@@ -1,6 +1,6 @@
 # FND-SSH-001 — Sessão SSH ociosa fica inoperante
 
-Status: **MITIGAÇÃO TEMPORÁRIA VALIDADA; CORREÇÃO PERMANENTE AUTORIZADA E PENDENTE**.
+Status: **RESOLVED — KEEPALIVE PERMANENTE VALIDADO NO CLIENTE SSH LOCAL**.
 
 ## Sintoma
 
@@ -22,7 +22,7 @@ Estado da conexão SSH ociosa era perdido/invalidado em alguma camada do caminho
 
 O comando de keepalive foi inicialmente executado quando o prompt já era `root@vmi3506102`, isto é, de dentro da VPS. Isso criou SSH dentro de SSH e não testou o caminho Linux Mint → VPS. O resultado foi descartado.
 
-## Teste válido
+## Teste válido temporário
 
 Origem confirmada: Linux Mint local, prompt `leo@leo-N43SM`.
 
@@ -42,11 +42,9 @@ Resultado:
 vivo
 ```
 
-## Conclusão
+Conclusão: o keepalive do cliente manteve a sessão funcional no teste temporário.
 
-O keepalive do cliente manteve a sessão funcional no teste realizado.
-
-## Decisão
+## Decisão autorizada
 
 LEANDRO autorizou persistir no cliente local:
 
@@ -60,20 +58,48 @@ Host contabo-vps
 
 O usuário `root` é temporário.
 
-## Estado local mais recente
+## Aplicação permanente
 
-Auditoria em chat de continuidade relatou inspeção somente leitura e resultado: `~/.ssh/config` ainda não existe.
+No Linux Mint local foi revalidado que `~/.ssh/config` não existia. Em seguida:
 
-## Validação permanente exigida
+1. o arquivo foi criado conscientemente;
+2. a permissão foi definida como `600` (`rw-------`);
+3. o bloco `Host contabo-vps` foi adicionado;
+4. a configuração efetiva foi validada com `ssh -G contabo-vps`;
+5. foram confirmados `user root`, `hostname 169.58.171.192`, `serveraliveinterval 30` e `serveralivecountmax 3`.
 
-Depois de criar configuração:
+## Validação permanente
 
-1. validar sintaxe/config efetiva;
-2. `ssh contabo-vps`;
-3. ~3 minutos ocioso;
-4. `echo vivo`;
-5. somente então marcar `RESOLVED`.
+A conexão foi iniciada a partir do Linux Mint local com:
+
+```bash
+ssh contabo-vps
+```
+
+O alias abriu corretamente a sessão remota `root@vmi3506102`.
+
+Após aproximadamente 3 minutos de ociosidade, na mesma sessão foi executado:
+
+```bash
+echo vivo
+```
+
+Resultado:
+
+```text
+vivo
+```
+
+Conclusão: a configuração permanente do keepalive foi validada no cenário que reproduzia o finding.
+
+## Estado final
+
+- mitigação temporária: validada;
+- configuração permanente: aplicada no Linux Mint local;
+- alias `contabo-vps`: validado;
+- teste de ociosidade permanente: validado;
+- finding: **RESOLVED**.
 
 ## Recovery
 
-Se configuração causar problema, remover/ajustar somente o bloco local. A VPS não depende desse arquivo para continuar online.
+Se a configuração local causar problema no futuro, remover ou ajustar somente o bloco `Host contabo-vps`. A VPS não depende de `~/.ssh/config` do Linux Mint para continuar online.
