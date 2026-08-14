@@ -6,7 +6,13 @@ Este arquivo responde principalmente: **onde estamos agora?** O contexto permane
 
 ## Gate de continuidade
 
-O PUC v1.0 foi implantado documentalmente. **Não retomar mudanças na VPS até que um novo chat passe no teste de continuidade usando somente o GitHub canônico.**
+O PUC v1.0 foi implantado e validado em novo chat usando somente o GitHub canônico.
+
+**Resultado: CONTINUIDADE COMPLETA.**
+
+Evidência: `governance/CONTINUITY-VALIDATION-2026-08-14.md`.
+
+A retomada operacional da VPS está liberada, respeitando HUMAN_GATEs e autorizações já registrados.
 
 ## Estado atual
 
@@ -15,6 +21,7 @@ O PUC v1.0 foi implantado documentalmente. **Não retomar mudanças na VPS até 
 - Etapa: **0.5 — Inventário real da VPS**.
 - Etapas 0.1 a 0.4: concluídas.
 - Etapa 0.5: em andamento.
+- PUC v1.0: `DONE`.
 
 ## Identificadores operacionais
 
@@ -76,16 +83,16 @@ Resultado: `vivo`.
 
 LEANDRO autorizou a configuração permanente no cliente local. Ainda não foi aplicada.
 
-A auditoria de continuidade posterior relatou que `~/.ssh/config` **não existe** no Linux Mint local. Portanto, após o gate do PUC, a criação poderá ser consciente e não uma sobrescrita de arquivo existente.
+Uma inspeção somente leitura relatou que `~/.ssh/config` não existia no Linux Mint local naquele momento. Como esse é estado local volátil, revalidar antes de escrever.
 
 Detalhes: `findings/FND-SSH-001.md`.
 
-## Próximo passo operacional — somente após continuidade PASS
+## Próximo passo operacional
 
 No Linux Mint LOCAL:
 
-1. revalidar, se necessário, que `~/.ssh/config` continua inexistente;
-2. criar o arquivo com permissão apropriada;
+1. revalidar que `~/.ssh/config` continua inexistente;
+2. criar conscientemente o arquivo com permissão apropriada;
 3. adicionar:
 
 ```sshconfig
@@ -100,7 +107,7 @@ Host contabo-vps
 5. conectar com `ssh contabo-vps`;
 6. aguardar ~3 minutos;
 7. executar `echo vivo`;
-8. atualizar finding, inventário, histórico e checkpoint.
+8. atualizar finding, histórico, state e checkpoint.
 
 Depois continuar inventário de armazenamento, filesystems, mounts, rede e uptime.
 
