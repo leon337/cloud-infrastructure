@@ -5,18 +5,19 @@ updated_at: 2026-08-14
 project:
   name: IMPLEMENTACAO_DA_VPS
   status: ACTIVE
-  current_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
-  phase_status: DONE
-  current_stage: "0.5 — Inventário real da VPS"
-  stage_status: DONE
+  current_phase: "FASE 1 — Base do sistema e segurança inicial"
+  phase_status: IN_PROGRESS
+  previous_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
+  previous_phase_status: DONE
+  current_stage: "Pré-execução do primeiro micro-passo — atualização inicial"
+  stage_status: HUMAN_GATE
   technical_inventory_collection: COMPLETE
-  stage_close_approved_by_leandro: true
-  stage_close_approved_at: 2026-08-14
+  phase_0_close_approved_by_leandro: true
   operational_resume_allowed: true
   continuity_status: CONTINUIDADE_COMPLETA
   continuity_validation_record: governance/CONTINUITY-VALIDATION-2026-08-14.md
-  next_phase: "FASE 1 — Base do sistema e segurança inicial"
-  next_phase_status: PROVISIONAL_NOT_STARTED
+  next_phase: "FASE 2 — Rede e firewall"
+  next_phase_status: PROVISIONAL
 local_machine:
   os: Linux Mint
   observed_prompt: "leo@leo-N43SM"
@@ -107,11 +108,18 @@ authorizations:
   - id: AUTH-STAGE-0.5-CLOSE-001
     decision: "LEANDRO aprovou o fechamento da Etapa 0.5 após revisão consolidada do inventário"
     status: EXECUTED
+  - id: AUTH-PHASE-1-START-001
+    decision: "LEANDRO determinou continuidade para a próxima etapa/fase"
+    status: EXECUTED_DOCUMENTALLY
+pending_human_gates:
+  - id: HG-F1-APT-UPDATE-001
+    scope: "Executar apt update na VPS para atualizar os índices APT, sem instalar upgrades"
+    status: PENDING
 next_actions:
-  - "Não iniciar mudanças da FASE 1 automaticamente"
-  - "Apresentar a LEANDRO o escopo imediato da FASE 1 — Base do sistema e segurança inicial"
-  - "Explicar objetivo, risco e recovery da primeira mudança proposta"
-  - "Obter HUMAN_GATE aplicável antes de qualquer mudança estrutural ou de segurança na VPS"
+  - "Explicar a LEANDRO o primeiro micro-passo da FASE 1: atualização dos índices APT"
+  - "Explicar objetivo, efeito, risco e recovery"
+  - "Obter HUMAN_GATE HG-F1-APT-UPDATE-001"
+  - "Se autorizado, executar somente apt update e analisar o resultado antes de qualquer apt upgrade"
 secrets_policy:
   never_version:
     - passwords
