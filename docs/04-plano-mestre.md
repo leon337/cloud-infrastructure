@@ -12,7 +12,7 @@ Inclui: modelo mental, repositório canônico, acesso VNC/SSH, SO, kernel, virtu
 
 Fechamento: coleta técnica concluída, inventário consolidado e fechamento didático aprovado por LEANDRO em 2026-08-14.
 
-### FASE 1 — Base do sistema e segurança inicial — PROVISIONAL
+### FASE 1 — Base do sistema e segurança inicial — IN_PROGRESS
 
 - atualizações iniciais;
 - usuário administrativo próprio;
@@ -24,7 +24,11 @@ Fechamento: coleta técnica concluída, inventário consolidado e fechamento did
 - política de senha SSH;
 - menor privilégio.
 
-A FASE 1 ainda não foi iniciada. Antes de qualquer mudança operacional, apresentar o passo imediato, explicar risco/recovery e respeitar os HUMAN_GATEs aplicáveis.
+LEANDRO determinou o avanço para a próxima fase em 2026-08-14. A FASE 1 foi iniciada de forma controlada.
+
+A sequência permanece gradual: primeiro apresentar e executar um único micro-passo por vez, com explicação prévia, risco/recovery e HUMAN_GATE quando aplicável. O início da fase não autoriza automaticamente mudanças que possam causar lockout ou alterações estruturais em lote.
+
+Primeiro micro-passo planejado: atualização inicial, começando pela atualização dos índices APT antes de qualquer upgrade de pacotes.
 
 ### FASE 2 — Rede e firewall — PROVISIONAL
 
