@@ -82,10 +82,13 @@ Chats nunca são fonte canônica de longo prazo.
 - Inventário técnico consolidado em `docs/06-inventario.md`.
 - **FASE 1 — Base do sistema e segurança inicial: IN_PROGRESS.**
 - Início da FASE 1: instrução explícita de LEANDRO em 2026-08-14 para avançar à próxima etapa e manter continuidade.
-- Primeiro micro-passo: atualização inicial, começando por atualização dos índices APT com `apt update` antes de qualquer upgrade.
-- `HG-F1-APT-UPDATE-001`: `PENDING`.
-- Nenhuma mudança de segurança, usuário, sudo, política root, firewall ou upgrade foi executada pelo início da fase.
-- Próximo passo: explicar objetivo/efeito/risco/recovery do `apt update`, obter o HUMAN_GATE e, se autorizado, executar somente esse comando e analisar o resultado.
+- Primeiro micro-passo: atualização inicial.
+- `HG-F1-APT-UPDATE-001`: **AUTORIZADO E EXECUTADO COM SUCESSO**.
+- `apt update`: executado na VPS em 2026-08-14; índices APT atualizados, cerca de 3000 kB obtidos, sem erro e sem instalação de upgrades.
+- A saída final do `apt update` informou **5 pacotes atualizáveis**.
+- Estado atual: `VALIDATING` — obter a lista exata com `apt list --upgradable` usando os índices recém-atualizados.
+- Nenhuma mudança de usuário, sudo, política root, firewall ou upgrade de pacotes foi executada.
+- Próximo passo: executar somente `apt list --upgradable`, analisar a lista e não executar `apt upgrade` sem etapa própria e HUMAN_GATE aplicável.
 
 ## Regra de fechamento de sessão
 
