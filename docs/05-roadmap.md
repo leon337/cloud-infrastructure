@@ -10,7 +10,7 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 | 0.4 Primeiro acesso seguro | DONE | VNC/TigerVNC + SSH + fingerprint validada |
 | 0.5 Inventário real | DONE | coleta técnica concluída, inventário consolidado e fechamento didático aprovado por LEANDRO em 2026-08-14 |
 | PUC v1.0 | DONE | teste canônico em novo chat resultou em CONTINUIDADE COMPLETA |
-| F1 Base/segurança inicial | PROVISIONAL | próxima fase; ainda não iniciada e sujeita aos HUMAN_GATEs aplicáveis |
+| F1 Base/segurança inicial | IN_PROGRESS | LEANDRO determinou continuidade para a próxima fase em 2026-08-14; primeira mudança ainda depende do HUMAN_GATE aplicável |
 | F2 Rede/firewall | PROVISIONAL | após acesso alternativo e políticas definidas |
 | F3 Armazenamento | PROVISIONAL | decisão somente após inventário e HUMAN_GATE |
 | F4 Manutenção/updates | PROVISIONAL | gate futuro |
@@ -37,4 +37,14 @@ A Etapa 0.5 teve sua coleta técnica concluída, foi revisada de forma consolida
 
 **FASE 0 — ORIENTAÇÃO E INVENTÁRIO: CONCLUÍDA.**
 
-A FASE 1 permanece `PROVISIONAL` e **não foi iniciada** por este fechamento. Antes de qualquer mudança operacional na VPS, o escopo imediato da FASE 1 deve ser apresentado e os HUMAN_GATEs pertinentes respeitados.
+## Início controlado da FASE 1
+
+LEANDRO determinou em 2026-08-14: **“VAMOS PARA A PROXIMA ETAPA”** e reforçou que a missão deve manter continuidade.
+
+Interpretação operacional:
+
+- a **FASE 1 — Base do sistema e segurança inicial** passa a `IN_PROGRESS`;
+- isso autoriza a transição de fase e o planejamento do primeiro micro-passo;
+- isso **não** autoriza automaticamente mudanças de segurança, upgrade em lote ou operações com risco de lockout;
+- o primeiro micro-passo planejado é a **atualização inicial**, começando pela atualização dos índices APT antes de qualquer upgrade;
+- antes da primeira mudança operacional relevante, objetivo, risco e recovery devem ser apresentados e o HUMAN_GATE aplicável deve ser obtido.
