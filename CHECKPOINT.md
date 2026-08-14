@@ -17,13 +17,15 @@ A retomada operacional está liberada, respeitando HUMAN_GATEs e autorizações 
 ## Estado atual
 
 - Repositório: `leon337/cloud-infrastructure`.
-- Fase: **FASE 0 — ORIENTAÇÃO E INVENTÁRIO**.
-- Etapa: **0.5 — Inventário real da VPS**.
-- Etapas 0.1 a 0.4: concluídas.
-- Etapa 0.5: `IN_PROGRESS`.
+- **FASE 0 — ORIENTAÇÃO E INVENTÁRIO: DONE.**
+- Etapas 0.1 a 0.5: `DONE`.
+- Etapa 0.5 — Inventário real da VPS: `DONE`.
 - Coleta técnica da Etapa 0.5: **CONCLUÍDA**.
-- Fechamento da Etapa 0.5: **pendente de revisão consolidada e confirmação de entendimento de LEANDRO**.
+- Revisão consolidada: **CONCLUÍDA**.
+- HUMAN_GATE de fechamento da Etapa 0.5: **APROVADO por LEANDRO em 2026-08-14**.
 - PUC v1.0: `DONE`.
+- Próxima fase planejada: **FASE 1 — Base do sistema e segurança inicial**.
+- FASE 1: **PROVISIONAL — NÃO INICIADA**.
 
 ## Identificadores operacionais
 
@@ -100,29 +102,27 @@ Detalhes permanentes: `docs/06-inventario.md`.
 - Remmina chegou ao serviço, mas não concluiu a sessão no teste.
 - Rescue System conhecido, não acionado.
 
-Detalhes: `findings/FND-SSH-001.md`, `docs/01-primeiro-acesso-seguro.md` e `runbooks/acesso-e-recuperacao.md`.
-
 ## Ponto exato de retomada
 
-**NÃO iniciar a FASE 1 ainda.**
+**FASE 0 encerrada. FASE 1 ainda não iniciada.**
 
-A coleta técnica da Etapa 0.5 terminou. O próximo passo é apresentar/revisar com LEANDRO o inventário consolidado, confirmar entendimento conforme a Definition of Done didática e somente então marcar a Etapa 0.5 como `DONE`.
-
-Depois disso, qualquer avanço para FASE 1 deve respeitar o plano provisório e os HUMAN_GATEs aplicáveis.
+O próximo passo não é executar comando na VPS. É apresentar a LEANDRO o escopo imediato da **FASE 1 — Base do sistema e segurança inicial**, definir o primeiro micro-passo, explicar risco e recovery e obter o HUMAN_GATE aplicável antes de qualquer mudança estrutural ou de segurança.
 
 ## Proibições imediatas
 
 Não executar ainda sem etapa própria e autorização:
 
-- particionamento ou alteração destrutiva de disco;
-- firewall;
-- desativação de root;
+- atualização/upgrade em lote;
+- criação/alteração de usuário administrativo;
+- mudança de sudo;
+- política de root;
 - desativação de senha SSH;
+- firewall;
+- particionamento ou alteração destrutiva de disco;
+- alterações de swap;
 - instalação de Docker;
 - desktop gráfico;
-- alterações de swap;
-- hardening em lote;
-- atualização/upgrade em lote.
+- hardening em lote.
 
 ## Próxima leitura obrigatória
 
