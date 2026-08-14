@@ -77,10 +77,10 @@ Chats nunca são fonte canônica de longo prazo.
 - Etapa atual: 0.5 — Inventário real da VPS.
 - PUC v1.0: validado com `CONTINUIDADE COMPLETA`.
 - Retomada operacional: permitida conforme `state/current.yaml`.
-- Achado ativo: `FND-SSH-001`.
-- Keepalive temporário: validado.
-- Keepalive permanente: autorizado e ainda pendente.
-- Inspeção relatada: `~/.ssh/config` não existia no Linux Mint local; revalidar antes de escrever.
+- `FND-SSH-001`: **RESOLVED**.
+- Keepalive permanente: aplicado e validado no Linux Mint local.
+- Alias SSH `contabo-vps`: validado.
+- Próximo passo: continuar inventário de armazenamento/filesystems, seguido por mounts, rede e uptime/estado básico.
 
 ## Regra de fechamento de sessão
 
