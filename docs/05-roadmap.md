@@ -8,11 +8,11 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 | 0.2 Repositório canônico | DONE | `cloud-infrastructure` criado, privado e separado do MCF |
 | 0.3 Preparação do primeiro acesso | DONE | painel Contabo e credenciais rotacionadas |
 | 0.4 Primeiro acesso seguro | DONE | VNC/TigerVNC + SSH + fingerprint validada |
-| 0.5 Inventário real | IN_PROGRESS | SO/kernel/CPU/RAM feitos; disco/rede/mounts/uptime pendentes |
+| 0.5 Inventário real | IN_PROGRESS | coleta técnica de SO/kernel/CPU/RAM/disco/filesystems/mounts/rede/uptime/estado básico concluída; falta revisão consolidada e fechamento didático com LEANDRO |
 | PUC v1.0 | DONE | teste canônico em novo chat resultou em CONTINUIDADE COMPLETA |
-| F1 Base/segurança inicial | PROVISIONAL | após inventário completo |
+| F1 Base/segurança inicial | PROVISIONAL | após inventário completo e fechamento da Etapa 0.5 |
 | F2 Rede/firewall | PROVISIONAL | após acesso alternativo e políticas definidas |
-| F3 Armazenamento | PROVISIONAL | decisão somente após inventário |
+| F3 Armazenamento | PROVISIONAL | decisão somente após inventário e HUMAN_GATE |
 | F4 Manutenção/updates | PROVISIONAL | gate futuro |
 | F5 Backup/recovery | PROVISIONAL | gate futuro |
 | F6 Docker/Compose | PROVISIONAL | somente após base segura e aula |
@@ -29,4 +29,8 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 
 Evidência: `governance/CONTINUITY-VALIDATION-2026-08-14.md`.
 
-A operação da Etapa 0.5 pode ser retomada seguindo `CHECKPOINT.md`, `state/current.yaml` e os HUMAN_GATEs vigentes.
+## Estado da Etapa 0.5
+
+A coleta técnica do inventário foi concluída por comandos somente leitura e está consolidada em `docs/06-inventario.md`.
+
+A etapa permanece `IN_PROGRESS` porque a Definition of Done didática exige revisão/entendimento de LEANDRO antes de marcar `DONE` e avançar para uma fase futura.
