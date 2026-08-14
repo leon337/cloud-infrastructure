@@ -24,16 +24,20 @@ Uma etapa somente é considerada concluída quando:
 3. foi documentada;
 4. LEANDRO entendeu.
 
-## Estado inicial conhecido
+## Estado confirmado
 
 - Provedor: Contabo
 - Produto: Cloud VPS 8
-- Sistema: Ubuntu 24.04 LTS
+- Sistema observado: Ubuntu 24.04.4 LTS
 - Recursos contratados: 8 vCPU, 24 GB RAM, 300 GB SSD
-- VPS já provisionada e em execução
-- IPv4 público disponível
-- Senha root inicial deve ser tratada como comprometida
+- VPS provisionada e em execução
 - Repositório: privado
+- senha `root` inicial descartada e rotacionada
+- console VNC validado com TigerVNC
+- fingerprint SSH ED25519 verificada por canal independente
+- primeiro login SSH com `root` validado
+
+Detalhes do checkpoint: [`docs/01-primeiro-acesso-seguro.md`](docs/01-primeiro-acesso-seguro.md).
 
 ## Objetivos arquitetônicos
 
@@ -86,4 +90,13 @@ Quando necessário, utilizar placeholders como `<IP_DO_SERVIDOR>`, `<USUARIO>`, 
 
 **FASE 0 — ORIENTAÇÃO E INVENTÁRIO**
 
-Nenhuma alteração técnica na VPS deve ocorrer antes do inventário seguro e da compreensão de LEANDRO.
+Etapas concluídas:
+
+- 0.1 — modelo mental da infraestrutura;
+- 0.2 — repositório canônico separado do MCF;
+- 0.3 — preparação do primeiro acesso;
+- 0.4 — primeiro acesso seguro via VNC + SSH.
+
+Próxima etapa:
+
+- **0.5 — inventário real da VPS**, começando por comandos somente de leitura.
