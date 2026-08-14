@@ -9,8 +9,8 @@ project:
   phase_status: IN_PROGRESS
   previous_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
   previous_phase_status: DONE
-  current_stage: "Validação da atualização inicial — índices APT atualizados"
-  stage_status: VALIDATING
+  current_stage: "Preparação do usuário administrativo próprio — inspeção prévia"
+  stage_status: READ_ONLY_PRECHECK
   technical_inventory_collection: COMPLETE
   phase_0_close_approved_by_leandro: true
   operational_resume_allowed: true
@@ -92,8 +92,24 @@ remote_vps:
     apt_update_authorized_at: 2026-08-14
     apt_update_status: SUCCESS
     apt_update_fetched_kb_approx: 3000
-    apt_update_upgradable_count_reported: 5
     apt_indexes_refreshed_in_phase_1: true
+    apt_upgradable_observed_count_after_refresh: 5
+    apt_upgradable_packages_after_refresh:
+      - krb5-locales
+      - libgssapi-krb5-2
+      - libk5crypto3
+      - libkrb5-3
+      - libkrb5support0
+    apt_upgradable_installed_version: 1.20.1-6ubuntu2.7
+    apt_upgradable_candidate_version: 1.20.1-6ubuntu2.8
+    apt_upgrade_simulation_command: "apt-get -s upgrade"
+    apt_upgrade_simulation_status: SUCCESS
+    apt_upgrade_simulation_upgraded: 0
+    apt_upgrade_simulation_newly_installed: 0
+    apt_upgrade_simulation_removed: 0
+    apt_upgrade_simulation_not_upgraded: 5
+    apt_upgrade_simulation_deferred_due_to_phasing: true
+    initial_updates_status: COMPLETE_WITH_PHASED_UPDATES_DEFERRED
 access:
   ssh: validated
   ssh_alias_contabo_vps: validated
@@ -121,9 +137,9 @@ authorizations:
     status: EXECUTED_SUCCESSFULLY
 pending_human_gates: []
 next_actions:
-  - "Executar somente apt list --upgradable para identificar os pacotes atualizáveis usando os índices recém-atualizados"
-  - "Analisar a lista antes de qualquer apt upgrade"
-  - "Não executar apt upgrade sem etapa própria, explicação de risco/recovery e HUMAN_GATE aplicável"
+  - "Não forçar os 5 phased updates; respeitar a política padrão do APT"
+  - "Iniciar o item usuário administrativo próprio com inspeção somente leitura das contas locais"
+  - "Antes de criar usuário ou alterar sudo, explicar objetivo, risco/recovery e obter HUMAN_GATE aplicável"
 secrets_policy:
   never_version:
     - passwords
