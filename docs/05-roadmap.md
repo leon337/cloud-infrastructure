@@ -8,9 +8,9 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 | 0.2 Repositório canônico | DONE | `cloud-infrastructure` criado, privado e separado do MCF |
 | 0.3 Preparação do primeiro acesso | DONE | painel Contabo e credenciais rotacionadas |
 | 0.4 Primeiro acesso seguro | DONE | VNC/TigerVNC + SSH + fingerprint validada |
-| 0.5 Inventário real | IN_PROGRESS | coleta técnica de SO/kernel/CPU/RAM/disco/filesystems/mounts/rede/uptime/estado básico concluída; falta revisão consolidada e fechamento didático com LEANDRO |
+| 0.5 Inventário real | DONE | coleta técnica concluída, inventário consolidado e fechamento didático aprovado por LEANDRO em 2026-08-14 |
 | PUC v1.0 | DONE | teste canônico em novo chat resultou em CONTINUIDADE COMPLETA |
-| F1 Base/segurança inicial | PROVISIONAL | após inventário completo e fechamento da Etapa 0.5 |
+| F1 Base/segurança inicial | PROVISIONAL | próxima fase; ainda não iniciada e sujeita aos HUMAN_GATEs aplicáveis |
 | F2 Rede/firewall | PROVISIONAL | após acesso alternativo e políticas definidas |
 | F3 Armazenamento | PROVISIONAL | decisão somente após inventário e HUMAN_GATE |
 | F4 Manutenção/updates | PROVISIONAL | gate futuro |
@@ -29,8 +29,12 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 
 Evidência: `governance/CONTINUITY-VALIDATION-2026-08-14.md`.
 
-## Estado da Etapa 0.5
+## Fechamento da FASE 0
 
-A coleta técnica do inventário foi concluída por comandos somente leitura e está consolidada em `docs/06-inventario.md`.
+As etapas 0.1 a 0.5 estão `DONE`.
 
-A etapa permanece `IN_PROGRESS` porque a Definition of Done didática exige revisão/entendimento de LEANDRO antes de marcar `DONE` e avançar para uma fase futura.
+A Etapa 0.5 teve sua coleta técnica concluída, foi revisada de forma consolidada com LEANDRO e recebeu HUMAN_GATE explícito de fechamento em 2026-08-14.
+
+**FASE 0 — ORIENTAÇÃO E INVENTÁRIO: CONCLUÍDA.**
+
+A FASE 1 permanece `PROVISIONAL` e **não foi iniciada** por este fechamento. Antes de qualquer mudança operacional na VPS, o escopo imediato da FASE 1 deve ser apresentado e os HUMAN_GATEs pertinentes respeitados.
