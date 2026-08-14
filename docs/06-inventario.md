@@ -1,6 +1,6 @@
 # 06 — Inventário Real da VPS
 
-Status: **COLETA TÉCNICA CONCLUÍDA — Etapa 0.5 ainda aguardando fechamento didático com LEANDRO**.
+Status: **ETAPA 0.5 CONCLUÍDA — fechamento didático aprovado por LEANDRO em 2026-08-14**.
 
 Última coleta: 2026-08-14.
 
@@ -212,4 +212,9 @@ Importante: nenhum `apt update` foi executado nesta etapa; portanto a lista refl
 - Nenhuma alteração de swap foi realizada.
 - Nenhum firewall foi configurado nesta etapa.
 - Nenhum serviço foi instalado ou removido para realizar o inventário.
-- A Etapa 0.5 só deve ser marcada `DONE` depois da revisão consolidada com LEANDRO, conforme a Definition of Done didática do projeto.
+
+## Fechamento da Etapa 0.5
+
+A coleta técnica foi concluída, o inventário consolidado foi apresentado a LEANDRO e o fechamento recebeu aprovação explícita em 2026-08-14, satisfazendo a Definition of Done didática aplicável a esta etapa.
+
+**Etapa 0.5 — DONE.**
