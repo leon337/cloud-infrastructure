@@ -7,14 +7,15 @@ project:
   status: ACTIVE
   current_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
   current_stage: "0.5 — Inventário real da VPS"
-  operational_resume_allowed: false
-  resume_blocker: "Validar o novo Protocolo Universal de Continuidade antes de retomar mudanças na VPS"
+  operational_resume_allowed: true
+  continuity_status: CONTINUIDADE_COMPLETA
+  continuity_validation_record: governance/CONTINUITY-VALIDATION-2026-08-14.md
 local_machine:
   os: Linux Mint
   observed_prompt: "leo@leo-N43SM"
   ssh_config:
     observed_exists: false
-    provenance: "relatado no chat de continuidade após inspeção somente leitura"
+    provenance: "relatado no chat de continuidade após inspeção somente leitura; revalidar antes de escrever por ser estado local volátil"
 remote_vps:
   provider: Contabo
   product: Cloud VPS 8
@@ -43,10 +44,12 @@ authorizations:
   - id: AUTH-SSH-KEEPALIVE-001
     decision: "LEANDRO autorizou configurar keepalive permanente no cliente SSH do Linux Mint"
     status: PENDING_EXECUTION
-next_actions_after_continuity_gate:
-  - "Criar conscientemente ~/.ssh/config no Linux Mint local, pois a inspeção relatou que o arquivo não existe"
+next_actions:
+  - "No Linux Mint LOCAL, revalidar que ~/.ssh/config continua inexistente antes de escrever"
+  - "Criar conscientemente ~/.ssh/config com permissão apropriada"
   - "Aplicar bloco Host contabo-vps com keepalive"
   - "Validar ssh contabo-vps após ~3 minutos ocioso com echo vivo"
+  - "Registrar resultado em FND-SSH-001 e no estado canônico"
   - "Continuar inventário de armazenamento/filesystems"
   - "Inventariar mounts"
   - "Inventariar rede"
