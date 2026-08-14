@@ -75,15 +75,17 @@ Chats nunca são fonte canônica de longo prazo.
 - Linux Mint local: `leo@leo-N43SM`.
 - **FASE 0 — ORIENTAÇÃO E INVENTÁRIO: DONE.**
 - Etapas 0.1 a 0.5: `DONE`.
-- Etapa 0.5: coleta técnica concluída, inventário consolidado e fechamento didático aprovado por LEANDRO em 2026-08-14.
 - PUC v1.0: validado com `CONTINUIDADE COMPLETA`.
 - `FND-SSH-001`: **RESOLVED**.
 - Keepalive permanente: aplicado e validado no Linux Mint local.
 - Alias SSH `contabo-vps`: validado.
-- Inventário técnico de sistema, CPU/RAM, armazenamento/filesystems, mounts, rede, portas, uptime e estado básico: consolidado em `docs/06-inventario.md`.
-- Próxima fase planejada: **FASE 1 — Base do sistema e segurança inicial**.
-- FASE 1: **PROVISIONAL — NÃO INICIADA**.
-- Próximo passo: apresentar a LEANDRO o escopo imediato da FASE 1, definir o primeiro micro-passo e obter o HUMAN_GATE aplicável antes de qualquer mudança operacional relevante na VPS.
+- Inventário técnico consolidado em `docs/06-inventario.md`.
+- **FASE 1 — Base do sistema e segurança inicial: IN_PROGRESS.**
+- Início da FASE 1: instrução explícita de LEANDRO em 2026-08-14 para avançar à próxima etapa e manter continuidade.
+- Primeiro micro-passo: atualização inicial, começando por atualização dos índices APT com `apt update` antes de qualquer upgrade.
+- `HG-F1-APT-UPDATE-001`: `PENDING`.
+- Nenhuma mudança de segurança, usuário, sudo, política root, firewall ou upgrade foi executada pelo início da fase.
+- Próximo passo: explicar objetivo/efeito/risco/recovery do `apt update`, obter o HUMAN_GATE e, se autorizado, executar somente esse comando e analisar o resultado.
 
 ## Regra de fechamento de sessão
 
