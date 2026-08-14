@@ -22,8 +22,11 @@ A retomada operacional está liberada, respeitando HUMAN_GATEs e autorizações 
 - PUC v1.0: `DONE`.
 - **FASE 1 — Base do sistema e segurança inicial: IN_PROGRESS.**
 - Início da FASE 1: autorizado por instrução explícita de LEANDRO em 2026-08-14 para dar continuidade à próxima etapa.
-- Primeiro micro-passo: **atualização inicial**, começando por `apt update` para atualizar os índices APT sem instalar upgrades.
-- Estado do primeiro micro-passo: `HUMAN_GATE` antes da execução.
+- Primeiro micro-passo: **atualização inicial**.
+- `HG-F1-APT-UPDATE-001`: **AUTORIZADO E EXECUTADO COM SUCESSO**.
+- `apt update`: executado na VPS em 2026-08-14; índices APT atualizados sem instalação de upgrades.
+- Resultado observado: cerca de 3000 kB obtidos, leitura de listas concluída sem erro e mensagem final indicando **5 pacotes atualizáveis**.
+- Estado atual do micro-passo: `VALIDATING` — falta identificar a lista exata de pacotes com os índices recém-atualizados antes de qualquer decisão de upgrade.
 
 ## Escopo da FASE 1
 
@@ -69,7 +72,6 @@ A sequência será executada em pequenos passos. Não desativar acesso existente
 - `systemd`: `running`, 0 unidades failed na medição.
 - Timezone observado: `Europe/Berlin`.
 - NTP ativo e relógio sincronizado.
-- `apt list --upgradable` havia mostrado 5 pacotes krb5 usando índices APT existentes; nenhum `apt update` havia sido executado.
 
 Detalhes permanentes: `docs/06-inventario.md`.
 
@@ -86,15 +88,17 @@ Princípio: nenhuma melhoria de segurança deve criar risco maior de perda de ac
 
 ## Ponto exato de retomada
 
-**FASE 1 iniciada; nenhuma alteração de segurança foi executada ainda.**
+**FASE 1 em andamento. `apt update` já foi executado com sucesso. Nenhum pacote foi atualizado.**
 
-Próximo passo é apresentar e obter o HUMAN_GATE para executar somente:
+Próximo passo é executar somente:
 
 ```bash
-apt update
+apt list --upgradable
 ```
 
-Esse comando atualizará os índices de pacotes, mas não instalará upgrades. Depois da execução, analisar o resultado antes de qualquer `apt upgrade`.
+Objetivo: obter a lista atual de pacotes disponíveis para upgrade usando os índices APT recém-atualizados. Esse comando é somente leitura em relação aos pacotes instalados: ele não instala upgrades.
+
+Depois da saída, analisar os pacotes antes de qualquer `apt upgrade`.
 
 ## Proibições imediatas
 
