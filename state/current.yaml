@@ -14,8 +14,12 @@ local_machine:
   os: Linux Mint
   observed_prompt: "leo@leo-N43SM"
   ssh_config:
-    observed_exists: false
-    provenance: "relatado no chat de continuidade após inspeção somente leitura; revalidar antes de escrever por ser estado local volátil"
+    observed_exists: true
+    path: "~/.ssh/config"
+    permissions: "600"
+    alias: contabo-vps
+    effective_config_validated: true
+    keepalive_permanent_validated: true
 remote_vps:
   provider: Contabo
   product: Cloud VPS 8
@@ -32,25 +36,22 @@ remote_vps:
   swap_bytes: 0
 access:
   ssh: validated
+  ssh_alias_contabo_vps: validated
+  ssh_keepalive_permanent: validated
   vnc_tigervnc: validated
   remmina_vnc: reached_service_but_session_not_completed
   root_password: validated_but_secret_not_versioned
   host_fingerprint_ed25519: "SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4"
 findings:
   - id: FND-SSH-001
-    status: MITIGATION_VALIDATED_TEMPORARILY
-    permanent_fix_status: AUTHORIZED_NOT_APPLIED
+    status: RESOLVED
+    permanent_fix_status: APPLIED_AND_VALIDATED
 authorizations:
   - id: AUTH-SSH-KEEPALIVE-001
     decision: "LEANDRO autorizou configurar keepalive permanente no cliente SSH do Linux Mint"
-    status: PENDING_EXECUTION
+    status: EXECUTED_AND_VALIDATED
 next_actions:
-  - "No Linux Mint LOCAL, revalidar que ~/.ssh/config continua inexistente antes de escrever"
-  - "Criar conscientemente ~/.ssh/config com permissão apropriada"
-  - "Aplicar bloco Host contabo-vps com keepalive"
-  - "Validar ssh contabo-vps após ~3 minutos ocioso com echo vivo"
-  - "Registrar resultado em FND-SSH-001 e no estado canônico"
-  - "Continuar inventário de armazenamento/filesystems"
+  - "Continuar inventário de armazenamento/filesystems com comandos somente leitura e explicação prévia"
   - "Inventariar mounts"
   - "Inventariar rede"
   - "Inventariar uptime/estado básico"
