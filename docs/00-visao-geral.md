@@ -1,43 +1,33 @@
 # 00 — Visão Geral
 
-## Objetivo
+Este arquivo é um índice introdutório preservado por compatibilidade com o início da missão.
 
-Registrar a visão da infraestrutura, o plano de aprendizado da missão e o estado validado da Fase 0.
+## Missão
 
-## Arquitetura conhecida
+Configurar, proteger, documentar e aprender a administrar a infraestrutura VPS, buscando segurança, funcionalidade, aprendizado e autonomia.
 
-- Computador local: Linux Mint em hardware físico.
-- Infraestrutura remota: Contabo Cloud VPS 8.
-- Sistema remoto observado: Ubuntu 24.04.4 LTS.
-- Uso futuro em estudo: servidor de infraestrutura e Cloud Workstation gráfica.
+A descrição completa está em `02-missao-e-escopo.md`.
 
-## Modelo híbrido
+## Arquitetura
 
-O computador local poderá ser usado como interface de trabalho, enquanto a VPS executa processamento, serviços, ambientes de desenvolvimento e aplicações remotas.
+- Linux Mint físico como estação local;
+- Contabo Cloud VPS 8 como infraestrutura remota;
+- Ubuntu 24.04.4 LTS confirmado;
+- modelo híbrido local/remoto;
+- Cloud Workstation preservada como requisito futuro, ainda adiado.
 
-## Acesso validado
+Detalhes: `03-arquitetura-e-principios.md` e `07-cloud-workstation.md`.
 
-Foram validados dois canais independentes de acesso:
+## Estado
 
-- SSH para administração normal;
-- VNC/TigerVNC para console alternativo e recuperação.
+FASE 0 — ORIENTAÇÃO E INVENTÁRIO.
 
-A fingerprint ED25519 apresentada pelo SSH foi confirmada diretamente na VPS através do console VNC antes de ser aceita no cliente local.
+Etapas 0.1–0.4 concluídas. Etapa 0.5 em andamento.
 
-O detalhamento está em [`01-primeiro-acesso-seguro.md`](01-primeiro-acesso-seguro.md).
+Inventário parcial: `06-inventario.md`.
+Roadmap: `05-roadmap.md`.
+Estado imediato: `../CHECKPOINT.md`.
 
-## Fase atual
+## Continuidade
 
-**FASE 0 — ORIENTAÇÃO E INVENTÁRIO**
-
-O primeiro acesso seguro foi concluído.
-
-A etapa atual é:
-
-**0.5 — Inventário real da VPS.**
-
-O objetivo agora é inventariar sistema, hostname, kernel, CPU, memória, armazenamento, filesystems, mounts, rede e uptime por comandos somente de leitura antes de qualquer mudança estrutural.
-
-## Regra de conclusão
-
-Uma etapa só é concluída quando funcionou, foi validada, foi documentada e LEANDRO entendeu.
+Qualquer nova IA deve começar por `../CONTEXT.md` e seguir o PUC v1.0. Este arquivo isolado não é suficiente para retomada.
