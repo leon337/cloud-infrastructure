@@ -9,7 +9,7 @@ project:
   phase_status: IN_PROGRESS
   previous_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
   previous_phase_status: DONE
-  current_stage: "Preparação do usuário administrativo próprio — validação da conta ubuntu"
+  current_stage: "Preparação do usuário administrativo próprio — inspeção de acesso SSH da conta ubuntu"
   stage_status: READ_ONLY_PRECHECK
   technical_inventory_collection: COMPLETE
   phase_0_close_approved_by_leandro: true
@@ -126,7 +126,18 @@ remote_vps:
         - dip
         - lxd
       sudo_group_membership_observed: true
-      effective_sudo_policy_validated: false
+      effective_sudo_policy_validated: true
+      effective_sudo_rules_observed:
+        - "(ALL : ALL) ALL"
+        - "(ALL) NOPASSWD: ALL"
+      nopasswd_all_observed: true
+      sudo_group_rule_observed: "%sudo ALL=(ALL:ALL) ALL"
+      nopasswd_source_file: /etc/sudoers.d/90-cloud-init-users
+      nopasswd_source_origin: cloud-init
+      nopasswd_rule_observed: "ubuntu ALL=(ALL) NOPASSWD:ALL"
+      cloud_init_source_comment_version_observed: "26.1-0ubuntu1~24.04.1"
+      cloud_init_source_comment_created_at_utc_observed: "2026-08-13 05:57:21 +0000"
+      ssh_access_readiness_validated: false
 access:
   ssh: validated
   ssh_alias_contabo_vps: validated
@@ -154,8 +165,8 @@ authorizations:
     status: EXECUTED_SUCCESSFULLY
 pending_human_gates: []
 next_actions:
-  - "Não criar novo usuário ainda: a conta ubuntu já existe e pertence ao grupo sudo"
-  - "Executar somente sudo -l -U ubuntu para validar a política efetiva de sudo da conta existente"
+  - "Não alterar ainda a regra NOPASSWD da conta ubuntu; origem cloud-init foi identificada"
+  - "Inspecionar somente permissões e existência de /home/ubuntu/.ssh e authorized_keys"
   - "Não alterar sudo, grupos, senha, SSH ou criar usuário sem análise e HUMAN_GATE aplicável"
 secrets_policy:
   never_version:
