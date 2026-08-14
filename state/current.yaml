@@ -9,7 +9,7 @@ project:
   phase_status: IN_PROGRESS
   previous_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
   previous_phase_status: DONE
-  current_stage: "Preparação do usuário administrativo próprio — inspeção prévia"
+  current_stage: "Preparação do usuário administrativo próprio — validação da conta ubuntu"
   stage_status: READ_ONLY_PRECHECK
   technical_inventory_collection: COMPLETE
   phase_0_close_approved_by_leandro: true
@@ -110,6 +110,23 @@ remote_vps:
     apt_upgrade_simulation_not_upgraded: 5
     apt_upgrade_simulation_deferred_due_to_phasing: true
     initial_updates_status: COMPLETE_WITH_PHASED_UPDATES_DEFERRED
+  accounts:
+    human_uid_range_precheck:
+      observed_count: 1
+      account: ubuntu
+      uid: 1000
+      gid: 1000
+      home: /home/ubuntu
+      shell: /bin/bash
+      groups_observed:
+        - ubuntu
+        - adm
+        - cdrom
+        - sudo
+        - dip
+        - lxd
+      sudo_group_membership_observed: true
+      effective_sudo_policy_validated: false
 access:
   ssh: validated
   ssh_alias_contabo_vps: validated
@@ -137,9 +154,9 @@ authorizations:
     status: EXECUTED_SUCCESSFULLY
 pending_human_gates: []
 next_actions:
-  - "Não forçar os 5 phased updates; respeitar a política padrão do APT"
-  - "Iniciar o item usuário administrativo próprio com inspeção somente leitura das contas locais"
-  - "Antes de criar usuário ou alterar sudo, explicar objetivo, risco/recovery e obter HUMAN_GATE aplicável"
+  - "Não criar novo usuário ainda: a conta ubuntu já existe e pertence ao grupo sudo"
+  - "Executar somente sudo -l -U ubuntu para validar a política efetiva de sudo da conta existente"
+  - "Não alterar sudo, grupos, senha, SSH ou criar usuário sem análise e HUMAN_GATE aplicável"
 secrets_policy:
   never_version:
     - passwords
