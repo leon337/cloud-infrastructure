@@ -8,6 +8,10 @@ Este arquivo é a porta de entrada obrigatória para qualquer IA, agente ou huma
 
 Objetivo: permitir continuidade segura entre chats, modelos, agentes, dias, meses ou anos sem depender da memória de uma conversa.
 
+Status do protocolo: **VALIDADO — CONTINUIDADE COMPLETA**.
+
+Evidência: `governance/CONTINUITY-VALIDATION-2026-08-14.md`.
+
 ## Regra zero
 
 Antes de qualquer ação operacional:
@@ -52,6 +56,7 @@ Chats nunca são fonte canônica de longo prazo.
 | Como funciona o painel Contabo? | `docs/10-painel-contabo.md` |
 | Como ensinar/avançar com LEANDRO? | `docs/11-protocolo-didatico.md` |
 | Como manter continuidade entre chats? | `governance/PUC-v1.md` |
+| O PUC foi validado? | `governance/CONTINUITY-VALIDATION-2026-08-14.md` |
 | Quais riscos do próprio protocolo? | `governance/RC-001-PUC-v1.md` |
 | Qual cobertura de contexto é obrigatória? | `governance/CONTEXT-COVERAGE.md` |
 | Qual decisão foi tomada? | `decisions/` |
@@ -70,13 +75,15 @@ Chats nunca são fonte canônica de longo prazo.
 - Linux Mint local: `leo@leo-N43SM`.
 - Fase atual: FASE 0 — ORIENTAÇÃO E INVENTÁRIO.
 - Etapa atual: 0.5 — Inventário real da VPS.
+- PUC v1.0: validado com `CONTINUIDADE COMPLETA`.
+- Retomada operacional: permitida conforme `state/current.yaml`.
 - Achado ativo: `FND-SSH-001`.
 - Keepalive temporário: validado.
 - Keepalive permanente: autorizado e ainda pendente.
-- Inspeção relatada no chat de continuidade: `~/.ssh/config` não existia no Linux Mint local.
+- Inspeção relatada: `~/.ssh/config` não existia no Linux Mint local; revalidar antes de escrever.
 
 ## Regra de fechamento de sessão
 
 Nenhuma sessão relevante está corretamente encerrada enquanto descobertas, decisões, autorizações, mudanças, riscos ou próximos passos existirem apenas no chat.
 
-Antes de trocar de chat, executar a Auditoria de Delta definida no PUC, persistir as mudanças, atualizar `CHECKPOINT.md` e `state/current.yaml`, registrar a sessão em `history/`, verificar a `main` e realizar teste de continuidade.
+Antes de trocar de chat, executar a Auditoria de Delta definida no PUC, persistir as mudanças, atualizar `CHECKPOINT.md` e `state/current.yaml`, registrar a sessão em `history/`, verificar a `main` e realizar teste de continuidade quando houver migração relevante de contexto.
