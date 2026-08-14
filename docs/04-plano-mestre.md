@@ -4,11 +4,13 @@ Este documento consolida tudo que foi planejado para a implementação. A ordem 
 
 ## Programa de capacidades
 
-### FASE 0 — Orientação e Inventário — IN_PROGRESS
+### FASE 0 — Orientação e Inventário — DONE
 
 Objetivo: compreender arquitetura, acessar com segurança e descobrir o estado real antes de mudanças estruturais.
 
 Inclui: modelo mental, repositório canônico, acesso VNC/SSH, SO, kernel, virtualização, CPU, RAM, armazenamento, filesystems, mounts, rede e uptime.
+
+Fechamento: coleta técnica concluída, inventário consolidado e fechamento didático aprovado por LEANDRO em 2026-08-14.
 
 ### FASE 1 — Base do sistema e segurança inicial — PROVISIONAL
 
@@ -21,6 +23,8 @@ Inclui: modelo mental, repositório canônico, acesso VNC/SSH, SO, kernel, virtu
 - política de root;
 - política de senha SSH;
 - menor privilégio.
+
+A FASE 1 ainda não foi iniciada. Antes de qualquer mudança operacional, apresentar o passo imediato, explicar risco/recovery e respeitar os HUMAN_GATEs aplicáveis.
 
 ### FASE 2 — Rede e firewall — PROVISIONAL
 
