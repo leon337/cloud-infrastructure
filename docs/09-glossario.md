@@ -1,0 +1,31 @@
+# 09 — Glossário Vivo
+
+- **VPS** — servidor virtual privado; uma VM fornecida por um provedor.
+- **VM** — máquina virtual com sistema operacional próprio.
+- **KVM** — tecnologia de virtualização observada na VPS.
+- **QEMU** — camada que apresenta hardware virtual ao guest.
+- **root** — usuário de autoridade máxima no Linux.
+- **sudo** — mecanismo para executar ações privilegiadas de forma controlada.
+- **SSH** — protocolo seguro de acesso remoto, principalmente terminal.
+- **host key** — chave que identifica criptograficamente o servidor SSH.
+- **fingerprint** — resumo da host key usado para conferência.
+- **known_hosts** — arquivo local que registra identidades SSH já confiadas.
+- **VNC** — acesso remoto à tela/console.
+- **TTY** — terminal textual do Linux; `tty1` foi acessado via VNC.
+- **Rescue System** — Linux temporário de recuperação para acessar/reparar o sistema principal.
+- **IP** — endereço de rede de uma máquina/interface.
+- **porta** — identificador de serviço em um endereço de rede.
+- **firewall** — controle de tráfego permitido/bloqueado.
+- **filesystem** — estrutura usada pelo sistema para organizar dados em armazenamento.
+- **partição** — divisão lógica de um disco.
+- **mount** — associação de um filesystem a um ponto da árvore de diretórios.
+- **swap** — espaço usado como apoio à memória; atualmente 0 B na VPS.
+- **snapshot** — fotografia do estado da máquina; não substitui backup independente.
+- **backup** — cópia independente para recuperação.
+- **container** — ambiente isolado que compartilha o kernel do host.
+- **Docker** — plataforma de containers; ainda não instalada nesta missão.
+- **volume Docker** — armazenamento persistente separado do ciclo de vida do container.
+- **reverse proxy** — recepção/encaminhamento de requisições a serviços internos.
+- **TLS** — criptografia de tráfego de aplicação, normalmente HTTPS.
+- **keepalive SSH** — mensagens periódicas para manter/detectar sessão; usado no FND-SSH-001.
+- **nested virtualization** — virtualização dentro de uma VM; não é dependência da arquitetura atual.

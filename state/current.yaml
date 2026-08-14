@@ -1,0 +1,68 @@
+protocol_version: PUC-v1.0
+canonical_repository: leon337/cloud-infrastructure
+canonical_branch: main
+updated_at: 2026-08-14
+project:
+  name: IMPLEMENTACAO_DA_VPS
+  status: ACTIVE
+  current_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
+  current_stage: "0.5 — Inventário real da VPS"
+  operational_resume_allowed: false
+  resume_blocker: "Validar o novo Protocolo Universal de Continuidade antes de retomar mudanças na VPS"
+local_machine:
+  os: Linux Mint
+  observed_prompt: "leo@leo-N43SM"
+  ssh_config:
+    observed_exists: false
+    provenance: "relatado no chat de continuidade após inspeção somente leitura"
+remote_vps:
+  provider: Contabo
+  product: Cloud VPS 8
+  ipv4: 169.58.171.192
+  hostname: vmi3506102
+  os: Ubuntu 24.04.4 LTS
+  codename: noble
+  kernel: Linux 6.8.0-137-generic
+  architecture: x86-64
+  virtualization: KVM
+  virtual_hardware: QEMU
+  cpu_logical: 8
+  ram_visible_gib_approx: 23
+  swap_bytes: 0
+access:
+  ssh: validated
+  vnc_tigervnc: validated
+  remmina_vnc: reached_service_but_session_not_completed
+  root_password: validated_but_secret_not_versioned
+  host_fingerprint_ed25519: "SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4"
+findings:
+  - id: FND-SSH-001
+    status: MITIGATION_VALIDATED_TEMPORARILY
+    permanent_fix_status: AUTHORIZED_NOT_APPLIED
+authorizations:
+  - id: AUTH-SSH-KEEPALIVE-001
+    decision: "LEANDRO autorizou configurar keepalive permanente no cliente SSH do Linux Mint"
+    status: PENDING_EXECUTION
+next_actions_after_continuity_gate:
+  - "Criar conscientemente ~/.ssh/config no Linux Mint local, pois a inspeção relatou que o arquivo não existe"
+  - "Aplicar bloco Host contabo-vps com keepalive"
+  - "Validar ssh contabo-vps após ~3 minutos ocioso com echo vivo"
+  - "Continuar inventário de armazenamento/filesystems"
+  - "Inventariar mounts"
+  - "Inventariar rede"
+  - "Inventariar uptime/estado básico"
+secrets_policy:
+  never_version:
+    - passwords
+    - private_ssh_keys
+    - tokens
+    - api_keys
+    - two_factor_codes
+    - real_connection_strings
+    - contabo_credentials
+    - real_env_secrets
+  operational_identifiers_allowed:
+    - public_ip
+    - hostname
+    - ssh_host_fingerprint
+    - ssh_alias
