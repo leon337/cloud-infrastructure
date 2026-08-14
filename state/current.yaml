@@ -7,6 +7,9 @@ project:
   status: ACTIVE
   current_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
   current_stage: "0.5 — Inventário real da VPS"
+  stage_status: IN_PROGRESS
+  technical_inventory_collection: COMPLETE
+  stage_close_blocker: "Revisão consolidada e confirmação de entendimento de LEANDRO conforme Definition of Done didática"
   operational_resume_allowed: true
   continuity_status: CONTINUIDADE_COMPLETA
   continuity_validation_record: governance/CONTINUITY-VALIDATION-2026-08-14.md
@@ -34,6 +37,53 @@ remote_vps:
   cpu_logical: 8
   ram_visible_gib_approx: 23
   swap_bytes: 0
+  storage:
+    primary_disk: /dev/sda
+    model: QEMU_HARDDISK
+    size_gib: 300
+    partition_table: GPT
+    root_partition: /dev/sda1
+    root_filesystem: ext4
+    root_mount: /
+    root_df_size_gib_approx: 290
+    root_used_gib_approx: 2.4
+    root_available_gib_approx: 288
+    root_use_percent: 1
+    boot_partition: /dev/sda16
+    boot_filesystem: ext4
+    boot_mount: /boot
+    efi_partition: /dev/sda15
+    efi_filesystem: vfat
+    efi_mount: /boot/efi
+    bios_boot_partition: /dev/sda14
+  network:
+    primary_interface: eth0
+    interface_state: UP
+    ipv4_cidr: 169.58.171.192/17
+    ipv4_gateway: 169.58.128.1
+    ipv6_global_cidr: "2a02:c207:2350:6102::1/64"
+    ipv6_gateway: "fe80::1"
+    dns_mode: systemd-resolved_stub
+    dns_servers:
+      - 195.179.224.53
+      - 209.126.15.53
+    listening:
+      ssh_ipv4: "0.0.0.0:22"
+      ssh_ipv6: "[::]:22"
+      local_dns:
+        - "127.0.0.53:53"
+        - "127.0.0.54:53"
+  basic_state:
+    uptime_observed: "~5h37"
+    load_average_observed: "0.00 0.03 0.00"
+    timezone: Europe/Berlin
+    timezone_offset_observed: "+0200 CEST"
+    ntp_service: active
+    system_clock_synchronized: true
+    failed_systemd_units: 0
+    systemd_state: running
+    apt_upgradable_observed_count: 5
+    apt_indexes_refreshed_during_inventory: false
 access:
   ssh: validated
   ssh_alias_contabo_vps: validated
@@ -51,10 +101,10 @@ authorizations:
     decision: "LEANDRO autorizou configurar keepalive permanente no cliente SSH do Linux Mint"
     status: EXECUTED_AND_VALIDATED
 next_actions:
-  - "Continuar inventário de armazenamento/filesystems com comandos somente leitura e explicação prévia"
-  - "Inventariar mounts"
-  - "Inventariar rede"
-  - "Inventariar uptime/estado básico"
+  - "Revisar com LEANDRO o inventário consolidado da Etapa 0.5"
+  - "Confirmar entendimento conforme Definition of Done didática"
+  - "Somente depois marcar Etapa 0.5 como DONE"
+  - "Não iniciar FASE 1 sem respeitar o próximo HUMAN_GATE aplicável"
 secrets_policy:
   never_version:
     - passwords
