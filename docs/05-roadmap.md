@@ -9,7 +9,7 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 | 0.3 Preparação do primeiro acesso | DONE | painel Contabo e credenciais rotacionadas |
 | 0.4 Primeiro acesso seguro | DONE | VNC/TigerVNC + SSH + fingerprint validada |
 | 0.5 Inventário real | IN_PROGRESS | SO/kernel/CPU/RAM feitos; disco/rede/mounts/uptime pendentes |
-| PUC v1.0 | VALIDATING | estrutura implantada; exige teste de novo chat |
+| PUC v1.0 | DONE | teste canônico em novo chat resultou em CONTINUIDADE COMPLETA |
 | F1 Base/segurança inicial | PROVISIONAL | após inventário completo |
 | F2 Rede/firewall | PROVISIONAL | após acesso alternativo e políticas definidas |
 | F3 Armazenamento | PROVISIONAL | decisão somente após inventário |
@@ -23,6 +23,10 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 | F11 Workloads | PROVISIONAL | implantação gradual |
 | F12 Autonomia/reconstrução | PROVISIONAL | maturidade final |
 
-## Bloqueio atual
+## Gate de continuidade
 
-Não retomar operação na VPS até o PUC v1.0 passar em teste de continuidade canônica.
+**PUC v1.0 VALIDADO — CONTINUIDADE COMPLETA.**
+
+Evidência: `governance/CONTINUITY-VALIDATION-2026-08-14.md`.
+
+A operação da Etapa 0.5 pode ser retomada seguindo `CHECKPOINT.md`, `state/current.yaml` e os HUMAN_GATEs vigentes.
