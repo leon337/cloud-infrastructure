@@ -75,12 +75,15 @@ Chats nunca são fonte canônica de longo prazo.
 - Linux Mint local: `leo@leo-N43SM`.
 - Fase atual: FASE 0 — ORIENTAÇÃO E INVENTÁRIO.
 - Etapa atual: 0.5 — Inventário real da VPS.
+- Estado da Etapa 0.5: coleta técnica concluída; fechamento didático ainda pendente.
 - PUC v1.0: validado com `CONTINUIDADE COMPLETA`.
 - Retomada operacional: permitida conforme `state/current.yaml`.
 - `FND-SSH-001`: **RESOLVED**.
 - Keepalive permanente: aplicado e validado no Linux Mint local.
 - Alias SSH `contabo-vps`: validado.
-- Próximo passo: continuar inventário de armazenamento/filesystems, seguido por mounts, rede e uptime/estado básico.
+- Inventário técnico de sistema, CPU/RAM, armazenamento/filesystems, mounts, rede, portas, uptime e estado básico: consolidado em `docs/06-inventario.md`.
+- Próximo passo: revisar o inventário consolidado com LEANDRO e confirmar entendimento antes de marcar 0.5 como `DONE`.
+- FASE 1 ainda não iniciada.
 
 ## Regra de fechamento de sessão
 
