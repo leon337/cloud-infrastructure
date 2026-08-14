@@ -9,8 +9,8 @@ project:
   phase_status: IN_PROGRESS
   previous_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
   previous_phase_status: DONE
-  current_stage: "Pré-execução do primeiro micro-passo — atualização inicial"
-  stage_status: HUMAN_GATE
+  current_stage: "Validação da atualização inicial — índices APT atualizados"
+  stage_status: VALIDATING
   technical_inventory_collection: COMPLETE
   phase_0_close_approved_by_leandro: true
   operational_resume_allowed: true
@@ -87,8 +87,13 @@ remote_vps:
     system_clock_synchronized: true
     failed_systemd_units: 0
     systemd_state: running
-    apt_upgradable_observed_count: 5
+    apt_upgradable_observed_count_before_refresh: 5
     apt_indexes_refreshed_during_inventory: false
+    apt_update_authorized_at: 2026-08-14
+    apt_update_status: SUCCESS
+    apt_update_fetched_kb_approx: 3000
+    apt_update_upgradable_count_reported: 5
+    apt_indexes_refreshed_in_phase_1: true
 access:
   ssh: validated
   ssh_alias_contabo_vps: validated
@@ -111,15 +116,14 @@ authorizations:
   - id: AUTH-PHASE-1-START-001
     decision: "LEANDRO determinou continuidade para a próxima etapa/fase"
     status: EXECUTED_DOCUMENTALLY
-pending_human_gates:
   - id: HG-F1-APT-UPDATE-001
-    scope: "Executar apt update na VPS para atualizar os índices APT, sem instalar upgrades"
-    status: PENDING
+    decision: "LEANDRO autorizou executar apt update na VPS para atualizar os índices APT, sem instalar upgrades"
+    status: EXECUTED_SUCCESSFULLY
+pending_human_gates: []
 next_actions:
-  - "Explicar a LEANDRO o primeiro micro-passo da FASE 1: atualização dos índices APT"
-  - "Explicar objetivo, efeito, risco e recovery"
-  - "Obter HUMAN_GATE HG-F1-APT-UPDATE-001"
-  - "Se autorizado, executar somente apt update e analisar o resultado antes de qualquer apt upgrade"
+  - "Executar somente apt list --upgradable para identificar os pacotes atualizáveis usando os índices recém-atualizados"
+  - "Analisar a lista antes de qualquer apt upgrade"
+  - "Não executar apt upgrade sem etapa própria, explicação de risco/recovery e HUMAN_GATE aplicável"
 secrets_policy:
   never_version:
     - passwords
