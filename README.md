@@ -36,8 +36,32 @@ Uma etapa somente é considerada concluída quando:
 - console VNC validado com TigerVNC
 - fingerprint SSH ED25519 verificada por canal independente
 - primeiro login SSH com `root` validado
+- hostname atual: `vmi3506102`
+- kernel observado: `Linux 6.8.0-137-generic`
+- virtualização confirmada: KVM/QEMU
+- 8 CPUs lógicas visíveis
+- aproximadamente 23 GiB de RAM visíveis
+- swap atualmente ausente (`0 B`)
 
-Detalhes do checkpoint: [`docs/01-primeiro-acesso-seguro.md`](docs/01-primeiro-acesso-seguro.md).
+Checkpoint de continuidade atual: [`CHECKPOINT.md`](CHECKPOINT.md).
+
+Detalhes do primeiro acesso seguro: [`docs/01-primeiro-acesso-seguro.md`](docs/01-primeiro-acesso-seguro.md).
+
+## Achado operacional atual
+
+### FND-SSH-001 — sessão SSH ociosa
+
+Sessões SSH normais ficaram aparentemente inoperantes após alguns minutos de ociosidade. Um teste iniciado corretamente no Linux Mint local com:
+
+```bash
+ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=3 root@<IP_DA_VPS>
+```
+
+permaneceu funcional após aproximadamente 3 minutos sem atividade e respondeu a `echo vivo`.
+
+LEANDRO autorizou tornar o keepalive permanente no cliente SSH local. A alteração ainda está pendente e deve ser feita no próximo chat após inspeção de `~/.ssh/config`.
+
+Modelo sanitizado: [`config/ssh_config.example`](config/ssh_config.example).
 
 ## Objetivos arquitetônicos
 
@@ -78,6 +102,7 @@ Quando necessário, utilizar placeholders como `<IP_DO_SERVIDOR>`, `<USUARIO>`, 
 
 ## Estrutura inicial
 
+- `CHECKPOINT.md` — estado canônico de retomada entre chats
 - `docs/` — tutorial canônico e visão técnica
 - `decisions/` — decisões arquitetônicas
 - `recovery/` — recuperação e incidentes
@@ -97,6 +122,12 @@ Etapas concluídas:
 - 0.3 — preparação do primeiro acesso;
 - 0.4 — primeiro acesso seguro via VNC + SSH.
 
-Próxima etapa:
+Etapa em andamento:
 
-- **0.5 — inventário real da VPS**, começando por comandos somente de leitura.
+- **0.5 — inventário real da VPS**.
+
+Próxima ação autorizada:
+
+- aplicar keepalive permanente no `~/.ssh/config` do Linux Mint local;
+- validar o alias/conexão;
+- continuar inventário de armazenamento, filesystems, mounts, rede e uptime.
