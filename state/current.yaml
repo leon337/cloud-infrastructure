@@ -6,13 +6,17 @@ project:
   name: IMPLEMENTACAO_DA_VPS
   status: ACTIVE
   current_phase: "FASE 0 — ORIENTAÇÃO E INVENTÁRIO"
+  phase_status: DONE
   current_stage: "0.5 — Inventário real da VPS"
-  stage_status: IN_PROGRESS
+  stage_status: DONE
   technical_inventory_collection: COMPLETE
-  stage_close_blocker: "Revisão consolidada e confirmação de entendimento de LEANDRO conforme Definition of Done didática"
+  stage_close_approved_by_leandro: true
+  stage_close_approved_at: 2026-08-14
   operational_resume_allowed: true
   continuity_status: CONTINUIDADE_COMPLETA
   continuity_validation_record: governance/CONTINUITY-VALIDATION-2026-08-14.md
+  next_phase: "FASE 1 — Base do sistema e segurança inicial"
+  next_phase_status: PROVISIONAL_NOT_STARTED
 local_machine:
   os: Linux Mint
   observed_prompt: "leo@leo-N43SM"
@@ -100,11 +104,14 @@ authorizations:
   - id: AUTH-SSH-KEEPALIVE-001
     decision: "LEANDRO autorizou configurar keepalive permanente no cliente SSH do Linux Mint"
     status: EXECUTED_AND_VALIDATED
+  - id: AUTH-STAGE-0.5-CLOSE-001
+    decision: "LEANDRO aprovou o fechamento da Etapa 0.5 após revisão consolidada do inventário"
+    status: EXECUTED
 next_actions:
-  - "Revisar com LEANDRO o inventário consolidado da Etapa 0.5"
-  - "Confirmar entendimento conforme Definition of Done didática"
-  - "Somente depois marcar Etapa 0.5 como DONE"
-  - "Não iniciar FASE 1 sem respeitar o próximo HUMAN_GATE aplicável"
+  - "Não iniciar mudanças da FASE 1 automaticamente"
+  - "Apresentar a LEANDRO o escopo imediato da FASE 1 — Base do sistema e segurança inicial"
+  - "Explicar objetivo, risco e recovery da primeira mudança proposta"
+  - "Obter HUMAN_GATE aplicável antes de qualquer mudança estrutural ou de segurança na VPS"
 secrets_policy:
   never_version:
     - passwords
