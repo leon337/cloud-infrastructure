@@ -81,14 +81,14 @@ Chats nunca são fonte canônica de longo prazo.
 - Alias SSH `contabo-vps`: validado.
 - Inventário técnico consolidado em `docs/06-inventario.md`.
 - **FASE 1 — Base do sistema e segurança inicial: IN_PROGRESS.**
-- Início da FASE 1: instrução explícita de LEANDRO em 2026-08-14 para avançar à próxima etapa e manter continuidade.
-- Primeiro micro-passo: atualização inicial.
 - `HG-F1-APT-UPDATE-001`: **AUTORIZADO E EXECUTADO COM SUCESSO**.
-- `apt update`: executado na VPS em 2026-08-14; índices APT atualizados, cerca de 3000 kB obtidos, sem erro e sem instalação de upgrades.
-- A saída final do `apt update` informou **5 pacotes atualizáveis**.
-- Estado atual: `VALIDATING` — obter a lista exata com `apt list --upgradable` usando os índices recém-atualizados.
-- Nenhuma mudança de usuário, sudo, política root, firewall ou upgrade de pacotes foi executada.
-- Próximo passo: executar somente `apt list --upgradable`, analisar a lista e não executar `apt upgrade` sem etapa própria e HUMAN_GATE aplicável.
+- `apt update`: executado com sucesso; índices APT atualizados; nenhum upgrade instalado.
+- Após o refresh, `apt list --upgradable` mostrou 5 pacotes Krb5, de `1.20.1-6ubuntu2.7` para `1.20.1-6ubuntu2.8`.
+- `apt-get -s upgrade` simulou `0 upgraded, 0 newly installed, 0 to remove and 5 not upgraded` e informou que os 5 upgrades foram adiados por phasing.
+- O mecanismo de phased updates não foi contornado.
+- Item `atualizações iniciais`: baseline concluída respeitando a política padrão do APT.
+- Próximo item: **usuário administrativo próprio**, começando por inspeção somente leitura das contas locais existentes.
+- Nenhuma criação de usuário, alteração de sudo, política root, firewall ou upgrade forçado foi executada.
 
 ## Regra de fechamento de sessão
 
