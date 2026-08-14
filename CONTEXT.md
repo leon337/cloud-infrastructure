@@ -73,17 +73,17 @@ Chats nunca são fonte canônica de longo prazo.
 - IPv4: `169.58.171.192`.
 - Hostname: `vmi3506102`.
 - Linux Mint local: `leo@leo-N43SM`.
-- Fase atual: FASE 0 — ORIENTAÇÃO E INVENTÁRIO.
-- Etapa atual: 0.5 — Inventário real da VPS.
-- Estado da Etapa 0.5: coleta técnica concluída; fechamento didático ainda pendente.
+- **FASE 0 — ORIENTAÇÃO E INVENTÁRIO: DONE.**
+- Etapas 0.1 a 0.5: `DONE`.
+- Etapa 0.5: coleta técnica concluída, inventário consolidado e fechamento didático aprovado por LEANDRO em 2026-08-14.
 - PUC v1.0: validado com `CONTINUIDADE COMPLETA`.
-- Retomada operacional: permitida conforme `state/current.yaml`.
 - `FND-SSH-001`: **RESOLVED**.
 - Keepalive permanente: aplicado e validado no Linux Mint local.
 - Alias SSH `contabo-vps`: validado.
 - Inventário técnico de sistema, CPU/RAM, armazenamento/filesystems, mounts, rede, portas, uptime e estado básico: consolidado em `docs/06-inventario.md`.
-- Próximo passo: revisar o inventário consolidado com LEANDRO e confirmar entendimento antes de marcar 0.5 como `DONE`.
-- FASE 1 ainda não iniciada.
+- Próxima fase planejada: **FASE 1 — Base do sistema e segurança inicial**.
+- FASE 1: **PROVISIONAL — NÃO INICIADA**.
+- Próximo passo: apresentar a LEANDRO o escopo imediato da FASE 1, definir o primeiro micro-passo e obter o HUMAN_GATE aplicável antes de qualquer mudança operacional relevante na VPS.
 
 ## Regra de fechamento de sessão
 
