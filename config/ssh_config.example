@@ -1,14 +1,15 @@
-# Exemplo de configuração do cliente SSH no Linux Mint local.
-# NÃO contém secrets.
-# Copiar/adaptar conscientemente para ~/.ssh/config somente após inspecionar o arquivo existente.
+# Configuração de referência do cliente SSH no Linux Mint local.
+# Não contém secrets. O IPv4 público e o hostname são identificadores operacionais.
+# Antes de aplicar, inspecionar ~/.ssh/config e preservar qualquer configuração existente.
 
 Host contabo-vps
-    HostName <IP_DA_VPS>
+    HostName 169.58.171.192
     User root
     ServerAliveInterval 30
     ServerAliveCountMax 3
 
-# Observação:
+# Observações:
 # - `root` é temporário durante a fase inicial.
 # - Quando existir um usuário administrativo próprio e autenticação por chave,
 #   atualizar este bloco em vez de manter acesso administrativo normal como root.
+# - NÃO sobrescrever ~/.ssh/config inteiro sem inspeção prévia.
