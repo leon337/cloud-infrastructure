@@ -21,19 +21,21 @@ A retomada operacional está liberada, respeitando HUMAN_GATEs e autorizações 
 - Etapas 0.1 a 0.5: `DONE`.
 - PUC v1.0: `DONE`.
 - **FASE 1 — Base do sistema e segurança inicial: IN_PROGRESS.**
-- Início da FASE 1: autorizado por instrução explícita de LEANDRO em 2026-08-14 para dar continuidade à próxima etapa.
-- Primeiro micro-passo: **atualização inicial**.
+- Item `atualizações iniciais`: baseline concluída sem forçar updates adiados por phasing.
 - `HG-F1-APT-UPDATE-001`: **AUTORIZADO E EXECUTADO COM SUCESSO**.
-- `apt update`: executado na VPS em 2026-08-14; índices APT atualizados sem instalação de upgrades.
-- Resultado observado: cerca de 3000 kB obtidos, leitura de listas concluída sem erro e mensagem final indicando **5 pacotes atualizáveis**.
-- Estado atual do micro-passo: `VALIDATING` — falta identificar a lista exata de pacotes com os índices recém-atualizados antes de qualquer decisão de upgrade.
+- `apt update`: executado com sucesso; índices APT atualizados; nenhum upgrade instalado.
+- `apt list --upgradable`: 5 pacotes Krb5 permaneceram disponíveis, todos de `1.20.1-6ubuntu2.7` para `1.20.1-6ubuntu2.8`.
+- `apt-get -s upgrade`: simulação concluída; `0 upgraded, 0 newly installed, 0 to remove and 5 not upgraded`.
+- Motivo informado pelo APT: `The following upgrades have been deferred due to phasing`.
+- Não foi executado contorno de phased updates e nenhum pacote foi forçado.
+- Próximo item da FASE 1: **usuário administrativo próprio**, começando por inspeção somente leitura das contas atuais.
 
 ## Escopo da FASE 1
 
 Conforme o Plano Mestre:
 
-1. atualizações iniciais;
-2. usuário administrativo próprio;
+1. atualizações iniciais — baseline atual concluída com phased updates respeitados;
+2. usuário administrativo próprio — próximo item;
 3. sudo;
 4. estratégia de SSH;
 5. chave SSH;
@@ -53,6 +55,21 @@ A sequência será executada em pequenos passos. Não desativar acesso existente
 - Linux Mint local observado: `leo@leo-N43SM`.
 - Alias SSH: `contabo-vps`.
 - Fingerprint ED25519 validada: `SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4`.
+
+## Atualizações APT observadas
+
+Pacotes ainda listados como atualizáveis após `apt update`:
+
+- `krb5-locales`;
+- `libgssapi-krb5-2`;
+- `libk5crypto3`;
+- `libkrb5-3`;
+- `libkrb5support0`.
+
+Versão instalada observada: `1.20.1-6ubuntu2.7`.
+Versão candidata observada: `1.20.1-6ubuntu2.8`.
+
+A simulação padrão não selecionou nenhum deles para instalação porque o APT os adiou por phasing. Não forçar esse mecanismo sem decisão explícita e justificativa própria.
 
 ## Base técnica herdada da FASE 0
 
@@ -88,23 +105,18 @@ Princípio: nenhuma melhoria de segurança deve criar risco maior de perda de ac
 
 ## Ponto exato de retomada
 
-**FASE 1 em andamento. `apt update` já foi executado com sucesso. Nenhum pacote foi atualizado.**
+**FASE 1 em andamento. Atualizações iniciais avaliadas; nenhum upgrade foi instalado porque os 5 candidatos foram adiados pelo phasing padrão do APT.**
 
-Próximo passo é executar somente:
+Próximo passo operacional é somente leitura: inspecionar quais contas locais de usuário humano já existem antes de decidir qualquer criação de usuário administrativo.
 
-```bash
-apt list --upgradable
-```
-
-Objetivo: obter a lista atual de pacotes disponíveis para upgrade usando os índices APT recém-atualizados. Esse comando é somente leitura em relação aos pacotes instalados: ele não instala upgrades.
-
-Depois da saída, analisar os pacotes antes de qualquer `apt upgrade`.
+Depois dessa inspeção, qualquer criação de usuário ou alteração de `sudo` exigirá explicação e HUMAN_GATE próprio.
 
 ## Proibições imediatas
 
 Não executar ainda sem etapa própria e autorização:
 
-- `apt upgrade` ou upgrade em lote;
+- forçar phased updates;
+- `apt upgrade` com override de phasing;
 - criação/alteração de usuário administrativo;
 - mudança de sudo;
 - política de root;
