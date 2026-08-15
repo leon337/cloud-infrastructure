@@ -130,8 +130,9 @@ Fotografia atual de 15/08/2026:
 - `ubuntu` existe e possui sudo, inclusive NOPASSWD por cloud-init;
 - uma nova chave ED25519 dedicada foi criada localmente e sua chave pública foi adicionada sem remover a chave antiga;
 - autenticação atual de `ubuntu` foi validada exclusivamente por `publickey`, confirmando UID 1000 e hostname `vmi3506102`;
+- auditoria read-only posterior confirmou elevação direta a root por sudo/NOPASSWD e caminho equivalente a root pelo socket LXD; ambos permanecem findings abertos/high;
 - root/senha permanece operacional, validado e temporariamente preservado;
-- política SSH, sudo, firewall e LXD não foram alterados pela validação;
+- política SSH, sudo, firewall e LXD não foram alterados pelas validações;
 - UFW está inativo;
 - backup independente e recovery do provedor não foram validados.
 
@@ -139,4 +140,4 @@ Fotografia atual de 15/08/2026:
 
 **FASE 1 — acesso administrativo, recovery e segurança mínima.**
 
-Próximo micro-passo recomendado: revisão read-only de sudo e do privilégio equivalente a root via LXD, somente após novo HUMAN_GATE. Esta seção substitui apenas o estado atual; o restante do documento preserva a história do primeiro acesso.
+Próximo micro-passo recomendado: revisão read-only de recovery proporcional e validação dos caminhos de recuperação, somente após novo HUMAN_GATE. Esta seção substitui apenas o estado atual; o restante do documento preserva a história do primeiro acesso.

@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-15
-documentation_state: RECONCILED_MISSION_2_STATE
+documentation_state: RECONCILED_MISSION_4_STATE
 repository_state:
   reconciliation_commit:
     sha: be52e36962159fa7a42ba93a0e96a028daabb67a
@@ -61,6 +61,9 @@ remote_vps:
       - "0.0.0.0:22/tcp"
       - "[::]:22/tcp"
     other_listeners: LOCAL_DNS_LOOPBACK_ONLY
+    mission4_listeners_hash_before: bbda5db2de8957b27e25815cd797a72b67a5e11fe14bbe4a06ff7272f362383b
+    mission4_listeners_hash_after: bbda5db2de8957b27e25815cd797a72b67a5e11fe14bbe4a06ff7272f362383b
+    mission4_listeners_unchanged: true
   firewall:
     ufw_installed: true
     ufw_status: inactive
@@ -94,6 +97,19 @@ remote_vps:
       nopasswd_all: true
       nopasswd_source: /etc/sudoers.d/90-cloud-init-users
       member_of_lxd: true
+      sudo_audit_2026_08_15:
+        sudo_n_l_exit_code: 0
+        rules_confirmed: true
+        nopasswd_confirmed: true
+        elevation_without_password: true
+        elevated_uid: 0
+        elevated_user: root
+        source_owner: root:root
+        source_mode: "440"
+        active_rules:
+          - "ubuntu ALL=(ALL) NOPASSWD:ALL"
+          - "root ALL=(ALL) NOPASSWD:ALL"
+        visudo_check: PASS
       authorized_key_legacy_fields_scope: HISTORICAL_SINGLE_KEY_BASELINE_2026_08_15
       authorized_key_matches_local_public_key: true
       authorized_key_fingerprint: SHA256:FeamXuFKDiA868c9eKVH8AOMXOQMLL1KBNH4Y9DrqMU
@@ -112,12 +128,40 @@ remote_vps:
           installed_occurrences: 1
           login_validated: true
   lxd:
-    installed_snap_version: 5.21.6
+    installed_snap_version: 5.21.6-78b046a
+    installed_snap_revision: 40361
     instances_total_observed: 0
     instances_running_observed: 0
     daemon_service_final: inactive_dead
     unix_socket_final: active_listening_enabled
     incident_recovery: SUCCESS
+    mission4_audit:
+      ubuntu_member_of_lxd: true
+      root_equivalent_path_confirmed: true
+      unix_socket_exists: true
+      unix_socket_owner: root:lxd
+      unix_socket_mode: "660"
+      unix_socket_writable_by_ubuntu: true
+      daemon_before: inactive_dead
+      daemon_after: inactive_dead
+      socket_unit_before: active_listening_enabled
+      socket_unit_after: active_listening_enabled
+      lxc_command_executed: false
+      configuration_write_executed: false
+      service_change_executed: false
+  mission4_audit:
+    mode: READ_ONLY
+    auth_as_ubuntu: true
+    remote_user: ubuntu
+    remote_uid: 1000
+    remote_gid: 1000
+    remote_home: /home/ubuntu
+    remote_host: vmi3506102
+    ubuntu_groups: [ubuntu, adm, cdrom, sudo, dip, lxd]
+    operational_change_executed: false
+    configuration_write_executed: false
+    service_change_executed: false
+    firewall_changed: false
   updates:
     apt_index_newest_observed: "2026-08-14 20:53:48"
     upgradable_count: 5
@@ -145,7 +189,7 @@ remote_vps:
     deprecated_keys_observed: true
 findings:
   resolved: [FND-SSH-001, FND-SSH-003, FND-DOC-001, FND-AUDIT-001]
-  open_high: [FND-SSH-002, FND-LXD-001, FND-BACKUP-001]
+  open_high: [FND-SSH-002, FND-LXD-001, FND-SUDO-001, FND-BACKUP-001]
   open_other: [FND-CPU-001, FND-CLOUDINIT-001]
 authorization:
   documentation_reconciliation: AUTHORIZED
@@ -156,9 +200,9 @@ authorization:
     AUTH-SSH-KEEPALIVE-001: EXECUTED_AND_VALIDATED
 next_actions:
   current: "Aguardar HUMAN_GATE operacional de LEANDRO"
-  after_new_human_gate: "Revisão read-only de sudo e do privilégio equivalente a root via LXD"
+  after_new_human_gate: "Revisão read-only de recovery proporcional e validação dos caminhos de recuperação"
   constraints:
-    - "Não restringir root/senha antes de recovery proporcional e revisão de privilégios validados"
+    - "Não restringir root/senha antes de recovery proporcional validado e decisão sobre os findings sudo/LXD"
     - "Não alterar SSH, firewall, sudo, LXD, pacotes ou serviços sem gate próprio"
     - "Entregar Cloud Workstation após os pré-requisitos mínimos, antes de Docker/observabilidade"
 secrets_policy:

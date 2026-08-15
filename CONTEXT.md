@@ -29,7 +29,7 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 | Infraestrutura observada | `docs/06-inventario.md` |
 | Cloud Workstation | `docs/07-cloud-workstation.md`, `decisions/DEC-003-cloud-workstation-prioridade-operacional.md` |
 | Segurança e didática | `docs/08-seguranca-e-governanca.md`, `docs/11-protocolo-didatico.md` |
-| Auditoria e acesso SSH | `governance/AUDIT-FASE-B-2026-08-15.md`, `history/SESSION-2026-08-15-009.md`, `history/SESSION-2026-08-15-010.md` |
+| Auditoria, acesso e privilégios | `governance/AUDIT-FASE-B-2026-08-15.md`, `history/SESSION-2026-08-15-009.md`, `history/SESSION-2026-08-15-010.md`, `history/SESSION-2026-08-15-011.md` |
 | Achados e recovery | `findings/`, `runbooks/`, `recovery/` |
 | Evidências visuais | `assets/README.md` |
 
@@ -38,10 +38,10 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 - Ubuntu 24.04.4 LTS, kernel `6.8.0-137-generic`, KVM/QEMU, 8 CPUs, ~23 GiB RAM, sem swap.
 - F0: `DONE`. Auditoria Fase B: `DONE` e aprovada para reconciliação.
 - F1 acesso/recovery/segurança mínima: `IN_PROGRESS`.
-- Root/senha permanece validado, temporário e preservado; ainda não restringir antes de recovery proporcional e revisão dos privilégios.
-- `ubuntu` tem login atual `VALIDATED` exclusivamente por nova chave `publickey`; a chave anterior foi preservada. UID 1000, sudo/NOPASSWD e associação ao grupo `lxd` permanecem conforme a baseline.
+- Root/senha permanece validado, temporário e preservado; ainda não restringir antes de recovery proporcional e decisões explícitas sobre sudo/LXD.
+- `ubuntu` tem login atual `VALIDATED` exclusivamente por nova chave `publickey`; a chave anterior foi preservada. A Missão 4 confirmou UID/GID 1000, grupos `ubuntu adm cdrom sudo dip lxd`, elevação sem senha a UID 0 por sudo/NOPASSWD e escrita no socket LXD.
 - SSH público em TCP 22; UFW inativo; ataques automatizados confirmados.
-- LXD daemon recuperado inactive/dead; socket ativo; 0 instâncias na auditoria.
+- LXD daemon permaneceu inactive/dead e o socket `root:lxd` modo `660` permaneceu active/listening; o caminho equivalente a root foi confirmado sem exploração ou execução de `lxc`.
 - Cinco updates Krb5 seguem adiados por phasing; nenhum upgrade forçado.
 - Provider VNC/Rescue/firewall/snapshots/backups: `UNCONFIRMED` na coleta de 15/08.
 - Cloud Workstation: `PRIORITY_PLANNED`, após validação dos pré-requisitos mínimos.
@@ -50,4 +50,4 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 
 A reconciliação e o fechamento pós-push/pós-PUC estão versionados. A validação independente preservada corresponde ao snapshot anterior à Missão 2/2B e não deve ser reinterpretada como validação independente do estado atual.
 
-Próximo micro-passo: aguardar HUMAN_GATE operacional de LEANDRO para a revisão read-only de sudo/NOPASSWD e do privilégio equivalente a root via LXD. Recovery proporcional e segurança mínima de SSH/firewall continuam pendentes. Nenhuma nova conexão ou mudança na VPS está autorizada sem gate próprio; futuros commits também continuam sujeitos a HUMAN_GATE.
+Próximo micro-passo: aguardar HUMAN_GATE operacional de LEANDRO para revisão read-only de recovery proporcional e validação dos caminhos de recuperação. Os findings `FND-SUDO-001` e `FND-LXD-001` permanecem abertos/high; segurança mínima de SSH/firewall continua pendente. Nenhuma nova conexão ou mudança na VPS está autorizada sem gate próprio; futuros commits também continuam sujeitos a HUMAN_GATE.

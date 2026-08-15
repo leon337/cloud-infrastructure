@@ -11,7 +11,7 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 | 0.5 Inventário real | DONE | baseline de 14/08 e revalidação de 15/08 documentadas |
 | PUC v1.0 | DONE | estado reconciliado de 15/08 publicado em `be52e369...` e validado com CONTINUIDADE COMPLETA; protocolo permanece aplicável a novos estados |
 | Auditoria Fase B | DONE | fotografia read-only de 15/08 aprovada para reconciliação |
-| F1 Acesso/recovery/segurança mínima | IN_PROGRESS | `ubuntu`/publickey validado; sudo/LXD, recovery e segurança mínima ainda pendentes |
+| F1 Acesso/recovery/segurança mínima | IN_PROGRESS | `ubuntu`/publickey e auditoria sudo/LXD concluídos; recovery, decisões de privilégio e segurança mínima pendentes |
 | F2 Cloud Workstation | PRIORITY_PLANNED | próxima grande entrega após pré-requisitos da F1; conclusão exige HUMAN_GATE de produtividade |
 | F3 Desenvolvimento/estabilização | PROVISIONAL | após implantação gráfica funcional |
 | F4 Rede/armazenamento/manutenção | PROVISIONAL | gates próprios |
@@ -26,11 +26,12 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 
 - baseline APT feita em 14/08; cinco updates Krb5 continuaram adiados por phasing em 15/08;
 - `ubuntu` possui login atual validado exclusivamente por nova chave `publickey`; a chave anterior e root/senha foram preservados;
+- a Missão 4 confirmou elevação direta a UID 0 via sudo/NOPASSWD e escrita de `ubuntu` no socket LXD `root:lxd` modo `660`, sem exploração nem alteração operacional;
 - UFW está inativo e o SSH público recebe alto volume de tentativas automatizadas;
-- LXD oferece risco de privilégio equivalente a root para `ubuntu`;
+- `FND-SUDO-001` e `FND-LXD-001` permanecem abertos/high;
 - backup independente e recursos de recovery do provedor não foram validados.
 
-Próximo micro-passo recomendado: revisão read-only de sudo e do privilégio equivalente a root via LXD, após novo HUMAN_GATE. Depois, validar recovery proporcional e segurança mínima de SSH/firewall sem lockout. Nenhuma política root/senha/firewall deve mudar antes desses controles.
+Próximo micro-passo recomendado: revisão read-only de recovery proporcional e validação dos caminhos de recuperação, após novo HUMAN_GATE. Depois, definir segurança mínima de SSH/firewall sem lockout e decidir a política de privilégios. Nenhuma política root/senha/firewall deve mudar antes desses controles.
 
 ## Mudança de prioridade
 

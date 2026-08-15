@@ -16,7 +16,16 @@ A conta `ubuntu` teve o login atual validado em 15/08/2026 com a chave dedicada 
 
 A nova chave pública foi adicionada sem remover a chave anterior. Não versionar nem expor a chave privada ou sua passphrase.
 
-O acesso root/senha continua preservado temporariamente. Ainda não remover nem restringir root: recovery proporcional, sudo/NOPASSWD, privilégio LXD e segurança mínima precisam de validações e HUMAN_GATEs próprios.
+O acesso root/senha continua preservado temporariamente. Ainda não remover nem restringir root: recovery proporcional, decisões sobre sudo/LXD e segurança mínima precisam de HUMAN_GATEs próprios.
+
+### Privilégios administrativos confirmados
+
+A Missão 4 confirmou em modo read-only dois caminhos equivalentes a root para `ubuntu`:
+
+- sudo/NOPASSWD efetivo, com elevação não interativa validada a UID `0`, originado em `/etc/sudoers.d/90-cloud-init-users`;
+- associação ao grupo `lxd` e escrita no socket `/var/snap/lxd/common/lxd/unix.socket`, proprietário `root:lxd`, modo `660`.
+
+Nenhum comando `lxc` ou exploração do socket foi executado. Não usar, remover ou mitigar esses caminhos automaticamente: primeiro validar recovery proporcional e obter HUMAN_GATE específico para qualquer decisão de privilégio.
 
 ### VNC — console alternativo
 

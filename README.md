@@ -32,10 +32,10 @@ Chats são temporários; o GitHub é a memória canônica após revisão e commi
 - Fase 0 e auditoria read-only Fase B: concluídas.
 - Fase atual: **F1 — acesso administrativo, recovery e segurança mínima**.
 - Root por senha: acesso operacional validado, ainda temporário.
-- `ubuntu`: UID 1000, sudo/NOPASSWD e grupo `lxd` preservados; login atual **VALIDATED** por nova chave dedicada com autenticação exclusivamente `publickey`.
+- `ubuntu`: UID 1000 e login atual **VALIDATED** por nova chave dedicada, exclusivamente via `publickey`; a Missão 4 confirmou elevação direta a root por sudo/NOPASSWD e caminho equivalente a root pelo socket LXD.
 - A chave antiga de `ubuntu` foi preservada; root/senha continua validado, temporário e ainda não deve ser restringido.
 - UFW: instalado e inativo; tentativas automatizadas contra SSH confirmadas.
-- LXD: 0 instâncias na auditoria; daemon recuperado para inactive/dead; socket ativo; grupo `lxd` requer revisão de privilégio.
+- LXD: 0 instâncias na auditoria; daemon `inactive/dead`; socket `root:lxd` modo `660`, ativo e gravável por `ubuntu`; `FND-LXD-001` permanece aberto/high.
 - Updates: cinco pacotes Krb5 adiados por phasing; nenhum upgrade forçado.
 - Backup/recovery do provedor: não confirmado na Fase B.
 - Cloud Workstation: **PRIORITY_PLANNED**, próxima grande entrega após os pré-requisitos da F1.
@@ -46,4 +46,4 @@ A solução gráfica será validada como ferramenta de produtividade: navegador,
 
 ## Segurança
 
-Nunca versionar senhas, passphrases, chaves privadas, tokens, API keys, 2FA ou credenciais. O próximo micro-passo é a revisão read-only de sudo e do privilégio equivalente a root via LXD, somente após novo HUMAN_GATE.
+Nunca versionar senhas, passphrases, chaves privadas, tokens, API keys, 2FA ou credenciais. O próximo micro-passo é a revisão read-only de recovery proporcional e dos caminhos de recuperação, somente após novo HUMAN_GATE.

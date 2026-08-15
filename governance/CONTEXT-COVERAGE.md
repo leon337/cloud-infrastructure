@@ -16,10 +16,10 @@ Esta matriz impede lacunas silenciosas de memória.
 | Painel Contabo | `docs/10-painel-contabo.md` | coberto inicial |
 | Glossário | `docs/09-glossario.md` | coberto inicial |
 | Decisões | `decisions/` | coberto e expansível |
-| Findings | `findings/` | findings da auditoria e resolução do `FND-SSH-003` em 15/08 cobertos |
+| Findings | `findings/` | resolução do `FND-SSH-003` e findings abertos/high de sudo/LXD confirmados em 15/08 cobertos |
 | Recovery | `recovery/RECOVERY-PLAYBOOK.md` | limites reais e incidente LXD cobertos; estratégia ampla pendente |
-| Runbooks | `runbooks/` | `ubuntu`/publickey e root temporário cobertos; recovery amplo pendente |
-| Histórico de sessões | `history/` | auditoria e Missão 2/2B preservadas cronologicamente |
+| Runbooks | `runbooks/` | `ubuntu`/publickey, root temporário e caminhos sudo/LXD cobertos; recovery amplo pendente |
+| Histórico de sessões | `history/` | auditoria, Missão 2/2B e Missão 4 preservadas cronologicamente |
 | Estado imediato | `CHECKPOINT.md` | coberto |
 | Estado legível por máquina | `state/current.yaml` | coberto |
 | Evidências visuais | `assets/README.md` | evidências sanitizadas da auditoria e Missão 2 separadas de imagens conceituais |

@@ -22,7 +22,7 @@ Detalhes: `03-arquitetura-e-principios.md` e `07-cloud-workstation.md`.
 
 FASE 1 — ACESSO ADMINISTRATIVO, RECOVERY E SEGURANÇA MÍNIMA — `IN_PROGRESS`.
 
-FASE 0 e auditoria read-only de 15/08/2026 concluídas. O login atual de `ubuntu` foi validado por nova chave dedicada, exclusivamente via `publickey`; root/senha permanece temporariamente preservado. O próximo micro-passo é a revisão read-only de sudo e do privilégio LXD, mediante novo HUMAN_GATE. Cloud Workstation: `PRIORITY_PLANNED`.
+FASE 0 e auditoria read-only de 15/08/2026 concluídas. O login atual de `ubuntu` foi validado por nova chave dedicada, exclusivamente via `publickey`; root/senha permanece temporariamente preservado. A revisão read-only de sudo/LXD confirmou dois caminhos equivalentes a root, sem explorá-los ou alterar configuração. O próximo micro-passo é a revisão read-only de recovery proporcional, mediante novo HUMAN_GATE. Cloud Workstation: `PRIORITY_PLANNED`.
 
 Inventário datado: `06-inventario.md`.
 Roadmap: `05-roadmap.md`.

@@ -22,6 +22,7 @@ Atualizado em 2026-08-15. Este arquivo responde: **onde estamos agora?**
 - Sincronização pós-push validada: HEAD local, `main`, `origin/main` e GitHub `main` apontavam para o mesmo SHA.
 - Fechamento pós-push/pós-PUC: documentado no estado canônico.
 - Missão 2/2B: nova chave dedicada instalada e login atual de `ubuntu` validado; fechamento em `history/SESSION-2026-08-15-010.md`.
+- Missão 4: auditoria read-only de sudo/LXD concluída; fechamento em `history/SESSION-2026-08-15-011.md`.
 - FASE 1 — acesso administrativo, recovery e segurança mínima: `IN_PROGRESS`.
 - FASE 2 — Cloud Workstation: `PRIORITY_PLANNED`, próxima grande entrega após os pré-requisitos da F1.
 - Política de futuros commits: **HUMAN_GATE obrigatório**.
@@ -46,27 +47,30 @@ Inventário detalhado: `docs/06-inventario.md`.
 - root por senha: acesso operacional preservado, validado e temporário;
 - fingerprint ED25519 do host: `SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4`;
 - alias/keepalive local: historicamente validados;
-- `ubuntu`: UID 1000, senha bloqueada, sudo efetivo e NOPASSWD via cloud-init;
+- `ubuntu`: UID/GID 1000, senha bloqueada, grupos `ubuntu adm cdrom sudo dip lxd`;
+- sudo/NOPASSWD: `sudo -n -l` exit code 0 e elevação sem senha confirmada a UID 0/usuário root; origem `/etc/sudoers.d/90-cloud-init-users`, `root:root`, modo `440`, validada por `visudo`;
 - chave ED25519 anteriormente observada: preservada;
 - nova chave ED25519 dedicada: pública instalada exatamente uma vez; fingerprint `SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg`;
 - login atual de `ubuntu`: **VALIDATED**, exclusivamente por `publickey`, sem fallback para senha no teste;
 - identidade validada: usuário `ubuntu`, UID 1000, hostname `vmi3506102`;
 - `config/ssh_config.example` documenta `ubuntu` como canal principal por chave e mantém alias root temporário; o exemplo não foi aplicado automaticamente;
-- `ubuntu` pertence ao grupo `lxd`, que exige revisão de menor privilégio.
+- `ubuntu` pertence ao grupo `lxd` e pode escrever no socket LXD `root:lxd` modo `660`, confirmando caminho equivalente a root sem exploração.
 
 ## LXD
 
-- snap 5.21.6;
+- snap `5.21.6-78b046a`, revisão `40361`;
 - 0 instâncias totais e 0 em execução na auditoria;
 - daemon ativado acidentalmente por `lxc version` via socket activation;
 - recuperação autorizada: daemon `inactive/dead`, processo ausente, socket `active/listening` e habilitado;
-- listeners de rede permaneceram inalterados.
+- na Missão 4, daemon permaneceu `inactive/dead` e socket `active/listening/enabled` antes/depois;
+- listeners de rede permaneceram inalterados, com hashes antes/depois idênticos;
+- nenhum comando `lxc`, escrita de configuração ou mudança de serviço foi executado.
 
 ## Findings
 
 Resolvidos: `FND-SSH-001`, `FND-SSH-003`, `FND-DOC-001`, `FND-AUDIT-001`.
 
-Abertos high: `FND-SSH-002`, `FND-LXD-001`, `FND-BACKUP-001`.
+Abertos high: `FND-SSH-002`, `FND-LXD-001`, `FND-SUDO-001`, `FND-BACKUP-001`.
 
 Abertos para análise: `FND-CPU-001`, `FND-CLOUDINIT-001`.
 
@@ -78,9 +82,9 @@ Só será `DONE` após LEANDRO validar produtividade real com navegador, VS Code
 
 ## Ponto exato de retomada
 
-Próximo micro-passo: aguardar HUMAN_GATE operacional de LEANDRO para revisão read-only de sudo/NOPASSWD e do privilégio equivalente a root via LXD.
+Próximo micro-passo: aguardar HUMAN_GATE operacional de LEANDRO para **RECOVERY PROPORCIONAL READ-ONLY / VALIDAÇÃO DE RECUPERAÇÃO**.
 
-Depois dessa revisão autorizada: validar recovery proporcional e segurança mínima de SSH/firewall sem lockout. Não restringir root/senha nem alterar firewall antes desses controles.
+Depois dessa revisão autorizada: definir segurança mínima de SSH/firewall sem lockout e decidir a política de menor privilégio para sudo/LXD. Não restringir root/senha nem alterar firewall antes desses controles.
 
 ## Proibições imediatas
 

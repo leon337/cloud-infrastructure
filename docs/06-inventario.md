@@ -315,3 +315,30 @@ Este evento complementa a fotografia anterior sem reescrevê-la. Na auditoria, o
 - `sshd_config`, root, sudo, firewall e LXD não foram alterados.
 
 Estado resultante: `FND-SSH-003` **RESOLVED**. A associação de `ubuntu` a sudo/NOPASSWD e ao grupo `lxd` permanece conforme a fotografia anterior e será revisada separadamente, mediante novo HUMAN_GATE.
+
+## Evento pós-auditoria — revisão read-only de sudo/LXD em 15/08/2026
+
+A Missão 4 complementa as fotografias anteriores. Houve uma tentativa de autenticação malsucedida antes da coleta bem-sucedida, sem efeito operacional. A sessão que produziu a evidência foi autenticada como `ubuntu` e confirmou usuário `ubuntu`, UID/GID `1000`, home `/home/ubuntu`, hostname `vmi3506102` e grupos `ubuntu adm cdrom sudo dip lxd`.
+
+### Sudo/NOPASSWD
+
+- `sudo -n -l` terminou com exit code `0` e confirmou as regras efetivas `(ALL : ALL) ALL` e `(ALL) NOPASSWD: ALL`;
+- `sudo -n` confirmou elevação sem senha a UID `0` e usuário `root`;
+- a origem observada foi `/etc/sudoers.d/90-cloud-init-users`, proprietário `root:root`, modo `440`;
+- as regras ativas observadas foram `ubuntu ALL=(ALL) NOPASSWD:ALL` e `root ALL=(ALL) NOPASSWD:ALL`;
+- `visudo -cf /etc/sudoers` terminou com validação `PASS`.
+
+Resultado: caminho direto de elevação a root sem senha confirmado em `FND-SUDO-001`. Nenhuma política sudo foi alterada.
+
+### Privilégio LXD
+
+- snap LXD `5.21.6-78b046a`, revisão `40361`;
+- socket existente, proprietário `root:lxd`, modo `660` e gravável pelo usuário autenticado `ubuntu`;
+- combinação de associação ao grupo `lxd` e escrita no socket confirmou um caminho equivalente a root, sem exploração;
+- daemon antes/depois: `inactive/dead`; socket unit antes/depois: `active/listening/enabled`;
+- hash dos listeners antes/depois: `bbda5db2de8957b27e25815cd797a72b67a5e11fe14bbe4a06ff7272f362383b`;
+- nenhum comando `lxc` foi executado.
+
+Resultado: `FND-LXD-001` permanece **OPEN/HIGH**, agora sustentado por evidência direta de acesso ao socket. A coleta não executou escrita de configuração, mudança de serviço, alteração de firewall ou qualquer outra mudança operacional.
+
+Próximo micro-passo proposto: revisão read-only de recovery proporcional e validação dos caminhos de recuperação, somente após novo HUMAN_GATE.
