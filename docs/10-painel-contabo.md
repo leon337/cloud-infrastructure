@@ -11,7 +11,7 @@ Este documento preserva os conceitos aprendidos no primeiro acesso.
 | Gerenciador de Complementos | add-ons do provedor | pode envolver custo |
 | Gerenciar Snapshots | cria/restaura estado da VPS | snapshot não substitui backup |
 | Gerenciar Firewall | firewall externo da Contabo | erro pode bloquear acesso |
-| Controle VNC | console/tela remota | validado com TigerVNC |
+| Controle VNC | console/tela remota | validado historicamente com TigerVNC; estado atual não revalidado em 15/08 |
 | Atualizar/Reduzir | mudança de capacidade/plano | pode envolver custo/migração |
 | Mover Para Outra Região | migração geográfica | pode mudar IP e causar indisponibilidade |
 | Expandir Armazenamento | aumenta capacidade contratada | Linux pode exigir expansão de partição/filesystem |

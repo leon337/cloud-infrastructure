@@ -1,50 +1,37 @@
 # 05 — Roadmap
 
-Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `DONE`, `DEFERRED`, `PROVISIONAL`.
+Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `DONE`, `PRIORITY_PLANNED`, `PROVISIONAL`.
 
 | Fase/Etapa | Estado | Evidência/Gate |
 |---|---|---|
 | 0.1 Modelo mental | DONE | LEANDRO confirmou compreensão |
-| 0.2 Repositório canônico | DONE | `cloud-infrastructure` criado, privado e separado do MCF |
-| 0.3 Preparação do primeiro acesso | DONE | painel Contabo e credenciais rotacionadas |
-| 0.4 Primeiro acesso seguro | DONE | VNC/TigerVNC + SSH + fingerprint validada |
-| 0.5 Inventário real | DONE | coleta técnica concluída, inventário consolidado e fechamento didático aprovado por LEANDRO em 2026-08-14 |
-| PUC v1.0 | DONE | teste canônico em novo chat resultou em CONTINUIDADE COMPLETA |
-| F1 Base/segurança inicial | IN_PROGRESS | LEANDRO determinou continuidade para a próxima fase em 2026-08-14; primeira mudança ainda depende do HUMAN_GATE aplicável |
-| F2 Rede/firewall | PROVISIONAL | após acesso alternativo e políticas definidas |
-| F3 Armazenamento | PROVISIONAL | decisão somente após inventário e HUMAN_GATE |
-| F4 Manutenção/updates | PROVISIONAL | gate futuro |
-| F5 Backup/recovery | PROVISIONAL | gate futuro |
-| F6 Docker/Compose | PROVISIONAL | somente após base segura e aula |
-| F7 Desenvolvimento remoto | PROVISIONAL | gate futuro |
-| F8 Observabilidade | PROVISIONAL | gate futuro |
-| F9 Plataforma de serviços | PROVISIONAL | gate futuro |
-| F10 Cloud Workstation | DEFERRED | avaliar depois da base segura |
-| F11 Workloads | PROVISIONAL | implantação gradual |
-| F12 Autonomia/reconstrução | PROVISIONAL | maturidade final |
+| 0.2 Repositório canônico | DONE | repositório separado do MCF |
+| 0.3 Preparação do primeiro acesso | DONE | painel e credenciais iniciais tratados |
+| 0.4 Primeiro acesso seguro | DONE | VNC/TigerVNC, SSH e fingerprint validados historicamente |
+| 0.5 Inventário real | DONE | baseline de 14/08 e revalidação de 15/08 documentadas |
+| PUC v1.0 | VALIDATING | validação de 14/08 completa; nova validação documental de 15/08 executada, teste independente ainda pendente |
+| Auditoria Fase B | DONE | fotografia read-only de 15/08 aprovada para reconciliação |
+| F1 Acesso/recovery/segurança mínima | IN_PROGRESS | `ubuntu` não validado atualmente; root/senha ainda operacional |
+| F2 Cloud Workstation | PRIORITY_PLANNED | próxima grande entrega após pré-requisitos da F1; conclusão exige HUMAN_GATE de produtividade |
+| F3 Desenvolvimento/estabilização | PROVISIONAL | após implantação gráfica funcional |
+| F4 Rede/armazenamento/manutenção | PROVISIONAL | gates próprios |
+| F5 Backup/recovery amplo | PROVISIONAL | gate futuro |
+| F6 Docker/Compose | PROVISIONAL | depois da entrega gráfica e base segura |
+| F7 Observabilidade | PROVISIONAL | gate futuro |
+| F8 Plataforma de serviços | PROVISIONAL | gate futuro |
+| F9 Workloads | PROVISIONAL | implantação gradual |
+| F10 Autonomia/reconstrução | PROVISIONAL | maturidade final |
 
-## Gate de continuidade
+## Estado da FASE 1
 
-**PUC v1.0 VALIDADO — CONTINUIDADE COMPLETA.**
+- baseline APT feita em 14/08; cinco updates Krb5 continuaram adiados por phasing em 15/08;
+- `ubuntu` existe, possui sudo e chave autorizada compatível, mas seu login atual por chave não foi concluído;
+- UFW está inativo e o SSH público recebe alto volume de tentativas automatizadas;
+- LXD oferece risco de privilégio equivalente a root para `ubuntu`;
+- backup independente e recursos de recovery do provedor não foram validados.
 
-Evidência: `governance/CONTINUITY-VALIDATION-2026-08-14.md`.
+Próximo micro-passo recomendado: diagnosticar somente a autenticação de `ubuntu`, após novo HUMAN_GATE. Nenhuma política root/senha/firewall deve mudar antes de acesso alternativo e recovery serem validados.
 
-## Fechamento da FASE 0
+## Mudança de prioridade
 
-As etapas 0.1 a 0.5 estão `DONE`.
-
-A Etapa 0.5 teve sua coleta técnica concluída, foi revisada de forma consolidada com LEANDRO e recebeu HUMAN_GATE explícito de fechamento em 2026-08-14.
-
-**FASE 0 — ORIENTAÇÃO E INVENTÁRIO: CONCLUÍDA.**
-
-## Início controlado da FASE 1
-
-LEANDRO determinou em 2026-08-14: **“VAMOS PARA A PROXIMA ETAPA”** e reforçou que a missão deve manter continuidade.
-
-Interpretação operacional:
-
-- a **FASE 1 — Base do sistema e segurança inicial** passa a `IN_PROGRESS`;
-- isso autoriza a transição de fase e o planejamento do primeiro micro-passo;
-- isso **não** autoriza automaticamente mudanças de segurança, upgrade em lote ou operações com risco de lockout;
-- o primeiro micro-passo planejado é a **atualização inicial**, começando pela atualização dos índices APT antes de qualquer upgrade;
-- antes da primeira mudança operacional relevante, objetivo, risco e recovery devem ser apresentados e o HUMAN_GATE aplicável deve ser obtido.
+Por `DEC-003`, a Cloud Workstation deixou de estar `DEFERRED`. Ela antecede Docker, observabilidade e a plataforma ampla de serviços.

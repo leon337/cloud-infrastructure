@@ -53,3 +53,13 @@ Preferir: pequeno passo → executar → observar → explicar → validar → c
 ## Estado ao fim de resposta relevante
 
 Informar quando útil: etapa atual, status, aprendizado, alteração, documentação e próximo passo — sem executar o próximo passo automaticamente.
+
+## Protocolo de interação com o computador local
+
+Antes de assumir terminal ou interface gráfica, parar em `[PAUSA DE TELA — EVIDÊNCIA VISUAL]` e explicar motivo, aplicativo, ação, screenshots e ponto de intervenção humana. Aguardar autorização.
+
+Depois da autorização, preparar automaticamente a interface até o ponto estritamente humano. Antes de senha, passphrase, token ou 2FA, parar em `[CREDENCIAL NECESSÁRIA — LEANDRO DEVE DIGITAR]`; nunca pedir o segredo pelo chat nem capturá-lo.
+
+Após confirmação, validar o resultado, ocultar qualquer dado sensível e registrar, quando didático, estado anterior, ponto relevante e estado posterior em `assets/tutorial/`. Isso vale para Terminal, VS Code, navegador, painel Contabo, Remmina/VNC, gerenciador de arquivos e Cloud Workstation.
+
+Se o controle ou screenshot programático não for possível, declarar a limitação e orientar exatamente a ação manual e o destino da evidência.

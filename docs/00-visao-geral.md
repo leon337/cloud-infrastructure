@@ -14,17 +14,17 @@ A descrição completa está em `02-missao-e-escopo.md`.
 - Contabo Cloud VPS 8 como infraestrutura remota;
 - Ubuntu 24.04.4 LTS confirmado;
 - modelo híbrido local/remoto;
-- Cloud Workstation preservada como requisito futuro, ainda adiado.
+- Cloud Workstation como próxima grande entrega após acesso/recovery/segurança mínima.
 
 Detalhes: `03-arquitetura-e-principios.md` e `07-cloud-workstation.md`.
 
 ## Estado
 
-FASE 0 — ORIENTAÇÃO E INVENTÁRIO.
+FASE 1 — ACESSO ADMINISTRATIVO, RECOVERY E SEGURANÇA MÍNIMA — `IN_PROGRESS`.
 
-Etapas 0.1–0.4 concluídas. Etapa 0.5 em andamento.
+FASE 0 e auditoria read-only de 15/08/2026 concluídas. A conta `ubuntu` ainda não tem login atual por chave validado. Cloud Workstation: `PRIORITY_PLANNED`.
 
-Inventário parcial: `06-inventario.md`.
+Inventário datado: `06-inventario.md`.
 Roadmap: `05-roadmap.md`.
 Estado imediato: `../CHECKPOINT.md`.
 

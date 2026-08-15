@@ -2,7 +2,7 @@
 
 Status: **ETAPA 0.5 CONCLUÍDA — fechamento didático aprovado por LEANDRO em 2026-08-14**.
 
-Última coleta: 2026-08-14.
+Baseline histórica: 2026-08-14. Revalidação read-only mais recente: 2026-08-15.
 
 ## Identidade
 
@@ -206,6 +206,15 @@ Importante: nenhum `apt update` foi executado nesta etapa; portanto a lista refl
 - Remmina: serviço alcançado, sessão não concluída no teste.
 - Rescue System: conhecido, não acionado.
 
+### Proveniência cloud-init observada na baseline de 14/08
+
+O arquivo de sudo criado pelo cloud-init para a conta `ubuntu` continha estes metadados de origem:
+
+- `cloud_init_source_comment_version_observed`: `26.1-0ubuntu1~24.04.1`;
+- `cloud_init_source_comment_created_at_utc_observed`: `2026-08-13 05:57:21 +0000`.
+
+Esses valores são evidência histórica da baseline, não afirmação sobre a versão ou timestamp atuais.
+
 ## Regras derivadas do inventário
 
 - Nenhuma decisão de particionamento/LVM/separação de `/home`, `/var` ou área Docker foi tomada.
@@ -218,3 +227,73 @@ Importante: nenhum `apt update` foi executado nesta etapa; portanto a lista refl
 A coleta técnica foi concluída, o inventário consolidado foi apresentado a LEANDRO e o fechamento recebeu aprovação explícita em 2026-08-14, satisfazendo a Definition of Done didática aplicável a esta etapa.
 
 **Etapa 0.5 — DONE.**
+
+## Fotografia de revalidação — 15/08/2026
+
+Esta fotografia datada complementa, sem apagar, a baseline de 14/08. A coleta terminou em `2026-08-15T11:03:59Z` e foi aprovada por LEANDRO para reconciliação.
+
+### Sistema e recursos
+
+- identidade, Ubuntu 24.04.4, kernel `6.8.0-137-generic`, x86-64 e KVM/QEMU permanecem iguais;
+- 8 CPUs lógicas, ~23 GiB RAM e swap 0 B;
+- raiz ext4 com ~2,5 GiB usados e ~288 GiB disponíveis;
+- aviso `Partition table entries are not in disk order` persiste;
+- systemd `running`, 0 unidades failed, NTP sincronizado, timezone `Europe/Berlin`, sem reboot pendente;
+- `lscpu` reportou `Spec rstack overflow: Vulnerable: Safe RET, no microcode`; análise pendente em `FND-CPU-001`.
+
+### Rede, listeners e firewall
+
+- `eth0`, endereços, rotas e DNS permanecem consistentes com a baseline;
+- somente SSH TCP 22 em IPv4/IPv6 e DNS local em loopback estavam em escuta;
+- UFW instalado, porém inativo; nenhuma regra nftables/iptables observada; fail2ban ausente;
+- firewall do provedor não confirmado nesta auditoria.
+
+### SSH e atividade observada
+
+- efetivos: `PermitRootLogin yes`, `PasswordAuthentication yes`, `PubkeyAuthentication yes`, `X11Forwarding yes` e `AllowTcpForwarding yes`;
+- root por senha validado durante a auditoria;
+- desde o boot: 24.447 falhas de senha, 1.676 usuários inválidos, 42 eventos de máximo de autenticações e 3 eventos `MaxStartups`;
+- nas 24 horas anteriores: 8.668 falhas de senha e 1.571 usuários inválidos;
+- um login histórico por chave para `ubuntu` ocorreu em 14/08/2026;
+- dez logins root por senha foram aceitos no período consultado, incluindo a auditoria; suas origens não foram atribuídas independentemente.
+
+Os logs comprovam tentativas automatizadas, não invasão.
+
+### Conta ubuntu e privilégios
+
+- UID/GID 1000, home `/home/ubuntu`, shell `/bin/bash`, senha bloqueada;
+- grupos: `ubuntu`, `adm`, `cdrom`, `sudo`, `dip`, `lxd`;
+- sudo inclui `(ALL : ALL) ALL` e `(ALL) NOPASSWD: ALL`;
+- NOPASSWD vem de `/etc/sudoers.d/90-cloud-init-users`, modo `440`;
+- `.ssh` modo `700` e `authorized_keys` modo `600`, ambos de `ubuntu`;
+- uma chave ED25519 autorizada, fingerprint `SHA256:FeamXuFKDiA868c9eKVH8AOMXOQMLL1KBNH4Y9DrqMU`, igual à chave pública local dedicada;
+- a tentativa atual não concluiu autenticação por chave e caiu para senha; como a senha está bloqueada, o login falhou;
+- causa exata não diagnosticada. Estado: **SSH DE ubuntu NÃO VALIDADO**.
+
+### LXD
+
+- snap LXD `5.21.6` instalado;
+- 0 instâncias totais e 0 em execução na consulta autorizada;
+- `lxc version` ativou o daemon pelo socket;
+- recuperação autorizada terminou com daemon `inactive/dead`, processo ausente e socket `active/listening` e habilitado;
+- nenhum listener de rede mudou;
+- associação de `ubuntu` ao grupo `lxd` está em `FND-LXD-001`.
+
+### Atualizações e integridade
+
+- índice APT local mais recente: `2026-08-14 20:53:48`;
+- os mesmos cinco pacotes Krb5 permaneciam candidatos de `.7` para `.8`, adiados por phasing;
+- simulação: 0 upgraded, 0 newly installed, 0 removed, 5 not upgraded;
+- auditoria dpkg limpa; unattended-upgrades e timers habilitados.
+
+### Workstation, containers e recovery
+
+- Docker e containerd não instalados;
+- nenhum display manager, xrdp, servidor VNC guest ou desktop testável confirmado;
+- `graphical.target` como default não prova presença de desktop;
+- nenhum backup independente comum encontrado no guest;
+- VNC, Rescue, snapshots, backups e firewall do provedor não foram revalidados ao vivo e permanecem **UNCONFIRMED**.
+
+### Cloud-init
+
+Cloud-init `26.1` terminou `degraded done` por chaves depreciadas; a lista de erros estava vazia. Ver `FND-CLOUDINIT-001`.

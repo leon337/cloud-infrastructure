@@ -1,51 +1,40 @@
 # 07 — Cloud Workstation
 
-Status: **DEFERRED — requisito preservado, implementação ainda não aprovada**.
+Status: **PRIORITY_PLANNED — próxima grande entrega após acesso administrativo, recovery e segurança mínima**.
 
-## Intenção de LEANDRO
+## Intenção
 
-Além de servidor, a VPS deve ser avaliada como computador remoto gráfico familiar: navegador, arquivos, VS Code, terminal e ferramentas de trabalho, acessível a partir do Linux Mint físico.
+A VPS deve servir como computador remoto gráfico de trabalho por causa das limitações do computador local: navegador, arquivos, VS Code, terminal e ferramentas acessíveis a partir do Linux Mint físico.
 
-## Modelo pretendido em estudo
+Desktop e serviços coexistirão no Ubuntu; os serviços não ficam “dentro” do desktop. O projeto não dependerá de nested virtualization sem revalidação explícita do provedor.
 
-```text
-Ubuntu da mesma VPS
-    +-- camada de serviços: Docker, APIs, bancos, agentes
-    +-- camada gráfica: desktop, navegador, editor, terminal
-```
-
-Os serviços não ficam "dentro do desktop"; desktop e serviços coexistem no mesmo sistema operacional.
-
-## O que não está decidido
+## Ainda precisa de decisão
 
 - ambiente gráfico;
-- protocolo remoto;
-- exposição de rede;
-- isolamento;
+- protocolo remoto e criptografia;
+- exposição de rede e isolamento;
 - consumo máximo aceitável;
-- se o desktop ficará sempre ativo;
-- se uma segunda VPS seria melhor no futuro.
+- política de sessão sempre ativa;
+- coexistência com workloads futuros e eventual necessidade de segunda VPS.
 
-## Nested virtualization
+## Pré-requisitos
 
-A intenção original de "ter outro Linux Mint dentro da VPS" foi refinada. Uma VM completa dentro da VPS exigiria nested virtualization. O projeto não dependerá disso sem revalidação explícita da capacidade/política do provedor.
+- acesso administrativo alternativo validado;
+- recovery proporcional validado;
+- segurança mínima necessária definida e aplicada com gates próprios;
+- recursos e impacto avaliados.
 
-## Avaliação obrigatória antes de instalar
+## Validação de produtividade obrigatória
 
-- necessidade real;
-- RAM/CPU;
-- segurança e superfície de ataque;
-- latência;
-- protocolo e criptografia;
-- experiência de uso;
-- diferença entre VS Code Remote SSH e desktop remoto completo;
-- impacto em serviços de produção;
-- recuperação.
+A etapa não termina quando o desktop apenas aparece. LEANDRO deverá testar:
 
-## Possível experiência
+- navegador, VS Code, terminal e gerenciador de arquivos;
+- múltiplas janelas e copiar/colar;
+- resolução e ergonomia;
+- estabilidade e reconexão;
+- latência percebida;
+- consumo de CPU, RAM e disco.
 
-Uma interface Cinnamon ou outra solução leve pode ser estudada por familiaridade com Linux Mint, mas isso seria Ubuntu com desktop escolhido, não necessariamente uma VM Linux Mint separada.
+Somente um HUMAN_GATE de LEANDRO confirmando que consegue trabalhar efetivamente conclui a etapa.
 
-## Gate
-
-Não instalar GUI antes de concluir inventário e base segura.
+Decisão canônica: `decisions/DEC-003-cloud-workstation-prioridade-operacional.md`.

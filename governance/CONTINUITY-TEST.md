@@ -24,12 +24,14 @@ O novo agente deve conseguir informar, sem pedir novamente a LEANDRO:
 12. autorização existente para keepalive permanente;
 13. estado relatado de `~/.ssh/config`;
 14. alias/bloco SSH planejado;
-15. inventário ainda pendente;
-16. fases futuras e quais são apenas provisionais;
-17. requisito de Cloud Workstation e por que está adiado;
+15. data da baseline e da última revalidação, distinguindo estado histórico de estado atual;
+16. findings abertos e resolvidos, inclusive SSH, LXD, backup, CPU e cloud-init;
+17. prioridade da Cloud Workstation, seus pré-requisitos e teste de produtividade;
 18. regras de secrets e HUMAN_GATE;
-19. ponto exato de retomada;
-20. documentos canônicos que sustentam cada resposta.
+19. ponto exato de retomada e por que não se deve iniciar hardening automaticamente;
+20. documentos canônicos que sustentam cada resposta;
+21. estado atual de `ubuntu`, root/senha, UFW, LXD e updates;
+22. quais capacidades do provedor permanecem `UNCONFIRMED`.
 
 ## Critérios
 

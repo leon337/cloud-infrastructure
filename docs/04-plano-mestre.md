@@ -1,103 +1,68 @@
 # 04 — Plano Mestre
 
-Este documento consolida tudo que foi planejado para a implementação. A ordem futura é **provisória** quando ainda não houve HUMAN_GATE específico.
+Este documento consolida o programa de capacidades. Fases futuras continuam provisórias até HUMAN_GATE específico.
 
-## Programa de capacidades
+## FASE 0 — Orientação e Inventário — DONE
 
-### FASE 0 — Orientação e Inventário — DONE
+Arquitetura, acesso inicial e inventário foram concluídos e aprovados em 14/08/2026. A fotografia foi revalidada por auditoria read-only em 15/08/2026.
 
-Objetivo: compreender arquitetura, acessar com segurança e descobrir o estado real antes de mudanças estruturais.
+## FASE 1 — Acesso administrativo, recovery e segurança mínima — IN_PROGRESS
 
-Inclui: modelo mental, repositório canônico, acesso VNC/SSH, SO, kernel, virtualização, CPU, RAM, armazenamento, filesystems, mounts, rede e uptime.
+- baseline APT: concluída sem forçar phased updates;
+- validar acesso SSH atual da conta `ubuntu` por chave;
+- revisar sudo e privilégio potencialmente equivalente a root via LXD;
+- validar caminho de recovery proporcional;
+- definir segurança mínima de SSH e firewall sem lockout;
+- validar a alternativa administrativa antes de mudar root/senha.
 
-Fechamento: coleta técnica concluída, inventário consolidado e fechamento didático aprovado por LEANDRO em 2026-08-14.
+A auditoria de 15/08 confirmou `ubuntu` com sudo, chave autorizada compatível e senha bloqueada, mas o login atual por chave não foi concluído. Root/senha continua sendo o acesso operacional validado; UFW está inativo; ataques automatizados foram confirmados; recovery independente/provedor não foi validado.
 
-### FASE 1 — Base do sistema e segurança inicial — IN_PROGRESS
+Próximo micro-passo recomendado, sujeito a novo HUMAN_GATE: diagnóstico mínimo da autenticação por chave de `ubuntu`, sem alterar política SSH.
 
-- atualizações iniciais;
-- usuário administrativo próprio;
-- sudo;
-- estratégia de SSH;
-- chave SSH;
-- validação de acesso por chave;
-- política de root;
-- política de senha SSH;
-- menor privilégio.
+## FASE 2 — Cloud Workstation gráfica — PRIORITY_PLANNED
 
-LEANDRO determinou o avanço para a próxima fase em 2026-08-14. A FASE 1 foi iniciada de forma controlada.
+Esta é a próxima grande entrega assim que os pré-requisitos mínimos da FASE 1 forem validados.
 
-A sequência permanece gradual: primeiro apresentar e executar um único micro-passo por vez, com explicação prévia, risco/recovery e HUMAN_GATE quando aplicável. O início da fase não autoriza automaticamente mudanças que possam causar lockout ou alterações estruturais em lote.
+- decidir desktop e protocolo remoto;
+- definir exposição, criptografia e recovery;
+- instalar em micro-passos autorizados;
+- testar navegador, VS Code, terminal e gerenciador de arquivos;
+- testar múltiplas janelas, copiar/colar, resolução, estabilidade, reconexão e latência;
+- medir consumo de CPU, RAM e disco;
+- concluir somente após HUMAN_GATE de LEANDRO confirmando produtividade real.
 
-Primeiro micro-passo planejado: atualização inicial, começando pela atualização dos índices APT antes de qualquer upgrade de pacotes.
+## FASE 3 — Desenvolvimento remoto e estabilização — PROVISIONAL
 
-### FASE 2 — Rede e firewall — PROVISIONAL
+VS Code Remote SSH quando aplicável, Git, terminal persistente, transferência/sincronização, builds remotos e recuperação da sessão gráfica.
 
-- portas necessárias;
-- firewall Contabo;
-- firewall Ubuntu/UFW;
-- prevenção de bloqueio próprio;
-- proteção contra brute force quando pertinente;
-- DNS/rede básica.
+## FASE 4 — Rede, armazenamento e manutenção — PROVISIONAL
 
-### FASE 3 — Armazenamento — PROVISIONAL
+Firewall do provedor e Ubuntu, portas, prevenção de lockout, DNS, layout de armazenamento e política recorrente de updates/logs/reboots. Alterações de disco somente após inventário e HUMAN_GATE.
 
-Antes de alterar: `lsblk`, `df`, filesystems, partições e mounts.
+## FASE 5 — Backup, snapshots e recovery — PROVISIONAL
 
-Decidir conscientemente entre layout atual, partição única, múltiplas partições, LVM, separação de `/home`, `/var` ou área Docker. Considerar crescimento, risco de enchimento isolado, recuperação, snapshots e backups.
+Distinguir snapshot de backup, criar cópia independente, testar restauração e completar o Recovery Playbook. O recovery mínimo necessário ao hardening não deve esperar esta fase ampla.
 
-### FASE 4 — Atualizações e manutenção — PROVISIONAL
+## FASE 6 — Docker e Compose — PROVISIONAL
 
-Política de atualização, logs, reinicializações, manutenção e verificação.
+Ensinar e implantar containers, imagens, volumes, redes, portas, persistência, restart policy e logs somente após a base necessária.
 
-### FASE 5 — Backup, snapshots e recovery — PROVISIONAL
+## FASE 7 — Observabilidade e operação — PROVISIONAL
 
-- distinguir snapshot de backup;
-- cópia independente;
-- testes de restauração;
-- Rescue System;
-- Recovery Playbook.
+Saúde do host, recursos, logs, alertas e monitoramento de serviços.
 
-### FASE 6 — Docker e Compose — PROVISIONAL
+## FASE 8 — Plataforma de serviços — PROVISIONAL
 
-Antes de instalar, ensinar VM x container, imagem, container, volume, rede, porta, registry, Compose, persistência, restart policy e logs.
+Reverse proxy, TLS, redes de aplicação, serviços internos e publicação controlada.
 
-### FASE 7 — Desenvolvimento remoto e modelo híbrido — PROVISIONAL
-
-- VS Code Remote SSH;
-- Git;
-- tmux;
-- transferência e sincronização;
-- builds remotos;
-- ambientes de desenvolvimento.
-
-### FASE 8 — Observabilidade e operação — PROVISIONAL
-
-- saúde do host;
-- recursos;
-- logs;
-- alertas;
-- monitoramento de serviços.
-
-### FASE 9 — Plataforma de serviços — PROVISIONAL
-
-- reverse proxy;
-- TLS;
-- redes de aplicação;
-- serviços internos;
-- publicação controlada.
-
-### FASE 10 — Cloud Workstation — DEFERRED
-
-Avaliar GUI, consumo, segurança, protocolo, latência, experiência e coexistência com servidor. Não instalar por impulso.
-
-### FASE 11 — Workloads do ecossistema — PROVISIONAL
+## FASE 9 — Workloads do ecossistema — PROVISIONAL
 
 Implantação gradual de MCF, MCPs, APIs, agentes, automações, n8n, dashboards, aplicações e produtos.
 
-### FASE 12 — Autonomia e reconstrução — PROVISIONAL
+## FASE 10 — Autonomia e reconstrução — PROVISIONAL
 
-Consolidar runbooks, exercícios, recuperação completa e capacidade de LEANDRO reconstruir a infraestrutura a partir do GitHub.
+Runbooks, exercícios e capacidade de reconstrução a partir do repositório.
 
 ## Regra de mudança de ordem
 
-A ordem pode mudar por segurança, dependências ou decisão de LEANDRO. Qualquer mudança relevante deve atualizar este plano, roadmap e decisão correspondente.
+A ordem provisória anterior colocava a Cloud Workstation depois de Docker e observabilidade. Ela foi substituída em 15/08/2026 por decisão explícita de LEANDRO, formalizada em `DEC-003`.

@@ -38,7 +38,7 @@ Containers não são equivalentes a VMs: compartilham o kernel do host e serão 
 
 A intenção de LEANDRO é também possuir uma experiência gráfica remota familiar, semelhante ao uso cotidiano do Linux Mint, sem necessariamente criar uma segunda VM. A hipótese principal a avaliar é interface gráfica sobre o próprio Ubuntu, coexistindo com serviços.
 
-Essa capacidade está documentada separadamente e permanece adiada até base segura e inventário.
+Essa capacidade está documentada separadamente e tornou-se prioridade operacional. Será a próxima grande entrega após acesso administrativo, recovery e segurança mínima, conforme `DEC-003`.
 
 ## Camadas arquitetônicas alvo
 
@@ -46,7 +46,7 @@ Essa capacidade está documentada separadamente e permanece adiada até base seg
 LEANDRO / Linux Mint local
         |
         +-- SSH / VS Code Remote
-        +-- eventual desktop remoto
+        +-- desktop remoto prioritário
         v
 Ubuntu VPS
         |

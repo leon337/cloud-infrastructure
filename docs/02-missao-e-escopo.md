@@ -14,7 +14,7 @@ O objetivo final não é apenas deixar um servidor funcionando. É permitir que 
 4. transformar a VPS em infraestrutura para projetos;
 5. criar modelo híbrido entre computador físico e VPS;
 6. usar a VPS como ambiente remoto de desenvolvimento;
-7. avaliar posteriormente desktop/computador na nuvem;
+7. entregar desktop/computador na nuvem logo após acesso administrativo, recovery e segurança mínima;
 8. instalar e administrar Docker e serviços;
 9. preparar infraestrutura para MCF, MCPs, APIs, agentes, automações e aplicações;
 10. ensinar Linux, servidores, redes, segurança, Docker e cloud durante o processo;
@@ -57,6 +57,10 @@ Esses dados de contratação podem mudar no futuro e devem ser revalidados antes
 
 A VPS poderá hospedar gradualmente desenvolvimento remoto, Docker, APIs, MCF, MCPs, agentes, automações, n8n, dashboards, monitoramento, reverse proxy, aplicações, serviços internos, produtos e eventualmente serviços de clientes.
 
+## Prioridade operacional atual
+
+Por limitações do computador local, a Cloud Workstation é a próxima grande entrega após os pré-requisitos mínimos de acesso, recovery e segurança. Sua Definition of Done inclui produtividade real e HUMAN_GATE de LEANDRO, não apenas desktop visível.
+
 ## Fora do escopo imediato
 
-Não instalar tudo no início. Não particionar por padrão. Não instalar Docker antes da base. Não desativar root/senha antes de outro acesso validado. Não instalar desktop gráfico antes de avaliação dedicada.
+Não instalar tudo no início. Não particionar por padrão. Não instalar Docker antes da base. Não desativar root/senha antes de outro acesso validado. Não instalar desktop gráfico antes da avaliação e dos gates dedicados.

@@ -111,3 +111,7 @@ Foram recuperadas e agora ganham casa canônica:
 ## Veredito
 
 O PUC v1.0 resolve o problema estrutural se for aplicado como processo, não apenas como conjunto de arquivos. O maior risco residual é **disciplina de atualização**. Por isso a retomada da VPS fica bloqueada até um teste de continuidade provar que um novo chat consegue reconstruir o estado somente a partir do repositório.
+
+## Evidência posterior — 15/08/2026
+
+O risco R2/R12 se materializou: `state/current.yaml` avançou enquanto README, CONTEXT, CHECKPOINT, plano, roadmap e history ficaram atrás. `FND-DOC-001` registra a deriva e a reconciliação posterior à auditoria ao vivo. Controle adicional: fotografias datadas não substituem baselines históricas, e `CHECKPOINT.md` deve ser atualizado por último após validação cruzada.

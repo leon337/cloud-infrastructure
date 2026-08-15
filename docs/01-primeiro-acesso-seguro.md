@@ -124,19 +124,17 @@ Conhecido conceitualmente e disponível no Customer Panel, mas ainda não aciona
 
 O acesso inicial funciona, mas a VPS ainda NÃO deve ser considerada endurecida para produção.
 
-Ainda estão pendentes, entre outros:
+Fotografia atual de 15/08/2026:
 
-- inventário técnico completo;
-- criação de usuário administrativo próprio;
-- `sudo`;
-- autenticação SSH por chave;
-- decisão sobre login direto de `root`;
-- firewall;
-- política permanente para VNC;
-- backup e recovery playbook.
+- inventário técnico concluído e revalidado;
+- `ubuntu` existe e possui sudo, inclusive NOPASSWD por cloud-init;
+- autenticação atual por chave de `ubuntu` não foi validada;
+- root/senha permanece operacional;
+- UFW está inativo;
+- backup independente e recovery do provedor não foram validados.
 
 ## Próxima etapa
 
-**FASE 0 — ETAPA 0.5: Inventário real da VPS.**
+**FASE 1 — acesso administrativo, recovery e segurança mínima.**
 
-O inventário deverá começar por comandos somente de leitura para confirmar sistema, hostname, kernel, CPU, RAM, armazenamento, filesystems, mounts, rede e uptime antes de qualquer mudança estrutural.
+Próximo micro-passo recomendado: diagnosticar a autenticação por chave de `ubuntu`, somente após novo HUMAN_GATE. Esta seção substitui apenas o estado atual; o restante do documento preserva a história do primeiro acesso.
