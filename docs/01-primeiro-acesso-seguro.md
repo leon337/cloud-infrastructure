@@ -128,8 +128,10 @@ Fotografia atual de 15/08/2026:
 
 - inventário técnico concluído e revalidado;
 - `ubuntu` existe e possui sudo, inclusive NOPASSWD por cloud-init;
-- autenticação atual por chave de `ubuntu` não foi validada;
-- root/senha permanece operacional;
+- uma nova chave ED25519 dedicada foi criada localmente e sua chave pública foi adicionada sem remover a chave antiga;
+- autenticação atual de `ubuntu` foi validada exclusivamente por `publickey`, confirmando UID 1000 e hostname `vmi3506102`;
+- root/senha permanece operacional, validado e temporariamente preservado;
+- política SSH, sudo, firewall e LXD não foram alterados pela validação;
 - UFW está inativo;
 - backup independente e recovery do provedor não foram validados.
 
@@ -137,4 +139,4 @@ Fotografia atual de 15/08/2026:
 
 **FASE 1 — acesso administrativo, recovery e segurança mínima.**
 
-Próximo micro-passo recomendado: diagnosticar a autenticação por chave de `ubuntu`, somente após novo HUMAN_GATE. Esta seção substitui apenas o estado atual; o restante do documento preserva a história do primeiro acesso.
+Próximo micro-passo recomendado: revisão read-only de sudo e do privilégio equivalente a root via LXD, somente após novo HUMAN_GATE. Esta seção substitui apenas o estado atual; o restante do documento preserva a história do primeiro acesso.

@@ -4,12 +4,19 @@
 
 Host contabo-vps
     HostName 169.58.171.192
+    User ubuntu
+    IdentityFile ~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815
+    IdentitiesOnly yes
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+
+Host contabo-vps-root-temporary
+    HostName 169.58.171.192
     User root
     ServerAliveInterval 30
     ServerAliveCountMax 3
 
 # Observações:
-# - `root` é temporário durante a fase inicial.
-# - Quando existir um usuário administrativo próprio e autenticação por chave,
-#   atualizar este bloco em vez de manter acesso administrativo normal como root.
+# - O login de `ubuntu` pela chave dedicada foi validado em 15/08/2026.
+# - O alias root é temporário e não deve ser removido antes de recovery e gates próprios.
 # - NÃO sobrescrever ~/.ssh/config inteiro sem inspeção prévia.

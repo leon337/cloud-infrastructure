@@ -6,7 +6,7 @@ Cada finding deve registrar sintoma, evidências, hipóteses, testes válidos/in
 
 - `FND-SSH-001.md` — sessão SSH ociosa; resolvido com keepalive permanente validado.
 - `FND-SSH-002.md` — ataques automatizados contra SSH e controles mínimos ausentes; aberto, high.
-- `FND-SSH-003.md` — login atual da conta `ubuntu` não validado; aberto, high.
+- `FND-SSH-003.md` — login atual de `ubuntu` validado por nova chave dedicada; resolvido em 15/08/2026.
 - `FND-LXD-001.md` — grupo/socket LXD concede privilégio potencialmente equivalente a root; aberto, high.
 - `FND-DOC-001.md` — deriva documental encontrada e reconciliada em 15/08/2026.
 - `FND-CPU-001.md` — relato de Spec rstack overflow; análise pendente.

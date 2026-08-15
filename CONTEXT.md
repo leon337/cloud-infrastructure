@@ -4,7 +4,7 @@ Este arquivo é a entrada obrigatória para qualquer IA, agente ou humano que as
 
 ## Protocolo
 
-PUC v1.0. A reconciliação de 15/08 foi publicada no commit `be52e36962159fa7a42ba93a0e96a028daabb67a` e seu estado foi reconstruído em novo chat a partir do GitHub canônico, sem depender de recapitulação conversacional, com resultado **CONTINUIDADE COMPLETA**. Evidência: `governance/CONTINUITY-VALIDATION-INDEPENDENT-2026-08-15.md`. A validação anterior, feita antes da publicação, permanece preservada em `governance/CONTINUITY-VALIDATION-2026-08-15.md`. O protocolo continua aplicável a futuras mudanças e migrações de contexto.
+PUC v1.0. A reconciliação de 15/08 foi publicada no commit `be52e36962159fa7a42ba93a0e96a028daabb67a`; o fechamento pós-push/pós-PUC foi publicado em `27e6f8223a12ad65da253a1b5364472ce1f764e8`. Aquele snapshot foi reconstruído em novo chat a partir do GitHub canônico, sem depender de recapitulação conversacional, com resultado **CONTINUIDADE COMPLETA**. Evidência histórica: `governance/CONTINUITY-VALIDATION-INDEPENDENT-2026-08-15.md`. A validação pré-publicação permanece em `governance/CONTINUITY-VALIDATION-2026-08-15.md`. Nenhum novo teste independente foi executado para o estado posterior à Missão 2/2B; o protocolo continua aplicável.
 
 ## Regra zero
 
@@ -29,7 +29,7 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 | Infraestrutura observada | `docs/06-inventario.md` |
 | Cloud Workstation | `docs/07-cloud-workstation.md`, `decisions/DEC-003-cloud-workstation-prioridade-operacional.md` |
 | Segurança e didática | `docs/08-seguranca-e-governanca.md`, `docs/11-protocolo-didatico.md` |
-| Auditoria Fase B | `governance/AUDIT-FASE-B-2026-08-15.md`, `history/SESSION-2026-08-15-009.md` |
+| Auditoria e acesso SSH | `governance/AUDIT-FASE-B-2026-08-15.md`, `history/SESSION-2026-08-15-009.md`, `history/SESSION-2026-08-15-010.md` |
 | Achados e recovery | `findings/`, `runbooks/`, `recovery/` |
 | Evidências visuais | `assets/README.md` |
 
@@ -38,8 +38,8 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 - Ubuntu 24.04.4 LTS, kernel `6.8.0-137-generic`, KVM/QEMU, 8 CPUs, ~23 GiB RAM, sem swap.
 - F0: `DONE`. Auditoria Fase B: `DONE` e aprovada para reconciliação.
 - F1 acesso/recovery/segurança mínima: `IN_PROGRESS`.
-- Root/senha é o acesso validado atual. Não restringir antes da alternativa.
-- `ubuntu` possui sudo/NOPASSWD e chave compatível, mas login atual por chave não foi validado; pertence ao grupo `lxd`.
+- Root/senha permanece validado, temporário e preservado; ainda não restringir antes de recovery proporcional e revisão dos privilégios.
+- `ubuntu` tem login atual `VALIDATED` exclusivamente por nova chave `publickey`; a chave anterior foi preservada. UID 1000, sudo/NOPASSWD e associação ao grupo `lxd` permanecem conforme a baseline.
 - SSH público em TCP 22; UFW inativo; ataques automatizados confirmados.
 - LXD daemon recuperado inactive/dead; socket ativo; 0 instâncias na auditoria.
 - Cinco updates Krb5 seguem adiados por phasing; nenhum upgrade forçado.
@@ -48,6 +48,6 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 
 ## Ponto exato
 
-A reconciliação de 15/08 está versionada e publicada. Em 15/08/2026 foi confirmado que HEAD local, `main`, `origin/main` e GitHub `main` apontavam para `be52e36962159fa7a42ba93a0e96a028daabb67a`. O fechamento pós-push/pós-PUC está documentado no estado canônico.
+A reconciliação e o fechamento pós-push/pós-PUC estão versionados. A validação independente preservada corresponde ao snapshot anterior à Missão 2/2B e não deve ser reinterpretada como validação independente do estado atual.
 
-Próximo micro-passo: aguardar HUMAN_GATE operacional de LEANDRO para iniciar a MISSÃO 2 — diagnóstico mínimo read-only da autenticação SSH por chave de `ubuntu`. Nenhuma conexão ou mudança na VPS está autorizada antes desse gate. Futuros commits também continuam sujeitos a HUMAN_GATE.
+Próximo micro-passo: aguardar HUMAN_GATE operacional de LEANDRO para a revisão read-only de sudo/NOPASSWD e do privilégio equivalente a root via LXD. Recovery proporcional e segurança mínima de SSH/firewall continuam pendentes. Nenhuma nova conexão ou mudança na VPS está autorizada sem gate próprio; futuros commits também continuam sujeitos a HUMAN_GATE.

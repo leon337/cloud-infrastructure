@@ -10,7 +10,8 @@ Atualizado em 2026-08-15. Este arquivo responde: **onde estamos agora?**
 - Depois do push, um novo chat reconstruiu o estado a partir do GitHub canônico, sem depender de recapitulação conversacional.
 - Resultado: **CONTINUIDADE COMPLETA**.
 - Evidência: `governance/CONTINUITY-VALIDATION-INDEPENDENT-2026-08-15.md`.
-- O resultado corresponde ao estado reconciliado de 15/08/2026; o PUC permanece ativo para futuras mudanças e migrações.
+- O resultado corresponde ao snapshot reconciliado anterior à Missão 2/2B; não é uma nova validação independente do estado atual.
+- O PUC permanece ativo para futuras mudanças e migrações.
 
 ## Estado atual
 
@@ -20,6 +21,7 @@ Atualizado em 2026-08-15. Este arquivo responde: **onde estamos agora?**
 - Reconciliação documental de 15/08: versionada e publicada em `be52e36962159fa7a42ba93a0e96a028daabb67a`.
 - Sincronização pós-push validada: HEAD local, `main`, `origin/main` e GitHub `main` apontavam para o mesmo SHA.
 - Fechamento pós-push/pós-PUC: documentado no estado canônico.
+- Missão 2/2B: nova chave dedicada instalada e login atual de `ubuntu` validado; fechamento em `history/SESSION-2026-08-15-010.md`.
 - FASE 1 — acesso administrativo, recovery e segurança mínima: `IN_PROGRESS`.
 - FASE 2 — Cloud Workstation: `PRIORITY_PLANNED`, próxima grande entrega após os pré-requisitos da F1.
 - Política de futuros commits: **HUMAN_GATE obrigatório**.
@@ -41,12 +43,15 @@ Inventário detalhado: `docs/06-inventario.md`.
 
 ## Acesso e identidade
 
-- root por senha: acesso operacional validado e temporário;
+- root por senha: acesso operacional preservado, validado e temporário;
 - fingerprint ED25519 do host: `SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4`;
 - alias/keepalive local: historicamente validados;
 - `ubuntu`: UID 1000, senha bloqueada, sudo efetivo e NOPASSWD via cloud-init;
-- chave autorizada de `ubuntu` coincide com a chave pública local dedicada;
-- login atual por chave de `ubuntu`: **NÃO VALIDADO**; a causa não foi diagnosticada;
+- chave ED25519 anteriormente observada: preservada;
+- nova chave ED25519 dedicada: pública instalada exatamente uma vez; fingerprint `SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg`;
+- login atual de `ubuntu`: **VALIDATED**, exclusivamente por `publickey`, sem fallback para senha no teste;
+- identidade validada: usuário `ubuntu`, UID 1000, hostname `vmi3506102`;
+- `config/ssh_config.example` documenta `ubuntu` como canal principal por chave e mantém alias root temporário; o exemplo não foi aplicado automaticamente;
 - `ubuntu` pertence ao grupo `lxd`, que exige revisão de menor privilégio.
 
 ## LXD
@@ -59,9 +64,9 @@ Inventário detalhado: `docs/06-inventario.md`.
 
 ## Findings
 
-Resolvidos: `FND-SSH-001`, `FND-DOC-001`, `FND-AUDIT-001`.
+Resolvidos: `FND-SSH-001`, `FND-SSH-003`, `FND-DOC-001`, `FND-AUDIT-001`.
 
-Abertos high: `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-BACKUP-001`.
+Abertos high: `FND-SSH-002`, `FND-LXD-001`, `FND-BACKUP-001`.
 
 Abertos para análise: `FND-CPU-001`, `FND-CLOUDINIT-001`.
 
@@ -73,9 +78,9 @@ Só será `DONE` após LEANDRO validar produtividade real com navegador, VS Code
 
 ## Ponto exato de retomada
 
-Próximo micro-passo: aguardar HUMAN_GATE operacional de LEANDRO para iniciar a MISSÃO 2 — diagnóstico mínimo read-only da autenticação SSH por chave de `ubuntu`.
+Próximo micro-passo: aguardar HUMAN_GATE operacional de LEANDRO para revisão read-only de sudo/NOPASSWD e do privilégio equivalente a root via LXD.
 
-Depois desse diagnóstico autorizado: validar sudo/privilégio LXD, recovery e segurança mínima. Não restringir root/senha nem alterar firewall antes desses controles.
+Depois dessa revisão autorizada: validar recovery proporcional e segurança mínima de SSH/firewall sem lockout. Não restringir root/senha nem alterar firewall antes desses controles.
 
 ## Proibições imediatas
 

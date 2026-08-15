@@ -32,11 +32,11 @@ Estudar e implementar gradualmente:
 - SSH público aceita root e senha;
 - UFW inativo e fail2ban ausente;
 - alto volume de tentativas automatizadas confirmado (`FND-SSH-002`);
-- login atual por chave de `ubuntu` não validado (`FND-SSH-003`);
+- login atual de `ubuntu` validado exclusivamente por nova chave `publickey`; `FND-SSH-003` resolvido;
 - `ubuntu` possui NOPASSWD e acesso ao socket LXD, com risco equivalente a root (`FND-LXD-001`);
 - backup independente e recovery do provedor não validados (`FND-BACKUP-001`).
 
-Não executar hardening até validar acesso administrativo alternativo e recovery proporcional. “Segurança mínima” é um conjunto a definir explicitamente, não autorização implícita para mudanças em lote.
+O acesso administrativo alternativo por chave foi validado, mas recovery proporcional e a revisão de sudo/LXD ainda estão pendentes. Não executar hardening nem restringir root/senha até esses pré-requisitos e seus HUMAN_GATEs próprios. “Segurança mínima” é um conjunto a definir explicitamente, não autorização implícita para mudanças em lote.
 
 ## Regras de proteção contra lockout
 

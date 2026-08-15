@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-15
-documentation_state: RECONCILED_VERSIONED_AND_INDEPENDENTLY_VALIDATED
+documentation_state: RECONCILED_MISSION_2_STATE
 repository_state:
   reconciliation_commit:
     sha: be52e36962159fa7a42ba93a0e96a028daabb67a
@@ -16,6 +16,8 @@ continuity:
   reconciled_independent_validation: governance/CONTINUITY-VALIDATION-INDEPENDENT-2026-08-15.md
   reconciled_state_date: 2026-08-15
   reconciled_result: CONTINUIDADE_COMPLETA
+  reconciled_result_scope: PRE_MISSION_2_SNAPSHOT
+  current_state_independent_validation: NOT_EXECUTED
   future_state_validation_policy: PUC_REVALIDATION_REQUIRED
 project:
   name: IMPLEMENTACAO_DA_VPS
@@ -66,11 +68,23 @@ remote_vps:
     provider_firewall_status: UNCONFIRMED
   ssh:
     root_password_login: VALIDATED
+    root_password_access: PRESERVED_TEMPORARY
+    root_diagnostic_validation:
+      confirmed: true
+      remote_uid: 0
+      ssh_exit_code: 0
     permit_root_login_effective: "yes"
     password_authentication_effective: "yes"
     publickey_authentication_effective: "yes"
     automated_attack_activity: CONFIRMED_HIGH_VOLUME
-    ubuntu_login_current: NOT_VALIDATED
+    ubuntu_login_current: VALIDATED
+    ubuntu_login_validated_at_date: 2026-08-15
+    ubuntu_login_validated_method: PUBLICKEY_ONLY
+    ubuntu_password_fallback_during_validation: DISABLED
+    ubuntu_login_validation_remote_user: ubuntu
+    ubuntu_login_validation_remote_uid: 1000
+    ubuntu_login_validation_remote_host: vmi3506102
+    ubuntu_login_validation_operational_change: false
     ubuntu_historical_publickey_login_observed: true
   accounts:
     ubuntu:
@@ -80,8 +94,23 @@ remote_vps:
       nopasswd_all: true
       nopasswd_source: /etc/sudoers.d/90-cloud-init-users
       member_of_lxd: true
+      authorized_key_legacy_fields_scope: HISTORICAL_SINGLE_KEY_BASELINE_2026_08_15
       authorized_key_matches_local_public_key: true
       authorized_key_fingerprint: SHA256:FeamXuFKDiA868c9eKVH8AOMXOQMLL1KBNH4Y9DrqMU
+      authorized_keys:
+        owner: ubuntu:ubuntu
+        permissions: "600"
+        total_key_count: UNCONFIRMED
+        previously_observed_key:
+          fingerprint: SHA256:FeamXuFKDiA868c9eKVH8AOMXOQMLL1KBNH4Y9DrqMU
+          preserved: true
+        mission_2b_validated_key:
+          type: ED25519
+          local_private_key_path: ~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815
+          fingerprint: SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg
+          public_key_installed: true
+          installed_occurrences: 1
+          login_validated: true
   lxd:
     installed_snap_version: 5.21.6
     instances_total_observed: 0
@@ -115,8 +144,8 @@ remote_vps:
     errors_list_empty: true
     deprecated_keys_observed: true
 findings:
-  resolved: [FND-SSH-001, FND-DOC-001, FND-AUDIT-001]
-  open_high: [FND-SSH-002, FND-SSH-003, FND-LXD-001, FND-BACKUP-001]
+  resolved: [FND-SSH-001, FND-SSH-003, FND-DOC-001, FND-AUDIT-001]
+  open_high: [FND-SSH-002, FND-LXD-001, FND-BACKUP-001]
   open_other: [FND-CPU-001, FND-CLOUDINIT-001]
 authorization:
   documentation_reconciliation: AUTHORIZED
@@ -126,11 +155,11 @@ authorization:
   historical_executed:
     AUTH-SSH-KEEPALIVE-001: EXECUTED_AND_VALIDATED
 next_actions:
-  current: "Aguardar HUMAN_GATE operacional de LEANDRO para iniciar a MISSÃO 2"
-  after_new_human_gate: "Diagnóstico mínimo read-only da autenticação SSH por chave de ubuntu"
+  current: "Aguardar HUMAN_GATE operacional de LEANDRO"
+  after_new_human_gate: "Revisão read-only de sudo e do privilégio equivalente a root via LXD"
   constraints:
-    - "Não restringir root/senha antes de acesso alternativo e recovery validados"
+    - "Não restringir root/senha antes de recovery proporcional e revisão de privilégios validados"
     - "Não alterar SSH, firewall, sudo, LXD, pacotes ou serviços sem gate próprio"
     - "Entregar Cloud Workstation após os pré-requisitos mínimos, antes de Docker/observabilidade"
 secrets_policy:
-  never_version: [passwords, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]
+  never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]

@@ -16,14 +16,14 @@ Esta matriz impede lacunas silenciosas de memória.
 | Painel Contabo | `docs/10-painel-contabo.md` | coberto inicial |
 | Glossário | `docs/09-glossario.md` | coberto inicial |
 | Decisões | `decisions/` | coberto e expansível |
-| Findings | `findings/` | findings da auditoria de 15/08 cobertos |
+| Findings | `findings/` | findings da auditoria e resolução do `FND-SSH-003` em 15/08 cobertos |
 | Recovery | `recovery/RECOVERY-PLAYBOOK.md` | limites reais e incidente LXD cobertos; estratégia ampla pendente |
-| Runbooks | `runbooks/` | acesso atual e recuperação inicial cobertos |
-| Histórico de sessões | `history/` | sessão retrospectiva inicial criada |
+| Runbooks | `runbooks/` | `ubuntu`/publickey e root temporário cobertos; recovery amplo pendente |
+| Histórico de sessões | `history/` | auditoria e Missão 2/2B preservadas cronologicamente |
 | Estado imediato | `CHECKPOINT.md` | coberto |
 | Estado legível por máquina | `state/current.yaml` | coberto |
-| Evidências visuais | `assets/README.md` | evidência operacional separada de imagens conceituais |
-| Continuidade universal | `CONTEXT.md` + `governance/PUC-v1.md` | estado reconciliado publicado; teste independente completo |
+| Evidências visuais | `assets/README.md` | evidências sanitizadas da auditoria e Missão 2 separadas de imagens conceituais |
+| Continuidade universal | `CONTEXT.md` + `governance/PUC-v1.md` | PUC ativo; validação independente anterior preservada para seu snapshot; novo estado recuperável, ainda sem novo teste independente |
 
 ## Regra de auditoria
 

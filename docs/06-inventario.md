@@ -297,3 +297,21 @@ Os logs comprovam tentativas automatizadas, não invasão.
 ### Cloud-init
 
 Cloud-init `26.1` terminou `degraded done` por chaves depreciadas; a lista de erros estava vazia. Ver `FND-CLOUDINIT-001`.
+
+## Evento pós-auditoria — acesso SSH de ubuntu em 15/08/2026
+
+Este evento complementa a fotografia anterior sem reescrevê-la. Na auditoria, o login atual de `ubuntu` ainda estava não validado; a Missão 2/2B resolveu esse bloqueio depois da coleta.
+
+- a chave privada antiga estava protegida por passphrase desconhecida por LEANDRO e não estava disponível em `ssh-agent`/keyring;
+- nenhuma tentativa de recuperar, extrair ou quebrar essa passphrase foi realizada;
+- uma nova chave ED25519 dedicada foi criada localmente em `~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815`;
+- fingerprint pública validada: `SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg`;
+- a nova chave pública foi adicionada a `/home/ubuntu/.ssh/authorized_keys` exatamente uma vez, sem substituir ou remover a chave anterior;
+- `authorized_keys` permaneceu com proprietário `ubuntu:ubuntu` e modo `600`;
+- root por senha foi revalidado no diagnóstico autorizado, com UID remoto `0` e exit code `0`, e permaneceu inalterado;
+- login de `ubuntu` com a nova chave foi validado exclusivamente por `publickey`, com fallback para senha desativado;
+- o teste confirmou usuário `ubuntu`, UID `1000` e hostname `vmi3506102`;
+- o teste final executou somente identificação read-only e não alterou estado operacional;
+- `sshd_config`, root, sudo, firewall e LXD não foram alterados.
+
+Estado resultante: `FND-SSH-003` **RESOLVED**. A associação de `ubuntu` a sudo/NOPASSWD e ao grupo `lxd` permanece conforme a fotografia anterior e será revisada separadamente, mediante novo HUMAN_GATE.

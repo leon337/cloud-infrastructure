@@ -32,7 +32,8 @@ Chats são temporários; o GitHub é a memória canônica após revisão e commi
 - Fase 0 e auditoria read-only Fase B: concluídas.
 - Fase atual: **F1 — acesso administrativo, recovery e segurança mínima**.
 - Root por senha: acesso operacional validado, ainda temporário.
-- `ubuntu`: conta/sudo/chave autorizada confirmados; login atual por chave **não validado**.
+- `ubuntu`: UID 1000, sudo/NOPASSWD e grupo `lxd` preservados; login atual **VALIDATED** por nova chave dedicada com autenticação exclusivamente `publickey`.
+- A chave antiga de `ubuntu` foi preservada; root/senha continua validado, temporário e ainda não deve ser restringido.
 - UFW: instalado e inativo; tentativas automatizadas contra SSH confirmadas.
 - LXD: 0 instâncias na auditoria; daemon recuperado para inactive/dead; socket ativo; grupo `lxd` requer revisão de privilégio.
 - Updates: cinco pacotes Krb5 adiados por phasing; nenhum upgrade forçado.
@@ -45,4 +46,4 @@ A solução gráfica será validada como ferramenta de produtividade: navegador,
 
 ## Segurança
 
-Nunca versionar senhas, chaves privadas, tokens, API keys, 2FA ou credenciais. Nenhuma mudança operacional na VPS está autorizada pelo estado documental atual.
+Nunca versionar senhas, passphrases, chaves privadas, tokens, API keys, 2FA ou credenciais. O próximo micro-passo é a revisão read-only de sudo e do privilégio equivalente a root via LXD, somente após novo HUMAN_GATE.

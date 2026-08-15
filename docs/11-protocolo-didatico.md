@@ -63,3 +63,17 @@ Depois da autorização, preparar automaticamente a interface até o ponto estri
 Após confirmação, validar o resultado, ocultar qualquer dado sensível e registrar, quando didático, estado anterior, ponto relevante e estado posterior em `assets/tutorial/`. Isso vale para Terminal, VS Code, navegador, painel Contabo, Remmina/VNC, gerenciador de arquivos e Cloud Workstation.
 
 Se o controle ou screenshot programático não for possível, declarar a limitação e orientar exatamente a ação manual e o destino da evidência.
+
+### Padrão preferencial para interações simples com secrets
+
+Quando uma operação simples exigir senha ou passphrase de LEANDRO, preferir este fluxo:
+
+```text
+CODEX prepara e valida o comando
+→ LEANDRO copia/cola manualmente
+→ LEANDRO digita o secret diretamente
+→ LEANDRO devolve apenas a saída sanitizada
+→ CODEX analisa
+```
+
+Evitar automação de janela/Terminal usada apenas para intermediar a credencial quando ela acrescentar complexidade, custo ou risco operacional. Esta é uma preferência para interações humanas simples com secrets neste projeto, não uma proibição universal de automação de interfaces.

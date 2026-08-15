@@ -4,15 +4,19 @@
 
 ### SSH — principal
 
-Endpoint operacional: `root@169.58.171.192` durante fase inicial.
+Endpoints administrativos atualmente validados: `ubuntu@169.58.171.192` por chave dedicada e `root@169.58.171.192` por senha durante a transição.
 
 Host fingerprint validada: `SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4`.
 
 Em 15/08/2026, root por senha permanecia como acesso operacional validado. É temporário e não deve ser restringido antes de alternativa e recovery validados.
 
-### Conta ubuntu — ainda não usar como único canal
+### Conta ubuntu — acesso por chave validado
 
-A conta existe, possui sudo e chave autorizada compatível com a chave pública local, mas o teste atual não concluiu autenticação por chave. O cliente caiu para senha e a senha da conta está bloqueada. Diagnosticar somente com novo HUMAN_GATE; não remover root antes da validação.
+A conta `ubuntu` teve o login atual validado em 15/08/2026 com a chave dedicada `~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815`, exclusivamente por `publickey` e sem fallback para senha. Fingerprint pública: `SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg`.
+
+A nova chave pública foi adicionada sem remover a chave anterior. Não versionar nem expor a chave privada ou sua passphrase.
+
+O acesso root/senha continua preservado temporariamente. Ainda não remover nem restringir root: recovery proporcional, sudo/NOPASSWD, privilégio LXD e segurança mínima precisam de validações e HUMAN_GATEs próprios.
 
 ### VNC — console alternativo
 
@@ -43,6 +47,7 @@ Ver `findings/FND-SSH-001.md`.
 ## Não fazer
 
 - não divulgar senhas;
+- não divulgar passphrases nem chaves privadas;
 - não remover acesso atual antes de alternativa validada;
 - não mexer no firewall durante recuperação sem entender impacto;
 - não usar reinstalação como ferramenta de diagnóstico inicial.

@@ -9,15 +9,15 @@ Arquitetura, acesso inicial e inventário foram concluídos e aprovados em 14/08
 ## FASE 1 — Acesso administrativo, recovery e segurança mínima — IN_PROGRESS
 
 - baseline APT: concluída sem forçar phased updates;
-- validar acesso SSH atual da conta `ubuntu` por chave;
+- validar acesso SSH atual da conta `ubuntu` por chave — **CONCLUÍDO em 15/08/2026**;
 - revisar sudo e privilégio potencialmente equivalente a root via LXD;
 - validar caminho de recovery proporcional;
 - definir segurança mínima de SSH e firewall sem lockout;
-- validar a alternativa administrativa antes de mudar root/senha.
+- validar a alternativa administrativa antes de mudar root/senha — **CONCLUÍDO para o acesso; root/senha ainda preservado até os demais pré-requisitos**.
 
-A auditoria de 15/08 confirmou `ubuntu` com sudo, chave autorizada compatível e senha bloqueada, mas o login atual por chave não foi concluído. Root/senha continua sendo o acesso operacional validado; UFW está inativo; ataques automatizados foram confirmados; recovery independente/provedor não foi validado.
+A Missão 2/2B criou uma nova chave ED25519 dedicada, adicionou sua chave pública sem remover a anterior e validou o login atual de `ubuntu` exclusivamente por `publickey`. Root/senha continua validado, temporário e preservado; UFW permanece inativo; ataques automatizados continuam confirmados; recovery independente/provedor não foi validado.
 
-Próximo micro-passo recomendado, sujeito a novo HUMAN_GATE: diagnóstico mínimo da autenticação por chave de `ubuntu`, sem alterar política SSH.
+Próximo micro-passo recomendado, sujeito a novo HUMAN_GATE: revisão read-only de sudo e do privilégio potencialmente equivalente a root via LXD. Depois permanecem a validação de recovery proporcional e a definição de segurança mínima de SSH/firewall sem lockout.
 
 ## FASE 2 — Cloud Workstation gráfica — PRIORITY_PLANNED
 
