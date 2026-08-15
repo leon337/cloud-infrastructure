@@ -9,7 +9,7 @@ Estados: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `HUMAN_GATE`, `VALIDATING`, `D
 | 0.3 Preparação do primeiro acesso | DONE | painel e credenciais iniciais tratados |
 | 0.4 Primeiro acesso seguro | DONE | VNC/TigerVNC, SSH e fingerprint validados historicamente |
 | 0.5 Inventário real | DONE | baseline de 14/08 e revalidação de 15/08 documentadas |
-| PUC v1.0 | VALIDATING | validação de 14/08 completa; nova validação documental de 15/08 executada, teste independente ainda pendente |
+| PUC v1.0 | DONE | estado reconciliado de 15/08 publicado em `be52e369...` e validado com CONTINUIDADE COMPLETA; protocolo permanece aplicável a novos estados |
 | Auditoria Fase B | DONE | fotografia read-only de 15/08 aprovada para reconciliação |
 | F1 Acesso/recovery/segurança mínima | IN_PROGRESS | `ubuntu` não validado atualmente; root/senha ainda operacional |
 | F2 Cloud Workstation | PRIORITY_PLANNED | próxima grande entrega após pré-requisitos da F1; conclusão exige HUMAN_GATE de produtividade |

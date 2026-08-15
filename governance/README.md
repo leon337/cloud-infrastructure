@@ -8,4 +8,5 @@
 - `RC-001-PUC-v1.md` — revisão crítica do protocolo.
 - `AUDIT-RETROSPECTIVA-2026-08-14.md` — auditoria que originou a estrutura atual.
 - `AUDIT-FASE-B-2026-08-15.md` — matriz de reconciliação entre documentação e fotografia real da VPS.
-- `CONTINUITY-VALIDATION-2026-08-15.md` — reexecução documental do teste; validação independente pendente.
+- `CONTINUITY-VALIDATION-2026-08-15.md` — verificação de cobertura feita antes da publicação; preserva o estado então pendente.
+- `CONTINUITY-VALIDATION-INDEPENDENT-2026-08-15.md` — teste pós-push em novo chat; resultado CONTINUIDADE COMPLETA.

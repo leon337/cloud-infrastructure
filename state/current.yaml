@@ -2,11 +2,21 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-15
-documentation_state: RECONCILED_AWAITING_HUMAN_REVIEW
+documentation_state: RECONCILED_VERSIONED_AND_INDEPENDENTLY_VALIDATED
+repository_state:
+  reconciliation_commit:
+    sha: be52e36962159fa7a42ba93a0e96a028daabb67a
+    status: PUBLISHED
+  synchronization:
+    verified_at: 2026-08-15
+    local_head_main_origin_and_github_main_equal: true
 continuity:
   historical_independent_validation: governance/CONTINUITY-VALIDATION-2026-08-14.md
   reconciled_validation: governance/CONTINUITY-VALIDATION-2026-08-15.md
-  reconciled_result: COVERAGE_COMPLETE_INDEPENDENT_TEST_PENDING
+  reconciled_independent_validation: governance/CONTINUITY-VALIDATION-INDEPENDENT-2026-08-15.md
+  reconciled_state_date: 2026-08-15
+  reconciled_result: CONTINUIDADE_COMPLETA
+  future_state_validation_policy: PUC_REVALIDATION_REQUIRED
 project:
   name: IMPLEMENTACAO_DA_VPS
   status: ACTIVE
@@ -110,13 +120,13 @@ findings:
   open_other: [FND-CPU-001, FND-CLOUDINIT-001]
 authorization:
   documentation_reconciliation: AUTHORIZED
-  commit: NOT_AUTHORIZED
+  future_changes_commit: HUMAN_GATE_REQUIRED
   new_vps_connection: NOT_AUTHORIZED
   operational_changes: NOT_AUTHORIZED
   historical_executed:
     AUTH-SSH-KEEPALIVE-001: EXECUTED_AND_VALIDATED
 next_actions:
-  current: "Apresentar diff completo e validação a LEANDRO"
+  current: "Aguardar HUMAN_GATE operacional de LEANDRO para iniciar a MISSÃO 2"
   after_new_human_gate: "Diagnóstico mínimo read-only da autenticação SSH por chave de ubuntu"
   constraints:
     - "Não restringir root/senha antes de acesso alternativo e recovery validados"

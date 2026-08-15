@@ -4,7 +4,7 @@ Este arquivo é a entrada obrigatória para qualquer IA, agente ou humano que as
 
 ## Protocolo
 
-PUC v1.0. A validação independente de 14/08/2026 foi completa para aquele snapshot. A reconciliação de 15/08 passou pelo teste de cobertura no mesmo contexto; um novo teste independente, usando somente o estado eventualmente versionado, permanece pendente. Ver `governance/CONTINUITY-VALIDATION-2026-08-15.md`.
+PUC v1.0. A reconciliação de 15/08 foi publicada no commit `be52e36962159fa7a42ba93a0e96a028daabb67a` e seu estado foi reconstruído em novo chat a partir do GitHub canônico, sem depender de recapitulação conversacional, com resultado **CONTINUIDADE COMPLETA**. Evidência: `governance/CONTINUITY-VALIDATION-INDEPENDENT-2026-08-15.md`. A validação anterior, feita antes da publicação, permanece preservada em `governance/CONTINUITY-VALIDATION-2026-08-15.md`. O protocolo continua aplicável a futuras mudanças e migrações de contexto.
 
 ## Regra zero
 
@@ -48,6 +48,6 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 
 ## Ponto exato
 
-A reconciliação documental está preparada e aguarda revisão/diff por LEANDRO. Não há autorização para commit nem para nova conexão ou mudança na VPS.
+A reconciliação de 15/08 está versionada e publicada. Em 15/08/2026 foi confirmado que HEAD local, `main`, `origin/main` e GitHub `main` apontavam para `be52e36962159fa7a42ba93a0e96a028daabb67a`. O fechamento pós-push/pós-PUC está documentado no estado canônico.
 
-Após novo HUMAN_GATE operacional, o primeiro micro-passo recomendado é diagnosticar somente a autenticação por chave de `ubuntu`. Depois: validar sudo/privilégio LXD, recovery e segurança mínima. A Cloud Workstation será a próxima grande entrega.
+Próximo micro-passo: aguardar HUMAN_GATE operacional de LEANDRO para iniciar a MISSÃO 2 — diagnóstico mínimo read-only da autenticação SSH por chave de `ubuntu`. Nenhuma conexão ou mudança na VPS está autorizada antes desse gate. Futuros commits também continuam sujeitos a HUMAN_GATE.

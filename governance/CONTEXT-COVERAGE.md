@@ -23,7 +23,7 @@ Esta matriz impede lacunas silenciosas de memória.
 | Estado imediato | `CHECKPOINT.md` | coberto |
 | Estado legível por máquina | `state/current.yaml` | coberto |
 | Evidências visuais | `assets/README.md` | evidência operacional separada de imagens conceituais |
-| Continuidade universal | `CONTEXT.md` + `governance/PUC-v1.md` | cobertura reconciliada; teste independente pendente |
+| Continuidade universal | `CONTEXT.md` + `governance/PUC-v1.md` | estado reconciliado publicado; teste independente completo |
 
 ## Regra de auditoria
 
