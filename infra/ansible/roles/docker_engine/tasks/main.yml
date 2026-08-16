@@ -16,6 +16,28 @@
       precheck passes and all package versions plus the upstream signing-key
       SHA-256 are recorded for this slice.
 
+- name: Read existing selected Docker package versions when present
+  ansible.builtin.command: "dpkg-query -W -f=${Version} {{ item.name }}"
+  loop:
+    - { name: docker-ce, version: "{{ docker_ce_version }}" }
+    - { name: docker-ce-cli, version: "{{ docker_ce_cli_version }}" }
+    - { name: containerd.io, version: "{{ containerd_io_version }}" }
+    - { name: docker-buildx-plugin, version: "{{ docker_buildx_plugin_version }}" }
+    - { name: docker-compose-plugin, version: "{{ docker_compose_plugin_version }}" }
+  register: docker_existing_versions
+  changed_when: false
+  failed_when: false
+
+- name: Block implicit Docker package upgrades or downgrades
+  ansible.builtin.assert:
+    that:
+      - item.rc != 0 or item.stdout | trim == item.item.version
+    fail_msg: >-
+      {{ item.item.name }} is already installed at {{ item.stdout | trim }}, while
+      this reviewed slice selected {{ item.item.version }}. Stop and record an
+      explicit upgrade/downgrade decision and rollback before changing it.
+  loop: "{{ docker_existing_versions.results }}"
+
 - name: Detect packages that conflict with Docker Engine packages
   ansible.builtin.shell: |
     set -o pipefail
@@ -101,10 +123,10 @@
       The Docker group has members. Docker group membership is root-equivalent
       authority and is forbidden for agents/project users by the mission.
 
-- name: Verify Docker daemon is not listening on a TCP socket
+- name: Verify the Docker daemon itself is not listening on a TCP socket
   ansible.builtin.shell: |
     set -o pipefail
-    ss -lntp 2>/dev/null | grep -E 'dockerd|docker-proxy' || true
+    ss -lntp 2>/dev/null | grep -E '\bdockerd\b' || true
   args:
     executable: /bin/bash
   register: docker_tcp_listeners
@@ -115,5 +137,6 @@
     that:
       - docker_tcp_listeners.stdout | trim == ''
     fail_msg: >-
-      A Docker-related TCP listener exists unexpectedly. Stop before enabling
-      workloads and reconcile the daemon/firewall configuration.
+      dockerd is listening on TCP unexpectedly. Stop before enabling workloads
+      and reconcile the daemon/firewall configuration. Docker proxy listeners
+      for later explicitly authorized gateways are evaluated separately.
