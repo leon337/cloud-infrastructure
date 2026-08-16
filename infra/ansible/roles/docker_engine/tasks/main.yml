@@ -1,0 +1,119 @@
+---
+- name: Validate Docker foundation preconditions
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_release == 'noble'
+      - ansible_facts.architecture == 'x86_64'
+      - docker_ce_version | length > 0
+      - docker_ce_cli_version | length > 0
+      - containerd_io_version | length > 0
+      - docker_buildx_plugin_version | length > 0
+      - docker_compose_plugin_version | length > 0
+      - docker_key_sha256 is match('^[0-9a-fA-F]{64}$')
+    fail_msg: >-
+      Docker installation is intentionally blocked until the live NODE-01
+      precheck passes and all package versions plus the upstream signing-key
+      SHA-256 are recorded for this slice.
+
+- name: Detect packages that conflict with Docker Engine packages
+  ansible.builtin.shell: |
+    set -o pipefail
+    for pkg in docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc; do
+      if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q '^install ok installed$'; then
+        printf '%s\n' "$pkg"
+      fi
+    done
+  args:
+    executable: /bin/bash
+  register: docker_conflicting_packages
+  changed_when: false
+
+- name: Stop instead of automatically removing conflicting runtime packages
+  ansible.builtin.assert:
+    that:
+      - docker_conflicting_packages.stdout_lines | length == 0
+    fail_msg: >-
+      Conflicting runtime packages are installed: {{ docker_conflicting_packages.stdout_lines }}.
+      This mission does not remove them automatically. Reconcile the live state,
+      assess workload impact and define a rollback before continuing.
+
+- name: Ensure Docker apt keyring directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install pinned Docker repository signing key
+  ansible.builtin.get_url:
+    url: "{{ docker_key_url }}"
+    dest: "{{ docker_key_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    checksum: "sha256:{{ docker_key_sha256 }}"
+
+- name: Configure Docker official apt repository
+  ansible.builtin.copy:
+    dest: "{{ docker_sources_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      Types: deb
+      URIs: https://download.docker.com/linux/ubuntu
+      Suites: noble
+      Components: stable
+      Architectures: amd64
+      Signed-By: {{ docker_key_path }}
+
+- name: Install explicitly selected Docker package versions
+  ansible.builtin.apt:
+    name:
+      - "docker-ce={{ docker_ce_version }}"
+      - "docker-ce-cli={{ docker_ce_cli_version }}"
+      - "containerd.io={{ containerd_io_version }}"
+      - "docker-buildx-plugin={{ docker_buildx_plugin_version }}"
+      - "docker-compose-plugin={{ docker_compose_plugin_version }}"
+    state: present
+    update_cache: true
+    allow_downgrade: false
+
+- name: Enable and start Docker
+  ansible.builtin.systemd_service:
+    name: docker.service
+    enabled: true
+    state: started
+
+- name: Read Docker group membership
+  ansible.builtin.command: getent group docker
+  register: docker_group
+  changed_when: false
+
+- name: Assert Docker group has no human or agent members after foundation install
+  ansible.builtin.assert:
+    that:
+      - docker_group.stdout.split(':') | length >= 4
+      - docker_group.stdout.split(':')[3] | trim == ''
+    fail_msg: >-
+      The Docker group has members. Docker group membership is root-equivalent
+      authority and is forbidden for agents/project users by the mission.
+
+- name: Verify Docker daemon is not listening on a TCP socket
+  ansible.builtin.shell: |
+    set -o pipefail
+    ss -lntp 2>/dev/null | grep -E 'dockerd|docker-proxy' || true
+  args:
+    executable: /bin/bash
+  register: docker_tcp_listeners
+  changed_when: false
+
+- name: Assert no Docker TCP API listener exists
+  ansible.builtin.assert:
+    that:
+      - docker_tcp_listeners.stdout | trim == ''
+    fail_msg: >-
+      A Docker-related TCP listener exists unexpectedly. Stop before enabling
+      workloads and reconcile the daemon/firewall configuration.
