@@ -1,0 +1,76 @@
+---
+- name: Privileged read-only NODE-01 security and recovery baseline
+  hosts: execution_nodes
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Collect effective SSH security policy
+      ansible.builtin.command: sshd -T
+      register: sshd_effective
+      changed_when: false
+
+    - name: Assert critical SSH controls before any mutation
+      ansible.builtin.assert:
+        that:
+          - "'permitrootlogin no' in sshd_effective.stdout"
+          - "'passwordauthentication no' in sshd_effective.stdout"
+          - "'kbdinteractiveauthentication no' in sshd_effective.stdout"
+          - "'pubkeyauthentication yes' in sshd_effective.stdout"
+          - "'allowusers ubuntu' in sshd_effective.stdout"
+          - "'maxauthtries 3' in sshd_effective.stdout"
+          - "'logingracetime 30' in sshd_effective.stdout"
+        fail_msg: >-
+          Effective SSH policy differs from the canonical hardened baseline.
+          Stop before mutation and record the drift.
+        success_msg: Effective SSH policy matches the canonical hardened baseline.
+
+    - name: Collect firewall, listeners and recovery-service evidence
+      ansible.builtin.shell: |
+        set -o pipefail
+        {{ item }}
+      args:
+        executable: /bin/bash
+      loop:
+        - ufw status verbose
+        - nft list ruleset
+        - ss -lntup
+        - systemctl status fail2ban.service --no-pager
+        - systemctl status cloud-infrastructure-config-backup.timer --no-pager
+        - systemctl list-timers cloud-infrastructure-config-backup.timer --all --no-pager
+        - find /var/backups/cloud-infrastructure -maxdepth 1 -type f -printf '%TY-%Tm-%TdT%TH:%TM:%TS %s %p\n' | sort
+      register: privileged_readonly_evidence
+      changed_when: false
+      failed_when: false
+
+    - name: Collect hashes of protected configuration without printing file contents
+      ansible.builtin.shell: |
+        set -o pipefail
+        for path in \
+          /etc/ssh/sshd_config \
+          /etc/ssh/sshd_config.d/*.conf \
+          /etc/ufw/user.rules \
+          /etc/ufw/user6.rules \
+          /etc/fail2ban/jail.local \
+          /etc/systemd/system/cloud-infrastructure-config-backup.service \
+          /etc/systemd/system/cloud-infrastructure-config-backup.timer; do
+          if [ -f "$path" ]; then
+            sha256sum "$path"
+          fi
+        done
+      args:
+        executable: /bin/bash
+      register: protected_config_hashes
+      changed_when: false
+
+    - name: Display effective SSH policy for sanitized capture
+      ansible.builtin.debug:
+        var: sshd_effective.stdout_lines
+
+    - name: Display privileged evidence for sanitized capture
+      ansible.builtin.debug:
+        var: privileged_readonly_evidence.results
+
+    - name: Display protected configuration hashes for sanitized capture
+      ansible.builtin.debug:
+        var: protected_config_hashes.stdout_lines
