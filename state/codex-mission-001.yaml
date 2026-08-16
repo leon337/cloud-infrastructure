@@ -1,0 +1,104 @@
+mission:
+  id: CODEX-EXECUTION-MISSION-001
+  authority: LEANDRO
+  canonical_repository: leon337/cloud-infrastructure
+  base_branch: main
+  execution_branch: codex/mission-001
+  base_sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
+  scope: DEV_LAB_ONLY
+  status: IN_PROGRESS
+  production_promotion: NOT_AUTHORIZED
+  credential_rotation: DEFERRED_BY_HUMAN_DECISION
+
+recovery:
+  github:
+    status: VERIFIED
+    branch: main
+    sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
+    verified_at_utc: 2026-08-16T09:26:43Z
+  node_01:
+    canonical_snapshot_at_utc: 2026-08-16T01:58:02Z
+    live_independent_revalidation: BLOCKED_NO_AUTHENTICATED_EXECUTION_CHANNEL
+    mutation_authorized_by_q40_d: true
+    mutation_allowed_now: false
+    blocker: HG-EXECUTION-ACCESS-001
+    expected_ssh_host_fingerprint: SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4
+    ssh_principal: ubuntu
+    secret_material_in_repo: false
+
+slice_000:
+  name: REPRODUCIBLE_FOUNDATION_BASELINE
+  status: IN_PROGRESS_WAITING_FOR_LIVE_NODE_PRECHECK
+  repository_work:
+    branch_created: true
+    mission_acceptance_recovery_report: DELIVERED
+    consolidated_requirements: CREATED
+    target_architecture: CREATED
+    threat_model_and_autonomy_boundaries: CREATED
+    infrastructure_blueprint_v1: CREATED
+    revised_implementation_roadmap: CREATED
+    foundation_technology_mapping: CREATED
+    readonly_precheck: PENDING
+  node_changes_performed: false
+  production_changes_performed: false
+  credentials_rotated: false
+
+technology_mapping:
+  host_reconciliation:
+    technology: Ansible
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  container_runtime:
+    technology: Docker_Engine_and_Docker_Compose
+    status: BINDING_SELECTED
+  private_management_overlay:
+    technology: Tailscale
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  host_firewall:
+    technology: UFW
+    status: PRESERVE_EXISTING
+  authorization_policy_engine:
+    technology: Open_Policy_Agent
+    status: SELECTED_FOR_PLATFORM_CORE
+  workflow_engine:
+    status: PENDING_DEDICATED_MAPPING
+  event_backbone:
+    status: PENDING_DEDICATED_MAPPING
+  data_service_plane:
+    status: PENDING_DEDICATED_MAPPING
+  observability:
+    status: PENDING_DEDICATED_MAPPING
+  preview_gateway:
+    status: PENDING_DEDICATED_MAPPING
+  agent_gateway:
+    status: PENDING_DEDICATED_MAPPING
+  ai_model_gateway:
+    status: PENDING_DEDICATED_MAPPING
+
+active_human_gates:
+  - id: HG-EXECUTION-ACCESS-001
+    status: WAITING_FOR_HUMAN_GATE
+    purpose: PROVIDE_SECURE_EXISTING_AUTHENTICATED_READONLY_EXECUTION_PATH_TO_NODE_01
+    constraints:
+      - DO_NOT_PASTE_PRIVATE_SSH_KEY_IN_CHAT
+      - DO_NOT_VERSION_PRIVATE_KEY_OR_PASSWORD
+      - DO_NOT_ROTATE_CREDENTIALS
+      - DO_NOT_WEAKEN_SSH_POLICY
+      - STOP_ON_UNEXPECTED_HOST_FINGERPRINT
+
+findings_carried_forward:
+  - id: FND-BACKUP-001
+    status: MITIGATED_OPEN
+  - id: FND-CPU-001
+    status: OBSERVED_NEEDS_ANALYSIS
+  - id: FND-CLOUDINIT-001
+    status: CONFIRMED_OPEN
+
+next_actions:
+  independent_safe:
+    - CREATE_READONLY_ANSIBLE_PRECHECK
+    - VERIFY_REPOSITORY_SLICE_AND_NO_SECRET_LEAKAGE
+    - TECHNOLOGY_MAPPING_NEXT_CAPABILITIES_AS_NEEDED
+  blocked_on_human_gate:
+    - AUTHENTICATED_LIVE_NODE_01_PRECHECK
+    - RECORD_GITHUB_NODE_DRIFT
+    - FIRST_NODE_01_MUTATION
