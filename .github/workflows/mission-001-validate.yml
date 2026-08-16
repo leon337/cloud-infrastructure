@@ -1,0 +1,92 @@
+name: mission-001-validate
+
+on:
+  push:
+    branches:
+      - codex/mission-001
+    paths:
+      - '.github/workflows/mission-001-validate.yml'
+      - 'infra/ansible/**'
+      - 'state/codex-mission-001.yaml'
+  pull_request:
+    paths:
+      - '.github/workflows/mission-001-validate.yml'
+      - 'infra/ansible/**'
+      - 'state/codex-mission-001.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out reviewed revision
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - name: Verify repository whitespace
+        run: git diff --check HEAD^ HEAD
+
+      - name: Install pinned Ansible Core validator
+        run: python3 -m pip install --disable-pip-version-check 'ansible-core==2.21.2'
+
+      - name: Parse repository YAML
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          roots = [Path('infra/ansible'), Path('state/codex-mission-001.yaml')]
+          files = []
+          for root in roots:
+              if root.is_file():
+                  files.append(root)
+              elif root.exists():
+                  files.extend(sorted(root.rglob('*.yml')))
+                  files.extend(sorted(root.rglob('*.yaml')))
+
+          for path in sorted(set(files)):
+              with path.open('r', encoding='utf-8') as handle:
+                  list(yaml.safe_load_all(handle))
+              print(f'YAML OK: {path}')
+          PY
+
+      - name: Run Ansible syntax checks
+        working-directory: infra/ansible
+        shell: bash
+        run: |
+          set -euo pipefail
+          for playbook in playbooks/*.yml; do
+            echo "Syntax check: ${playbook}"
+            ansible-playbook "${playbook}" --syntax-check
+          done
+
+      - name: Reject common committed secret material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE \
+            --exclude-dir=.git \
+            --exclude='mission-001-validate.yml' \
+            '(BEGIN (OPENSSH|RSA|EC|DSA) PRIVATE KEY|github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{30,}|sk-proj-[A-Za-z0-9_-]{20,})' \
+            .; then
+            echo 'Potential committed secret material detected.' >&2
+            exit 1
+          fi
+
+      - name: Confirm no inventory secret variables are defined
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE \
+            --exclude-dir=.git \
+            '(ansible_password|ansible_become_password|ansible_ssh_pass|private_key_content)[[:space:]]*:' \
+            infra/ansible; then
+            echo 'Forbidden inventory/authentication secret variable detected.' >&2
+            exit 1
+          fi
