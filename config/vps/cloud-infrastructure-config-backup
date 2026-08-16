@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 027
+
+DEST=/var/backups/cloud-infrastructure
+STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+ARCHIVE="$DEST/cloud-infrastructure-config-$STAMP.tar.gz"
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
+
+install -d -m 0750 -o root -g adm "$DEST"
+install -d -m 0750 "$TMP/snapshot/config" "$TMP/snapshot/state"
+
+copy_config() {
+  local src=$1
+  if [ -e "$src" ]; then
+    install -D -m 0640 "$src" "$TMP/snapshot/config$src"
+  fi
+}
+
+copy_config /etc/ssh/sshd_config
+for f in /etc/ssh/sshd_config.d/*.conf; do [ -e "$f" ] && copy_config "$f"; done
+copy_config /etc/sudoers
+for f in /etc/sudoers.d/*; do [ -f "$f" ] && copy_config "$f"; done
+copy_config /etc/default/ufw
+copy_config /etc/ufw/user.rules
+copy_config /etc/ufw/user6.rules
+for f in /etc/fail2ban/jail.d/*.local; do [ -e "$f" ] && copy_config "$f"; done
+copy_config /etc/xrdp/xrdp.ini
+copy_config /etc/xrdp/sesman.ini
+copy_config /etc/xrdp/startwm.sh
+for f in /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.d/*.conf; do [ -e "$f" ] && copy_config "$f"; done
+copy_config /etc/apt/sources.list.d/mozilla.list
+copy_config /etc/apt/sources.list.d/vscode.sources
+copy_config /etc/apt/preferences.d/mozilla
+
+/usr/sbin/sshd -T > "$TMP/snapshot/state/sshd-effective.txt"
+/usr/sbin/iptables-save > "$TMP/snapshot/state/firewall-effective.txt"
+/usr/bin/systemctl is-enabled ssh ufw fail2ban xrdp xrdp-sesman lightdm cloud-infrastructure-config-backup.timer > "$TMP/snapshot/state/enabled-services.txt" 2>&1 || true
+/usr/bin/systemctl is-active ssh ufw fail2ban xrdp xrdp-sesman lightdm snap.lxd.daemon snap.lxd.daemon.unix.socket > "$TMP/snapshot/state/active-services.txt" 2>&1 || true
+/usr/bin/ss -H -lntup > "$TMP/snapshot/state/listeners.txt"
+/usr/bin/dpkg-query -W -f='${binary:Package}\t${Version}\n' > "$TMP/snapshot/state/packages.tsv"
+/usr/bin/apt-mark showmanual > "$TMP/snapshot/state/manual-packages.txt"
+/usr/bin/findmnt --real -o TARGET,SOURCE,FSTYPE,OPTIONS > "$TMP/snapshot/state/mounts.txt"
+
+/usr/bin/tar -C "$TMP/snapshot" -czf "$ARCHIVE" .
+chown root:adm "$ARCHIVE"
+chmod 0640 "$ARCHIVE"
+/usr/bin/sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+chown root:adm "$ARCHIVE.sha256"
+chmod 0640 "$ARCHIVE.sha256"
+
+mapfile -t old < <(find "$DEST" -maxdepth 1 -type f -name 'cloud-infrastructure-config-*.tar.gz' -printf '%T@ %p\n' | sort -nr | tail -n +8 | cut -d' ' -f2-)
+for f in "${old[@]}"; do
+  rm -f -- "$f" "$f.sha256"
+done
+
+printf 'BACKUP_ARCHIVE=%s\n' "$ARCHIVE"

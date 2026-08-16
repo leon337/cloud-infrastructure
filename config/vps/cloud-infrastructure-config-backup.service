@@ -1,0 +1,17 @@
+[Unit]
+Description=Backup sanitizado de configuracoes da Cloud Workstation
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/cloud-infrastructure-config-backup
+User=root
+Group=root
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/backups/cloud-infrastructure
+ProtectHome=read-only

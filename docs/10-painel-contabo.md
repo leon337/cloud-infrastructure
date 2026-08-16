@@ -1,29 +1,16 @@
-# 10 — Painel Contabo: mapa operacional
+# 10 — Painel Contabo: recovery atual
 
-Este documento preserva os conceitos aprendidos no primeiro acesso.
+Coleta read-only e validação de 15/08/2026:
 
-| Opção | Função | Risco/uso |
-|---|---|---|
-| Reinstalar | reinstala o sistema e pode apagar o estado atual | destrutivo; equivalente a formatar |
-| Sistema de Resgate | inicia Linux temporário para reparar/acessar o disco principal | recuperação; não é backup |
-| Redefinir Credenciais | redefine credencial administrativa | usado para rotacionar root |
-| Alterar Nome de Exibição | muda etiqueta no painel | não confundir com hostname do Ubuntu |
-| Gerenciador de Complementos | add-ons do provedor | pode envolver custo |
-| Gerenciar Snapshots | cria/restaura estado da VPS | snapshot não substitui backup |
-| Gerenciar Firewall | firewall externo da Contabo | erro pode bloquear acesso |
-| Controle VNC | console/tela remota | validado historicamente com TigerVNC; estado atual não revalidado em 15/08 |
-| Atualizar/Reduzir | mudança de capacidade/plano | pode envolver custo/migração |
-| Mover Para Outra Região | migração geográfica | pode mudar IP e causar indisponibilidade |
-| Expandir Armazenamento | aumenta capacidade contratada | Linux pode exigir expansão de partição/filesystem |
-| Cancelar VPS | encerra serviço | crítico; não é botão de desligar |
+| Recurso | Estado |
+|---|---|
+| Controle VNC | `VALIDATED_CURRENTLY` — habilitado/configurado e console `tty1` revalidado |
+| Sistema de Resgate | `AVAILABLE_CONFIRMED` — disponível, não acionado |
+| Snapshots | `NOT_CONFIGURED` — nenhum snapshot existente |
+| Auto Backup | `NOT_CONTRACTED` |
+| Firewall Contabo | `NOT_CONFIGURED` |
+| Reinstalação/imagens | disponível, mas destrutivo e não validado como recovery |
 
-## Conceitos consolidados
+VNC é console, não o desktop XRDP. Rescue muda temporariamente o boot e exigiria mutação para validação. Snapshot não substitui backup independente. Firewall do provedor é separado do UFW do Ubuntu.
 
-- Reinstalar = começar o sistema novamente.
-- Rescue = usar outro sistema temporário para consertar/acessar o atual.
-- Snapshot = retornar a um estado anterior.
-- Backup = recuperar a partir de cópia independente.
-- VNC = console alternativo; não cria GUI sozinho.
-- Firewall Contabo e firewall Ubuntu são camadas diferentes.
-
-Detalhes específicos do produto/provedor devem ser revalidados na documentação atual antes de ações de risco.
+Não clicar em confirmar, criar, restaurar, contratar, reiniciar, reinstalar, redefinir credenciais ou alterar firewall sem HUMAN_GATE próprio.

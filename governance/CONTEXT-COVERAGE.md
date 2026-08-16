@@ -7,7 +7,7 @@ Esta matriz impede lacunas silenciosas de memória.
 | Identidade/finalidade | `docs/02-missao-e-escopo.md` | coberto |
 | Regras didáticas | `docs/11-protocolo-didatico.md` | coberto |
 | Arquitetura atual/alvo | `docs/03-arquitetura-e-principios.md` | coberto |
-| Cloud Workstation | `docs/07-cloud-workstation.md` | coberto |
+| Cloud Workstation | `docs/07-cloud-workstation.md` | implementada e validada; arquitetura e testes cobertos |
 | Plano mestre | `docs/04-plano-mestre.md` | coberto |
 | Roadmap/status | `docs/05-roadmap.md` | coberto |
 | Inventário factual | `docs/06-inventario.md` | baseline 14/08 + revalidação 15/08 cobertas |
@@ -16,14 +16,14 @@ Esta matriz impede lacunas silenciosas de memória.
 | Painel Contabo | `docs/10-painel-contabo.md` | coberto inicial |
 | Glossário | `docs/09-glossario.md` | coberto inicial |
 | Decisões | `decisions/` | coberto e expansível |
-| Findings | `findings/` | resolução do `FND-SSH-003` e findings abertos/high de sudo/LXD confirmados em 15/08 cobertos |
-| Recovery | `recovery/RECOVERY-PLAYBOOK.md` | limites reais e incidente LXD cobertos; estratégia ampla pendente |
-| Runbooks | `runbooks/` | `ubuntu`/publickey, root temporário e caminhos sudo/LXD cobertos; recovery amplo pendente |
-| Histórico de sessões | `history/` | auditoria, Missão 2/2B e Missão 4 preservadas cronologicamente |
+| Findings | `findings/` | SSH/LXD/sudo resolvidos; backup mitigado/aberto; histórico preservado |
+| Recovery | `recovery/RECOVERY-PLAYBOOK.md` | VNC, SSH, XRDP e backup proporcional cobertos; reconstrução ampla pendente |
+| Runbooks | `runbooks/` | SSH/publickey, túnel RDP, sudo autenticado, VNC e backup cobertos |
+| Histórico de sessões | `history/` | auditorias, Missões 2/2B/4 e implementação F1/F2 preservadas |
 | Estado imediato | `CHECKPOINT.md` | coberto |
 | Estado legível por máquina | `state/current.yaml` | coberto |
-| Evidências visuais | `assets/README.md` | evidências sanitizadas da auditoria e Missão 2 separadas de imagens conceituais |
-| Continuidade universal | `CONTEXT.md` + `governance/PUC-v1.md` | PUC ativo; validação independente anterior preservada para seu snapshot; novo estado recuperável, ainda sem novo teste independente |
+| Evidências visuais | `assets/README.md` | SSH e Cloud Workstation sanitizados, separados de conceitos |
+| Continuidade universal | `CONTEXT.md` + `governance/PUC-v1.md` | PUC ativo; validações independentes históricas preservadas; novo estado recuperável e aguardando teste independente |
 
 ## Regra de auditoria
 

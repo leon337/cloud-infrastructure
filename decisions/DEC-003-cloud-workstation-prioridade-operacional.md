@@ -1,6 +1,6 @@
 # DEC-003 — Cloud Workstation como próxima grande entrega
 
-Status: **APPROVED DIRECTION — IMPLEMENTATION REQUIRES HUMAN_GATES**.
+Status: **IMPLEMENTED — objetivo entregue em 15/08/2026**.
 
 ## Contexto
 
@@ -16,10 +16,13 @@ Desktop visível não basta. LEANDRO deverá testar navegador, VS Code, terminal
 
 A etapa somente termina após HUMAN_GATE de LEANDRO confirmando produtividade real.
 
+## Resultado
+
+LEANDRO autorizou execução e validação end-to-end. A Cloud Workstation passou nos critérios técnicos e funcionais; a arquitetura resultante está em `DEC-004`.
+
 ## Consequências
 
 - a fase gráfica deixa de ser `DEFERRED`;
 - arquitetura, protocolo, exposição e instalação continuam sujeitos a análise e gates próprios;
 - serviços futuros devem coexistir sem comprometer segurança ou recursos da workstation;
 - esta decisão atualiza a prioridade definida em `DEC-002`, sem abandonar o modelo híbrido nem introduzir dependência de nested virtualization.
-

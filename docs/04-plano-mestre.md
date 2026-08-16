@@ -1,68 +1,43 @@
 # 04 — Plano Mestre
 
-Este documento consolida o programa de capacidades. Fases futuras continuam provisórias até HUMAN_GATE específico.
+Este documento consolida o programa de capacidades.
 
-## FASE 0 — Orientação e Inventário — DONE
+## FASE 0 — Orientação e inventário — DONE
 
-Arquitetura, acesso inicial e inventário foram concluídos e aprovados em 14/08/2026. A fotografia foi revalidada por auditoria read-only em 15/08/2026.
+Arquitetura, primeiro acesso e inventário foram concluídos e revalidados.
 
-## FASE 1 — Acesso administrativo, recovery e segurança mínima — IN_PROGRESS
+## FASE 1 — Acesso administrativo, recovery e segurança mínima — DONE
 
-- baseline APT: concluída sem forçar phased updates;
-- validar acesso SSH atual da conta `ubuntu` por chave — **CONCLUÍDO em 15/08/2026**;
-- revisar sudo e privilégio potencialmente equivalente a root via LXD — **CONCLUÍDO em 15/08/2026**;
-- validar caminho de recovery proporcional;
-- definir segurança mínima de SSH e firewall sem lockout;
-- validar a alternativa administrativa antes de mudar root/senha — **CONCLUÍDO para o acesso; root/senha ainda preservado até os demais pré-requisitos**.
+- `ubuntu`/publickey e sessão independente: validados;
+- VNC out-of-band: revalidado; Rescue: disponível;
+- SSH endurecido; root e senha desabilitados no SSH;
+- UFW ativo somente com OpenSSH e fail2ban ativo;
+- sudo NOPASSWD removido e sudo autenticado validado;
+- `ubuntu` removido de `lxd`; daemon/socket LXD desabilitados;
+- updates aplicados e reboot validado;
+- backup sanitizado diário, cópia off-host e extração de recuperação validados.
 
-A Missão 2/2B criou uma nova chave ED25519 dedicada, adicionou sua chave pública sem remover a anterior e validou o login atual de `ubuntu` exclusivamente por `publickey`. A Missão 4 confirmou, sem alteração operacional, que `ubuntu` pode elevar diretamente a UID 0 por sudo/NOPASSWD e escrever no socket LXD `root:lxd` modo `660`; os findings correspondentes permanecem abertos/high. Root/senha continua validado, temporário e preservado; UFW permanece inativo; ataques automatizados continuam confirmados; recovery independente/provedor não foi validado.
+O backup amplo de dados e reconstrução integral permanecem evolução posterior, sem bloquear a segurança mínima já validada.
 
-Próximo micro-passo recomendado, sujeito a novo HUMAN_GATE: revisão read-only de recovery proporcional e validação dos caminhos de recuperação. Depois permanece a definição de segurança mínima de SSH/firewall sem lockout e as decisões explícitas sobre os findings sudo/LXD.
+## FASE 2 — Cloud Workstation gráfica — DONE
 
-## FASE 2 — Cloud Workstation gráfica — PRIORITY_PLANNED
+Arquitetura: XFCE + LightDM + XRDP/xorgxrdp sobre túnel SSH. XRDP não é público.
 
-Esta é a próxima grande entrega assim que os pré-requisitos mínimos da FASE 1 forem validados.
+Validações concluídas: login gráfico, navegador, VS Code, terminal, gerenciador de arquivos, projeto Git, múltiplas janelas, clipboard bidirecional, resolução dinâmica, desconexão/reconexão, persistência, logout/login, consumo de recursos e funcionamento após reboot.
 
-- decidir desktop e protocolo remoto;
-- definir exposição, criptografia e recovery;
-- instalar em micro-passos autorizados;
-- testar navegador, VS Code, terminal e gerenciador de arquivos;
-- testar múltiplas janelas, copiar/colar, resolução, estabilidade, reconexão e latência;
-- medir consumo de CPU, RAM e disco;
-- concluir somente após HUMAN_GATE de LEANDRO confirmando produtividade real.
+## Próxima operação — rotação de credenciais
 
-## FASE 3 — Desenvolvimento remoto e estabilização — PROVISIONAL
+Rotacionar credenciais temporárias de bootstrap preservando `ubuntu`/publickey, VNC e acesso gráfico. Depois executar novo teste independente do PUC.
 
-VS Code Remote SSH quando aplicável, Git, terminal persistente, transferência/sincronização, builds remotos e recuperação da sessão gráfica.
+## Fases futuras — PROVISIONAL
 
-## FASE 4 — Rede, armazenamento e manutenção — PROVISIONAL
+3. desenvolvimento remoto e estabilização;
+4. rede, armazenamento e manutenção;
+5. backup/recovery amplo;
+6. Docker/Compose;
+7. observabilidade;
+8. plataforma de serviços;
+9. workloads;
+10. autonomia e reconstrução.
 
-Firewall do provedor e Ubuntu, portas, prevenção de lockout, DNS, layout de armazenamento e política recorrente de updates/logs/reboots. Alterações de disco somente após inventário e HUMAN_GATE.
-
-## FASE 5 — Backup, snapshots e recovery — PROVISIONAL
-
-Distinguir snapshot de backup, criar cópia independente, testar restauração e completar o Recovery Playbook. O recovery mínimo necessário ao hardening não deve esperar esta fase ampla.
-
-## FASE 6 — Docker e Compose — PROVISIONAL
-
-Ensinar e implantar containers, imagens, volumes, redes, portas, persistência, restart policy e logs somente após a base necessária.
-
-## FASE 7 — Observabilidade e operação — PROVISIONAL
-
-Saúde do host, recursos, logs, alertas e monitoramento de serviços.
-
-## FASE 8 — Plataforma de serviços — PROVISIONAL
-
-Reverse proxy, TLS, redes de aplicação, serviços internos e publicação controlada.
-
-## FASE 9 — Workloads do ecossistema — PROVISIONAL
-
-Implantação gradual de MCF, MCPs, APIs, agentes, automações, n8n, dashboards, aplicações e produtos.
-
-## FASE 10 — Autonomia e reconstrução — PROVISIONAL
-
-Runbooks, exercícios e capacidade de reconstrução a partir do repositório.
-
-## Regra de mudança de ordem
-
-A ordem provisória anterior colocava a Cloud Workstation depois de Docker e observabilidade. Ela foi substituída em 15/08/2026 por decisão explícita de LEANDRO, formalizada em `DEC-003`.
+Cloud Workstation foi antecipada por `DEC-003`; sua arquitetura foi formalizada por `DEC-004`.

@@ -1,6 +1,6 @@
 # FND-LXD-001 — Conta ubuntu possui caminho de privilégio equivalente a root via LXD
 
-Status: **CONFIRMED — OPEN**. Severidade: **HIGH**.
+Status: **RESOLVED em 15/08/2026**. Severidade histórica: **HIGH**.
 
 ## Evidência de 15/08/2026
 
@@ -27,3 +27,9 @@ A auditoria read-only confirmou diretamente:
 - nenhum comando `lxc`, exploração ou chamada à API LXD foi executado.
 
 Essa combinação confirma o **caminho de privilégio equivalente a root** disponível para `ubuntu` por meio do socket LXD, sem alegar que ele foi explorado. O finding permanece aberto e exige decisão explícita de menor privilégio; nenhuma correção automática foi autorizada.
+
+## Resolução — 15/08/2026
+
+Após confirmar novamente zero instâncias, `ubuntu` foi removido do grupo `lxd`. O snap LXD foi parado e desabilitado; daemon, socket de sistema e user-daemon permaneceram `inactive` após reboot. O grupo `lxd` ficou sem membros.
+
+O caminho root-equivalent anteriormente comprovado não está mais disponível à conta `ubuntu`. Nenhuma instância foi removida.

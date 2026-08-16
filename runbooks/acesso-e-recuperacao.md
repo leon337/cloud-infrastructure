@@ -1,62 +1,46 @@
-# Runbook — Acesso e Recuperação Inicial
+# Runbook — Acesso e recuperação
 
-## Canais conhecidos
+## SSH administrativo
 
-### SSH — principal
+Canal atual: `ubuntu@169.58.171.192` por chave dedicada. Fingerprint do host: `SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4`.
 
-Endpoints administrativos atualmente validados: `ubuntu@169.58.171.192` por chave dedicada e `root@169.58.171.192` por senha durante a transição.
+O servidor não aceita root, senha ou keyboard-interactive por SSH. Não alterar `known_hosts` diante de fingerprint inesperada.
 
-Host fingerprint validada: `SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4`.
+## Cloud Workstation
 
-Em 15/08/2026, root por senha permanecia como acesso operacional validado. É temporário e não deve ser restringido antes de alternativa e recovery validados.
-
-### Conta ubuntu — acesso por chave validado
-
-A conta `ubuntu` teve o login atual validado em 15/08/2026 com a chave dedicada `~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815`, exclusivamente por `publickey` e sem fallback para senha. Fingerprint pública: `SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg`.
-
-A nova chave pública foi adicionada sem remover a chave anterior. Não versionar nem expor a chave privada ou sua passphrase.
-
-O acesso root/senha continua preservado temporariamente. Ainda não remover nem restringir root: recovery proporcional, decisões sobre sudo/LXD e segurança mínima precisam de HUMAN_GATEs próprios.
-
-### Privilégios administrativos confirmados
-
-A Missão 4 confirmou em modo read-only dois caminhos equivalentes a root para `ubuntu`:
-
-- sudo/NOPASSWD efetivo, com elevação não interativa validada a UID `0`, originado em `/etc/sudoers.d/90-cloud-init-users`;
-- associação ao grupo `lxd` e escrita no socket `/var/snap/lxd/common/lxd/unix.socket`, proprietário `root:lxd`, modo `660`.
-
-Nenhum comando `lxc` ou exploração do socket foi executado. Não usar, remover ou mitigar esses caminhos automaticamente: primeiro validar recovery proporcional e obter HUMAN_GATE específico para qualquer decisão de privilégio.
-
-### VNC — console alternativo
-
-TigerVNC foi validado historicamente. O estado atual não foi revalidado em 15/08; consultar endpoint/porta no painel antes de usar. Senha VNC é secret e não pertence ao repositório.
-
-O console observado foi `tty1`. Se o teclado brasileiro estiver incorreto:
+Exemplo usando `config/ssh_config.example`:
 
 ```bash
-loadkeys br
+ssh -N contabo-vps-rdp
 ```
 
-### Rescue System — emergência
+Com o túnel ativo, abrir Remmina/FreeRDP em `127.0.0.1:13389`, protocolo RDP, usuário `ubuntu`. Não publicar 3389 nem criar regra UFW para RDP.
 
-Conhecido conceitualmente como ambiente Linux temporário. Sua disponibilidade e uso real não foram revalidados na auditoria de 15/08 e permanecem `UNCONFIRMED`.
+Fechar o cliente preserva a sessão; logout cria uma sessão limpa no próximo login. Clipboard e resolução dinâmica foram validados.
 
-### LXD — estado recuperado
+## Sudo
 
-Após ativação acidental pelo socket durante a auditoria, confirmou-se 0 instâncias. O daemon foi parado com autorização e ficou `inactive/dead`; o socket permaneceu `active/listening`. Não usar `lxc` em auditoria estritamente passiva sem considerar socket activation.
+`ubuntu` pertence a `sudo`, mas exige senha. `sudo -n` deve falhar. Não reintroduzir `NOPASSWD:ALL`.
 
-## Verificação de host SSH
+## VNC/Rescue
 
-Se host key mudar inesperadamente, não aceitar automaticamente. Investigar causa. Em primeiro acesso, a fingerprint foi verificada pelo VNC antes do `yes`.
+- VNC Contabo: console out-of-band validado; sua credencial é independente e nunca deve ser versionada.
+- Rescue: disponível no painel, não acionado. Usar somente em incidente real com gate próprio.
 
-## Sessão SSH ociosa
+## Backup proporcional
 
-Ver `findings/FND-SSH-001.md`.
+- timer: `cloud-infrastructure-config-backup.timer`;
+- cópias remotas: `/var/backups/cloud-infrastructure`;
+- cópia off-host inicial: `/home/leo/Backups/cloud-infrastructure`;
+- retenção remota: sete arquivos;
+- conteúdo: configurações sanitizadas e estado técnico, sem chaves privadas ou senhas.
+
+Verificar timer, arquivo e hash antes de depender do backup. O backup atual não cobre dados completos de usuários/workloads.
 
 ## Não fazer
 
-- não divulgar senhas;
-- não divulgar passphrases nem chaves privadas;
-- não remover acesso atual antes de alternativa validada;
-- não mexer no firewall durante recuperação sem entender impacto;
-- não usar reinstalação como ferramenta de diagnóstico inicial.
+- não expor RDP à Internet;
+- não remover a chave validada antes de testar uma substituta;
+- não reativar LXD/NOPASSWD sem decisão;
+- não aceitar host key alterada automaticamente;
+- não registrar senhas, passphrases ou chaves privadas.

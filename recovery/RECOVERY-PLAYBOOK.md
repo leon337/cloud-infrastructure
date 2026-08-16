@@ -1,52 +1,45 @@
 # Recovery Playbook — versão viva
 
-Objetivo: permitir que LEANDRO recupere a infraestrutura, não apenas saiba instalá-la.
+## Perdi acesso SSH
 
-## Cenários
+1. confirmar no painel se a VPS está em execução;
+2. confirmar a fingerprint sem aceitá-la automaticamente;
+3. usar VNC Contabo validado para observar console/boot;
+4. conferir `sshd`, UFW e rede pelo console;
+5. se o sistema não iniciar, avaliar Rescue disponível;
+6. não reinstalar nem restaurar sem gate explícito.
 
-### Perdi acesso SSH
+## Cloud Workstation não conecta
 
-1. confirmar se VPS está em execução no painel;
-2. testar alcançabilidade sem assumir que ping prova SSH;
-3. consultar `FND-SSH-001` se o problema for sessão ociosa;
-4. consultar no painel se VNC/TigerVNC está realmente disponível; a validação é histórica e não foi repetida em 15/08;
-5. confirmar e avaliar Rescue System; seu estado atual não foi revalidado;
-6. não reinstalar por impulso.
+1. validar primeiro `ssh contabo-vps`;
+2. iniciar o túnel `ssh -N contabo-vps-rdp`;
+3. confirmar localmente `127.0.0.1:13389`;
+4. na VPS, XRDP deve estar somente em `127.0.0.1:3389` e sesman em `[::1]:3350`;
+5. verificar `xrdp`, `xrdp-sesman`, `lightdm` e logs sem publicar RDP;
+6. se a sessão estiver corrompida, encerrar somente a sessão gráfica afetada e reconectar.
 
-### Host key SSH mudou
+## Firewall bloqueou acesso
 
-Parar. Não aceitar automaticamente. Verificar se houve reinstalação/migração legítima ou risco de identidade incorreta. Conferir por canal independente.
+Pelo VNC, revisar UFW. Estado esperado: ativo, default deny incoming e somente OpenSSH 22 permitido. Fazer rollback pequeno; não desativar permanentemente a proteção.
 
-### Firewall bloqueou acesso
+## Restaurar configurações
 
-Procedimento detalhado será preenchido quando firewall for implementado. Pré-requisito: manter caminho alternativo de recuperação.
+1. escolher um arquivo em `/var/backups/cloud-infrastructure` ou na cópia off-host;
+2. validar SHA-256 e listar/extrair em diretório temporário;
+3. comparar o arquivo necessário;
+4. restaurar somente o componente afetado;
+5. validar sintaxe antes de recarregar serviço.
 
-### Disco cheio
+A extração de recuperação foi testada com 24 arquivos, mas um restore real não foi necessário. Dados de usuário/workloads não estão cobertos por esse backup.
 
-Procedimento será preenchido após inventário/arquitetura de armazenamento.
+## LXD
 
-### Container/serviço caiu
+Estado esperado: `ubuntu` fora do grupo `lxd`, daemon/socket desabilitados e inativos. Antes de qualquer reativação, confirmar necessidade e risco root-equivalent.
 
-Será preenchido após Docker/serviços.
+## Atualização/reboot
 
-### Atualização quebrou sistema
+Antes: validar SSH/VNC, backup e ausência de operação crítica. Depois: validar SSH, UFW, fail2ban, XRDP, LightDM, LXD inativo e login gráfico.
 
-Será preenchido após política de atualização.
+## Reconstrução
 
-### Restaurar backup/snapshot
-
-Será preenchido após estratégia de backup. Snapshot não substitui backup independente.
-
-Em 15/08/2026 nenhum backup independente comum foi encontrado no guest. Snapshots e backups do provedor não foram confirmados ao vivo. Este caminho ainda não é recovery validado.
-
-### LXD ativado por uma consulta
-
-Antes de parar o daemon, confirmar se há instâncias e se alguma está em execução. Na recuperação de 15/08 havia 0 instâncias; com HUMAN_GATE, somente `snap.lxd.daemon.service` foi parado, preservando `snap.lxd.daemon.unix.socket`. Revalidar processo, units e listeners.
-
-### Reconstruir VPS
-
-Meta final: reconstrução a partir deste repositório, documentação, decisões, configs sanitizadas e backups apropriados.
-
-## Regra
-
-Cada nova tecnologia instalada deve adicionar seu cenário de falha e recuperação a este playbook.
+Meta posterior: reconstruir a VPS a partir do repositório, backups e runbooks. Esta validação ampla ainda está pendente.

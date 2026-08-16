@@ -141,3 +141,16 @@ Fotografia atual de 15/08/2026:
 **FASE 1 — acesso administrativo, recovery e segurança mínima.**
 
 Próximo micro-passo recomendado: revisão read-only de recovery proporcional e validação dos caminhos de recuperação, somente após novo HUMAN_GATE. Esta seção substitui apenas o estado atual; o restante do documento preserva a história do primeiro acesso.
+
+## Atualização de estado — 15/08/2026
+
+O texto acima permanece como registro histórico. Depois dele, FASE 1 e FASE 2 foram concluídas:
+
+- VNC do provedor foi revalidado;
+- SSH passou a aceitar somente `ubuntu`/publickey; root e senha foram desabilitados no SSH;
+- UFW/fail2ban foram ativados;
+- sudo NOPASSWD e o privilégio LXD de `ubuntu` foram removidos;
+- backup proporcional e reboot foram validados;
+- a Cloud Workstation XFCE/XRDP sobre túnel SSH passou nos testes funcionais.
+
+Próximo passo atual: rotação das credenciais temporárias de bootstrap.

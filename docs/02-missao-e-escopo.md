@@ -57,10 +57,10 @@ Esses dados de contratação podem mudar no futuro e devem ser revalidados antes
 
 A VPS poderá hospedar gradualmente desenvolvimento remoto, Docker, APIs, MCF, MCPs, agentes, automações, n8n, dashboards, monitoramento, reverse proxy, aplicações, serviços internos, produtos e eventualmente serviços de clientes.
 
-## Prioridade operacional atual
+## Prioridade operacional entregue
 
-Por limitações do computador local, a Cloud Workstation é a próxima grande entrega após os pré-requisitos mínimos de acesso, recovery e segurança. Sua Definition of Done inclui produtividade real e HUMAN_GATE de LEANDRO, não apenas desktop visível.
+Por limitações do computador local, a Cloud Workstation foi antecipada e concluída em 15/08/2026 após os pré-requisitos mínimos. Sua Definition of Done exigiu produtividade real, não apenas desktop visível.
 
 ## Fora do escopo imediato
 
-Não instalar tudo no início. Não particionar por padrão. Não instalar Docker antes da base. Não desativar root/senha antes de outro acesso validado. Não instalar desktop gráfico antes da avaliação e dos gates dedicados.
+Não instalar tudo no início. Não particionar por padrão. Não instalar Docker antes da base. Não alterar storage, contratar add-on ou iniciar workloads amplos sem decisão própria.

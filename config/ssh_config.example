@@ -1,22 +1,26 @@
-# Configuração de referência do cliente SSH no Linux Mint local.
-# Não contém secrets. O IPv4 público e o hostname são identificadores operacionais.
-# Antes de aplicar, inspecionar ~/.ssh/config e preservar qualquer configuração existente.
+# Configuração de referência do cliente SSH. Não contém secrets.
 
 Host contabo-vps
     HostName 169.58.171.192
     User ubuntu
     IdentityFile ~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815
     IdentitiesOnly yes
+    PreferredAuthentications publickey
+    PasswordAuthentication no
     ServerAliveInterval 30
     ServerAliveCountMax 3
 
-Host contabo-vps-root-temporary
+Host contabo-vps-rdp
     HostName 169.58.171.192
-    User root
+    User ubuntu
+    IdentityFile ~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+    PasswordAuthentication no
+    LocalForward 13389 127.0.0.1:3389
+    ExitOnForwardFailure yes
     ServerAliveInterval 30
     ServerAliveCountMax 3
 
-# Observações:
-# - O login de `ubuntu` pela chave dedicada foi validado em 15/08/2026.
-# - O alias root é temporário e não deve ser removido antes de recovery e gates próprios.
-# - NÃO sobrescrever ~/.ssh/config inteiro sem inspeção prévia.
+# Depois de iniciar `ssh -N contabo-vps-rdp`, conectar o cliente RDP a
+# 127.0.0.1:13389. O login root por SSH não é permitido.

@@ -339,6 +339,47 @@ Resultado: caminho direto de elevação a root sem senha confirmado em `FND-SUDO
 - hash dos listeners antes/depois: `bbda5db2de8957b27e25815cd797a72b67a5e11fe14bbe4a06ff7272f362383b`;
 - nenhum comando `lxc` foi executado.
 
-Resultado: `FND-LXD-001` permanece **OPEN/HIGH**, agora sustentado por evidência direta de acesso ao socket. A coleta não executou escrita de configuração, mudança de serviço, alteração de firewall ou qualquer outra mudança operacional.
+## Fotografia pós-hardening e Cloud Workstation — 15/08/2026
 
-Próximo micro-passo proposto: revisão read-only de recovery proporcional e validação dos caminhos de recuperação, somente após novo HUMAN_GATE.
+Esta fotografia não altera os fatos históricos acima; registra o estado final após a autorização end-to-end.
+
+### Acesso, rede e segurança
+
+- `ubuntu`/publickey validado após reboot;
+- SSH efetivo: root `no`, password `no`, keyboard-interactive `no`, publickey `yes`, `AllowUsers ubuntu`;
+- somente SSH TCP 22 exposto em IPv4/IPv6;
+- UFW ativo, default deny incoming, somente OpenSSH;
+- fail2ban/sshd ativo;
+- XRDP somente em `127.0.0.1:3389`; sesman somente em `[::1]:3350`;
+- NetworkManager e ModemManager desativados; `systemd-networkd` permanece gerenciando `eth0`.
+
+### Menor privilégio e updates
+
+- `ubuntu` removido do grupo `lxd`; grupo sem membros;
+- daemon e socket LXD desabilitados/inativos;
+- regra cloud-init NOPASSWD removida do conjunto ativo, com backup de recuperação preservado;
+- `sudo -n` falha e sudo autenticado alcança UID 0; `visudo` passa;
+- cinco updates Krb5 aplicados; zero updates pendentes;
+- reboot final executado e todos os controles revalidados.
+
+### Recovery do provedor e backup
+
+- VNC: `VALIDATED_CURRENTLY`, console `tty1`;
+- Rescue: `AVAILABLE_CONFIRMED`, não acionado;
+- snapshots: `NOT_CONFIGURED`;
+- backup Contabo: `NOT_CONTRACTED`;
+- firewall Contabo: `NOT_CONFIGURED`;
+- backup diário sanitizado de configurações ativo;
+- cópia off-host com SHA-256 remoto/local idêntico;
+- extração de recuperação testada com 24 arquivos.
+
+### Cloud Workstation e recursos
+
+- XFCE + LightDM + XRDP/xorgxrdp;
+- Firefox DEB oficial Mozilla 153.0.4, VS Code 1.133.0, terminal XFCE, Thunar e Git;
+- desktop, navegador, VS Code, terminal integrado, arquivos, múltiplas janelas, clipboard bidirecional, resolução 1100×700/1280×720, reconnect, persistência, logout/login e pós-reboot: `PASS`;
+- RAM na validação final com sessão gráfica ativa: ~2,2 GiB usada de 23 GiB;
+- raiz: ~7,5 GiB usada de 290 GiB, ~283 GiB disponíveis;
+- 8 CPUs; swap continua 0 B.
+
+Nota histórica: ao término da Missão 4, `FND-LXD-001` ainda estava **OPEN/HIGH** e o próximo passo era recovery read-only. A fotografia pós-hardening acima substitui somente esse estado corrente: o finding foi resolvido e o próximo passo passou a ser rotação de credenciais.

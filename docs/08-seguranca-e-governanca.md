@@ -1,80 +1,31 @@
 # 08 — Segurança e Governança
 
-## Princípio
+## Estado endurecido em 15/08/2026
 
-Nenhuma melhoria de segurança deve criar risco maior de perda de acesso sem caminho de recuperação validado.
+- SSH: `PermitRootLogin no`, `PasswordAuthentication no`, `KbdInteractiveAuthentication no`, `PubkeyAuthentication yes`, `AllowUsers ubuntu`, `MaxAuthTries 3`, `LoginGraceTime 30`;
+- UFW: ativo, default deny incoming, somente TCP 22/OpenSSH em IPv4/IPv6;
+- fail2ban: jail `sshd` ativo;
+- XRDP: somente `127.0.0.1:3389`; sesman somente `[::1]:3350`;
+- sudo: sem `NOPASSWD`, com autenticação validada;
+- LXD: `ubuntu` removido do grupo; daemon e socket desabilitados/inativos;
+- updates: zero pendências após upgrade e reboot;
+- recovery: VNC funcional e Rescue disponível;
+- backup: configurações críticas diárias, cópia off-host e extração validadas.
 
-## Sequência de segurança planejada
+As tentativas automatizadas observadas historicamente comprovam exposição/ataques, não comprometimento. O hardening reduziu a superfície e resolveu `FND-SSH-002`.
 
-Estudar e implementar gradualmente:
+## Anti-lockout
 
-- senha root comprometida — já rotacionada;
-- atualização inicial;
-- usuário administrativo próprio;
-- sudo;
-- SSH;
-- chave SSH;
-- validação por chave;
-- política de root;
-- política de senha SSH;
-- firewall Contabo;
-- firewall Ubuntu;
-- portas necessárias;
-- brute force quando pertinente;
-- logs;
-- backups;
-- snapshots;
-- recuperação;
-- menor privilégio.
-
-## Fotografia de risco — 15/08/2026
-
-- SSH público aceita root e senha;
-- UFW inativo e fail2ban ausente;
-- alto volume de tentativas automatizadas confirmado (`FND-SSH-002`);
-- login atual de `ubuntu` validado exclusivamente por nova chave `publickey`; `FND-SSH-003` resolvido;
-- a Missão 4 confirmou elevação direta de `ubuntu` a UID 0 via sudo/NOPASSWD (`FND-SUDO-001`, open/high);
-- a Missão 4 confirmou que `ubuntu` pode escrever no socket LXD `root:lxd` modo `660`, constituindo caminho equivalente a root sem exploração (`FND-LXD-001`, open/high);
-- backup independente e recovery do provedor não validados (`FND-BACKUP-001`).
-
-O acesso administrativo alternativo por chave e a revisão read-only de sudo/LXD foram concluídos. Recovery proporcional, decisões de menor privilégio e segurança mínima continuam pendentes. Não executar hardening nem restringir root/senha até esses pré-requisitos e seus HUMAN_GATEs próprios. “Segurança mínima” é um conjunto a definir explicitamente, não autorização implícita para mudanças em lote.
-
-## Regras de proteção contra lockout
-
-- não fechar acesso root antes de validar usuário administrativo;
-- não desativar senha antes de validar chave;
-- não alterar firewall sem garantir rota de recuperação;
-- manter VNC/Rescue como opções conhecidas enquanto a política definitiva não for escolhida;
-- mudanças pequenas e verificadas.
+Antes de restringir root/senha, foram validados `ubuntu`/publickey em sessão independente e VNC do provedor. Depois de cada mudança, SSH, listeners, UFW e serviços foram rechecados; um reboot final confirmou persistência.
 
 ## Secrets
 
-Proibido versionar:
+Nunca versionar senhas, passphrases, chaves privadas, tokens, API keys, códigos 2FA, connection strings reais, credenciais Contabo ou arquivos `.env` reais. IP, hostname e fingerprints públicos podem ser documentados quando necessários.
 
-- senhas;
-- chaves SSH privadas;
-- tokens;
-- API keys;
-- códigos 2FA;
-- connection strings reais;
-- credenciais Contabo;
-- `.env` real.
+## Próximo controle
 
-Identificadores operacionais como IP público, hostname, alias e fingerprint SSH não são secrets por si só e podem ser documentados quando necessários.
+Rotacionar todas as credenciais temporárias de bootstrap. A rotação deve preservar os canais validados e ser seguida de testes independentes de SSH, VNC, XRDP e continuidade.
 
 ## HUMAN_GATE
 
-Exige autorização explícita de LEANDRO:
-
-- mudanças destrutivas;
-- firewall/exposição de rede;
-- políticas que podem bloquear acesso;
-- particionamento/filesystem;
-- instalação estrutural relevante;
-- custo/upgrade/migração;
-- cancelamento/reinstalação;
-- decisões arquitetônicas permanentes.
-
-## Segurança do próprio GitHub
-
-O repositório permanece privado nesta fase. Privacidade do repositório não substitui política de zero secrets.
+Mudanças destrutivas, custos, restore, reinstalação, storage, firewall/exposição, rotação e decisões arquitetônicas permanentes exigem a autorização aplicável de LEANDRO.

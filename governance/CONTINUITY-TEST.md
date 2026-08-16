@@ -1,56 +1,27 @@
 # Teste de Continuidade Canônica
 
-Objetivo: provar que um novo chat consegue reconstruir o projeto **usando somente o GitHub canônico**, sem depender de memória de conversas anteriores.
-
-## Prompt mínimo recomendado
-
-> Continue a missão `leon337/cloud-infrastructure`. Antes de qualquer ação, consulte a `main` real e siga integralmente `CONTEXT.md`. Não execute mudanças. Faça primeiro o teste de continuidade definido no repositório.
+Objetivo: provar que um novo chat reconstrói o projeto somente a partir do GitHub canônico.
 
 ## Perguntas obrigatórias
 
-O novo agente deve conseguir informar, sem pedir novamente a LEANDRO:
+1. finalidade da missão e separação do MCF;
+2. fases concluídas e próximo passo exato;
+3. identidade, recursos e virtualização da VPS;
+4. acesso SSH atual e política efetiva de root/senha;
+5. UFW/fail2ban e listeners públicos;
+6. estado de sudo e LXD;
+7. caminhos VNC, Rescue, snapshots, backups e firewall do provedor;
+8. backup guest/off-host e limite de cobertura;
+9. arquitetura da Cloud Workstation;
+10. resultados funcionais de navegador, VS Code, terminal, arquivos, clipboard, resolução, reconnect e reboot;
+11. findings resolvidos, mitigados e abertos;
+12. decisões DEC-003/DEC-004;
+13. regras de secrets/HUMAN_GATE;
+14. por que o próximo passo é rotação de credenciais;
+15. documentos canônicos que sustentam cada resposta.
 
-1. finalidade da missão;
-2. por que o repositório é separado do MCF;
-3. quatro objetivos: segurança, funcionalidade, aprendizado e autonomia;
-4. fase/etapa atual;
-5. etapas concluídas;
-6. IP, hostname, sistema, kernel e arquitetura;
-7. virtualização KVM/QEMU e posição sobre nested virtualization;
-8. inventário de CPU/RAM/swap;
-9. canais SSH/VNC/Rescue e estado de cada um;
-10. fingerprint SSH validada e por que foi verificada por VNC;
-11. FND-SSH-001, papel do ping, teste inválido e teste válido;
-12. autorização existente para keepalive permanente;
-13. estado relatado de `~/.ssh/config`;
-14. alias/bloco SSH planejado;
-15. data da baseline e da última revalidação, distinguindo estado histórico de estado atual;
-16. findings abertos e resolvidos, inclusive SSH, LXD, backup, CPU e cloud-init;
-17. prioridade da Cloud Workstation, seus pré-requisitos e teste de produtividade;
-18. regras de secrets e HUMAN_GATE;
-19. ponto exato de retomada e por que não se deve iniciar hardening automaticamente;
-20. documentos canônicos que sustentam cada resposta;
-21. estado atual de `ubuntu`, root/senha, UFW, LXD e updates;
-22. quais capacidades do provedor permanecem `UNCONFIRMED`.
+## Critério
 
-## Critérios
+`CONTINUIDADE COMPLETA` exige respostas sem inventar, distinguir baselines históricas do estado atual e não executar rotação ou nova mudança sem autorização aplicável.
 
-### CONTINUIDADE COMPLETA
-
-- responde todos os itens essenciais a partir do repositório;
-- distingue fatos, decisões e propostas;
-- não pede IP/hostname/fingerprint já canônicos;
-- não inventa estado ausente;
-- identifica bloqueio atual e não retoma VPS automaticamente.
-
-### CONTINUIDADE PARCIAL
-
-- consegue operar, mas ainda depende de contexto de chat para motivação, histórico, decisão ou próximo passo.
-
-### CONTINUIDADE INSUFICIENTE
-
-- não consegue reconstruir fase/estado/decisões ou pede novamente dados básicos já documentados.
-
-## Regra pós-teste
-
-A VPS só volta a ser alterada após resultado **CONTINUIDADE COMPLETA**, ou decisão explícita de LEANDRO aceitando uma lacuna conhecida.
+As validações independentes anteriores permanecem válidas apenas para seus snapshots. O estado F1/F2 deve receber novo teste independente depois da publicação.

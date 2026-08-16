@@ -2,36 +2,22 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-15
-documentation_state: RECONCILED_MISSION_4_STATE
-repository_state:
-  reconciliation_commit:
-    sha: be52e36962159fa7a42ba93a0e96a028daabb67a
-    status: PUBLISHED
-  synchronization:
-    verified_at: 2026-08-15
-    local_head_main_origin_and_github_main_equal: true
+documentation_state: PHASE_1_AND_2_RECONCILED
 continuity:
-  historical_independent_validation: governance/CONTINUITY-VALIDATION-2026-08-14.md
-  reconciled_validation: governance/CONTINUITY-VALIDATION-2026-08-15.md
-  reconciled_independent_validation: governance/CONTINUITY-VALIDATION-INDEPENDENT-2026-08-15.md
-  reconciled_state_date: 2026-08-15
-  reconciled_result: CONTINUIDADE_COMPLETA
-  reconciled_result_scope: PRE_MISSION_2_SNAPSHOT
+  historical_validations_preserved: true
   current_state_independent_validation: NOT_EXECUTED
   future_state_validation_policy: PUC_REVALIDATION_REQUIRED
 project:
   name: IMPLEMENTACAO_DA_VPS
   status: ACTIVE
-  current_phase: "FASE 1 — Acesso administrativo, recovery e segurança mínima"
-  phase_status: IN_PROGRESS
-  previous_phase: "FASE 0 — Orientação e Inventário"
-  previous_phase_status: DONE
-  audit_phase_b_status: DONE_APPROVED_FOR_DOCUMENTATION
-  next_major_delivery: "FASE 2 — Cloud Workstation gráfica"
-  next_major_delivery_status: PRIORITY_PLANNED
-  cloud_workstation_done_gate: LEANDRO_CONFIRMS_REAL_PRODUCTIVITY
+  phases:
+    phase_0: DONE
+    phase_1: DONE
+    phase_2_cloud_workstation: DONE
+  cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
+  next_exact_step: CREDENTIAL_ROTATION
 remote_vps:
-  snapshot_at_utc: "2026-08-15T11:03:59Z"
+  snapshot_at_utc: "2026-08-16T01:58:02Z"
   provider: Contabo
   product: Cloud VPS 8
   ipv4: 169.58.171.192
@@ -41,169 +27,118 @@ remote_vps:
   architecture: x86-64
   virtualization: KVM_QEMU
   cpu_logical: 8
-  ram_visible_gib_approx: 23
+  ram_total_gib_approx: 23
+  ram_used_after_desktop_gib_approx: 2.2
   swap_bytes: 0
-  systemd_state: running
-  failed_systemd_units: 0
-  timezone: Europe/Berlin
-  ntp_synchronized: true
   storage:
     primary_disk: /dev/sda
     size_gib: 300
-    partition_table: GPT
-    root_filesystem: ext4
-    root_used_gib_approx: 2.5
-    root_available_gib_approx: 288
-    partition_order_warning_observed: true
+    root_filesystem_size_gib_approx: 290
+    root_used_gib_approx: 7.5
+    root_available_gib_approx: 283
   network:
     primary_interface: eth0
+    manager: systemd-networkd
     listeners_external:
       - "0.0.0.0:22/tcp"
       - "[::]:22/tcp"
-    other_listeners: LOCAL_DNS_LOOPBACK_ONLY
-    mission4_listeners_hash_before: bbda5db2de8957b27e25815cd797a72b67a5e11fe14bbe4a06ff7272f362383b
-    mission4_listeners_hash_after: bbda5db2de8957b27e25815cd797a72b67a5e11fe14bbe4a06ff7272f362383b
-    mission4_listeners_unchanged: true
+    xrdp_listener: "127.0.0.1:3389/tcp"
+    xrdp_sesman_listener: "[::1]:3350/tcp"
+    provider_firewall: NOT_CONFIGURED
   firewall:
-    ufw_installed: true
-    ufw_status: inactive
-    guest_nftables_or_iptables_rules_observed: false
-    provider_firewall_status: UNCONFIRMED
+    ufw_status: active
+    default_incoming: deny
+    default_outgoing: allow
+    allowed_inbound: [OpenSSH_22_TCP_IPV4, OpenSSH_22_TCP_IPV6]
+    fail2ban_sshd: active
   ssh:
-    root_password_login: VALIDATED
-    root_password_access: PRESERVED_TEMPORARY
-    root_diagnostic_validation:
-      confirmed: true
-      remote_uid: 0
-      ssh_exit_code: 0
-    permit_root_login_effective: "yes"
-    password_authentication_effective: "yes"
+    host_fingerprint_ed25519: SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4
+    root_password_login_historical: VALIDATED
+    root_login_current: DISABLED_BY_POLICY
+    permit_root_login_effective: "no"
+    password_authentication_effective: "no"
+    keyboard_interactive_authentication_effective: "no"
     publickey_authentication_effective: "yes"
-    automated_attack_activity: CONFIRMED_HIGH_VOLUME
+    allow_tcp_forwarding_effective: "yes"
+    allow_users: [ubuntu]
+    max_auth_tries: 3
+    login_grace_time_seconds: 30
     ubuntu_login_current: VALIDATED
-    ubuntu_login_validated_at_date: 2026-08-15
-    ubuntu_login_validated_method: PUBLICKEY_ONLY
-    ubuntu_password_fallback_during_validation: DISABLED
-    ubuntu_login_validation_remote_user: ubuntu
-    ubuntu_login_validation_remote_uid: 1000
-    ubuntu_login_validation_remote_host: vmi3506102
-    ubuntu_login_validation_operational_change: false
-    ubuntu_historical_publickey_login_observed: true
+    ubuntu_login_method: PUBLICKEY_ONLY
+    automated_attack_activity_historical: CONFIRMED_NOT_COMPROMISE
   accounts:
     ubuntu:
       uid: 1000
-      password_state: LOCKED
+      groups: [ubuntu, adm, cdrom, sudo, dip]
       sudo_effective: true
-      nopasswd_all: true
-      nopasswd_source: /etc/sudoers.d/90-cloud-init-users
-      member_of_lxd: true
-      sudo_audit_2026_08_15:
-        sudo_n_l_exit_code: 0
-        rules_confirmed: true
-        nopasswd_confirmed: true
-        elevation_without_password: true
-        elevated_uid: 0
-        elevated_user: root
-        source_owner: root:root
-        source_mode: "440"
-        active_rules:
-          - "ubuntu ALL=(ALL) NOPASSWD:ALL"
-          - "root ALL=(ALL) NOPASSWD:ALL"
-        visudo_check: PASS
-      authorized_key_legacy_fields_scope: HISTORICAL_SINGLE_KEY_BASELINE_2026_08_15
-      authorized_key_matches_local_public_key: true
-      authorized_key_fingerprint: SHA256:FeamXuFKDiA868c9eKVH8AOMXOQMLL1KBNH4Y9DrqMU
+      sudo_requires_password: true
+      nopasswd_all: false
+      member_of_lxd: false
       authorized_keys:
         owner: ubuntu:ubuntu
         permissions: "600"
-        total_key_count: UNCONFIRMED
-        previously_observed_key:
-          fingerprint: SHA256:FeamXuFKDiA868c9eKVH8AOMXOQMLL1KBNH4Y9DrqMU
-          preserved: true
-        mission_2b_validated_key:
+        previous_key_preserved: true
+        validated_key:
           type: ED25519
           local_private_key_path: ~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815
           fingerprint: SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg
           public_key_installed: true
-          installed_occurrences: 1
           login_validated: true
   lxd:
     installed_snap_version: 5.21.6-78b046a
-    installed_snap_revision: 40361
-    instances_total_observed: 0
-    instances_running_observed: 0
-    daemon_service_final: inactive_dead
-    unix_socket_final: active_listening_enabled
-    incident_recovery: SUCCESS
-    mission4_audit:
-      ubuntu_member_of_lxd: true
-      root_equivalent_path_confirmed: true
-      unix_socket_exists: true
-      unix_socket_owner: root:lxd
-      unix_socket_mode: "660"
-      unix_socket_writable_by_ubuntu: true
-      daemon_before: inactive_dead
-      daemon_after: inactive_dead
-      socket_unit_before: active_listening_enabled
-      socket_unit_after: active_listening_enabled
-      lxc_command_executed: false
-      configuration_write_executed: false
-      service_change_executed: false
-  mission4_audit:
-    mode: READ_ONLY
-    auth_as_ubuntu: true
-    remote_user: ubuntu
-    remote_uid: 1000
-    remote_gid: 1000
-    remote_home: /home/ubuntu
-    remote_host: vmi3506102
-    ubuntu_groups: [ubuntu, adm, cdrom, sudo, dip, lxd]
-    operational_change_executed: false
-    configuration_write_executed: false
-    service_change_executed: false
-    firewall_changed: false
+    instances_total_before_disable: 0
+    instances_running_before_disable: 0
+    ubuntu_group_membership_removed: true
+    daemon_service: disabled_inactive
+    unix_socket: disabled_inactive
+    root_equivalent_path_current: REMOVED
   updates:
-    apt_index_newest_observed: "2026-08-14 20:53:48"
-    upgradable_count: 5
-    packages: [krb5-locales, libgssapi-krb5-2, libk5crypto3, libkrb5-3, libkrb5support0]
-    deferred_due_to_phasing: true
-    upgrades_installed_by_audit: 0
-    dpkg_audit_clean: true
-    reboot_required: false
+    upgradable_count: 0
+    unattended_upgrades: active_enabled
+    reboot_executed: true
   cloud_workstation:
-    graphical_target_default: true
-    usable_desktop_confirmed: false
-    display_manager_confirmed: false
-    xrdp_confirmed: false
-    guest_vnc_server_confirmed: false
+    architecture: XFCE_LIGHTDM_XRDP_OVER_SSH_TUNNEL
+    desktop_session: PASS
+    remote_graphical_login: PASS
+    browser: PASS
+    browser_package: Mozilla_Firefox_DEB_153.0.4
+    vscode: PASS
+    vscode_version: "1.133.0"
+    terminal: PASS
+    vscode_integrated_terminal: PASS
+    file_manager: PASS
+    clipboard_bidirectional: PASS
+    multi_window: PASS
+    resolution_dynamic: PASS
+    resolutions_validated: [1100x700, 1280x720]
+    disconnect_reconnect: PASS
+    session_persistence: PASS
+    logout_login: PASS
+    post_reboot_login: PASS
   recovery:
-    independent_guest_backup_confirmed: false
-    provider_vnc: UNCONFIRMED_CURRENTLY
-    provider_rescue: UNCONFIRMED_CURRENTLY
-    provider_snapshots: UNCONFIRMED_CURRENTLY
-    provider_backups: UNCONFIRMED_CURRENTLY
-  cloud_init:
-    version: "26.1"
-    status: degraded_done
-    errors_list_empty: true
-    deprecated_keys_observed: true
+    provider_vnc: VALIDATED_CURRENTLY
+    provider_rescue: AVAILABLE_CONFIRMED
+    provider_snapshots: NOT_CONFIGURED
+    provider_backups: NOT_CONTRACTED
+    provider_firewall: NOT_CONFIGURED
+    config_backup:
+      timer: active_enabled
+      directory_persistence: systemd_tmpfiles
+      remote_path: /var/backups/cloud-infrastructure
+      offhost_path: /home/leo/Backups/cloud-infrastructure
+      remote_local_sha256_match: true
+      extraction_restore_test: PASS
+      restored_files_tested: 24
+    full_data_backup: PENDING
 findings:
-  resolved: [FND-SSH-001, FND-SSH-003, FND-DOC-001, FND-AUDIT-001]
-  open_high: [FND-SSH-002, FND-LXD-001, FND-SUDO-001, FND-BACKUP-001]
+  resolved: [FND-SSH-001, FND-SSH-002, FND-SSH-003, FND-LXD-001, FND-SUDO-001, FND-DOC-001, FND-AUDIT-001]
+  mitigated_open: [FND-BACKUP-001]
   open_other: [FND-CPU-001, FND-CLOUDINIT-001]
 authorization:
-  documentation_reconciliation: AUTHORIZED
-  future_changes_commit: HUMAN_GATE_REQUIRED
-  new_vps_connection: NOT_AUTHORIZED
-  operational_changes: NOT_AUTHORIZED
+  phase_1_and_2_full_access: EXECUTED
+  next_step: CREDENTIAL_ROTATION
+  future_changes: HUMAN_GATE_REQUIRED
   historical_executed:
     AUTH-SSH-KEEPALIVE-001: EXECUTED_AND_VALIDATED
-next_actions:
-  current: "Aguardar HUMAN_GATE operacional de LEANDRO"
-  after_new_human_gate: "Revisão read-only de recovery proporcional e validação dos caminhos de recuperação"
-  constraints:
-    - "Não restringir root/senha antes de recovery proporcional validado e decisão sobre os findings sudo/LXD"
-    - "Não alterar SSH, firewall, sudo, LXD, pacotes ou serviços sem gate próprio"
-    - "Entregar Cloud Workstation após os pré-requisitos mínimos, antes de Docker/observabilidade"
 secrets_policy:
   never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]

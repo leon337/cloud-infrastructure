@@ -1,6 +1,6 @@
 # FND-SSH-002 — Exposição SSH com ataques automatizados e controles mínimos ausentes
 
-Status: **CONFIRMED — OPEN**. Severidade: **HIGH**.
+Status: **RESOLVED em 15/08/2026**. Severidade histórica: **HIGH**.
 
 ## Evidência de 15/08/2026
 
@@ -17,3 +17,14 @@ Os números comprovam tráfego automatizado hostil, mas não comprovam invasão.
 
 Validar primeiro acesso administrativo por chave e recovery. Depois, mediante HUMAN_GATE próprio, definir defesa em profundidade: política de root/senha, firewall do host e provedor, limitação de tentativas e monitoramento.
 
+## Resolução — 15/08/2026
+
+Depois de validar `ubuntu`/publickey e VNC out-of-band, foram aplicados e testados:
+
+- `PermitRootLogin no`, `PasswordAuthentication no` e `KbdInteractiveAuthentication no`;
+- `AllowUsers ubuntu`, `MaxAuthTries 3` e `LoginGraceTime 30`;
+- UFW ativo, default deny incoming e somente OpenSSH TCP 22;
+- fail2ban com jail `sshd`;
+- sessão SSH independente e reboot final.
+
+As tentativas automatizadas continuam sendo exposição histórica observada, não comprometimento confirmado.
