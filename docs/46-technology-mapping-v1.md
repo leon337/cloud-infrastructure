@@ -64,23 +64,23 @@ data de consulta e texto de licença no decision record sem copiar secrets.
 ## Component record do slice corrente — F1.1
 
 Este record torna explícitos os treze critérios da missão para a única seleção já
-em implementação. `PASS` estático não substitui a prova comportamental pendente.
+em implementação. A prova na fixture descartável não substitui a prova na VPS.
 
 | Critério | Registro F1.1 | Estado |
 |---|---|---|
 | Aderência Q1–Q39 | Ansible/Schema implementam Q9/Q27; accounting prepara Q25 sem aplicar hard limits cegos | `SATISFIED_BY_DESIGN` |
 | RAM/CPU/disk | nenhum daemon Ansible é instalado no node; custo transitório do apply e delta final ainda serão medidos na VPS | `PARTIAL_NOT_MEASURED_REMOTE` |
-| Segurança/privilégio | SSH por identidade do controller, sudo humano, target/machine guard, marker root-only e rollback fail-closed; prova dinâmica aguarda VM descartável | `PARTIAL_PENDING_VM` |
+| Segurança/privilégio | SSH por identidade do controller, sudo humano, target/machine guard, marker root-only e rollback fail-closed passaram na fixture commit-bound; preview/apply privilegiados no NODE-01 não ocorreram | `SATISFIED_DISPOSABLE_CI_REMOTE_NOT_APPLIED` |
 | Maturidade/manutenção | Ansible Core 2.21.3 e Python 3.12 são fixados; lifecycle/release vêm das fontes oficiais abaixo | `SELECTED` |
 | Licença/custo | Ansible GPL-3.0-or-later; PyYAML/jsonschema MIT; nenhum plano comercial selecionado | `RECORDED` |
 | Simplicidade operacional | agentless, módulos builtin, um inventory e playbooks separados de preflight/apply/rollback | `SELECTED` |
-| Backup/restore/rebuild | desired state está no Git; F1.1 não contém dado de aplicação; rollback dinâmico e rebuild ainda aguardam fixture nova | `PARTIAL_PENDING_VM` |
+| Backup/restore/rebuild | desired state está no Git e F1.1 não contém dado de aplicação; rollback vazio e reconstrução da fixture passaram, enquanto recovery real continua condicionado ao apply | `SATISFIED_DISPOSABLE_CI_REMOTE_NOT_APPLIED` |
 | Portabilidade | inventory e role separam controller/node; F1.1 pressupõe Ubuntu 24.04 + systemd/cgroup v2 declarados | `SELECTED_WITH_OS_CONSTRAINT` |
 | Evolução multi-node | grupos de inventory e `ExecutionNode` preservam expansão; este slice só autoriza exatamente `node-01` | `DESIGNED_NOT_TESTED_MULTI_NODE` |
 | API/CLI/MCP | CLI Ansible é interface do controller; agentes futuros só poderão acioná-la por capability, nunca receber sudo/inventory secreto | `CLI_SELECTED_FUTURE_MEDIATION_REQUIRED` |
 | Observabilidade/auditoria | output sanitizado, correlation/evidence contract e invariance checks definidos; execução remota não ocorreu | `PARTIAL_NOT_APPLIED` |
 | Lock-in | YAML/JSON Schema e arquivos systemd são abertos; dependência de módulos builtin torna migração possível, porém não gratuita | `ACCEPTED_MODERATE` |
-| Migração/rollback | remoção é por proveniência e diretório vazio; resultado histórico não vale após o delta e precisa de rerun | `PARTIAL_PENDING_VM` |
+| Migração/rollback | remoção por proveniência/diretório vazio, quatro recusas fail-closed e rollback limpo passaram no CI; rollback real permanece inaplicável antes do apply | `SATISFIED_DISPOSABLE_CI_REMOTE_NOT_APPLIED` |
 
 ## Evidência oficial por domínio
 

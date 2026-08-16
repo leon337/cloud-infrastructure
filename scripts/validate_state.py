@@ -34,6 +34,30 @@ CANONICAL_PATH_KEYS = (
     "revised_roadmap",
     "technology_mapping",
     "component_inventory",
+    "current_state_independent_validation_report",
+)
+
+F1_1_CURRENT_STATUS_PATHS = (
+    "CHECKPOINT.md",
+    "CONTEXT.md",
+    "docs/05-roadmap.md",
+    "docs/39-platform-discovery-checkpoint-028.md",
+    "docs/40-mission-acceptance-recovery-report.md",
+    "docs/44-infrastructure-blueprint-v1.md",
+    "docs/45-revised-implementation-roadmap.md",
+    "docs/46-technology-mapping-v1.md",
+    "governance/CONTEXT-COVERAGE.md",
+)
+
+F1_1_STALE_DISPOSABLE_GATE_MARKERS = (
+    "PARTIAL_PENDING_VM",
+    "PENDING_REVALIDATION_IN_DISPOSABLE_GITHUB_VM_AFTER_REVIEW_DELTA",
+    "SLICE_001_REVALIDATE_IN_DISPOSABLE_GITHUB_VM_AFTER_SAFETY_REMEDIATION",
+    "PARTIAL_AWAITING_DISPOSABLE_VM_REVALIDATION",
+    "integração descartável e apply real explicitamente pendentes",
+    "prova dinâmica aguarda VM descartável",
+    "rollback dinâmico e rebuild ainda aguardam fixture nova",
+    "resultado histórico não vale após o delta e precisa de rerun",
 )
 
 
@@ -56,6 +80,37 @@ def path_errors(current: dict[str, Any]) -> list[str]:
             errors.append(f"canonical artifact {key} escapes repository root")
         elif not path.is_file():
             errors.append(f"missing canonical artifact for {key}: {raw_path}")
+    return errors
+
+
+def stale_f1_1_gate_errors(
+    current: dict[str, Any],
+    canonical_texts: dict[str, str] | None = None,
+) -> list[str]:
+    """Reject current-state prose that reopens an already passed disposable gate."""
+    validation = current["codex_execution"]["current_slice"]["validation"]
+    disposable_keys = (
+        "disposable_ubuntu_check_mode",
+        "disposable_ubuntu_first_apply",
+        "disposable_ubuntu_second_apply",
+        "disposable_ubuntu_rollback",
+    )
+    if not all(str(validation[key]).startswith("PASS_") for key in disposable_keys):
+        return []
+
+    if canonical_texts is None:
+        canonical_texts = {
+            relative_path: (ROOT / relative_path).read_text(encoding="utf-8")
+            for relative_path in F1_1_CURRENT_STATUS_PATHS
+        }
+
+    errors: list[str] = []
+    for relative_path, text in canonical_texts.items():
+        for marker in F1_1_STALE_DISPOSABLE_GATE_MARKERS:
+            if marker in text:
+                errors.append(
+                    f"{relative_path} reopens passed F1.1 disposable gate: {marker}"
+                )
     return errors
 
 
@@ -120,6 +175,7 @@ def crosscheck_errors(
             errors.append(f"credential rotation is no longer deferred at {location}")
 
     current_validation = current["codex_execution"]["current_slice"]["validation"]
+    errors.extend(stale_f1_1_gate_errors(current))
     for key in (
         "real_vps_privileged_check_mode",
         "real_vps_apply",
@@ -295,8 +351,9 @@ def main() -> int:
         return 1
 
     print(
-        "STATE_CROSSCHECK_PASS decisions=Q1-Q40-exact artifacts=12 "
-        "gates=preserved real_apply=NOT_EXECUTED timestamps=aligned"
+        "STATE_CROSSCHECK_PASS decisions=Q1-Q40-exact "
+        f"artifacts={len(CANONICAL_PATH_KEYS)} gates=preserved "
+        "real_apply=NOT_EXECUTED timestamps=aligned"
     )
     return 0
 

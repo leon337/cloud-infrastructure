@@ -147,6 +147,15 @@ class StateCrosscheckTests(unittest.TestCase):
             any("secret prohibition" in error for error in self.errors_for(current=current))
         )
 
+    def test_stale_disposable_gate_is_rejected_after_ci_pass(self):
+        errors = MODULE.stale_f1_1_gate_errors(
+            copy.deepcopy(self.current),
+            {"docs/example.md": "status: PARTIAL_PENDING_VM"},
+        )
+        self.assertTrue(
+            any("reopens passed F1.1 disposable gate" in error for error in errors)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
