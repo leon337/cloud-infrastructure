@@ -19,3 +19,18 @@ Antes de hardening com risco de lockout e antes de considerar a Cloud Workstatio
 - extração de recuperação validada com 24 arquivos.
 
 O finding permanece aberto porque dados completos de usuário/workloads, retenção off-host automatizada e reconstrução integral ainda não foram testados. Snapshots continuam ausentes e backup do provedor não foi contratado.
+
+## Platform Discovery — Q16 — 16/08/2026
+
+LEANDRO aprovou a estratégia **C — infraestrutura reconstruível + backups automáticos off-host + restore testado**, registrada em `docs/15-platform-discovery-checkpoint-004.md`.
+
+Isso transforma as pendências deste finding em requisitos explícitos da arquitetura-alvo:
+
+- compute e configuração devem ser reconstruíveis a partir de artefatos versionados;
+- dados persistentes relevantes devem possuir backup automático;
+- deve existir cópia off-host independente da VPS;
+- restore deve ser testado e produzir evidência verificável;
+- estado descartável não precisa ser tratado como dado permanente;
+- a arquitetura deve permitir reconstrução em novo host/provedor sem depender da memória humana.
+
+**O status deste finding não muda por causa da decisão de Discovery.** Ele permanece `MITIGATED — OPEN` até que esses requisitos sejam implementados e validados operacionalmente.
