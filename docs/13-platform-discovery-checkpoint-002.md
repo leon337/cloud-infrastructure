@@ -1,4 +1,4 @@
-# 13 — Platform Discovery Checkpoint 002 — Q10–Q11
+# 13 — Platform Discovery Checkpoint 002 — Q10–Q12
 
 Data: 2026-08-16
 Status: **DISCOVERY_IN_PROGRESS**
@@ -122,6 +122,68 @@ O futuro Capability Core poderá evoluir para operações como:
 - aplicar quotas por projeto/sandbox;
 - integrar storage persistente ao futuro sistema de backup e recovery.
 
+## Q12 — Segredos, tokens e credenciais para agentes e sandboxes
+
+**Escolha de LEANDRO: C — cofre central + credenciais escopadas/temporárias + injeção automática nos sandboxes.**
+
+### Decisão
+
+Segredos não devem ser administrados manualmente como parte normal do fluxo dos agentes, nem versionados em Git. A plataforma deve possuir uma camada central de secrets/identity capaz de resolver credenciais em tempo de execução e fornecê-las apenas ao projeto, missão e sandbox autorizados.
+
+O manifesto poderá declarar **que tipo de segredo ou acesso é necessário**, mas nunca conter o valor real do segredo.
+
+Exemplo conceitual:
+
+```text
+Manifesto
+  -> declara: database_credentials, object_storage_credentials, github_read_access
+  -> Capability Core valida projeto/missão/sandbox
+  -> Secret/Identity Layer resolve as credenciais
+  -> credenciais são injetadas no sandbox
+  -> missão termina
+  -> credenciais temporárias são revogadas quando suportado
+```
+
+### Limites de autoridade
+
+Uma missão do Projeto A poderá receber acesso apenas aos recursos necessários do Projeto A. Não deve receber por padrão:
+
+- credenciais de outros projetos;
+- credenciais administrativas da VPS;
+- chaves SSH privadas da infraestrutura;
+- credenciais do provedor Contabo;
+- segredos globais;
+- tokens permanentes quando uma credencial temporária ou escopada for possível.
+
+Princípio: **o agente deve receber capacidade de usar um recurso dentro do escopo autorizado, e não autoridade permanente sobre o recurso.**
+
+### Capacidades desejadas
+
+O futuro Capability Core / Secret & Identity Layer deverá poder evoluir para operações como:
+
+- solicitar acesso a banco, storage ou serviço conforme política;
+- injetar secrets no ambiente em runtime;
+- emitir credenciais temporárias quando suportado;
+- revogar credenciais ao término da missão;
+- rotacionar segredos de maneira controlada;
+- auditar qual projeto/missão/sandbox recebeu qual classe de acesso;
+- impedir que valores reais de secrets sejam versionados ou expostos em manifests, logs e evidências.
+
+### Direção futura
+
+A arquitetura deve ser compatível com evolução para identidade dinâmica/Zero Trust mais completa, mas isso não será exigido integralmente no primeiro release.
+
+Princípios derivados:
+
+- secrets centralizados;
+- acesso mínimo necessário;
+- escopo por projeto/missão/sandbox;
+- credenciais temporárias preferidas quando tecnicamente viáveis;
+- injeção automática no runtime;
+- zero secrets no Git;
+- separação entre declaração de necessidade e valor do segredo;
+- mais autonomia deve ser conquistada por melhor controle de identidade e escopo, não por entrega de credenciais administrativas amplas.
+
 ## Estado das decisões
 
 ```text
@@ -136,10 +198,11 @@ Q8  = C
 Q9  = C
 Q10 = C
 Q11 = D
+Q12 = C
 ```
 
 ## Próximo passo
 
-**DISCOVERY_Q12**.
+**DISCOVERY_Q13**.
 
 A Discovery continua. Nenhuma escolha tecnológica final de banco, runtime, object storage, volumes, reverse proxy, secret manager, CI/CD, observabilidade, Hermes/OpenClaw/Freebuff/OpenHands ou desenho detalhado de MCP deve ser antecipada antes das decisões correspondentes.
