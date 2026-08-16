@@ -28,7 +28,7 @@ recovery:
 
 slice_000:
   name: REPRODUCIBLE_FOUNDATION_BASELINE
-  status: IN_PROGRESS_WAITING_FOR_LIVE_NODE_PRECHECK
+  status: REPOSITORY_BASELINE_COMPLETE_WAITING_FOR_LIVE_NODE_PRECHECK
   repository_work:
     branch_created: true
     mission_acceptance_recovery_report: DELIVERED
@@ -37,6 +37,8 @@ slice_000:
     threat_model_and_autonomy_boundaries: CREATED
     infrastructure_blueprint_v1: CREATED
     revised_implementation_roadmap: CREATED
+    component_inventory: CREATED
+    foundations_runbook: CREATED
     foundation_technology_mapping: CREATED
     workflow_event_technology_mapping: CREATED
     data_secrets_observability_technology_mapping: CREATED
@@ -48,6 +50,23 @@ slice_000:
       - infra/ansible/playbooks/precheck-readonly.yml
       - infra/ansible/playbooks/precheck-privileged-readonly.yml
       - infra/ansible/README.md
+    slice_001_apply_contract: CREATED_NOT_EXECUTED
+    slice_001_rollback_contract: CREATED_NOT_EXECUTED
+    slice_002_apply_contract: CREATED_NOT_EXECUTED
+    slice_002_rollback_contract: CREATED_NOT_EXECUTED
+    repository_ci:
+      workflow: mission-001-validate
+      validated_sha: f2716e367d302aca700a5f41451e3fa2b7800f00
+      run_id: 31940420737
+      conclusion: SUCCESS
+      checks:
+        - REPOSITORY_WHITESPACE
+        - YAML_PARSE
+        - ANSIBLE_SYNTAX
+        - COMMON_SECRET_PATTERN_SCAN
+        - ANSIBLE_AUTH_SECRET_VARIABLE_SCAN
+    evidence:
+      - evidence/mission-001/slice-000/repository-validation.md
   node_changes_performed: false
   production_changes_performed: false
   credentials_rotated: false
@@ -159,10 +178,10 @@ findings_carried_forward:
 
 next_actions:
   independent_safe:
-    - PREPARE_FOUNDATION_IDEMPOTENT_ROLES_WITHOUT_APPLYING_NODE_CHANGES
-    - VERIFY_REPOSITORY_SLICE_AND_NO_SECRET_LEAKAGE
-    - PREPARE_SLICE_001_AND_SLICE_002_APPLY_CONTRACTS
+    - VERIFY_FINAL_BRANCH_DIFF_AND_MAIN_CONCURRENCY
+    - CREATE_DRAFT_PR_CHECKPOINT_WITHOUT_MERGE
   blocked_on_human_gate:
     - AUTHENTICATED_LIVE_NODE_01_PRECHECK
     - RECORD_GITHUB_NODE_DRIFT
+    - PIN_SLICE_001_UPSTREAM_VERSION_AND_CHECKSUMS
     - FIRST_NODE_01_MUTATION
