@@ -1,0 +1,47 @@
+---
+- name: Slice 001 - install private management overlay client without enrollment
+  hosts: execution_nodes
+  gather_facts: true
+  become: true
+
+  vars:
+    mission_slice_id: slice-001-tailscale-install
+
+  pre_tasks:
+    - name: Require live recovery gates before NODE-01 mutation
+      ansible.builtin.assert:
+        that:
+          - mission_live_precheck_passed | default(false) | bool
+          - mission_expected_fingerprint_verified | default(false) | bool
+        fail_msg: >-
+          NODE-01 mutation is blocked. Run the canonical read-only prechecks,
+          reconcile drift and verify the expected SSH host fingerprint first.
+
+    - name: Require a stable checkpoint ID bound to the reviewed revision
+      ansible.builtin.assert:
+        that:
+          - mission_checkpoint_id | default('') | length > 0
+
+  roles:
+    - role: platform_paths
+    - role: prechange_checkpoint
+    - role: tailscale_client
+
+  post_tasks:
+    - name: Verify existing SSH service remains active
+      ansible.builtin.command: systemctl is-active ssh.service
+      register: slice001_ssh_state
+      changed_when: false
+      failed_when: slice001_ssh_state.stdout | trim != 'active'
+
+    - name: Verify public listeners after client installation
+      ansible.builtin.command: ss -lntup
+      register: slice001_listeners
+      changed_when: false
+
+    - name: State the enrollment gate explicitly
+      ansible.builtin.debug:
+        msg: >-
+          Package/client installation finished but NODE-01 is intentionally not
+          enrolled. Do not run `tailscale up` until the management-identity
+          enrollment HUMAN_GATE and Tailscale Grants are ready.
