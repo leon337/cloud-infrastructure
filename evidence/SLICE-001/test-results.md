@@ -18,9 +18,12 @@ SHELLCHECK_PASS count=4
 FOUNDATION_STATIC_TESTS_PASS
 ```
 
-This result is current for the uncommitted worktree observed at that timestamp,
-not yet bound to a published Git tree. The configured GitHub workflow is the
-commit-bound gate for this delta.
+The same static gate passed in GitHub Actions for implementation commit
+`edd2497d657cc9bc35952f5dfc71090a18dade53`. Run
+[`31972460567`](https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567)
+was triggered by `push`, completed successfully at `2026-08-16T21:08:05Z`, and
+its `validate` job completed in 23 seconds. This is commit-bound evidence for
+that SHA, not a claim that a later evidence-only commit has already run in CI.
 
 The hardened secret policy scans tracked/untracked files plus every reachable Git
 blob for its high-confidence rules without printing matched values. CI fetches
@@ -42,11 +45,44 @@ fixture boundary (`/.dockerenv`, `systemd-detect-virt=docker`, canonical baked
 inventory/root) was absent and the preflight refused the target with exit `2`,
 before any mutation.
 
+## Commit-bound disposable Ubuntu 24.04/systemd integration
+
+GitHub Actions run
+[`31972460567`](https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567),
+job `disposable-integration` (`95226938043`), passed for commit
+`edd2497d657cc9bc35952f5dfc71090a18dade53`. The job ran from
+`2026-08-16T21:06:05Z` through `2026-08-16T21:08:04Z` on a GitHub-hosted Ubuntu
+24.04 disposable VM. The privileged fixture gate accepted only
+`DISPOSABLE_VM_ONLY`; the allowlisted bundle reported Git, virtualenv and
+forbidden secret-bearing paths absent, and the test container used no network.
+Content-level secret policy was proved separately by the required `validate` job.
+
+```text
+FOUNDATION_CHECK_MODE_INVARIANCE_PASS
+FOUNDATION_PARTIAL_MARKER_CHECK_PASS
+FIRST_APPLY: changed=7 failed=0 unreachable=0
+SECOND_APPLY: changed=0 failed=0 unreachable=0
+SECURITY_ASSERTIONS: PASS
+ROLLBACK_REFUSAL marker_tampered: PASS_F1_1_MANAGED_SURFACE_INVARIANT
+ROLLBACK_REFUSAL persistent_content: PASS_F1_1_MANAGED_SURFACE_INVARIANT
+ROLLBACK_REFUSAL runtime_content: PASS_F1_1_MANAGED_SURFACE_INVARIANT
+ROLLBACK_REFUSAL marker_absent: PASS_F1_1_MANAGED_SURFACE_INVARIANT
+SUCCESSFUL_ROLLBACK: changed=7 failed=0 unreachable=0
+FOUNDATION_CONTAINER_TEST_PASS check_mode partial_marker_check apply_changed idempotent_changed_0 security_assertions rollback_refusals_4 rollback_clean
+FOUNDATION_CONTAINER_TEST_CLEANUP_PASS container=removed image=removed bundle=removed
+```
+
+The GitHub job completed in 1 minute 59 seconds. This proves the reviewed role's
+check-mode invariance, apply, idempotence, security postconditions, fail-closed
+rollback cases, successful rollback and cleanup of the named test image/container
+and bundle in that disposable fixture. It does not claim removal of Docker base
+layers or prove any privileged operation on the real VPS.
+
 ## Historical disposable Ubuntu 24.04/systemd integration test
 
 Executed: 2026-08-16 20:09 UTC. These results applied to the pre-review input and
-are retained as history; they are **not current PASS evidence** after the test and
-role review delta. Current status is `PENDING_REVALIDATION_AFTER_REVIEW_DELTA`.
+are retained as history; they are **not** the evidence used to pass the reviewed
+delta. The commit-bound CI run above supersedes them for the disposable fixture.
 
 Fixture base:
 `ubuntu@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea`
@@ -70,9 +106,9 @@ repository during fixture build.
 
 ## Evidence boundary
 
-The historical run proved the then-current role against a disposable Ubuntu
-24.04/systemd fixture. It does not prove the reviewed worktree, privileged apply,
-idempotence, restart behavior or rollback on the real VPS. Those real-VPS rows
-remain `NOT_EXECUTED` in `baseline.yaml` until LEANDRO performs interactive sudo
-authentication. The final disposable rerun and GitHub CI must bind fresh results
-to the published commit/tree.
+Run `31972460567` proves only commit
+`edd2497d657cc9bc35952f5dfc71090a18dade53` in the disposable CI fixture. These
+subsequent evidence/state edits are not represented as having passed a final CI
+run. The run does not prove privileged check mode, apply, idempotence, restart
+behavior or rollback on the real VPS. Those real-VPS rows remain `NOT_EXECUTED`
+in `baseline.yaml` until LEANDRO performs interactive sudo authentication.

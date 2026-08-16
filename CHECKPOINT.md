@@ -1,7 +1,7 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-16 após Mission Acceptance, revisão arquitetônica e revisão
-de safety do `SLICE-001 — Foundations F1.1`.
+Atualizado em 2026-08-16 após Mission Acceptance, revisão arquitetônica, revisão
+de safety e CI descartável do `SLICE-001 — Foundations F1.1`.
 
 ## Estado durável
 
@@ -14,9 +14,10 @@ de safety do `SLICE-001 — Foundations F1.1`.
 - Q40-D: Technology Mapping + implementação incremental DEV/lab autorizados.
 - Produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
 - Rotação: `DEFERRED_BY_HUMAN_DECISION`.
-- F1.1: remediação candidata materializada e suíte estática local aprovada no
-  worktree; comportamento em VM descartável requer nova validação; VPS real
-  **NOT_APPLIED**.
+- F1.1: commit de implementação
+  `edd2497d657cc9bc35952f5dfc71090a18dade53` aprovado no GitHub Actions run
+  `31972460567`, inclusive VM descartável privilegiada; VPS real **NOT_APPLIED**
+  e slice `PARTIAL`, pronto para check mode privilegiado com interação humana.
 
 ## Artefatos canônicos criados
 
@@ -39,21 +40,26 @@ de safety do `SLICE-001 — Foundations F1.1`.
 - manifests `ExecutionNode`/`Project` validados por JSON Schema 2020-12;
 - produção `false`, ingress público arbitrário e secret literal rejeitados;
 - secret/path policy passou;
-- suíte estática endurecida, testes unitários e syntax-checks Ansible passaram no
-  worktree local, ainda sem vínculo a commit; as contagens ficam no test report;
-- ShellCheck 0.9 passou nos quatro scripts no worktree local;
+- suíte estática endurecida, 37 testes unitários/negativos, três syntax-checks
+  Ansible e ShellCheck nos quatro scripts passaram no job `validate` vinculado ao
+  commit `edd2497d`;
 - os resultados anteriores da fixture (`changed=7`, depois `changed=0` e cleanup)
-  permanecem históricos, não prova atual;
+  permanecem históricos e não são a prova usada para o delta revisado;
 - a revisão encontrou gaps de provenance/TOCTOU no rollback, adoção de objetos,
   check mode e proteção do target; eles foram corrigidos no desired state e
-  passaram revisão/suíte estática, mas ainda exigem integração na VM descartável
-  antes de qualquer apply/rollback na VPS;
+  passaram revisão, suíte estática e integração na VM descartável;
 - o preflight sem sudo passou no NODE-01 com `changed=0`, e o inventário de teste
-  foi recusado corretamente na Workstation física.
+  foi recusado corretamente na Workstation física;
+- o job `disposable-integration` passou em 1m59: check mode sem mutação real da
+  fixture, partial-marker check, primeiro apply `changed=7`, segunda reconciliação
+  `changed=0`, postconditions, quatro recusas de rollback fail-closed, rollback
+  limpo e cleanup de container/imagem de teste nomeada/bundle;
+- o run [`31972460567`](https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567)
+  valida o commit `edd2497d`; esta atualização posterior de evidência/state não é
+  apresentada como CI do commit final.
 
-Check mode, primeiro apply, segunda reconciliação e rollback da fixture precisam
-de rerun em VM GitHub descartável. O resultado histórico nunca substitui
-apply/idempotência/invariância na VPS real.
+A prova na fixture não substitui check mode, apply, idempotência ou invariância na
+VPS real; todas essas linhas reais continuam `NOT_EXECUTED`.
 
 ## Estado real da VPS antes do apply
 
@@ -86,9 +92,9 @@ Snapshot read-only: `2026-08-16T19:46:14Z`.
 
 ## Guardrails do próximo passo
 
-- não executar check mode, apply ou rollback na VPS antes de a VM GitHub
-  descartável provar a remediação de safety do F1.1 e existir novo checkpoint;
-- quando chegar ao apply, LEANDRO digita sudo diretamente; senha nunca é
+- a VM GitHub descartável já provou a remediação de safety para `edd2497d`; o
+  próximo passo permitido é somente check mode privilegiado na VPS real;
+- LEANDRO digita sudo diretamente no check mode; senha nunca é
   enviada/registrada;
 - manter segunda sessão SSH e revalidar concorrência antes do apply;
 - usar `runbooks/platform-foundation.md`;
@@ -101,13 +107,14 @@ Snapshot read-only: `2026-08-16T19:46:14Z`.
 
 ## Próximo passo exato
 
-**SLICE_001_REVALIDATE_IN_DISPOSABLE_GITHUB_VM_AFTER_SAFETY_REMEDIATION**
+**SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO**
 
-Somente depois de a nova suíte provar prechecks, idempotência e rollback
-fail-closed o próximo checkpoint poderá autorizar check mode/apply interativo. Até
-que apply, segunda reconciliação e invariance checks passem na VPS, F1.1 permanece
-`PARTIAL/NOT_APPLIED`, nunca `DONE`. Docker F1.2, Management Network, produção e
-rotação não fazem parte desse passo.
+Executar apenas o check mode F1.1 na VPS com `--ask-become-pass`, com LEANDRO
+digitando a senha sudo diretamente e sem registro. Inspecionar o diff e reconciliar
+evidência antes de qualquer apply. Até que apply, segunda reconciliação e
+invariance checks passem na VPS, F1.1 permanece `PARTIAL/NOT_APPLIED`, nunca
+`DONE`. Docker F1.2, Management Network, produção e rotação não fazem parte desse
+passo.
 
 ## Architecture/Technology Mapping — gaps condicionais
 

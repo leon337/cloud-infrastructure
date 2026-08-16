@@ -145,7 +145,7 @@ fi
 
 printf '%s\n' \
   "FOUNDATION_CONTAINER_PRIVILEGED_GATE_ACCEPTED host=$HOST_SHORT policy=$PRIVILEGED_CONFIRMATION" \
-  "FOUNDATION_CONTAINER_BUNDLE_READY source_count=$BUNDLE_SOURCE_COUNT git=absent venv=absent secrets=absent"
+  "FOUNDATION_CONTAINER_BUNDLE_READY source_count=$BUNDLE_SOURCE_COUNT git=absent venv=absent forbidden_secret_paths=absent"
 
 CURRENT_STAGE=build_fixture
 docker build --tag "$IMAGE" --file "$DOCKERFILE" "$HARNESS_TMP_DIR"

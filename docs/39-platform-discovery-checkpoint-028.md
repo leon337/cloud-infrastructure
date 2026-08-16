@@ -130,8 +130,10 @@ Preparar e entregar a missão canônica `CODEX-EXECUTION-MISSION-001`, na qual o
 Atualização de continuidade em 16/08/2026: a missão foi criada e aceita; o
 MISSION ACCEPTANCE + RECOVERY REPORT está em
 `40-mission-acceptance-recovery-report.md` e o slice F1.1 foi iniciado. A revisão
-de safety posterior rebaixou o desired state; uma remediação candidata e a suíte
-estática local passaram no worktree, mas check mode/apply/idempotência/rollback
-continuam `PENDING_REVALIDATION_IN_DISPOSABLE_GITHUB_VM_AFTER_REVIEW_DELTA`.
-Nenhuma aplicação ocorreu na VPS e os resultados descartáveis anteriores são
-somente históricos. Essa atualização operacional não reabre Q1–Q40.
+de safety posterior rebaixou o desired state; a remediação foi vinculada ao commit
+`edd2497d657cc9bc35952f5dfc71090a18dade53` e passou no GitHub Actions run
+`31972460567`, inclusive check mode, apply, `changed=0`, recusas fail-closed,
+rollback e cleanup na VM descartável. Nenhuma operação privilegiada ocorreu na
+VPS real. O próximo passo é somente check mode privilegiado no NODE-01, com sudo
+digitado diretamente por LEANDRO; apply depende da reconciliação desse preview.
+Essa atualização operacional não reabre Q1–Q40.

@@ -60,7 +60,7 @@ Depois de baseline medido:
 
 | Capability | Componente V1 | Deployment inicial | Estado |
 |---|---|---|---|
-| Desired state | Ansible Core 2.21.3 + JSON Schema | controller → SSH/sudo humano | `F1_1_PARTIAL_AWAITING_DISPOSABLE_VM_REVALIDATION` |
+| Desired state | Ansible Core 2.21.3 + JSON Schema | controller → SSH/sudo humano | `F1_1_PARTIAL_CI_PASS_REAL_VPS_NOT_APPLIED; NEXT_PRIVILEGED_CHECK_MODE` |
 | Management Network | Tailscale com grants explícitos | serviço host | `WAITING_HUMAN_GATE` |
 | Container runtime | Docker Engine + Compose plugin | serviço host, grupo vazio, sem workload/porta | `PLANNED_F1_2B` |
 | Network/egress | nftables/`DOCKER-USER` + DNS/egress mechanism a selecionar | host + bridges segregadas | `DECISION_PENDING_BEFORE_FIRST_WORKLOAD` |
@@ -163,3 +163,7 @@ F1.1 desired state/namespaces/accounting
 
 Cada seta é dependency, não autorização para executar o próximo slice sem o
 checkpoint do anterior.
+
+Para F1.1, o run `31972460567` validou o commit `edd2497d` na VM descartável. O
+checkpoint corrente autoriza somente check mode privilegiado no NODE-01 com sudo
+humano; não autoriza inferir apply, idempotência ou invariância na VPS.

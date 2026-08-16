@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-16
-documentation_state: SLICE_001_PARTIAL_AWAITING_DISPOSABLE_VM_REVALIDATION
+documentation_state: SLICE_001_PARTIAL_READY_FOR_REAL_VPS_PRIVILEGED_CHECK_MODE
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: NOT_EXECUTED
@@ -29,7 +29,7 @@ project:
     future_platform_implementation: SLICE_001_FOUNDATIONS_PARTIAL
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: SLICE_001_REVALIDATE_IN_DISPOSABLE_GITHUB_VM_AFTER_SAFETY_REMEDIATION
+  next_exact_step: SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
 platform_discovery:
   status: CODEX_IMPLEMENTATION_IN_PROGRESS
   decision_source: state/platform-discovery.yaml
@@ -184,7 +184,7 @@ authorization:
   authority: LEANDRO
   phase_1_and_2_full_access: EXECUTED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: SLICE_001_REVALIDATE_IN_DISPOSABLE_GITHUB_VM_AFTER_SAFETY_REMEDIATION
+  next_step: SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
   platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
   codex_technology_selection: AUTHORIZED_BY_Q40_D
   codex_implementation_mission: AUTHORIZED_BY_Q40_D
@@ -200,7 +200,7 @@ codex_execution:
   current_slice:
     id: SLICE-001
     name: FOUNDATIONS_F1_1
-    status: PARTIAL_AWAITING_DISPOSABLE_VM_REVALIDATION_REAL_VPS_NOT_APPLIED
+    status: PARTIAL_DISPOSABLE_CI_PASS_REAL_VPS_NOT_APPLIED
     scope:
       - CANONICAL_ARCHITECTURE_ARTIFACTS
       - TECHNOLOGY_MAPPING
@@ -220,24 +220,33 @@ codex_execution:
       - NETWORK_LISTENERS
       - SECRET_VALUES
     validation:
-      static_policy_suite: PASS_LOCAL_WORKTREE_NOT_COMMIT_BOUND
-      unit_tests: PASS_LOCAL_WORKTREE_NOT_COMMIT_BOUND
-      ansible_syntax: PASS_LOCAL_WORKTREE_NOT_COMMIT_BOUND
-      shellcheck: PASS_4_LOCAL_WORKTREE_NOT_COMMIT_BOUND
+      ci_run_id: 31972460567
+      ci_run_url: https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567
+      ci_validated_commit: edd2497d657cc9bc35952f5dfc71090a18dade53
+      ci_conclusion: PASS
+      ci_scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
+      static_policy_suite: PASS_CI_RUN_31972460567_COMMIT_EDD2497D
+      unit_tests: PASS_37_CI_RUN_31972460567_COMMIT_EDD2497D
+      ansible_syntax: PASS_3_CI_RUN_31972460567_COMMIT_EDD2497D
+      shellcheck: PASS_4_CI_RUN_31972460567_COMMIT_EDD2497D
       unprivileged_real_vps_target_preflight: PASS_CHANGED_0_NO_MUTATION
       physical_test_inventory_guard: REFUSED_BEFORE_MUTATION_EXIT_2
-      disposable_ubuntu_check_mode: PENDING_REVALIDATION_IN_DISPOSABLE_GITHUB_VM_AFTER_REVIEW_DELTA
-      disposable_ubuntu_first_apply: PENDING_REVALIDATION_IN_DISPOSABLE_GITHUB_VM_AFTER_REVIEW_DELTA
-      disposable_ubuntu_second_apply: PENDING_REVALIDATION_IN_DISPOSABLE_GITHUB_VM_AFTER_REVIEW_DELTA
-      disposable_ubuntu_rollback: PENDING_REVALIDATION_IN_DISPOSABLE_GITHUB_VM_AFTER_REVIEW_DELTA
+      disposable_ubuntu_check_mode: PASS_CI_RUN_31972460567_F1_1_MANAGED_SURFACE_INVARIANT
+      disposable_ubuntu_partial_marker_check_mode: PASS_CI_RUN_31972460567_F1_1_MANAGED_SURFACE_INVARIANT
+      disposable_ubuntu_first_apply: PASS_CI_RUN_31972460567_CHANGED_7
+      disposable_ubuntu_second_apply: PASS_CI_RUN_31972460567_CHANGED_0
+      disposable_ubuntu_security_assertions: PASS_CI_RUN_31972460567
+      disposable_ubuntu_rollback_refusals: PASS_CI_RUN_31972460567_SCENARIOS_4_F1_1_MANAGED_SURFACE_INVARIANT
+      disposable_ubuntu_rollback: PASS_CI_RUN_31972460567_CLEAN
+      disposable_ubuntu_cleanup: PASS_CI_RUN_31972460567_CONTAINER_NAMED_TEST_IMAGE_BUNDLE_REMOVED
       previous_disposable_fixture_results: HISTORICAL_ONLY_CHANGED_7_THEN_0_AND_CLEANUP_NOT_CURRENT_PROOF
       real_vps_privileged_check_mode: NOT_EXECUTED
       real_vps_apply: NOT_EXECUTED
       real_vps_idempotence: NOT_EXECUTED
       real_vps_post_apply_invariance: NOT_EXECUTED
     human_interaction:
-      status: NOT_YET_ACTIONABLE_PENDING_DISPOSABLE_VM_REVALIDATION
-      reason: INTERACTIVE_SUDO_IS_REQUIRED_ONLY_AFTER_DISPOSABLE_VM_REVALIDATION_AND_NEW_CHECKPOINT
+      status: READY_FOR_PRIVILEGED_CHECK_MODE_WAITING_LEANDRO_INTERACTIVE_SUDO
+      reason: DISPOSABLE_CI_PASSED_PRIVILEGED_REAL_VPS_CHECK_MODE_REQUIRES_HUMAN_SUDO
       secret_must_not_be_sent_to_agent_or_logged: true
 secrets_policy:
   never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]

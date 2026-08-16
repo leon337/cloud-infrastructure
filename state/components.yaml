@@ -55,7 +55,14 @@ platform_components:
     technology: systemd_slices_tmpfiles_fhs_namespaces
     selected_version: systemd-255-compatible
     observed_version: NOT_APPLIED
-    lifecycle: DESIRED_STATE_PARTIAL_AWAITING_DISPOSABLE_VM_REVALIDATION_REMOTE_NOT_APPLIED
+    lifecycle: DESIRED_STATE_CI_VALIDATED_DISPOSABLE_REAL_VPS_NOT_APPLIED_READY_FOR_PRIVILEGED_CHECK_MODE
+    ci_validation:
+      commit: edd2497d657cc9bc35952f5dfc71090a18dade53
+      run_id: 31972460567
+      conclusion: PASS
+      scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
+      disposable_integration: PASS
+      real_vps_privileged_check_mode: NOT_EXECUTED
   management_network:
     technology: Tailscale
     selected_version: RESOLVE_AT_SLICE

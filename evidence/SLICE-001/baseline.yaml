@@ -12,7 +12,37 @@ git:
   behind: 0
   worktree_clean: true
   working_branch: codex/mission-001-foundations-f1-1
-  reviewed_delta_commit: NOT_AVAILABLE_WORKTREE_UNCOMMITTED
+  reviewed_delta_commit: edd2497d657cc9bc35952f5dfc71090a18dade53
+ci:
+  provider: GitHub_Actions
+  workflow: foundation-ci
+  run_id: 31972460567
+  run_url: https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567
+  event: push
+  branch: codex/mission-001-foundations-f1-1
+  head_sha: edd2497d657cc9bc35952f5dfc71090a18dade53
+  created_at_utc: "2026-08-16T21:05:35Z"
+  completed_at_utc: "2026-08-16T21:08:05Z"
+  conclusion: PASS
+  evidence_scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
+  jobs:
+    validate:
+      job_id: 95226880273
+      conclusion: PASS
+      duration_seconds: 23
+    disposable_integration:
+      job_id: 95226938043
+      conclusion: PASS
+      duration_seconds: 119
+      privileged_boundary: GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
+      check_mode: PASS_F1_1_MANAGED_SURFACE_INVARIANT
+      partial_marker_check_mode: PASS_F1_1_MANAGED_SURFACE_INVARIANT
+      first_apply: PASS_CHANGED_7
+      idempotence_reconcile: PASS_CHANGED_0
+      security_assertions: PASS
+      rollback_refusals: PASS_4_SCENARIOS_F1_1_MANAGED_SURFACE_INVARIANT
+      successful_rollback: PASS_CLEAN
+      cleanup: PASS_CONTAINER_NAMED_TEST_IMAGE_BUNDLE_REMOVED
 vps:
   observed_at_utc: "2026-08-16T19:46:14Z"
   boot_id: 26f703b0-3037-46fc-a7d2-4d574cc43f3a

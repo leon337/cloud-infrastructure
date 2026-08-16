@@ -1,7 +1,7 @@
 # 40 — MISSION ACCEPTANCE + RECOVERY REPORT
 
 Data da recuperação: 2026-08-16 19:46 UTC
-Status: **ACCEPTED — BASELINE RECOVERED — SLICE-001 PARTIAL/AWAITING DISPOSABLE VM REVALIDATION**
+Status: **ACCEPTED — BASELINE RECOVERED — SLICE-001 PARTIAL/CI PASS/REAL VPS NOT APPLIED**
 Autoridade: **LEANDRO / Q40-D**
 
 ## GitHub canônico
@@ -14,6 +14,12 @@ Autoridade: **LEANDRO / Q40-D**
 - worktree/index: limpos;
 - branch isolada do primeiro incremento:
   `codex/mission-001-foundations-f1-1`.
+
+Atualização pós-recuperação: o commit de implementação
+`edd2497d657cc9bc35952f5dfc71090a18dade53` passou no GitHub Actions run
+[`31972460567`](https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567),
+incluindo a integração privilegiada somente na VM descartável. A atualização
+posterior de evidence/state não é apresentada como CI de um commit final novo.
 
 Não havia mudança concorrente no GitHub no início do slice. Há sessões humanas e
 processos de desenvolvimento ativos na VPS; a ausência de concorrência deve ser
@@ -125,11 +131,12 @@ técnica bloqueada, namespaces, tmpfiles e slices de accounting. Não instala
 runtime, não cria listener, não muda SSH/UFW/XRDP e não manipula credenciais.
 
 A revisão de safety encontrou gaps de provenance/TOCTOU no rollback, adoção de
-objetos, check mode e proteção do target. A remediação candidata e a suíte estática
-passaram no worktree local, ainda sem vínculo a commit; check mode, apply,
-idempotência e rollback aguardam prova em VM GitHub descartável. Na VPS essas
-operações continuam bloqueadas. Quando um checkpoint posterior as liberar, a
-aplicação ainda requer autenticação sudo digitada por LEANDRO fora de logs.
+objetos, check mode e proteção do target. A remediação no commit `edd2497d` passou
+na suíte estática e na integração descartável commit-bound: check mode preservou o
+estado, apply teve `changed=7`, segunda reconciliação teve `changed=0`, quatro
+recusas de rollback foram fail-closed e rollback/cleanup terminaram limpos. Isso
+não prova a VPS. O próximo passo permitido é somente o check mode privilegiado no
+NODE-01, com autenticação sudo digitada por LEANDRO fora de logs.
 
 ## Rollback do primeiro incremento
 
@@ -144,11 +151,11 @@ aplicação ainda requer autenticação sudo digitada por LEANDRO fora de logs.
 - o rollback não altera pacotes, Docker, rede, firewall, SSH, credenciais ou dados
   preexistentes.
 
-Esses são requisitos do rollback, não uma afirmação de que a implementação atual
-já os satisfaz dinamicamente. O playbook atual não pode ser executado na VPS até
-provar fail-closed em VM descartável os controles de provenance/TOCTOU, adoção e
-target. O resultado anterior da fixture é histórico e requer revalidação após a
-revisão; o rollback na VPS real continua `NOT_EXECUTED`.
+Esses requisitos passaram na VM descartável do run `31972460567`, mas não são
+apresentados como prova do host real. O resultado anterior da fixture permanece
+histórico; rollback, apply, idempotência e invariância na VPS continuam
+`NOT_EXECUTED`. Nenhum rollback real deve ser tentado antes de existir apply e
+nova evidência de que os namespaces permanecem vazios.
 
 ## HUMAN_GATEs conhecidos
 
@@ -175,3 +182,7 @@ O snapshot sanitizado está em `evidence/SLICE-001/baseline.yaml`. Ele preserva 
 estado observado sem secrets, mas não substitui nova inspeção imediatamente antes
 de apply. Claims do painel do provedor permanecem históricos, e a cópia off-host
 validada refere-se ao archive observado, não ao archive remoto mais recente.
+
+O CI comprova somente o commit `edd2497d` na fixture descartável. O check mode
+privilegiado real deve gerar evidência própria e terminar em nova reconciliação
+antes de qualquer apply; F1.1 permanece `PARTIAL/NOT_APPLIED`.

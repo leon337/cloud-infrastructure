@@ -6,7 +6,12 @@ accounting. Não inclui Docker, rede, firewall, SSH, XRDP ou secrets.
 ## Guardrails
 
 - executar somente contra `node-01` DEV;
-- confirmar branch/SHA e `origin/main` antes de aplicar;
+- confirmar branch/SHA, `origin/main`, worktree limpo e branch remota antes de
+  qualquer operação privilegiada;
+- usar o desired state validado no commit
+  `edd2497d657cc9bc35952f5dfc71090a18dade53` pelo GitHub Actions run
+  `31972460567`, ou um descendente cuja CI esteja verde e cujo delta executável
+  tenha sido explicitamente reconciliado; o run não cobre mudanças posteriores;
 - manter uma segunda sessão SSH validada;
 - não usar `NOPASSWD`, `sshpass` ou variável de senha;
 - LEANDRO digita sudo diretamente quando `--ask-become-pass` solicitar;
@@ -31,19 +36,26 @@ O arquivo apontado por `PLATFORM_SSH_KEY_FILE` permanece fora do repositório.
 Antes de qualquer conexão, o primeiro play valida que ele é arquivo regular,
 não symlink, modo `0400/0600` e fingerprint pública previamente registrada. O
 alvo remoto também precisa coincidir com IP, hostname e hash sanitizado de
-`machine-id` versionados; `StrictHostKeyChecking=yes` continua obrigatório.
+`machine-id` versionados; `StrictHostKeyChecking=yes` continua obrigatório. A
+entrada ED25519 conhecida do host deve resultar no fingerprint público
+`SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4`; não persistir a chave
+privada nem conteúdo de `known_hosts` como evidência.
 
 ## Precheck read-only
 
-1. `git fetch --prune origin`; confirmar SHA e worktree;
-2. validar SSH estrito em duas sessões;
+1. `git fetch --prune origin`; confirmar SHA, worktree e run CI aplicável;
+2. validar SSH estrito, fingerprint público do host e duas sessões;
 3. registrar `systemctl --failed`, listeners, RAM, disco, cgroup v2 e AppArmor;
 4. registrar estados de SSH/UFW/fail2ban/XRDP/LightDM/LXD/Docker;
 5. validar checksum/listagem do backup recente e cópia off-host disponível;
 6. confirmar ausência de marker, `cloud-platform`, `platform-core`, paths,
    runtime paths, tmpfiles e units F1.1;
-7. confirmar que nenhum package manager/reconcile está em execução;
-8. executar suíte local e syntax check.
+7. confirmar ausência de `/run/lock/cloud-platform-foundation-operation`; se
+   existir, seguir a investigação de lock obsoleto abaixo, sem removê-lo
+   automaticamente;
+8. confirmar que nenhum `ansible-playbook`, package manager ou reconcile está em
+   execução e que não há mudança concorrente;
+9. executar suíte local e syntax check.
 
 Comandos de validação local:
 
@@ -53,7 +65,7 @@ cd automation/ansible
 ../../.venv/bin/ansible-playbook playbooks/foundation.yml --syntax-check
 ```
 
-## Preview e apply
+## Preview autorizado e apply posterior
 
 O check mode inicial simula o máximo possível, mas não substitui backup/rollback:
 
@@ -63,7 +75,14 @@ cd automation/ansible
   --ask-become-pass --check --diff
 ```
 
-Revisar o diff e então aplicar:
+O checkpoint corrente termina depois desse preview. Revisar e persistir o diff de
+forma sanitizada, confirmar `failed=0`, `unreachable=0` e ausência de mutação, e
+reconciliar evidence/state/checkpoint antes de qualquer apply. No primeiro check
+mode, account/directories dependentes do grupo simulado são deliberadamente
+pulados; portanto `changed=0` não é o resultado esperado do preview.
+
+O comando de apply abaixo é apenas referência para um checkpoint posterior; não
+deve ser executado como continuação automática do check mode:
 
 ```bash
 ../../.venv/bin/ansible-playbook playbooks/foundation.yml \
@@ -137,6 +156,11 @@ O harness recusa NODE-01/hostname real, monta apenas um bundle allowlisted sem
 imagem e bundle. Ele testa check mode, apply, `changed=0`, contas/permissões,
 quatro recusas fail-closed sem mudança e rollback vazio. O CI hospedado é a
 execução canônica; não rode esse comando na máquina física de trabalho.
+
+O run `31972460567` passou para o commit `edd2497d`: check mode e partial-marker
+check preservaram o estado da fixture, apply teve `changed=7`, segunda
+reconciliação `changed=0`, quatro recusas de rollback preservaram o estado e o
+rollback/cleanup terminaram limpos. Isso não é evidência de execução na VPS real.
 
 ## Evidência
 

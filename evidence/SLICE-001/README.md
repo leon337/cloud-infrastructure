@@ -13,11 +13,11 @@ preparação não prova aplicação na VPS.
 | Unprivileged DEV identity preflight | `PASS_CHANGED_0_AT_2026-08-16T20:58:00Z` |
 | Physical-host test-inventory guard | `REFUSED_BEFORE_MUTATION_EXIT_2` |
 | Technology Mapping official-source review | `REVIEWED_AT_2026-08-16` |
-| Desired-state unit/schema/negative tests | `PASS_CURRENT_WORKTREE_NOT_COMMIT_BOUND` |
-| Ansible syntax check | `PASS_CURRENT_WORKTREE_NOT_COMMIT_BOUND` |
-| Disposable Ubuntu check mode | `PENDING_REVALIDATION_AFTER_REVIEW_DELTA` |
-| Disposable Ubuntu apply/idempotence/rollback | `PENDING_REVALIDATION_AFTER_REVIEW_DELTA` |
-| Real VPS privileged check mode | `WAITING_HUMAN_INTERACTION` |
+| Desired-state unit/schema/negative tests | `PASS_CI_RUN_31972460567_COMMIT_EDD2497D` |
+| Ansible syntax check | `PASS_CI_RUN_31972460567_COMMIT_EDD2497D` |
+| Disposable Ubuntu check mode/invariance | `PASS_CI_RUN_31972460567_COMMIT_EDD2497D` |
+| Disposable Ubuntu apply/idempotence/rollback | `PASS_CI_RUN_31972460567_COMMIT_EDD2497D` |
+| Real VPS privileged check mode | `READY_WAITING_HUMAN_INTERACTIVE_SUDO` |
 | VPS apply | `NOT_EXECUTED` |
 | Second reconcile `changed=0` | `NOT_EXECUTED` |
 | Post-apply invariance | `NOT_EXECUTED` |
@@ -25,6 +25,10 @@ preparação não prova aplicação na VPS.
 
 `NOT_EXECUTED` nunca deve ser interpretado como `PASS`.
 
-Os resultados históricos da fixture continuam registrados em `test-results.md`,
-mas não valem para o delta revisado até nova execução completa. O commit/CI final
-deve vincular os testes ao tree efetivamente publicado antes do checkpoint.
+O run GitHub Actions
+[`31972460567`](https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567)
+passou para o commit de implementação
+`edd2497d657cc9bc35952f5dfc71090a18dade53`. Os resultados anteriores da fixture
+continuam registrados apenas como histórico. Esta atualização de evidência é
+posterior àquele SHA e não alega CI do commit final; a VPS real continua sem
+execução privilegiada.

@@ -73,8 +73,10 @@ Q40 = `D` por decisão explícita de LEANDRO:
 
 A missão vinculante é `docs/CODEX-EXECUTION-MISSION-001.md`. Mission Acceptance e
 Q1–Q40 foram persistidos. O Technology Mapping é suficiente para F1.1, mas mantém
-gaps posteriores explicitamente `CONDITIONAL`; a remediação candidata do primeiro
-slice aguarda revalidação em VM GitHub descartável.
+gaps posteriores explicitamente `CONDITIONAL`. O commit de implementação
+`edd2497d657cc9bc35952f5dfc71090a18dade53` passou nos jobs estático e de
+integração descartável do GitHub Actions run `31972460567`; isso não prova nenhuma
+operação privilegiada na VPS real.
 
 ## Guardrails centrais
 
@@ -95,20 +97,17 @@ Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUD
 
 ## Ponto exato
 
-**SLICE_001_REVALIDATE_IN_DISPOSABLE_GITHUB_VM_AFTER_SAFETY_REMEDIATION**.
+**SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO**.
 
 F1.1 possui artefatos canônicos, desired state Ansible, schema/manifests, policy de
-secrets, CI e testes. A remediação candidata dos gaps de safety foi materializada no
-worktree; suíte estática, unit tests, syntax-checks Ansible e ShellCheck nos quatro
-scripts passaram localmente, ainda sem vínculo a commit; as contagens ficam no
-test report. Os resultados
-anteriores da fixture Ubuntu (`changed=7`, depois `changed=0` e cleanup) são
-históricos. Nada foi aplicado à VPS real.
+secrets, CI e testes. O run commit-bound `31972460567` passou com 37 testes,
+ShellCheck, três syntax-checks Ansible, check mode sem mutação, apply descartável
+`changed=7`, segunda reconciliação `changed=0`, quatro recusas fail-closed,
+rollback e cleanup. Os resultados anteriores da fixture são somente históricos.
+Nada foi aplicado à VPS real; F1.1 permanece `PARTIAL/NOT_APPLIED`.
 
-O próximo executor deve rodar na VM GitHub descartável o check mode, primeiro
-apply, segunda reconciliação e rollback, incluindo as recusas de
-provenance/TOCTOU, adoção e target guard. Só um checkpoint novo após esse rerun
-pode liberar check mode/apply na VPS. Quando isso ocorrer, LEANDRO digita a senha
-sudo diretamente no prompt interativo; ela nunca é enviada ao agente ou
-registrada. Docker, Management Network, produção e rotação não fazem parte desse
-apply.
+O próximo executor deve repetir os prechecks read-only frescos e executar somente
+o check mode privilegiado F1.1 no NODE-01. LEANDRO digita a senha sudo diretamente
+no prompt `--ask-become-pass`; ela nunca é enviada ao agente ou registrada. O diff
+deve ser persistido de forma sanitizada e reconciliado antes de qualquer apply.
+Docker, Management Network, produção e rotação não fazem parte desse passo.
