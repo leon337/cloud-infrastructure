@@ -17,6 +17,8 @@ preparação não prova aplicação na VPS.
 | Ansible syntax check | `PASS_CI_RUN_31972460567_COMMIT_EDD2497D` |
 | Disposable Ubuntu check mode/invariance | `PASS_CI_RUN_31972460567_COMMIT_EDD2497D` |
 | Disposable Ubuntu apply/idempotence/rollback | `PASS_CI_RUN_31972460567_COMMIT_EDD2497D` |
+| Checkpoint HEAD CI | `PASS_RUN_31973125852_COMMIT_DA7DF70` |
+| Fresh pre-preview DEV baseline | `PASS_READ_ONLY_AT_2026-08-16T21:23:21Z` |
 | Real VPS privileged check mode | `READY_WAITING_HUMAN_INTERACTIVE_SUDO` |
 | VPS apply | `NOT_EXECUTED` |
 | Second reconcile `changed=0` | `NOT_EXECUTED` |
@@ -30,5 +32,11 @@ O run GitHub Actions
 passou para o commit de implementação
 `edd2497d657cc9bc35952f5dfc71090a18dade53`. Os resultados anteriores da fixture
 continuam registrados apenas como histórico. Esta atualização de evidência é
-posterior àquele SHA e não alega CI do commit final; a VPS real continua sem
-execução privilegiada.
+posterior àquele SHA; a VPS real continua sem execução privilegiada.
+
+O checkpoint posterior `da7df7070b31c019242900375664ab9eada3894f` também passou
+integralmente no run
+[`31973125852`](https://github.com/leon337/cloud-infrastructure/actions/runs/31973125852).
+O baseline read-only imediatamente posterior confirmou ausência de drift e de
+objetos/lock F1.1. Esta atualização de evidência é posterior ao run e não altera
+nenhum artefato executável.

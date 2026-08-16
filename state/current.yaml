@@ -225,11 +225,20 @@ codex_execution:
       ci_validated_commit: edd2497d657cc9bc35952f5dfc71090a18dade53
       ci_conclusion: PASS
       ci_scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
+      checkpoint_head_ci_run_id: 31973125852
+      checkpoint_head_ci_run_url: https://github.com/leon337/cloud-infrastructure/actions/runs/31973125852
+      checkpoint_head_ci_validated_commit: da7df7070b31c019242900375664ab9eada3894f
+      checkpoint_head_ci_conclusion: PASS
+      checkpoint_head_ci_scope: COMMIT_BOUND_CHECKPOINT_HEAD_NOT_SUBSEQUENT_READ_ONLY_EVIDENCE_UPDATE
       static_policy_suite: PASS_CI_RUN_31972460567_COMMIT_EDD2497D
       unit_tests: PASS_37_CI_RUN_31972460567_COMMIT_EDD2497D
       ansible_syntax: PASS_3_CI_RUN_31972460567_COMMIT_EDD2497D
       shellcheck: PASS_4_CI_RUN_31972460567_COMMIT_EDD2497D
       unprivileged_real_vps_target_preflight: PASS_CHANGED_0_NO_MUTATION
+      fresh_pre_privileged_readonly_baseline: PASS_AT_2026_08_16T21_23_21Z_NO_DRIFT_NO_MUTATION
+      fresh_foundation_objects_and_lock: ALL_ABSENT
+      fresh_concurrent_reconcile_and_package_processes: ZERO
+      pre_apply_archive_and_off_host_revalidation: REQUIRED_BEFORE_APPLY_NOT_READ_ONLY_PREVIEW
       physical_test_inventory_guard: REFUSED_BEFORE_MUTATION_EXIT_2
       disposable_ubuntu_check_mode: PASS_CI_RUN_31972460567_F1_1_MANAGED_SURFACE_INVARIANT
       disposable_ubuntu_partial_marker_check_mode: PASS_CI_RUN_31972460567_F1_1_MANAGED_SURFACE_INVARIANT

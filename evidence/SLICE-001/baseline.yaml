@@ -43,6 +43,19 @@ ci:
       rollback_refusals: PASS_4_SCENARIOS_F1_1_MANAGED_SURFACE_INVARIANT
       successful_rollback: PASS_CLEAN
       cleanup: PASS_CONTAINER_NAMED_TEST_IMAGE_BUNDLE_REMOVED
+checkpoint_head_ci:
+  run_id: 31973125852
+  run_url: https://github.com/leon337/cloud-infrastructure/actions/runs/31973125852
+  head_sha: da7df7070b31c019242900375664ab9eada3894f
+  completed_at_utc: "2026-08-16T21:21:53Z"
+  conclusion: PASS
+  validate_job_id: 95228537900
+  validate_duration_seconds: 22
+  disposable_integration_job_id: 95228589869
+  disposable_integration_duration_seconds: 145
+  executable_delta_from_reviewed_commit:
+    - scripts/test_foundation_container.sh: OUTPUT_LABEL_PRECISION_ONLY
+  evidence_scope: CHECKPOINT_HEAD_COMMIT_BOUND_NOT_SUBSEQUENT_READ_ONLY_EVIDENCE_UPDATE
 vps:
   observed_at_utc: "2026-08-16T19:46:14Z"
   boot_id: 26f703b0-3037-46fc-a7d2-4d574cc43f3a
@@ -95,6 +108,28 @@ vps:
     observed_at_utc: "2026-08-16T20:59:00Z"
     result: REFUSED_BEFORE_MUTATION
     exit_code: 2
+  pre_privileged_check_mode_revalidation:
+    observed_at_utc: "2026-08-16T21:23:21Z"
+    checkpoint_head: da7df7070b31c019242900375664ab9eada3894f
+    controller_and_remote_identity_preflight: PASS_CHANGED_0_NO_SUDO
+    known_host_ed25519_fingerprint: PASS_EXPECTED
+    boot_id_unchanged: true
+    hostname_machine_id_kernel_cgroup_apparmor: PASS_EXPECTED
+    memory_available_kib: 18240916
+    root_available_bytes: 299597164544
+    failed_units: 0
+    listeners_match_initial_baseline: true
+    core_services_match_expected_baseline: true
+    lxd_daemon_inactive: true
+    lxd_socket_inactive_disabled: true
+    docker_and_containerd_units_absent: true
+    foundation_objects_account_group_and_lock: ALL_ABSENT
+    concurrent_ansible_apt_dpkg_unattended_upgrade_processes: 0
+    active_session_count: 6
+    backup_timer: active_enabled
+    backup_service_last_result: success
+    archive_integrity_and_off_host_copy: NOT_REVALIDATED_WITHOUT_PRIVILEGE_REQUIRED_BEFORE_APPLY_NOT_READ_ONLY_PREVIEW
+    remote_mutation: false
 apply:
   privileged_check_mode: NOT_EXECUTED
   privileged_apply: NOT_EXECUTED

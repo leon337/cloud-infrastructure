@@ -45,6 +45,30 @@ fixture boundary (`/.dockerenv`, `systemd-detect-virt=docker`, canonical baked
 inventory/root) was absent and the preflight refused the target with exit `2`,
 before any mutation.
 
+## Checkpoint HEAD CI and fresh pre-preview baseline
+
+Checkpoint commit `da7df7070b31c019242900375664ab9eada3894f` passed GitHub
+Actions run
+[`31973125852`](https://github.com/leon337/cloud-infrastructure/actions/runs/31973125852)
+at `2026-08-16T21:21:53Z`. The required static job passed in 22 seconds and the
+disposable integration passed in 2 minutes 25 seconds. The only executable delta
+from `edd2497d` was a more precise non-control-flow output label in the harness;
+the full lifecycle was nevertheless rerun on the checkpoint HEAD.
+
+At `2026-08-16T21:23:21Z`, a new unprivileged NODE-01 preflight and read-only
+baseline passed with `changed=0`, no sudo and no remote mutation. Boot identity,
+host/machine identity, kernel, cgroup v2, AppArmor, listeners and core services
+matched the recovered baseline; failed units were zero. LXD remained inactive
+with its socket disabled, Docker/containerd remained absent, every F1.1 object,
+account, group and lock remained absent, and no Ansible/package-manager process
+was concurrent. The backup timer was active and the last service result was
+`success`. Archive integrity and the off-host copy were not reopened without
+privilege; they remain a mandatory precondition for apply, not for this
+non-mutating preview.
+
+This evidence/state update follows run `31973125852`, changes no executable
+artifact and does not claim that the update commit itself was already tested.
+
 ## Commit-bound disposable Ubuntu 24.04/systemd integration
 
 GitHub Actions run
@@ -106,9 +130,10 @@ repository during fixture build.
 
 ## Evidence boundary
 
-Run `31972460567` proves only commit
-`edd2497d657cc9bc35952f5dfc71090a18dade53` in the disposable CI fixture. These
-subsequent evidence/state edits are not represented as having passed a final CI
-run. The run does not prove privileged check mode, apply, idempotence, restart
-behavior or rollback on the real VPS. Those real-VPS rows remain `NOT_EXECUTED`
-in `baseline.yaml` until LEANDRO performs interactive sudo authentication.
+Run `31972460567` proves implementation commit `edd2497d`; the later run
+`31973125852` proves checkpoint HEAD `da7df70`, both in the disposable CI
+fixture. This subsequent read-only evidence/state update changes no executable
+artifact and is not represented as having already passed another CI run. Neither
+run proves privileged check mode, apply, idempotence, restart behavior or
+rollback on the real VPS. Those real-VPS rows remain `NOT_EXECUTED` in
+`baseline.yaml` until LEANDRO performs interactive sudo authentication.

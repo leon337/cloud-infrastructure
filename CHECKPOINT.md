@@ -57,6 +57,14 @@ de safety e CI descartável do `SLICE-001 — Foundations F1.1`.
 - o run [`31972460567`](https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567)
   valida o commit `edd2497d`; esta atualização posterior de evidência/state não é
   apresentada como CI do commit final.
+- o checkpoint `da7df70` passou novamente no run
+  [`31973125852`](https://github.com/leon337/cloud-infrastructure/actions/runs/31973125852):
+  job estático em 22 s e integração descartável em 2m25;
+- o baseline read-only de `2026-08-16T21:23:21Z` confirmou identidade, mesmo boot,
+  zero units falhas, mesmos listeners/serviços, LXD inativo, Docker ausente, zero
+  concorrência e todos os objetos/lock F1.1 ausentes, sem sudo ou mutação;
+- timer de backup ativo e último serviço `success`; checksum/archive e cópia
+  off-host devem ser revalidados antes do apply, não deste preview sem mutação.
 
 A prova na fixture não substitui check mode, apply, idempotência ou invariância na
 VPS real; todas essas linhas reais continuam `NOT_EXECUTED`.
