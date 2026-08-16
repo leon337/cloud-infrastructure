@@ -1,4 +1,4 @@
-# 12 — Platform Discovery Checkpoint 001 — Q1–Q7
+# 12 — Platform Discovery Checkpoint 001 — Q1–Q8
 
 Data: 2026-08-16
 Status: **DISCOVERY_IN_PROGRESS**
@@ -27,12 +27,13 @@ Princípios emergentes:
 - autonomia por escopo, não acesso irrestrito;
 - projetos isolados entre si;
 - sandboxes temporários para missões/agentes;
+- sandboxes com limites explícitos de CPU, RAM, disco e rede;
 - núcleo central de capacidades independente de um único cliente de IA;
 - MCP como uma interface para agentes, não como a infraestrutura inteira;
 - catálogo amplo de capacidades, implementado progressivamente;
 - compute descartável; estado importante explicitamente persistente.
 
-## Decisões Q1–Q7
+## Decisões Q1–Q8
 
 ### Q1 — Identidade da infraestrutura
 
@@ -124,6 +125,25 @@ Princípio: **compute é descartável; estado importante é explicitamente persi
 
 Direção futura possível, ainda não decidida: aumentar gradualmente a capacidade de reconstrução automática a partir de Git, manifests, migrations, fixtures e backups.
 
+### Q8 — Nível de isolamento do sandbox
+
+**Escolha: C — projeto isolado + sandbox por missão com limites de recursos.**
+
+Cada projeto deve possuir um ambiente principal isolado e a plataforma deve ser capaz de criar sandboxes adicionais para missões, agentes ou testes. Esses sandboxes devem poder receber limites e políticas próprias de:
+
+- CPU;
+- RAM;
+- disco;
+- rede;
+- processos;
+- filesystem temporário;
+- variáveis e serviços;
+- banco temporário quando necessário.
+
+Princípio: **um agente descontrolado não deve conseguir consumir todos os recursos do laboratório nem interferir em outro projeto ou na infraestrutura-base.**
+
+A tecnologia de isolamento ainda não está decidida; containers são candidatos naturais, mas Docker/Podman/Kubernetes ou outra solução permanecem para decisão posterior.
+
 ## Arquitetura conceitual emergente
 
 ```text
@@ -159,7 +179,7 @@ Direção futura possível, ainda não decidida: aumentar gradualmente a capacid
 
 ## Não decidido ainda
 
-Nenhuma escolha tecnológica específica está congelada por estas Q1–Q7. Em particular, ainda não está decidido de forma final:
+Nenhuma escolha tecnológica específica está congelada por estas Q1–Q8. Em particular, ainda não está decidido de forma final:
 
 - Docker/Podman/Kubernetes ou outra estratégia de runtime;
 - PostgreSQL/Supabase self-hosted ou outra camada de dados;
@@ -179,7 +199,7 @@ Esses itens devem ser resolvidos pela continuação da Discovery, não por insta
 
 ## Próximo passo
 
-**DISCOVERY_Q8**.
+**DISCOVERY_Q9**.
 
 Continuar o questionário até existir maturidade suficiente para produzir:
 
