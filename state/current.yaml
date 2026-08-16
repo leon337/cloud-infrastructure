@@ -1,8 +1,8 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-15
-documentation_state: PHASE_1_AND_2_RECONCILED
+updated_at: 2026-08-16
+documentation_state: PLATFORM_DISCOVERY_IN_PROGRESS
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: NOT_EXECUTED
@@ -14,8 +14,53 @@ project:
     phase_0: DONE
     phase_1: DONE
     phase_2_cloud_workstation: DONE
+    future_phases_3_to_10: PROVISIONAL_PENDING_PLATFORM_DISCOVERY
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
-  next_exact_step: CREDENTIAL_ROTATION
+  credential_rotation: DEFERRED_BY_HUMAN_DECISION
+  next_exact_step: DISCOVERY_Q8
+platform_discovery:
+  status: IN_PROGRESS
+  checkpoint: docs/12-platform-discovery-checkpoint-001.md
+  purpose: DESIGN_AGENT_DEVELOPMENT_LAB_AND_PRIVATE_EXECUTION_PLATFORM
+  implementation_authorized: false
+  codex_implementation_mission_authorized: false
+  q1:
+    status: DECIDED
+    choice: C
+    decision: PRIVATE_COMPUTE_DEVELOPMENT_AND_AGENT_EXECUTION_PLATFORM
+  q2:
+    status: DECIDED
+    choice: C
+    decision: OWN_INFRASTRUCTURE_DEFAULT_FOR_DEV_EXTERNAL_SERVICES_WHEN_ADVANTAGEOUS
+    refinement: LAB_FOR_AGENT_AUTONOMY_WITH_PRODUCTION_PORTABILITY
+  q3:
+    status: DECIDED
+    choice: C
+    decision: PROJECT_ISOLATION_PLUS_TEMPORARY_AGENT_MISSION_SANDBOXES
+  q4:
+    status: DECIDED
+    choice: C
+    decision: AUTONOMY_INSIDE_AUTHORIZED_SCOPE_HUMAN_GATE_OUTSIDE
+  q5:
+    status: DECIDED
+    choice: D
+    decision: CAPABILITY_CORE_PLUS_API_MCP_CLI_PROGRESSIVELY
+  q6:
+    status: DECIDED
+    choice: C
+    decision: COMPLETE_DEVELOPMENT_LAB_CAPABILITY_CATALOG_PROGRESSIVE_IMPLEMENTATION
+  q7:
+    status: DECIDED
+    choice: C
+    decision: DISPOSABLE_COMPUTE_EXPLICITLY_PERSISTENT_IMPORTANT_STATE
+  next_question: Q8
+  target_artifacts:
+    - CONSOLIDATED_REQUIREMENTS
+    - TARGET_ARCHITECTURE
+    - THREAT_MODEL_AND_AUTONOMY_BOUNDARIES
+    - INFRASTRUCTURE_BLUEPRINT_V1
+    - REVISED_IMPLEMENTATION_ROADMAP
+    - CODEX_EXECUTION_MISSION
 remote_vps:
   snapshot_at_utc: "2026-08-16T01:58:02Z"
   provider: Contabo
@@ -136,8 +181,10 @@ findings:
   open_other: [FND-CPU-001, FND-CLOUDINIT-001]
 authorization:
   phase_1_and_2_full_access: EXECUTED
-  next_step: CREDENTIAL_ROTATION
+  credential_rotation: DEFERRED_BY_HUMAN_DECISION
+  next_step: DISCOVERY_Q8
   future_changes: HUMAN_GATE_REQUIRED
+  platform_heavy_implementation: NOT_AUTHORIZED_PENDING_DISCOVERY
   historical_executed:
     AUTH-SSH-KEEPALIVE-001: EXECUTED_AND_VALIDATED
 secrets_policy:
