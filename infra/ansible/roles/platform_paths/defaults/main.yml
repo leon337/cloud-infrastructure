@@ -1,0 +1,5 @@
+---
+platform_root_config: /etc/cloud-platform
+platform_root_opt: /opt/cloud-platform
+platform_root_state: /var/lib/cloud-platform
+platform_root_backup: /var/backups/cloud-infrastructure/mission-001
