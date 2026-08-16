@@ -1,4 +1,4 @@
-# 13 — Platform Discovery Checkpoint 002 — Q10
+# 13 — Platform Discovery Checkpoint 002 — Q10–Q11
 
 Data: 2026-08-16
 Status: **DISCOVERY_IN_PROGRESS**
@@ -60,6 +60,68 @@ O futuro Capability Core deverá ser capaz de evoluir para operações como:
 - a arquitetura deve favorecer portabilidade futura para serviços externos de produção;
 - a tecnologia concreta da camada de dados ainda não está congelada.
 
+## Q11 — Estratégia de armazenamento de arquivos
+
+**Escolha de LEANDRO: D — modelo híbrido: Git + filesystem temporário + object storage + volumes persistentes quando necessários.**
+
+### Decisão
+
+A plataforma deve tratar tipos de armazenamento conforme sua finalidade, evitando usar uma única solução para tudo.
+
+Estrutura conceitual:
+
+```text
+PROJETO
+|
++-- Git
+|   +-- código
+|   +-- configuração versionável
+|   +-- documentação
+|   +-- manifests
+|
++-- Filesystem temporário
+|   +-- workspace do sandbox
+|   +-- dependências
+|   +-- arquivos temporários
+|   +-- execução de builds/testes
+|
++-- Object Storage
+|   +-- uploads
+|   +-- imagens
+|   +-- PDFs
+|   +-- relatórios
+|   +-- artefatos
+|   +-- arquivos gerados por agentes
+|
++-- Volume persistente
+    +-- somente para workloads que realmente exijam filesystem persistente
+```
+
+### Princípios derivados
+
+- Git não deve ser usado como depósito genérico de dados e uploads;
+- filesystem de sandbox é descartável por padrão;
+- object storage é a capacidade preferencial para arquivos persistentes orientados a aplicação;
+- volumes persistentes devem existir apenas quando o workload realmente exigir semântica de filesystem;
+- storage deve ser isolado e autorizado por projeto;
+- credenciais de projeto/sandbox não devem permitir acesso ao storage de outros projetos;
+- armazenamento não substitui backup;
+- a arquitetura deve favorecer portabilidade futura para object storage/volumes gerenciados em produção;
+- a tecnologia concreta de object storage e volumes ainda não está congelada.
+
+### Capacidades desejadas
+
+O futuro Capability Core poderá evoluir para operações como:
+
+- criar storage/bucket escopado por projeto;
+- emitir credenciais temporárias e limitadas;
+- upload/download/list/delete de objetos conforme política;
+- provisionar filesystem temporário de sandbox;
+- provisionar volume persistente quando declarado no manifesto;
+- anexar/desanexar volumes de forma controlada;
+- aplicar quotas por projeto/sandbox;
+- integrar storage persistente ao futuro sistema de backup e recovery.
+
 ## Estado das decisões
 
 ```text
@@ -73,10 +135,11 @@ Q7  = C
 Q8  = C
 Q9  = C
 Q10 = C
+Q11 = D
 ```
 
 ## Próximo passo
 
-**DISCOVERY_Q11**.
+**DISCOVERY_Q12**.
 
-A Discovery continua. Nenhuma escolha tecnológica final de banco, runtime, storage, reverse proxy, secret manager, CI/CD, observabilidade, Hermes/OpenClaw/Freebuff/OpenHands ou desenho detalhado de MCP deve ser antecipada antes das decisões correspondentes.
+A Discovery continua. Nenhuma escolha tecnológica final de banco, runtime, object storage, volumes, reverse proxy, secret manager, CI/CD, observabilidade, Hermes/OpenClaw/Freebuff/OpenHands ou desenho detalhado de MCP deve ser antecipada antes das decisões correspondentes.
