@@ -39,6 +39,8 @@ slice_000:
     revised_implementation_roadmap: CREATED
     foundation_technology_mapping: CREATED
     workflow_event_technology_mapping: CREATED
+    data_secrets_observability_technology_mapping: CREATED
+    edge_identity_artifacts_ai_technology_mapping: CREATED
     readonly_precheck: CREATED_NOT_EXECUTED
     readonly_precheck_files:
       - infra/ansible/ansible.cfg
@@ -66,6 +68,15 @@ technology_mapping:
   authorization_policy_engine:
     technology: Open_Policy_Agent
     status: SELECTED_FOR_PLATFORM_CORE
+  identity_provider:
+    technology: Keycloak
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  capability_core_runtime:
+    technology: Nodejs_24_LTS_TypeScript_Fastify_v5
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  mcp_adapter:
+    technology: Official_MCP_TypeScript_SDK_Streamable_HTTP
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
   workflow_engine:
     technology: Temporal
     topology: SELF_HOSTED_SINGLE_NODE_FIRST_POSTGRESQL_BACKED_DISTRIBUTED_CAPABLE
@@ -74,16 +85,47 @@ technology_mapping:
     technology: NATS_JetStream
     topology: SINGLE_NODE_FILE_STORE_FIRST_CLUSTER_READY
     status: SELECTED_FOR_INCREMENTAL_VALIDATION
-  data_service_plane:
-    status: PENDING_DEDICATED_MAPPING
+  relational_data_plane:
+    technology: PostgreSQL_18
+    status: SELECTED_WITH_TEMPORAL_COMPATIBILITY_GATE
+  secret_store:
+    technology: OpenBao_Integrated_Storage
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  object_storage:
+    technology: Garage_S3
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  cache:
+    technology: Valkey
+    role: CACHE_ONLY_NOT_CANONICAL_STATE
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
   observability:
-    status: PENDING_DEDICATED_MAPPING
+    technology:
+      - OpenTelemetry_Collector
+      - Prometheus
+      - Grafana_Loki
+      - Grafana
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
   preview_gateway:
-    status: PENDING_DEDICATED_MAPPING
+    technology: Traefik_v3_File_Provider
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  dev_dns:
+    technology: WILDCARD_OPERATOR_OWNED_DOMAIN
+    status: SELECTED_PATTERN_ACTIVATION_WAITING_FOR_DOMAIN_FACT
+  automatic_tls:
+    technology: Traefik_ACME_HTTP01
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  canonical_oci_registry:
+    technology: GitHub_Container_Registry
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  local_oci_cache:
+    technology: zot
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
   agent_gateway:
-    status: PENDING_DEDICATED_MAPPING
+    technology: Nodejs_24_LTS_TypeScript_Fastify_v5
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
   ai_model_gateway:
-    status: PENDING_DEDICATED_MAPPING
+    technology: LiteLLM_Proxy
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
 
 active_human_gates:
   - id: HG-EXECUTION-ACCESS-001
@@ -96,6 +138,17 @@ active_human_gates:
       - DO_NOT_WEAKEN_SSH_POLICY
       - STOP_ON_UNEXPECTED_HOST_FINGERPRINT
 
+anticipated_human_gates:
+  - id: HG-OPENBAO-RECOVERY-001
+    status: NOT_YET_REACHED
+    purpose: SECURELY_RECEIVE_AND_STORE_INITIAL_OPENBAO_RECOVERY_MATERIAL
+  - id: HG-IDENTITY-BOOTSTRAP-001
+    status: NOT_YET_REACHED
+    purpose: SECURELY_ESTABLISH_FIRST_PLATFORM_IDENTITY_ADMINISTRATOR
+  - id: HG-DEV-DNS-001
+    status: NOT_YET_REACHED
+    purpose: DESIGNATE_OPERATOR_OWNED_DEV_DOMAIN_OR_SUBDOMAIN_FOR_PUBLIC_PREVIEWS
+
 findings_carried_forward:
   - id: FND-BACKUP-001
     status: MITIGATED_OPEN
@@ -106,9 +159,9 @@ findings_carried_forward:
 
 next_actions:
   independent_safe:
-    - VERIFY_REPOSITORY_SLICE_AND_NO_SECRET_LEAKAGE
     - PREPARE_FOUNDATION_IDEMPOTENT_ROLES_WITHOUT_APPLYING_NODE_CHANGES
-    - TECHNOLOGY_MAPPING_DATA_SECRETS_OBSERVABILITY_EDGE
+    - VERIFY_REPOSITORY_SLICE_AND_NO_SECRET_LEAKAGE
+    - PREPARE_SLICE_001_AND_SLICE_002_APPLY_CONTRACTS
   blocked_on_human_gate:
     - AUTHENTICATED_LIVE_NODE_01_PRECHECK
     - RECORD_GITHUB_NODE_DRIFT
