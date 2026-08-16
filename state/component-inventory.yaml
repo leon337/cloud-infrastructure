@@ -1,0 +1,223 @@
+inventory_version: 1
+updated_at: 2026-08-16
+mission: CODEX-EXECUTION-MISSION-001
+scope: DEV_LAB_ONLY
+node_01_deployment_state: NOT_CHANGED_BY_MISSION
+version_policy:
+  rule: PIN_EXACT_VERSION_OR_IMMUTABLE_DIGEST_BEFORE_DEPLOYMENT
+  floating_latest_tags_allowed: false
+  current_version_revalidation_required_before_apply: true
+
+components:
+  host_reconciliation:
+    product: Ansible Core
+    selected_line: "2.21"
+    validation_version: "2.21.2"
+    deployment_version: CONTROL_NODE_ONLY
+    status: REPOSITORY_VALIDATION_SELECTED
+    criticality: REBUILDABLE
+
+  container_runtime:
+    product: Docker Engine
+    selected_line: stable_official_ubuntu_noble
+    deployment_version: PENDING_LIVE_PRECHECK_AND_PIN
+    status: SELECTED_NOT_DEPLOYED_BY_MISSION
+    criticality: REBUILDABLE
+    notes: Agents and project users do not receive docker group or Docker socket authority.
+
+  compose:
+    product: Docker Compose plugin
+    deployment_version: PENDING_LIVE_PRECHECK_AND_PIN
+    status: SELECTED_NOT_DEPLOYED_BY_MISSION
+    criticality: REBUILDABLE
+
+  management_overlay:
+    product: Tailscale
+    selected_line: stable_ubuntu_noble
+    deployment_version: PENDING_LIVE_PRECHECK_AND_PIN
+    status: SELECTED_NOT_DEPLOYED_BY_MISSION
+    criticality: REBUILDABLE
+    notes: Installation and enrollment are separated; existing OpenSSH remains fallback.
+
+  host_firewall:
+    product: UFW
+    deployment_version: EXISTING_NODE_VERSION_UNVERIFIED_CURRENTLY
+    status: PRESERVE_EXISTING_CANONICAL_BASELINE
+    criticality: CRITICAL
+
+  policy_engine:
+    product: Open Policy Agent
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE
+
+  identity_provider:
+    product: Keycloak
+    selected_line: "26.x"
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: CRITICAL
+
+  capability_core_runtime:
+    product: Node.js
+    selected_line: "24 LTS"
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE
+
+  capability_core_framework:
+    product: Fastify
+    selected_line: "5.x"
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE
+
+  mcp_adapter:
+    product: Official MCP TypeScript SDK
+    transport: Streamable_HTTP
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE
+
+  workflow_engine:
+    product: Temporal
+    topology: SELF_HOSTED_SINGLE_NODE_FIRST_POSTGRESQL_BACKED
+    deployment_version: PENDING_PIN_AND_COMPATIBILITY_TEST
+    status: SELECTED_NOT_DEPLOYED
+    criticality: CRITICAL
+
+  event_backbone:
+    product: NATS JetStream
+    topology: SINGLE_NODE_FILE_STORE_FIRST_CLUSTER_READY
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: IMPORTANT
+
+  relational_data_plane:
+    product: PostgreSQL
+    selected_line: "18"
+    deployment_version: PENDING_CURRENT_MINOR_AND_TEMPORAL_COMPATIBILITY_TEST
+    fallback_line_if_temporal_incompatible: "17"
+    status: SELECTED_NOT_DEPLOYED
+    criticality: CRITICAL_OR_IMPORTANT_BY_DATABASE
+
+  secret_store:
+    product: OpenBao
+    storage: Integrated_Storage_Raft
+    selected_line: "2.6.x"
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: CRITICAL
+
+  object_storage:
+    product: Garage
+    selected_line: "2.x"
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: IMPORTANT_BY_BUCKET
+
+  cache:
+    product: Valkey
+    selected_line: "9.x"
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    canonical_state_allowed: false
+    criticality: REBUILDABLE
+
+  telemetry_collector:
+    product: OpenTelemetry Collector
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE
+
+  metrics:
+    product: Prometheus
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE_OR_IMPORTANT_BY_RETENTION
+
+  logs:
+    product: Grafana Loki
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: IMPORTANT_BY_RETENTION_POLICY
+
+  observability_ui:
+    product: Grafana
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE
+
+  preview_gateway:
+    product: Traefik
+    selected_line: "3.x"
+    provider: FILE_PROVIDER_NO_DOCKER_SOCKET
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE
+
+  automatic_tls:
+    product: Traefik_ACME
+    challenge_v1: HTTP_01
+    deployment_version: FOLLOWS_TRAEFIK
+    status: SELECTED_NOT_ACTIVATED
+    criticality: IMPORTANT
+
+  dev_dns:
+    product: Operator_owned_wildcard_DNS
+    deployment_version: NOT_APPLICABLE
+    status: PATTERN_SELECTED_WAITING_FOR_HG_DEV_DNS_001
+    criticality: IMPORTANT
+
+  canonical_oci_registry:
+    product: GitHub Container Registry
+    deployment_version: MANAGED_EXTERNAL_SERVICE
+    status: SELECTED_NOT_INTEGRATED
+    criticality: IMPORTANT
+
+  local_oci_cache:
+    product: zot
+    deployment_version: PENDING_PIN
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE
+
+  ai_model_gateway:
+    product: LiteLLM Proxy
+    deployment_version: PENDING_PIN_AND_SIGNATURE_VERIFICATION
+    status: SELECTED_NOT_DEPLOYED
+    criticality: REBUILDABLE_WITH_IMPORTANT_ACCOUNTING_STATE
+
+existing_node_components_from_canonical_snapshot:
+  operating_system:
+    product: Ubuntu
+    version: "24.04.4 LTS"
+    snapshot_at_utc: "2026-08-16T01:58:02Z"
+    current_live_revalidation: BLOCKED
+  kernel:
+    version: "6.8.0-137-generic"
+    snapshot_at_utc: "2026-08-16T01:58:02Z"
+    current_live_revalidation: BLOCKED
+  cloud_workstation:
+    stack: XFCE_LIGHTDM_XRDP_OVER_SSH_TUNNEL
+    status: HISTORICALLY_FUNCTIONAL_AND_VALIDATED
+    mission_role: OPTIONAL_HUMAN_COCKPIT
+  firefox:
+    version: "153.0.4"
+    status: HISTORICAL_CANONICAL_SNAPSHOT
+  vscode:
+    version: "1.133.0"
+    status: HISTORICAL_CANONICAL_SNAPSHOT
+
+human_gates_affecting_components:
+  HG-EXECUTION-ACCESS-001:
+    blocks:
+      - all_NODE_01_live_precheck_and_mutation
+  HG-OPENBAO-RECOVERY-001:
+    blocks:
+      - OpenBao_initialization_recovery_material_handling
+  HG-IDENTITY-BOOTSTRAP-001:
+    blocks:
+      - first_Keycloak_platform_administrator_bootstrap
+  HG-DEV-DNS-001:
+    blocks:
+      - public_DEV_preview_DNS_and_ACME_activation
