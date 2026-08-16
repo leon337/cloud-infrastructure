@@ -13,6 +13,22 @@
       precheck passes and the exact package version and upstream file SHA-256
       values are recorded for this slice.
 
+- name: Read an existing Tailscale package version if present
+  ansible.builtin.command: dpkg-query -W -f=${Version} tailscale
+  register: tailscale_existing_version
+  changed_when: false
+  failed_when: false
+
+- name: Block an implicit Tailscale upgrade or downgrade
+  ansible.builtin.assert:
+    that:
+      - tailscale_existing_version.rc != 0 or tailscale_existing_version.stdout | trim == tailscale_package_version
+    fail_msg: >-
+      NODE-01 already has Tailscale {{ tailscale_existing_version.stdout | trim }}
+      but this reviewed slice selected {{ tailscale_package_version }}. Stop and
+      create an explicit upgrade/downgrade decision with rollback instead of
+      silently changing an existing management component.
+
 - name: Ensure Tailscale keyring directory exists
   ansible.builtin.file:
     path: /usr/share/keyrings
