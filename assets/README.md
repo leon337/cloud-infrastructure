@@ -6,7 +6,8 @@ Os ativos visuais são separados por natureza probatória.
 
 `tutorial/ssh/` preserva a linha histórica de autenticação, auditoria e criação da nova chave. As imagens `01` a `10` versionadas foram revisadas e não exibem secrets.
 
-Os cinco arquivos locais `06-preparacao-diagnostico-read-only-ubuntu_000.png` a `_004.png` continuam não rastreados e fora do escopo; não foram apagados, renomeados nem incluídos.
+O checkout canônico reconciliado em 16/08/2026 não contém os antigos arquivos
+locais `_000` a `_004`; esta documentação não depende deles como evidência.
 
 ## Evidências da Cloud Workstation
 

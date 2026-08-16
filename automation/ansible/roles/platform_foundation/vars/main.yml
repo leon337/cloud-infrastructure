@@ -1,0 +1,18 @@
+---
+# Immutable SLICE-001 ownership contract. Role vars intentionally outrank
+# inventory/extra vars so callers cannot redirect a reviewed mutation.
+platform_foundation_marker: /etc/cloud-platform-foundation.managed
+platform_foundation_marker_content: |-
+  managed_by=cloud-infrastructure
+  slice=SLICE-001
+  schema=1
+  environment={{ platform_environment }}
+  node={{ platform_node_id }}
+
+platform_foundation_managed_files:
+  - source: platform/tmpfiles.d/cloud-platform.conf
+    destination: /etc/tmpfiles.d/cloud-platform.conf
+  - source: platform/systemd/cloud-platform.slice
+    destination: /etc/systemd/system/cloud-platform.slice
+  - source: platform/systemd/cloud-workloads.slice
+    destination: /etc/systemd/system/cloud-workloads.slice

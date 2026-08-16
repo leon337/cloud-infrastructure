@@ -1,0 +1,9 @@
+---
+platform_foundation_group: cloud-platform
+platform_foundation_accounts: []
+platform_foundation_directories: []
+platform_foundation_runtime_directories: []
+platform_foundation_privileged_groups:
+  - sudo
+  - lxd
+  - docker

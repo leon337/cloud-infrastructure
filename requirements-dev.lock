@@ -1,0 +1,17 @@
+# Resolved on the Linux/Python 3.12 controller for SLICE-001.
+# Regenerate intentionally; do not update dependencies implicitly during apply.
+ansible-core==2.21.3
+attrs==26.1.0
+cffi==2.1.1
+cryptography==50.0.0
+Jinja2==3.1.6
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+MarkupSafe==3.0.3
+packaging==26.3
+pycparser==3.0
+PyYAML==6.0.3
+referencing==0.37.0
+resolvelib==1.2.1
+rpds-py==2026.6.3
+typing_extensions==4.16.0

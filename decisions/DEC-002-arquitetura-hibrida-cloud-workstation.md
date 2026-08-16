@@ -1,6 +1,6 @@
 # DEC-002 — Preservar arquitetura híbrida e requisito de Cloud Workstation
 
-Status: **DIREÇÃO ARQUITETÔNICA ACEITA; IMPLEMENTAÇÃO GRÁFICA ADIADA**.
+Status: **DIREÇÃO ACEITA; SEQUENCIAMENTO SUPERSEDED POR DEC-003/DEC-004**.
 
 ## Contexto
 
@@ -20,6 +20,9 @@ LEANDRO quer usar o Linux Mint físico como estação local e deslocar processam
 2. não depender de nested virtualization;
 3. estudar Cloud Workstation sobre a mesma VPS apenas depois do inventário e base segura;
 4. não instalar GUI imediatamente.
+
+O item 4 registra a sequência decidida naquele snapshot. DEC-003 autorizou a
+antecipação e DEC-004 registra a implementação XFCE/XRDP validada.
 
 ## Consequências
 

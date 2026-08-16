@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://platform.leandro.dev/schemas/node.schema.json",
+  "title": "Cloud Platform execution node",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "platform.leandro.dev/v1alpha1"},
+    "kind": {"const": "ExecutionNode"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "environment"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
+        "environment": {"enum": ["dev", "staging"]}
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "roles", "labels", "capacityPolicy", "sandboxDefaults", "management", "productionPromotion"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["control-plane", "execution"]}
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {"type": "string", "maxLength": 64}
+        },
+        "capacityPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hostReserveMemoryMiB", "platformHighWaterMemoryMiB", "workloadPoolMemoryMiB", "uncommittedMemoryMiB", "workloadCpuMillicores", "minimumRootFreePercent"],
+          "properties": {
+            "hostReserveMemoryMiB": {"type": "integer", "minimum": 4096},
+            "platformHighWaterMemoryMiB": {"type": "integer", "minimum": 1024},
+            "workloadPoolMemoryMiB": {"type": "integer", "minimum": 1024},
+            "uncommittedMemoryMiB": {"type": "integer", "minimum": 1024},
+            "workloadCpuMillicores": {"type": "integer", "minimum": 1000},
+            "minimumRootFreePercent": {"type": "integer", "minimum": 15, "maximum": 80}
+          }
+        },
+        "sandboxDefaults": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cpuMillicores", "memoryMiB", "pids", "maximumConcurrent"],
+          "properties": {
+            "cpuMillicores": {"type": "integer", "minimum": 100, "maximum": 4000},
+            "memoryMiB": {"type": "integer", "minimum": 128, "maximum": 8192},
+            "pids": {"type": "integer", "minimum": 32, "maximum": 2048},
+            "maximumConcurrent": {"type": "integer", "minimum": 1, "maximum": 8}
+          }
+        },
+        "management": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["exposure", "sshFallback"],
+          "properties": {
+            "exposure": {"const": "private-only"},
+            "sshFallback": {"const": true}
+          }
+        },
+        "productionPromotion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authorized", "gate"],
+          "properties": {
+            "authorized": {"const": false},
+            "gate": {"const": "LEANDRO"}
+          }
+        }
+      }
+    }
+  }
+}

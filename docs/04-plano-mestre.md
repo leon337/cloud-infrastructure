@@ -25,19 +25,21 @@ Arquitetura: XFCE + LightDM + XRDP/xorgxrdp sobre túnel SSH. XRDP não é públ
 
 Validações concluídas: login gráfico, navegador, VS Code, terminal, gerenciador de arquivos, projeto Git, múltiplas janelas, clipboard bidirecional, resolução dinâmica, desconexão/reconexão, persistência, logout/login, consumo de recursos e funcionamento após reboot.
 
-## Próxima operação — rotação de credenciais
+## Plataforma privada DEV/lab — AUTHORIZED_INCREMENTAL
 
-Rotacionar credenciais temporárias de bootstrap preservando `ubuntu`/publickey, VNC e acesso gráfico. Depois executar novo teste independente do PUC.
+Q1–Q39 substituem as fases provisórias como especificação arquitetônica. Q40-D
+autoriza Technology Mapping, blueprint e implementação incremental conforme
+`CODEX-EXECUTION-MISSION-001.md`.
 
-## Fases futuras — PROVISIONAL
+O plano executável está em:
 
-3. desenvolvimento remoto e estabilização;
-4. rede, armazenamento e manutenção;
-5. backup/recovery amplo;
-6. Docker/Compose;
-7. observabilidade;
-8. plataforma de serviços;
-9. workloads;
-10. autonomia e reconstrução.
+- `41-consolidated-requirements.md`;
+- `42-target-architecture.md`;
+- `43-threat-model-and-autonomy-boundaries.md`;
+- `44-infrastructure-blueprint-v1.md`;
+- `45-revised-implementation-roadmap.md`;
+- `46-technology-mapping-v1.md`.
+
+O slice corrente é F1.1. Rotação permanece adiada; produção continua bloqueada.
 
 Cloud Workstation foi antecipada por `DEC-003`; sua arquitetura foi formalizada por `DEC-004`.

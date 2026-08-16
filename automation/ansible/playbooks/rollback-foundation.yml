@@ -1,0 +1,611 @@
+---
+- import_playbook: controller-preflight.yml
+
+- name: Roll back only proven-empty objects created by Foundations F1.1
+  hosts: platform_nodes
+  gather_facts: true
+  become: true
+  serial: 1
+  force_handlers: true
+
+  vars:
+    platform_foundation_rollback_confirm: false
+
+  vars_files:
+    - ../roles/platform_foundation/vars/main.yml
+
+  tasks:
+    - name: Require explicit rollback confirmation
+      ansible.builtin.assert:
+        that:
+          - platform_foundation_rollback_confirm | bool
+        fail_msg: >-
+          Re-run with -e platform_foundation_rollback_confirm=true only after
+          validating the SLICE-001 evidence and current node state.
+
+    - name: Inspect the Docker marker for a local rollback test
+      ansible.builtin.stat:
+        path: /.dockerenv
+        follow: false
+      register: platform_foundation_rollback_dockerenv
+      when: (ansible_connection | default('ssh')) == 'local'
+
+    - name: Identify a local rollback test container
+      ansible.builtin.command:
+        argv: [systemd-detect-virt, --container]
+      register: platform_foundation_rollback_container_virt
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: (ansible_connection | default('ssh')) == 'local'
+
+    - name: Verify the exact non-production rollback target
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == 'Ubuntu'
+          - ansible_facts.distribution_version == '24.04'
+          - ansible_facts.service_mgr == 'systemd'
+          - ansible_facts.architecture == 'x86_64'
+          - inventory_hostname == 'node-01'
+          - platform_node_id == 'node-01'
+          - >-
+            (
+              (ansible_connection | default('ssh')) == 'local' and
+              platform_environment == 'test' and
+              platform_repository_root == '/workspace/cloud-infrastructure' and
+              platform_foundation_rollback_dockerenv.stat.exists and
+              (platform_foundation_rollback_dockerenv.stat.isreg |
+                default(false)) and
+              not (platform_foundation_rollback_dockerenv.stat.islnk |
+                default(false)) and
+              platform_foundation_rollback_container_virt.rc == 0 and
+              platform_foundation_rollback_container_virt.stdout == 'docker'
+            ) or (
+              (ansible_connection | default('ssh')) != 'local' and
+              platform_environment == 'dev' and
+              ansible_user == 'ubuntu' and
+              platform_expected_ansible_host == '169.58.171.192' and
+              platform_expected_hostname == 'vmi3506102' and
+              platform_expected_machine_id_sha256 ==
+                '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+              (ansible_host | string) ==
+                (platform_expected_ansible_host | string) and
+              ansible_facts.hostname == platform_expected_hostname and
+              (ansible_facts.machine_id | hash('sha256')) ==
+                platform_expected_machine_id_sha256
+            )
+        fail_msg: Rollback refuses an unrecorded node, release, or environment.
+
+    - name: Verify the immutable rollback allowlist
+      ansible.builtin.assert:
+        that:
+          - platform_foundation_group == 'cloud-platform'
+          - platform_foundation_marker == '/etc/cloud-platform-foundation.managed'
+          - >-
+            (
+              platform_environment == 'dev' and
+              (platform_foundation_marker_content | hash('sha256')) ==
+                '0ece23dea825d4961bba3ae1af84b1a2dd3814adeca4a4bdbb204928039e3e54'
+            ) or (
+              platform_environment == 'test' and
+              (platform_foundation_marker_content | hash('sha256')) ==
+                '6534374d2b10588278f71e045f95b2b4a920976f080e8a4733678d81358b4594'
+            )
+          - platform_foundation_accounts | length == 1
+          - platform_foundation_accounts[0].name == 'platform-core'
+          - platform_foundation_accounts[0].comment == 'Cloud Platform unprivileged control-plane identity'
+          - platform_foundation_accounts[0].home == '/nonexistent'
+          - platform_foundation_accounts[0].shell == '/usr/sbin/nologin'
+          - >-
+            platform_foundation_directories | map(attribute='path') | list ==
+            ['/etc/cloud-platform', '/var/lib/cloud-platform',
+             '/var/log/cloud-platform', '/var/cache/cloud-platform']
+          - >-
+            platform_foundation_directories | map(attribute='owner') | list ==
+            ['root', 'root', 'root', 'root']
+          - >-
+            platform_foundation_directories | map(attribute='group') | list ==
+            ['cloud-platform', 'cloud-platform', 'cloud-platform',
+             'cloud-platform']
+          - >-
+            platform_foundation_directories | map(attribute='mode') | list ==
+            ['0750', '0750', '0750', '0750']
+          - >-
+            platform_foundation_runtime_directories |
+              map(attribute='path') | list ==
+            ['/run/cloud-platform', '/run/cloud-platform/credentials']
+          - >-
+            platform_foundation_runtime_directories |
+              map(attribute='owner') | list ==
+            ['root', 'root']
+          - >-
+            platform_foundation_runtime_directories |
+              map(attribute='group') | list ==
+            ['cloud-platform', 'root']
+          - >-
+            platform_foundation_runtime_directories |
+              map(attribute='mode') | list ==
+            ['0750', '0700']
+          - >-
+            platform_foundation_managed_files |
+              map(attribute='source') | list ==
+            ['platform/tmpfiles.d/cloud-platform.conf',
+             'platform/systemd/cloud-platform.slice',
+             'platform/systemd/cloud-workloads.slice']
+          - >-
+            platform_foundation_managed_files |
+              map(attribute='destination') | list ==
+            ['/etc/tmpfiles.d/cloud-platform.conf',
+             '/etc/systemd/system/cloud-platform.slice',
+             '/etc/systemd/system/cloud-workloads.slice']
+        fail_msg: Rollback variables do not match the reviewed SLICE-001 scope.
+
+    - name: Inspect the management marker without following links
+      ansible.builtin.stat:
+        path: "{{ platform_foundation_marker }}"
+        follow: false
+      register: platform_foundation_rollback_marker_state
+
+    - name: Require the exact root-only regular management marker
+      ansible.builtin.assert:
+        that:
+          - platform_foundation_rollback_marker_state.stat.exists
+          - platform_foundation_rollback_marker_state.stat.isreg
+          - >-
+            not (platform_foundation_rollback_marker_state.stat.islnk |
+              default(false))
+          - platform_foundation_rollback_marker_state.stat.uid == 0
+          - platform_foundation_rollback_marker_state.stat.gid == 0
+          - platform_foundation_rollback_marker_state.stat.mode == '0600'
+        fail_msg: >-
+          No exact SLICE-001 provenance marker is present. Refusing rollback.
+
+    - name: Read the management marker
+      ansible.builtin.slurp:
+        src: "{{ platform_foundation_marker }}"
+      register: platform_foundation_rollback_marker_data
+
+    - name: Require exact management-marker content
+      ansible.builtin.assert:
+        that:
+          - >-
+            (platform_foundation_rollback_marker_data.content | b64decode) ==
+            platform_foundation_marker_content
+        fail_msg: The marker does not identify this exact slice and node.
+
+    - name: Inspect persistent directories without following links
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        follow: false
+      loop: "{{ platform_foundation_directories }}"
+      register: platform_foundation_rollback_directories
+
+    - name: Inspect runtime directories without following links
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        follow: false
+      loop: "{{ platform_foundation_runtime_directories }}"
+      register: platform_foundation_rollback_runtime_directories
+
+    - name: Require exact type, ownership, and mode for existing directories
+      ansible.builtin.assert:
+        that:
+          - >-
+            not item.stat.exists or
+            (
+              item.stat.isdir and
+              not (item.stat.islnk | default(false)) and
+              item.stat.pw_name == item.item.owner and
+              item.stat.gr_name == item.item.group and
+              item.stat.mode == item.item.mode
+            )
+        fail_msg: >-
+          {{ item.item.path }} no longer has exact SLICE-001 provenance.
+          Refusing rollback.
+      loop: >-
+        {{ platform_foundation_rollback_directories.results +
+           platform_foundation_rollback_runtime_directories.results }}
+
+    - name: Inspect managed files on the node
+      ansible.builtin.stat:
+        path: "{{ item.destination }}"
+        follow: false
+        checksum_algorithm: sha256
+      loop: "{{ platform_foundation_managed_files }}"
+      register: platform_foundation_rollback_managed_files
+
+    - name: Hash reviewed managed-file sources on the controller
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../../../{{ item.source }}"
+        follow: false
+        checksum_algorithm: sha256
+      loop: "{{ platform_foundation_managed_files }}"
+      register: platform_foundation_rollback_source_files
+      become: false
+      delegate_to: localhost
+
+    - name: Require exact managed-file provenance before deletion
+      ansible.builtin.assert:
+        that:
+          - >-
+            not item.stat.exists or
+            (
+              item.stat.isreg and
+              not (item.stat.islnk | default(false)) and
+              item.stat.uid == 0 and
+              item.stat.gid == 0 and
+              item.stat.mode == '0644' and
+              item.stat.checksum ==
+                platform_foundation_rollback_source_files.results[
+                  ansible_loop.index0].stat.checksum
+            )
+        fail_msg: >-
+          {{ item.item.destination }} differs from the reviewed source.
+          Refusing to delete a modified or unrelated file.
+      loop: "{{ platform_foundation_rollback_managed_files.results }}"
+      loop_control:
+        extended: true
+
+    - name: Inspect the technical account
+      ansible.builtin.command:
+        argv: [getent, passwd, "{{ item.name }}"]
+      loop: "{{ platform_foundation_accounts }}"
+      register: platform_foundation_rollback_accounts
+      changed_when: false
+      failed_when: platform_foundation_rollback_accounts.rc not in [0, 2]
+      check_mode: false
+
+    - name: Inspect the technical group
+      ansible.builtin.command:
+        argv: [getent, group, "{{ platform_foundation_group }}"]
+      register: platform_foundation_rollback_group
+      changed_when: false
+      failed_when: platform_foundation_rollback_group.rc not in [0, 2]
+      check_mode: false
+
+    - name: Inspect technical-account groups
+      ansible.builtin.command:
+        argv: [id, -nG, "{{ item.name }}"]
+      loop: "{{ platform_foundation_accounts }}"
+      register: platform_foundation_rollback_account_groups
+      changed_when: false
+      failed_when: platform_foundation_rollback_account_groups.rc not in [0, 1]
+      check_mode: false
+
+    - name: Inspect technical-account password locks
+      ansible.builtin.command:
+        argv: [passwd, -S, "{{ item.name }}"]
+      loop: "{{ platform_foundation_accounts }}"
+      register: platform_foundation_rollback_account_passwords
+      changed_when: false
+      failed_when: platform_foundation_rollback_account_passwords.rc not in [0, 1]
+      check_mode: false
+      no_log: true
+
+    - name: Require exact technical-account provenance
+      ansible.builtin.assert:
+        that:
+          - item.stdout.split(':') | length >= 7
+          - item.stdout.split(':')[4] == item.item.comment
+          - item.stdout.split(':')[5] == item.item.home
+          - item.stdout.split(':')[6] == item.item.shell
+          - platform_foundation_rollback_group.rc == 0
+          - >-
+            item.stdout.split(':')[3] ==
+            platform_foundation_rollback_group.stdout.split(':')[2]
+          - >-
+            platform_foundation_rollback_account_groups.results[
+              ansible_loop.index0].stdout.split() ==
+            [platform_foundation_group]
+          - >-
+            platform_foundation_rollback_account_passwords.results[
+              ansible_loop.index0].stdout.split()[1] == 'L'
+        fail_msg: >-
+          {{ item.item.name }} differs from the locked SLICE-001 identity.
+          Refusing account deletion.
+      loop: "{{ platform_foundation_rollback_accounts.results }}"
+      loop_control:
+        extended: true
+      when: item.rc == 0
+
+    - name: Require no unexpected technical-group member
+      ansible.builtin.assert:
+        that:
+          - platform_foundation_rollback_group.stdout.split(':') | length == 4
+          - >-
+            (platform_foundation_rollback_group.stdout.split(':')[3].split(',') |
+              reject('equalto', '') | list |
+              difference(platform_foundation_accounts |
+                map(attribute='name') | list) | length) == 0
+        fail_msg: cloud-platform has an unrelated member; refusing deletion.
+      when: platform_foundation_rollback_group.rc == 0
+
+    - name: Enumerate accounts with the foundation group as primary GID
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - >-
+            import pwd,sys;
+            gid=int(sys.argv[1]);
+            print('\n'.join(entry.pw_name for entry in pwd.getpwall()
+            if entry.pw_gid == gid))
+          - "{{ platform_foundation_rollback_group.stdout.split(':')[2] }}"
+      register: platform_foundation_rollback_primary_group_accounts
+      changed_when: false
+      check_mode: false
+      when: platform_foundation_rollback_group.rc == 0
+
+    - name: Refuse to orphan another account primary group
+      ansible.builtin.assert:
+        that:
+          - >-
+            platform_foundation_rollback_primary_group_accounts.skipped |
+              default(false) or
+            (platform_foundation_rollback_primary_group_accounts.stdout_lines |
+              difference(platform_foundation_accounts |
+                map(attribute='name') | list) | length) == 0
+        fail_msg: >-
+          Another account uses cloud-platform as its primary group. Refusing
+          group deletion.
+
+    - name: Check for any process running with the foundation real GID
+      ansible.builtin.command:
+        argv:
+          - pgrep
+          - -G
+          - "{{ platform_foundation_rollback_group.stdout.split(':')[2] }}"
+      register: platform_foundation_rollback_group_processes
+      changed_when: false
+      failed_when: platform_foundation_rollback_group_processes.rc not in [0, 1]
+      check_mode: false
+      when: platform_foundation_rollback_group.rc == 0
+
+    - name: Refuse rollback while any process uses the foundation real GID
+      ansible.builtin.assert:
+        that:
+          - >-
+            platform_foundation_rollback_group_processes.skipped |
+              default(false) or
+            platform_foundation_rollback_group_processes.rc == 1
+        fail_msg: A process still uses cloud-platform as real GID.
+
+    - name: Check for a running process under the technical account
+      ansible.builtin.command:
+        argv: [pgrep, -u, "{{ item.name }}"]
+      loop: "{{ platform_foundation_accounts }}"
+      register: platform_foundation_rollback_processes
+      changed_when: false
+      failed_when: platform_foundation_rollback_processes.rc not in [0, 1]
+      check_mode: false
+      when: >-
+        platform_foundation_rollback_accounts.results[
+          ansible_loop.index0].rc == 0
+      loop_control:
+        extended: true
+
+    - name: Refuse rollback while a technical-account process is running
+      ansible.builtin.assert:
+        that:
+          - item.skipped | default(false) or item.rc == 1
+        fail_msg: >-
+          A process is running under {{ item.item.name }}. Stop and classify it
+          before rollback.
+      loop: "{{ platform_foundation_rollback_processes.results }}"
+
+    - name: Check for tasks assigned to the managed systemd slices
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - show
+          - --property=TasksCurrent
+          - --value
+          - "{{ item }}"
+      loop:
+        - cloud-platform.slice
+        - cloud-workloads.slice
+      register: platform_foundation_rollback_slice_tasks
+      changed_when: false
+      failed_when: platform_foundation_rollback_slice_tasks.rc != 0
+      check_mode: false
+
+    - name: Refuse rollback while a managed slice contains tasks
+      ansible.builtin.assert:
+        that:
+          - item.stdout | trim in ['0', '[not set]']
+        fail_msg: "{{ item.item }} still contains tasks; refusing rollback."
+      loop: "{{ platform_foundation_rollback_slice_tasks.results }}"
+
+    - name: Check persistent directories are empty before any mutation
+      ansible.builtin.command:
+        argv:
+          - find
+          - "{{ item.item.path }}"
+          - -mindepth
+          - '1'
+          - -print
+          - -quit
+      loop: "{{ platform_foundation_rollback_directories.results }}"
+      register: platform_foundation_rollback_persistent_content
+      changed_when: false
+      check_mode: false
+      when: item.stat.exists
+
+    - name: Refuse rollback when persistent content exists
+      ansible.builtin.assert:
+        that:
+          - item.skipped | default(false) or item.stdout | length == 0
+        fail_msg: >-
+          {{ item.item.item.path }} is not empty. Classify and recover its
+          state before retrying.
+      loop: "{{ platform_foundation_rollback_persistent_content.results }}"
+
+    - name: Check the credentials runtime directory is empty
+      ansible.builtin.command:
+        argv:
+          - find
+          - /run/cloud-platform/credentials
+          - -mindepth
+          - '1'
+          - -print
+          - -quit
+      register: platform_foundation_rollback_credential_content
+      changed_when: false
+      check_mode: false
+      when: platform_foundation_rollback_runtime_directories.results[1].stat.exists
+
+    - name: Refuse rollback when runtime credentials exist
+      ansible.builtin.assert:
+        that:
+          - >-
+            platform_foundation_rollback_credential_content.skipped |
+              default(false) or
+            platform_foundation_rollback_credential_content.stdout | length == 0
+        fail_msg: Runtime credentials exist; refusing rollback.
+
+    - name: Check the runtime root has no unexpected entry
+      ansible.builtin.command:
+        argv:
+          - find
+          - /run/cloud-platform
+          - -mindepth
+          - '1'
+          - -maxdepth
+          - '1'
+          - '!'
+          - -name
+          - credentials
+          - -print
+          - -quit
+      register: platform_foundation_rollback_runtime_content
+      changed_when: false
+      check_mode: false
+      when: platform_foundation_rollback_runtime_directories.results[0].stat.exists
+
+    - name: Refuse rollback when unexpected runtime content exists
+      ansible.builtin.assert:
+        that:
+          - >-
+            platform_foundation_rollback_runtime_content.skipped |
+              default(false) or
+            platform_foundation_rollback_runtime_content.stdout | length == 0
+        fail_msg: Unexpected runtime content exists; refusing rollback.
+
+    - name: Search persistent and runtime filesystems for technical-account files
+      ansible.builtin.command:
+        argv:
+          - find
+          - "{{ item }}"
+          - -xdev
+          - -uid
+          - >-
+            {{ platform_foundation_rollback_accounts.results[0].stdout.split(':')[2] }}
+          - -print
+          - -quit
+      loop:
+        - /
+        - /run
+      register: platform_foundation_rollback_owned_files
+      changed_when: false
+      check_mode: false
+      when: platform_foundation_rollback_accounts.results[0].rc == 0
+
+    - name: Refuse to orphan files owned by the technical account
+      ansible.builtin.assert:
+        that:
+          - item.skipped | default(false) or (item.stdout | length) == 0
+        fail_msg: >-
+          The technical account still owns a file on the root or runtime
+          filesystem. Classify it before deleting the account.
+      loop: "{{ platform_foundation_rollback_owned_files.results }}"
+
+    - name: Search the root filesystem for external foundation-group ownership
+      ansible.builtin.command:
+        argv:
+          - find
+          - /
+          - -xdev
+          - '('
+          - -path
+          - /etc/cloud-platform
+          - -o
+          - -path
+          - /var/lib/cloud-platform
+          - -o
+          - -path
+          - /var/log/cloud-platform
+          - -o
+          - -path
+          - /var/cache/cloud-platform
+          - ')'
+          - -prune
+          - -o
+          - -gid
+          - "{{ platform_foundation_rollback_group.stdout.split(':')[2] }}"
+          - -print
+          - -quit
+      register: platform_foundation_rollback_group_files_root
+      changed_when: false
+      check_mode: false
+      when: platform_foundation_rollback_group.rc == 0
+
+    - name: Search runtime for external foundation-group ownership
+      ansible.builtin.command:
+        argv:
+          - find
+          - /run
+          - -xdev
+          - -path
+          - /run/cloud-platform
+          - -prune
+          - -o
+          - -gid
+          - "{{ platform_foundation_rollback_group.stdout.split(':')[2] }}"
+          - -print
+          - -quit
+      register: platform_foundation_rollback_group_files_run
+      changed_when: false
+      check_mode: false
+      when: platform_foundation_rollback_group.rc == 0
+
+    - name: Refuse to orphan files owned by the foundation group
+      ansible.builtin.assert:
+        that:
+          - >-
+            platform_foundation_rollback_group_files_root.skipped |
+              default(false) or
+            (platform_foundation_rollback_group_files_root.stdout | length) == 0
+          - >-
+            platform_foundation_rollback_group_files_run.skipped |
+              default(false) or
+            (platform_foundation_rollback_group_files_run.stdout | length) == 0
+        fail_msg: >-
+          cloud-platform still owns an external file on the root or runtime
+          filesystem. Classify it before deleting the group.
+
+    - name: Acquire the exclusive Foundation mutation lock
+      ansible.builtin.command:
+        argv:
+          - mkdir
+          - /run/lock/cloud-platform-foundation-operation
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Mutate rollback state while holding the exclusive lock
+      block:
+        - name: Execute the reviewed empty-only rollback set
+          ansible.builtin.include_tasks: tasks/rollback-foundation-mutate.yml
+      always:
+        - name: Release the exclusive Foundation mutation lock
+          ansible.builtin.command:
+            argv:
+              - rmdir
+              - /run/lock/cloud-platform-foundation-operation
+          changed_when: false
+          when: not ansible_check_mode
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+      changed_when: false

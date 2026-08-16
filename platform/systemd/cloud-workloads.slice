@@ -1,0 +1,11 @@
+[Unit]
+Description=Cloud Platform DEV and sandbox workloads
+Documentation=https://github.com/leon337/cloud-infrastructure
+
+[Slice]
+CPUAccounting=yes
+MemoryAccounting=yes
+TasksAccounting=yes
+IOAccounting=yes
+CPUWeight=100
+IOWeight=100

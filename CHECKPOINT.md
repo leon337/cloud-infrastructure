@@ -1,72 +1,123 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-16 após a decisão Q40-D. Este arquivo responde: **onde estamos agora?**
+Atualizado em 2026-08-16 após Mission Acceptance, revisão arquitetônica e revisão
+de safety do `SLICE-001 — Foundations F1.1`.
 
 ## Estado durável
 
-- Repositório: `leon337/cloud-infrastructure`, branch `main`.
-- FASE 0 — inventário: `DONE`.
-- FASE 1 — acesso, recovery e segurança mínima: `DONE`.
-- FASE 2 — Cloud Workstation: `DONE`, `FUNCTIONAL_AND_VALIDATED`.
-- As antigas F3–F10 permanecem históricas/provisórias; a implementação agora segue a arquitetura definida pela Platform Discovery.
-- `CREDENTIAL_ROTATION`: `DEFERRED_BY_HUMAN_DECISION`.
-- Platform Discovery Q1–Q40 concluída para fins de delegação; Q1–Q39 são requisitos arquitetônicos vinculantes.
-- Q40 = `D`: LEANDRO delegou ao Codex a seleção tecnológica e a implementação incremental da plataforma DEV/lab.
-- Missão canônica: `docs/CODEX-EXECUTION-MISSION-001.md`.
-- Checkpoint da decisão: `docs/39-platform-discovery-checkpoint-028.md`.
-- Estado estruturado: `state/platform-discovery.yaml`.
-- `implementation_authorized: true` para a plataforma privada DEV/lab dentro dos guardrails.
-- `codex_implementation_mission_authorized: true`.
-- `production_promotion_authorized: false`; produção continua sujeita a HUMAN_GATE de LEANDRO.
+- Repositório canônico: `leon337/cloud-infrastructure`, branch `main`.
+- Base recuperada: `987c5359ea948d1903355e98177ae1eb2f1849d5`.
+- Branch do slice: `codex/mission-001-foundations-f1-1`.
+- F0, F1 e F2 Cloud Workstation: `DONE`.
+- Mission Acceptance + Recovery: `DONE`.
+- Q1–Q39: requisitos arquitetônicos vinculantes.
+- Q40-D: Technology Mapping + implementação incremental DEV/lab autorizados.
+- Produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
+- Rotação: `DEFERRED_BY_HUMAN_DECISION`.
+- F1.1: remediação candidata materializada e suíte estática local aprovada no
+  worktree; comportamento em VM descartável requer nova validação; VPS real
+  **NOT_APPLIED**.
 
-## Guardrails vigentes
+## Artefatos canônicos criados
 
-- LEANDRO continua autoridade humana final.
-- Q1–Q39 não podem ser reabertas silenciosamente pelo executor.
-- Nunca versionar passwords, passphrases, private keys, tokens, API keys, 2FA, connection strings reais ou credenciais do provedor.
-- Management Plane não deve ser exposto publicamente.
-- Agentes não recebem root/Docker daemon irrestrito.
-- Mudanças críticas devem ter precheck, rollback e evidência.
-- Cloud Workstation permanece cockpit humano opcional e não deve ser destruída sem plano de recuperação adequado.
-- Rotação de credenciais continua adiada por decisão humana.
-- Promoção para produção externa continua bloqueada até novo HUMAN_GATE.
+- `docs/40-mission-acceptance-recovery-report.md`;
+- `docs/41-consolidated-requirements.md`;
+- `docs/42-target-architecture.md`;
+- `docs/43-threat-model-and-autonomy-boundaries.md`;
+- `docs/44-infrastructure-blueprint-v1.md`;
+- `docs/45-revised-implementation-roadmap.md`;
+- `docs/46-technology-mapping-v1.md`;
+- `decisions/DEC-005-*`, `decisions/DEC-006-*`;
+- `state/components.yaml`;
+- `automation/ansible/`, `platform/`, `scripts/`, `tests/`;
+- `runbooks/platform-foundation.md`;
+- `evidence/SLICE-001/`.
 
-## Segurança e acesso atuais
+## SLICE-001 — estado de evidência
 
-- `ubuntu`/publickey validado com chave dedicada; chave anterior preservada.
-- SSH efetivo: root login `no`, password `no`, keyboard-interactive `no`, publickey `yes`, `MaxAuthTries 3`, `LoginGraceTime 30`, `AllowUsers ubuntu`.
-- UFW ativo: default deny incoming; somente OpenSSH TCP 22 para IPv4/IPv6.
-- fail2ban/sshd ativo.
-- sudo exige senha; não há `NOPASSWD`; `visudo` validado.
-- `ubuntu` não pertence ao grupo `lxd`; LXD daemon/socket estão desabilitados e inativos.
+- Ansible Core 2.21.3 e dependências estão fixados em ambiente local isolado;
+- manifests `ExecutionNode`/`Project` validados por JSON Schema 2020-12;
+- produção `false`, ingress público arbitrário e secret literal rejeitados;
+- secret/path policy passou;
+- suíte estática endurecida, testes unitários e syntax-checks Ansible passaram no
+  worktree local, ainda sem vínculo a commit; as contagens ficam no test report;
+- ShellCheck 0.9 passou nos quatro scripts no worktree local;
+- os resultados anteriores da fixture (`changed=7`, depois `changed=0` e cleanup)
+  permanecem históricos, não prova atual;
+- a revisão encontrou gaps de provenance/TOCTOU no rollback, adoção de objetos,
+  check mode e proteção do target; eles foram corrigidos no desired state e
+  passaram revisão/suíte estática, mas ainda exigem integração na VM descartável
+  antes de qualquer apply/rollback na VPS;
+- o preflight sem sudo passou no NODE-01 com `changed=0`, e o inventário de teste
+  foi recusado corretamente na Workstation física.
 
-## Recovery e backup
+Check mode, primeiro apply, segunda reconciliação e rollback da fixture precisam
+de rerun em VM GitHub descartável. O resultado histórico nunca substitui
+apply/idempotência/invariância na VPS real.
 
-- VNC Contabo revalidado funcionalmente.
-- Rescue disponível, não acionado.
-- Snapshots não configurados; backup do provedor não contratado; firewall do provedor não configurado.
-- Backup diário sanitizado em `/var/backups/cloud-infrastructure` com timer ativo.
-- Primeira cópia off-host em `/home/leo/Backups/cloud-infrastructure`; SHA-256 remoto/local idêntico e extração de 24 arquivos validada.
-- Backup amplo de dados e reconstrução total ainda não foram testados; `FND-BACKUP-001` permanece mitigado/aberto.
+## Estado real da VPS antes do apply
 
-## Cloud Workstation
+Snapshot read-only: `2026-08-16T19:46:14Z`.
 
-- Stack: XFCE + LightDM + XRDP/xorgxrdp.
-- XRDP escuta somente em `127.0.0.1:3389`; sesman somente em `[::1]:3350`; não há regra pública para RDP.
-- Cliente validado por túnel SSH local `127.0.0.1:13389`.
-- Passaram: desktop, login gráfico, Firefox, VS Code, terminal, terminal integrado, Thunar, projeto Git, múltiplas janelas, clipboard nos dois sentidos, 1100×700 e 1280×720, reconnect, persistência, logout/login e reboot.
-- Recursos pós-reboot com sessão gráfica ativa: 8 CPUs, ~2,2 GiB/23 GiB RAM, ~7,5 GiB/290 GiB disco.
+- Ubuntu 24.04.4, kernel `6.8.0-137-generic`, KVM, 8 CPUs;
+- ~23,5 GiB RAM, ~17,2 GiB disponível; sem swap;
+- raiz ~289,6 GiB, ~279 GiB disponível;
+- cgroup v2, AppArmor ativo, Python 3.12.3;
+- zero units falhas;
+- público somente SSH TCP 22;
+- XRDP `127.0.0.1:3389`, sesman `[::1]:3350`;
+- SSH/UFW/fail2ban/XRDP/LightDM ativos;
+- `ubuntu` fora de `lxd`; LXD daemon/socket inativos;
+- Docker/containerd ausentes;
+- conta/grupo/paths/units F1.1 ausentes, sem conflito;
+- múltiplas sessões Firefox/VS Code/Codex ativas;
+- `sudo -n` negado conforme política.
 
-## Findings
+## Backup/recovery
 
-- Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUDO-001`, `FND-DOC-001`, `FND-AUDIT-001`.
-- Mitigado e aberto: `FND-BACKUP-001`.
-- A investigar: `FND-CPU-001`, `FND-CLOUDINIT-001`.
+- timer sanitizado ativo e último resultado de serviço `success`;
+- dois archives remotos passaram checksum e leitura do tar;
+- primeira cópia off-host observada confere; a mais recente não foi observada
+  off-host;
+- houve extração histórica, não restore/rebuild funcional;
+- archives atuais normalizam modes para `0640` e não são restore drop-in;
+- VNC/Rescue/provedor não foram reabertos nesta coleta guest-only;
+- `FND-BACKUP-001` permanece `MITIGATED — OPEN`.
 
-## Regra de retomada
+## Guardrails do próximo passo
 
-Toda retomada começa em `CONTEXT.md`, verifica a `main` real, lê `CHECKPOINT.md`, `state/current.yaml`, `state/platform-discovery.yaml`, `docs/39-platform-discovery-checkpoint-028.md` e `docs/CODEX-EXECUTION-MISSION-001.md`.
+- não executar check mode, apply ou rollback na VPS antes de a VM GitHub
+  descartável provar a remediação de safety do F1.1 e existir novo checkpoint;
+- quando chegar ao apply, LEANDRO digita sudo diretamente; senha nunca é
+  enviada/registrada;
+- manter segunda sessão SSH e revalidar concorrência antes do apply;
+- usar `runbooks/platform-foundation.md`;
+- F1.1 não instala pacote/runtime, não cria listener e não toca
+  SSH/UFW/XRDP/Workstation/credenciais;
+- abortar diante de objeto preexistente sem marker ou estado concorrente;
+- depois do apply exigir segunda execução `changed=0`, negações, modes e
+  invariância de listeners/SSH/UFW/fail2ban/XRDP/LXD/units;
+- rollback só quando os namespaces persistentes estiverem vazios.
 
-Próximo passo exato: **CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT**.
+## Próximo passo exato
 
-O Codex deve primeiro recuperar GitHub + estado real da VPS, registrar divergências, confirmar riscos, Technology Mapping inicial e primeiro incremento com rollback; depois prosseguir incrementalmente dentro da autorização Q40-D.
+**SLICE_001_REVALIDATE_IN_DISPOSABLE_GITHUB_VM_AFTER_SAFETY_REMEDIATION**
+
+Somente depois de a nova suíte provar prechecks, idempotência e rollback
+fail-closed o próximo checkpoint poderá autorizar check mode/apply interativo. Até
+que apply, segunda reconciliação e invariance checks passem na VPS, F1.1 permanece
+`PARTIAL/NOT_APPLIED`, nunca `DONE`. Docker F1.2, Management Network, produção e
+rotação não fazem parte desse passo.
+
+## Architecture/Technology Mapping — gaps condicionais
+
+- worker não chama Node Agent diretamente; toda capability privilegiada volta ao
+  Core e é revalidada localmente;
+- PostgreSQL foundation precede Keycloak;
+- network/egress/service discovery e quota de disco bloqueiam o primeiro workload;
+- dados Critical/Important dependem de backup off-host e restore por classe;
+- Loki/Grafana dependem de review AGPL; runner, cache OCI local, audit ledger,
+  mensageria Q38, DNS, object storage e Model Gateway final continuam
+  `CONDITIONAL`;
+- previews DEV no namespace/grant aprovado são autônomos após bootstrap DNS;
+- produção continua não autorizada e rotação continua adiada.

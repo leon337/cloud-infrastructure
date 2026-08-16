@@ -3,17 +3,13 @@
 | Fase/Etapa | Estado | Evidência |
 |---|---|---|
 | F0 Orientação e inventário | DONE | baseline e auditorias reconciliadas |
-| F1 Acesso/recovery/segurança mínima | DONE | SSH, VNC, UFW, fail2ban, sudo, LXD, updates, backup e reboot validados |
+| F1 Acesso/recovery/segurança mínima | DONE | SSH, UFW, fail2ban, sudo, LXD, updates, backup e reboot validados; VNC preservado como validação histórica |
 | F2 Cloud Workstation | DONE | XFCE/XRDP sobre túnel SSH e testes reais de produtividade |
-| Rotação de credenciais | NEXT | credenciais temporárias de bootstrap devem ser substituídas |
-| F3 Desenvolvimento/estabilização | PROVISIONAL | após rotação |
-| F4 Rede/armazenamento/manutenção | PROVISIONAL | gates próprios |
-| F5 Backup/recovery amplo | PROVISIONAL | backup completo e reconstrução |
-| F6 Docker/Compose | PROVISIONAL | depois da base gráfica segura |
-| F7 Observabilidade | PROVISIONAL | gate futuro |
-| F8 Plataforma de serviços | PROVISIONAL | gate futuro |
-| F9 Workloads | PROVISIONAL | implantação gradual |
-| F10 Autonomia/reconstrução | PROVISIONAL | maturidade final |
+| Recovery da missão Codex | DONE | GitHub/VPS/Q1–Q40 reconciliados em `40-mission-acceptance-recovery-report.md` |
+| Foundations F1.1 | PARTIAL_DISPOSABLE_VM_REVALIDATION_REQUIRED | remediação candidata e suíte estática local passaram no worktree; integração/check-mode/rollback requerem VM GitHub descartável; apply sudo não executado |
+| Plataforma DEV/lab Q40-D | AUTHORIZED_INCREMENTAL | roadmap detalhado em `45-revised-implementation-roadmap.md` |
+| Rotação de credenciais | DEFERRED_BY_HUMAN_DECISION | fora da execução atual |
+| Produção | HUMAN_GATE_REQUIRED | promoção não autorizada |
 
 ## Resultado técnico da F1
 
@@ -23,4 +19,7 @@ Somente TCP 22 está exposto; SSH aceita apenas `ubuntu`/publickey; UFW/fail2ban
 
 XFCE, LightDM, XRDP em loopback, Firefox DEB, VS Code, terminal e Thunar estão funcionais. Clipboard nos dois sentidos, múltiplas janelas, resolução dinâmica, reconnect, persistência, logout/login e pós-reboot passaram.
 
-Próximo passo: `CREDENTIAL_ROTATION`, seguido por validação independente do PUC.
+Próximo passo: repetir a suíte de integração do F1.1 em VM GitHub descartável e
+só então executar check mode/apply autenticado, segunda
+reconciliação `changed=0` e invariance checks. A fonte detalhada é
+`45-revised-implementation-roadmap.md`; as antigas F3–F10 são históricas.

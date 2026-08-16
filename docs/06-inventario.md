@@ -382,4 +382,7 @@ Esta fotografia não altera os fatos históricos acima; registra o estado final 
 - raiz: ~7,5 GiB usada de 290 GiB, ~283 GiB disponíveis;
 - 8 CPUs; swap continua 0 B.
 
-Nota histórica: ao término da Missão 4, `FND-LXD-001` ainda estava **OPEN/HIGH** e o próximo passo era recovery read-only. A fotografia pós-hardening acima substitui somente esse estado corrente: o finding foi resolvido e o próximo passo passou a ser rotação de credenciais.
+Nota histórica: ao término da Missão 4, `FND-LXD-001` ainda estava **OPEN/HIGH** e
+o próximo passo era recovery read-only. A fotografia pós-hardening resolveu o
+finding. Em 16/08/2026, Q40-D substituiu a rotação como próximo passo; rotação
+permanece adiada e Foundations F1.1 é o incremento corrente.

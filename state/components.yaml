@@ -1,0 +1,178 @@
+schema_version: 1
+updated_at: 2026-08-16
+environment: DEV_LAB
+node: node-01
+source:
+  technology_mapping: docs/46-technology-mapping-v1.md
+  blueprint: docs/44-infrastructure-blueprint-v1.md
+observed_at_utc: "2026-08-16T19:46:14Z"
+observed:
+  host:
+    hostname: vmi3506102
+    os: Ubuntu 24.04.4 LTS
+    kernel: 6.8.0-137-generic
+    architecture: x86_64
+    init: systemd
+    cgroup: v2
+    apparmor: enabled
+    python: 3.12.3
+  access_and_recovery:
+    openssh_server: 9.6p1-3ubuntu13.18
+    ufw: 0.36.2-6
+    fail2ban: 1.0.2-3ubuntu0.1
+    config_backup_timer: active_enabled
+  cloud_workstation:
+    xrdp: 0.9.24-4
+    xorgxrdp: 0.9.19-1
+    lightdm: 1.30.0-0ubuntu14
+    xfce4: "4.18"
+    firefox: 153.0.4~build1
+    vscode: 1.133.0-1786487972
+  runtime:
+    docker_engine: ABSENT
+    docker_compose_plugin: ABSENT
+    containerd: ABSENT
+    lxd: INSTALLED_DISABLED_INACTIVE
+controller_tooling:
+  ansible_core:
+    selected_version: 2.21.3
+    observed_local_version: 2.21.3
+    remote_agent: NONE
+    license: GPL-3.0-or-later
+    lifecycle: SELECTED_LOCAL_VALIDATED_REMOTE_NOT_APPLIED
+  jsonschema:
+    selected_version: 4.26.0
+    observed_local_version: 4.26.0
+    license: MIT
+    lifecycle: SELECTED_LOCAL_VALIDATED
+  pyyaml:
+    selected_version: 6.0.3
+    observed_local_version: 6.0.3
+    license: MIT
+    lifecycle: SELECTED_LOCAL_VALIDATED
+platform_components:
+  foundation:
+    technology: systemd_slices_tmpfiles_fhs_namespaces
+    selected_version: systemd-255-compatible
+    observed_version: NOT_APPLIED
+    lifecycle: DESIRED_STATE_PARTIAL_AWAITING_DISPOSABLE_VM_REVALIDATION_REMOTE_NOT_APPLIED
+  management_network:
+    technology: Tailscale
+    selected_version: RESOLVE_AT_SLICE
+    observed_version: ABSENT
+    lifecycle: CONDITIONAL_WAITING_HUMAN_GATE
+  container_runtime:
+    technology: Docker_Engine_and_Compose_plugin
+    selected_version: RESOLVE_AT_SLICE
+    observed_version: ABSENT
+    lifecycle: SELECTED_PLANNED_F1_2
+  capability_core:
+    technology: Go_OpenAPI_3_1_2_OPA_Rego_v1
+    selected_version: Go_1.26.x
+    observed_version: ABSENT
+    lifecycle: SELECTED_PLANNED_F2
+  identity:
+    technology: Keycloak
+    selected_version: 26.x
+    observed_version: ABSENT
+    lifecycle: SELECTED_PLANNED_F2_3_DEPENDS_OPERATIONAL_SECRET_STORE_AND_POSTGRESQL_FOUNDATION
+  secrets:
+    technology: OpenBao_integrated_Raft_Shamir
+    selected_version: 2.6.x
+    observed_version: ABSENT
+    lifecycle: SELECTED_F1_4_INSTALL_SEALED_F1_6_INITIALIZATION_HUMAN_GATED_AFTER_OFFHOST_RECOVERY
+  workflow:
+    technology: Temporal_PostgreSQL
+    selected_version: 1.31.x
+    observed_version: ABSENT
+    lifecycle: SELECTED_PLANNED_F3
+  event_backbone:
+    technology: NATS_JetStream
+    selected_version: 2.14.x
+    observed_version: ABSENT
+    lifecycle: SELECTED_PLANNED_F3
+  application_messaging:
+    technology: UNDECIDED_NATS_separate_account_or_dedicated_broker
+    selected_version: null
+    observed_version: ABSENT
+    lifecycle: DECISION_PENDING_REQUIRES_DOMAIN_ISOLATION_TEST
+  relational_database:
+    technology: PostgreSQL
+    selected_version: 18.x_with_17.x_fallback
+    observed_version: ABSENT
+    lifecycle: CONDITIONAL_ON_SECRET_STORE_KEYCLOAK_TEMPORAL_PGBACKREST_AND_RESTORE_TESTS
+  cache:
+    technology: Valkey
+    selected_version: 9.x
+    observed_version: ABSENT
+    lifecycle: SELECTED_DEFERRED_UNTIL_CONSUMER
+  object_storage:
+    technology: UNDECIDED_Garage_candidate
+    selected_version: null
+    observed_version: ABSENT
+    lifecycle: DECISION_PENDING
+  oci_registry:
+    technology: GHCR
+    selected_version: EXTERNAL_SERVICE
+    observed_version: NOT_CONFIGURED
+    lifecycle: SELECTED_WAITING_AUTH_GATE
+  oci_local_cache:
+    technology: UNDECIDED_CNCF_Distribution_or_equivalent_pull_through
+    selected_version: null
+    observed_version: ABSENT
+    lifecycle: DECISION_AND_AUTH_EVICTION_BYPASS_REBUILD_TEST_REQUIRED
+  preview_gateway:
+    technology: Caddy
+    selected_version: RESOLVE_AT_SLICE
+    observed_version: ABSENT
+    lifecycle: SELECTED_PLANNED_F5
+  dns_automation:
+    technology: UNDECIDED_PROVIDER_PLUGIN_OR_DELEGATED_SUBDOMAIN
+    selected_version: null
+    observed_version: NOT_CONFIGURED
+    lifecycle: CONDITIONAL_WAITING_HUMAN_GATE
+  observability:
+    technology: Alloy_OTLP_Prometheus_selected_Loki_Grafana_conditional
+    selected_version: RESOLVE_PER_COMPONENT_AT_SLICE
+    observed_version: ABSENT
+    lifecycle: PARTIAL_SELECTION_LICENSE_COMPLIANCE_REVIEW_REQUIRED_FOR_LOKI_GRAFANA
+  audit_ledger:
+    technology: UNDECIDED_PostgreSQL_append_only_or_external_WORM
+    selected_version: null
+    observed_version: ABSENT
+    lifecycle: DECISION_PENDING
+  backup:
+    technology: Restic_and_pgBackRest
+    selected_version: RESOLVE_AT_SLICE
+    observed_version: ABSENT
+    lifecycle: SELECTED_WAITING_OFFHOST_DESTINATION_GATE
+  supply_chain:
+    technology: Syft_Trivy_Cosign
+    selected_version: RESOLVE_AT_SLICE
+    observed_version: ABSENT
+    lifecycle: SELECTED_PLANNED_F5
+  network_enforcement:
+    technology: UNDECIDED_nftables_DOCKER_USER_egress_policy
+    selected_version: null
+    observed_version: NOT_APPLIED
+    lifecycle: DECISION_AND_NEGATIVE_TESTS_REQUIRED_BEFORE_FIRST_WORKLOAD
+  disk_isolation:
+    technology: UNDECIDED_project_quota_bounded_volume_or_execution_node
+    selected_version: null
+    observed_version: NOT_APPLIED
+    lifecycle: DECISION_AND_LIMIT_TEST_REQUIRED_BEFORE_WRITABLE_SANDBOX_DONE
+  pipeline_runner:
+    technology: UNDECIDED_isolated_disposable_runner
+    selected_version: null
+    observed_version: ABSENT
+    lifecycle: DECISION_AND_PRIVILEGE_ESCAPE_TEST_REQUIRED
+  model_gateway:
+    technology: LiteLLM_or_minimal_Core_proxy
+    selected_version: null
+    observed_version: ABSENT
+    lifecycle: CONDITIONAL_SECURITY_SPIKE_REQUIRED
+production:
+  deployment_authorized: false
+  promotion_gate: LEANDRO
+credential_rotation:
+  status: DEFERRED_BY_HUMAN_DECISION

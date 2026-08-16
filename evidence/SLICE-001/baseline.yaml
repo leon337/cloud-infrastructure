@@ -1,0 +1,72 @@
+schema_version: 1
+slice: SLICE-001
+classification: SANITIZED_OPERATIONAL_EVIDENCE
+git:
+  verification_scope: PRE_DELTA_RECOVERY_BASELINE
+  verified_at_utc: "2026-08-16T19:45:00Z"
+  repository: leon337/cloud-infrastructure
+  canonical_branch: main
+  canonical_sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
+  origin_main_sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
+  ahead: 0
+  behind: 0
+  worktree_clean: true
+  working_branch: codex/mission-001-foundations-f1-1
+  reviewed_delta_commit: NOT_AVAILABLE_WORKTREE_UNCOMMITTED
+vps:
+  observed_at_utc: "2026-08-16T19:46:14Z"
+  boot_id: 26f703b0-3037-46fc-a7d2-4d574cc43f3a
+  machine_id_sha256: 27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
+  machine_id_hash_input: RAW_VALUE_WITHOUT_TRAILING_NEWLINE
+  machine_id_raw_persisted: false
+  hostname: vmi3506102
+  os: Ubuntu 24.04.4 LTS
+  kernel: 6.8.0-137-generic
+  python: 3.12.3
+  cgroup_filesystem: cgroup2fs
+  apparmor_enabled: true
+  memory_available_bytes: 18437410816
+  root_available_bytes: 299605925888
+  failed_units: 0
+  sudo_noninteractive: denied
+  public_tcp_listeners:
+    - 0.0.0.0:22
+    - "[::]:22"
+  loopback_tcp_listeners:
+    - 127.0.0.1:3389
+    - "[::1]:3350"
+    - 127.0.0.1:45211
+    - 127.0.0.53:53
+    - 127.0.0.54:53
+  services:
+    ssh_socket: active_enabled
+    ufw: active_enabled
+    fail2ban: active_enabled
+    xrdp: active_enabled
+    xrdp_sesman: active_enabled
+    lightdm: active_indirect
+    lxd_daemon: inactive
+    lxd_socket: inactive_disabled
+    docker: absent
+  object_conflicts:
+    cloud_platform_group: absent
+    platform_core_account: absent
+    foundation_paths: absent
+    foundation_units: absent
+  unprivileged_target_preflight:
+    observed_at_utc: "2026-08-16T20:58:00Z"
+    controller_key_and_ssh_profile: PASS
+    remote_user_ip_hostname_machine_hash: PASS
+    changed: 0
+    failed: 0
+    sudo_requested: false
+    remote_mutation: false
+  physical_test_inventory_guard:
+    observed_at_utc: "2026-08-16T20:59:00Z"
+    result: REFUSED_BEFORE_MUTATION
+    exit_code: 2
+apply:
+  privileged_check_mode: NOT_EXECUTED
+  privileged_apply: NOT_EXECUTED
+  idempotence_reconcile: NOT_EXECUTED
+  post_apply_invariance: NOT_EXECUTED

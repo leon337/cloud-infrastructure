@@ -7,5 +7,7 @@ Decisões canônicas da infraestrutura.
 - `DEC-002-arquitetura-hibrida-cloud-workstation.md` — preservar modelo híbrido e não depender de nested virtualization; prioridade gráfica atualizada por DEC-003.
 - `DEC-003-cloud-workstation-prioridade-operacional.md` — prioridade gráfica aprovada e entregue.
 - `DEC-004-xfce-xrdp-sobre-tunel-ssh.md` — XFCE/XRDP restrito a loopback e acessado por túnel SSH.
+- `DEC-005-foundation-declarativa-e-accounting.md` — Ansible/schema e slices F1.1 sem limites cegos.
+- `DEC-006-technology-mapping-v1.md` — baseline tecnológica e implantação controlada por lifecycle.
 
 Novas decisões devem registrar contexto, alternativas, escolha, motivo, consequências, status e possibilidade de revisão.

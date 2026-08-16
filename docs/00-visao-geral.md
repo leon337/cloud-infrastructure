@@ -18,9 +18,12 @@ Configurar, proteger, documentar e aprender a administrar a infraestrutura VPS, 
 
 FASE 0: `DONE`. FASE 1: `DONE`. FASE 2 Cloud Workstation: `DONE — FUNCTIONAL_AND_VALIDATED`.
 
-Próximo passo: rotação das credenciais temporárias, seguida por novo teste independente do PUC.
+Q1–Q39 são a arquitetura vinculante. Q40-D autorizou Technology Mapping e
+implementação incremental DEV/lab. O slice corrente é Foundations F1.1; produção
+continua sob HUMAN_GATE e rotação permanece adiada por decisão humana.
 
-Inventário: `06-inventario.md`. Roadmap: `05-roadmap.md`. Estado imediato: `../CHECKPOINT.md`.
+Inventário: `06-inventario.md`. Roadmap corrente:
+`45-revised-implementation-roadmap.md`. Estado imediato: `../CHECKPOINT.md`.
 
 ## Continuidade
 
