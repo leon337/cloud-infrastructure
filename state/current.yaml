@@ -2,11 +2,15 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-16
-documentation_state: PLATFORM_DISCOVERY_IN_PROGRESS
+documentation_state: CODEX_TECH_SELECTION_AND_IMPLEMENTATION_AUTHORIZED
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: NOT_EXECUTED
   future_state_validation_policy: PUC_REVALIDATION_REQUIRED
+  canonical_entrypoint: CONTEXT.md
+  checkpoint: CHECKPOINT.md
+  platform_discovery_state: state/platform-discovery.yaml
+  codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
 project:
   name: IMPLEMENTACAO_DA_VPS
   status: ACTIVE
@@ -14,51 +18,24 @@ project:
     phase_0: DONE
     phase_1: DONE
     phase_2_cloud_workstation: DONE
-    future_phases_3_to_10: PROVISIONAL_PENDING_PLATFORM_DISCOVERY
+    future_platform_implementation: AUTHORIZED_INCREMENTAL_DEV_LAB
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: DISCOVERY_Q9
+  next_exact_step: CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
 platform_discovery:
-  status: IN_PROGRESS
-  checkpoint: docs/12-platform-discovery-checkpoint-001.md
-  purpose: DESIGN_AGENT_DEVELOPMENT_LAB_AND_PRIVATE_EXECUTION_PLATFORM
-  implementation_authorized: false
-  codex_implementation_mission_authorized: false
-  q1:
-    status: DECIDED
-    choice: C
-    decision: PRIVATE_COMPUTE_DEVELOPMENT_AND_AGENT_EXECUTION_PLATFORM
-  q2:
-    status: DECIDED
-    choice: C
-    decision: OWN_INFRASTRUCTURE_DEFAULT_FOR_DEV_EXTERNAL_SERVICES_WHEN_ADVANTAGEOUS
-    refinement: LAB_FOR_AGENT_AUTONOMY_WITH_PRODUCTION_PORTABILITY
-  q3:
-    status: DECIDED
-    choice: C
-    decision: PROJECT_ISOLATION_PLUS_TEMPORARY_AGENT_MISSION_SANDBOXES
-  q4:
-    status: DECIDED
-    choice: C
-    decision: AUTONOMY_INSIDE_AUTHORIZED_SCOPE_HUMAN_GATE_OUTSIDE
-  q5:
+  status: HANDOFF_TO_CODEX_AUTHORIZED
+  decision_source: state/platform-discovery.yaml
+  checkpoint: docs/39-platform-discovery-checkpoint-028.md
+  q1_to_q39: BINDING_ARCHITECTURAL_REQUIREMENTS
+  q40:
     status: DECIDED
     choice: D
-    decision: CAPABILITY_CORE_PLUS_API_MCP_CLI_PROGRESSIVELY
-  q6:
-    status: DECIDED
-    choice: C
-    decision: COMPLETE_DEVELOPMENT_LAB_CAPABILITY_CATALOG_PROGRESSIVE_IMPLEMENTATION
-  q7:
-    status: DECIDED
-    choice: C
-    decision: DISPOSABLE_COMPUTE_EXPLICITLY_PERSISTENT_IMPORTANT_STATE
-  q8:
-    status: DECIDED
-    choice: C
-    decision: PROJECT_ISOLATION_PLUS_PER_MISSION_SANDBOX_RESOURCE_LIMITS
-    constraints: [CPU, RAM, DISK, NETWORK, PROCESS, TEMP_FILESYSTEM]
-  next_question: Q9
+    decision: DELEGATE_TECHNOLOGY_SELECTION_AND_INCREMENTAL_DEV_LAB_IMPLEMENTATION_TO_CODEX
+  implementation_authorized: true
+  codex_implementation_mission_authorized: true
+  production_promotion_authorized: false
+  execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
+  next_question: NONE
   target_artifacts:
     - CONSOLIDATED_REQUIREMENTS
     - TARGET_ARCHITECTURE
@@ -148,6 +125,7 @@ remote_vps:
     reboot_executed: true
   cloud_workstation:
     architecture: XFCE_LIGHTDM_XRDP_OVER_SSH_TUNNEL
+    role: OPTIONAL_HUMAN_COCKPIT_NOT_PLATFORM_DEPENDENCY
     desktop_session: PASS
     remote_graphical_login: PASS
     browser: PASS
@@ -185,11 +163,15 @@ findings:
   mitigated_open: [FND-BACKUP-001]
   open_other: [FND-CPU-001, FND-CLOUDINIT-001]
 authorization:
+  authority: LEANDRO
   phase_1_and_2_full_access: EXECUTED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: DISCOVERY_Q9
-  future_changes: HUMAN_GATE_REQUIRED
-  platform_heavy_implementation: NOT_AUTHORIZED_PENDING_DISCOVERY
+  next_step: CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
+  platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
+  codex_technology_selection: AUTHORIZED_BY_Q40_D
+  codex_implementation_mission: AUTHORIZED_BY_Q40_D
+  production_promotion: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
+  future_scope_expansion: HUMAN_GATE_REQUIRED
   historical_executed:
     AUTH-SSH-KEEPALIVE-001: EXECUTED_AND_VALIDATED
 secrets_policy:
