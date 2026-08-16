@@ -67,6 +67,12 @@ slice_000:
         - ANSIBLE_AUTH_SECRET_VARIABLE_SCAN
     evidence:
       - evidence/mission-001/slice-000/repository-validation.md
+    review_checkpoint:
+      pull_request: 1
+      state: OPEN_DRAFT
+      base: main
+      head: codex/mission-001
+      merged: false
   node_changes_performed: false
   production_changes_performed: false
   credentials_rotated: false
@@ -177,9 +183,7 @@ findings_carried_forward:
     status: CONFIRMED_OPEN
 
 next_actions:
-  independent_safe:
-    - VERIFY_FINAL_BRANCH_DIFF_AND_MAIN_CONCURRENCY
-    - CREATE_DRAFT_PR_CHECKPOINT_WITHOUT_MERGE
+  independent_safe: []
   blocked_on_human_gate:
     - AUTHENTICATED_LIVE_NODE_01_PRECHECK
     - RECORD_GITHUB_NODE_DRIFT
