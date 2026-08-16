@@ -1,6 +1,6 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-16 durante a nova Platform Discovery. Este arquivo responde: **onde estamos agora?**
+Atualizado em 2026-08-16 após a decisão Q40-D. Este arquivo responde: **onde estamos agora?**
 
 ## Estado durável
 
@@ -8,22 +8,37 @@ Atualizado em 2026-08-16 durante a nova Platform Discovery. Este arquivo respond
 - FASE 0 — inventário: `DONE`.
 - FASE 1 — acesso, recovery e segurança mínima: `DONE`.
 - FASE 2 — Cloud Workstation: `DONE`, `FUNCTIONAL_AND_VALIDATED`.
-- As antigas F3–F10 permanecem `PROVISIONAL_PENDING_PLATFORM_DISCOVERY`.
+- As antigas F3–F10 permanecem históricas/provisórias; a implementação agora segue a arquitetura definida pela Platform Discovery.
 - `CREDENTIAL_ROTATION`: `DEFERRED_BY_HUMAN_DECISION`.
-- Próximo passo exato: `DISCOVERY_Q8`.
-- Checkpoint da Discovery: `docs/12-platform-discovery-checkpoint-001.md`.
-- Nenhuma implementação pesada da nova plataforma está autorizada antes do fechamento da Discovery e de HUMAN_GATE explícito de LEANDRO.
-- O PUC v1.0 permanece ativo; validações independentes anteriores continuam históricas.
+- Platform Discovery Q1–Q40 concluída para fins de delegação; Q1–Q39 são requisitos arquitetônicos vinculantes.
+- Q40 = `D`: LEANDRO delegou ao Codex a seleção tecnológica e a implementação incremental da plataforma DEV/lab.
+- Missão canônica: `docs/CODEX-EXECUTION-MISSION-001.md`.
+- Checkpoint da decisão: `docs/39-platform-discovery-checkpoint-028.md`.
+- Estado estruturado: `state/platform-discovery.yaml`.
+- `implementation_authorized: true` para a plataforma privada DEV/lab dentro dos guardrails.
+- `codex_implementation_mission_authorized: true`.
+- `production_promotion_authorized: false`; produção continua sujeita a HUMAN_GATE de LEANDRO.
 
-## Segurança e acesso
+## Guardrails vigentes
 
-- `ubuntu`/publickey validado com a chave dedicada; chave anterior preservada.
+- LEANDRO continua autoridade humana final.
+- Q1–Q39 não podem ser reabertas silenciosamente pelo executor.
+- Nunca versionar passwords, passphrases, private keys, tokens, API keys, 2FA, connection strings reais ou credenciais do provedor.
+- Management Plane não deve ser exposto publicamente.
+- Agentes não recebem root/Docker daemon irrestrito.
+- Mudanças críticas devem ter precheck, rollback e evidência.
+- Cloud Workstation permanece cockpit humano opcional e não deve ser destruída sem plano de recuperação adequado.
+- Rotação de credenciais continua adiada por decisão humana.
+- Promoção para produção externa continua bloqueada até novo HUMAN_GATE.
+
+## Segurança e acesso atuais
+
+- `ubuntu`/publickey validado com chave dedicada; chave anterior preservada.
 - SSH efetivo: root login `no`, password `no`, keyboard-interactive `no`, publickey `yes`, `MaxAuthTries 3`, `LoginGraceTime 30`, `AllowUsers ubuntu`.
 - UFW ativo: default deny incoming; somente OpenSSH TCP 22 para IPv4/IPv6.
 - fail2ban/sshd ativo.
 - sudo exige senha; não há `NOPASSWD`; `visudo` validado.
 - `ubuntu` não pertence ao grupo `lxd`; LXD daemon/socket estão desabilitados e inativos.
-- Root continua existindo para console/recovery, mas não autentica por SSH.
 
 ## Recovery e backup
 
@@ -42,31 +57,6 @@ Atualizado em 2026-08-16 durante a nova Platform Discovery. Este arquivo respond
 - Passaram: desktop, login gráfico, Firefox, VS Code, terminal, terminal integrado, Thunar, projeto Git, múltiplas janelas, clipboard nos dois sentidos, 1100×700 e 1280×720, reconnect, persistência, logout/login e reboot.
 - Recursos pós-reboot com sessão gráfica ativa: 8 CPUs, ~2,2 GiB/23 GiB RAM, ~7,5 GiB/290 GiB disco.
 
-## Platform Discovery — Q1–Q7
-
-Estado: `IN_PROGRESS`.
-
-Decisões registradas:
-
-1. Q1 `C` — plataforma privada de computação, desenvolvimento e execução de agentes;
-2. Q2 `C` — infraestrutura própria como padrão para laboratório DEV, externa quando vantajosa/produção;
-3. Q3 `C` — projeto isolado + sandboxes temporários por missão/agente;
-4. Q4 `C` — autonomia dentro de sandbox/projeto, HUMAN_GATE fora do escopo;
-5. Q5 `D` — Capability Core + API + MCP + CLI, progressivamente;
-6. Q6 `C` — laboratório completo de desenvolvimento, implementado progressivamente;
-7. Q7 `C` — ambientes descartáveis, dados importantes explicitamente persistentes.
-
-Princípios consolidados até aqui:
-
-- development autonomy first;
-- production portability;
-- autonomia por escopo, não acesso irrestrito;
-- isolamento entre projetos;
-- sandboxes temporários;
-- compute descartável;
-- estado importante explicitamente persistente;
-- MCP como interface para agentes, não como núcleo único da infraestrutura.
-
 ## Findings
 
 - Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUDO-001`, `FND-DOC-001`, `FND-AUDIT-001`.
@@ -75,8 +65,8 @@ Princípios consolidados até aqui:
 
 ## Regra de retomada
 
-Toda retomada começa em `CONTEXT.md`, verifica a `main` real, lê `CHECKPOINT.md`, `state/current.yaml` e `docs/12-platform-discovery-checkpoint-001.md`.
+Toda retomada começa em `CONTEXT.md`, verifica a `main` real, lê `CHECKPOINT.md`, `state/current.yaml`, `state/platform-discovery.yaml`, `docs/39-platform-discovery-checkpoint-028.md` e `docs/CODEX-EXECUTION-MISSION-001.md`.
 
-Próximo passo: **DISCOVERY_Q8**.
+Próximo passo exato: **CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT**.
 
-Não executar rotação de credenciais agora. Não iniciar implementação pesada ou entregar missão de implementação ao Codex até que a Discovery produza requisitos consolidados, arquitetura-alvo, limites de autonomia/threat model, Infrastructure Blueprint v1, roadmap revisado e HUMAN_GATE explícito de LEANDRO.
+O Codex deve primeiro recuperar GitHub + estado real da VPS, registrar divergências, confirmar riscos, Technology Mapping inicial e primeiro incremento com rollback; depois prosseguir incrementalmente dentro da autorização Q40-D.
