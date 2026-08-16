@@ -1,4 +1,4 @@
-# 14 — Platform Discovery Checkpoint 003 — Q14
+# 14 — Platform Discovery Checkpoint 003 — Q14–Q15
 
 Data: 2026-08-16
 Status: **DISCOVERY_IN_PROGRESS**
@@ -99,6 +99,68 @@ O futuro Capability Core poderá evoluir para operações como:
 - `destroy_deployment()`;
 - registrar proveniência/evidências do deployment.
 
+## Q15 — Observabilidade e diagnóstico para agentes
+
+**Escolha de LEANDRO: C — logs + métricas + eventos + auditoria centralizados.**
+
+### Decisão
+
+A plataforma deve oferecer observabilidade central suficiente para que agentes possam verificar resultados, diagnosticar falhas e entender o estado de projetos, sandboxes, deployments e recursos sem depender de investigação manual recorrente de LEANDRO.
+
+A observabilidade inicial deve combinar quatro classes principais:
+
+- **logs** — mensagens e erros produzidos por aplicações e serviços;
+- **métricas** — CPU, RAM, disco, latência, requests, erros, uso de banco e consumo por projeto/sandbox;
+- **eventos** — criação/destruição de sandbox, deploy iniciado/concluído/falhado, preview publicado/revogado, backup/restore e outras mudanças relevantes;
+- **auditoria** — identidade/agente, projeto, missão, sandbox, ação, resultado e momento da operação.
+
+### Princípio operacional
+
+Um agente não deve marcar uma tarefa como concluída apenas porque executou uma ação. A plataforma deve fornecer evidência suficiente para verificar se o resultado esperado realmente ocorreu.
+
+Fluxo conceitual:
+
+```text
+AÇÃO
+  -> logs + métricas + eventos + status
+  -> evidência
+  -> verificação
+  -> DONE ou diagnóstico/correção
+```
+
+### Relação com limites de recursos
+
+A observabilidade deve permitir identificar quando um sandbox ou projeto se aproxima ou excede limites definidos de CPU, RAM, disco, rede ou processos. A política futura poderá então alertar, limitar, pausar ou encerrar workloads conforme regras explícitas, sem permitir que um agente descontrolado comprometa todo o laboratório.
+
+### Capacidades desejadas
+
+O futuro Capability Core poderá evoluir para operações como:
+
+- `get_logs()`;
+- `get_metrics()`;
+- `get_events()`;
+- `get_health()`;
+- `get_resource_usage()`;
+- `get_deployment_status()`;
+- `diagnose_project()`;
+- `diagnose_sandbox()`;
+- consultar trilha de auditoria;
+- detectar anomalias futuramente.
+
+### Direção futura
+
+Tracing distribuído deve permanecer compatível como evolução futura, mas não será requisito obrigatório do primeiro release.
+
+### Princípios derivados
+
+- observabilidade central, não dependência de inspeção manual serviço por serviço;
+- evidência antes de considerar uma ação concluída;
+- logs, métricas, eventos e auditoria como capacidades de primeira classe;
+- isolamento de visibilidade por projeto/missão quando necessário;
+- agentes devem poder diagnosticar problemas dentro do escopo autorizado;
+- ações relevantes do Capability Core devem deixar trilha auditável;
+- a tecnologia concreta de observabilidade ainda não está congelada.
+
 ## Estado das decisões
 
 ```text
@@ -116,10 +178,11 @@ Q11 = D
 Q12 = C
 Q13 = C
 Q14 = C
+Q15 = C
 ```
 
 ## Próximo passo
 
-**DISCOVERY_Q15**.
+**DISCOVERY_Q16**.
 
-A Discovery continua. Nenhuma escolha tecnológica final de runtime, banco, object storage, gateway, secret manager, CI/CD, registry, observabilidade, Hermes/OpenClaw/Freebuff/OpenHands ou desenho detalhado de MCP deve ser antecipada antes das decisões correspondentes.
+A Discovery continua. Nenhuma escolha tecnológica final de runtime, banco, object storage, gateway, secret manager, CI/CD, registry, observabilidade, backup/recovery, Hermes/OpenClaw/Freebuff/OpenHands ou desenho detalhado de MCP deve ser antecipada antes das decisões correspondentes.
