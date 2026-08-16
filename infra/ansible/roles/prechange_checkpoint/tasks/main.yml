@@ -63,7 +63,7 @@
       - "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/sources.list.d"
     creates: "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/sources.list.d"
 
-- name: Hash checkpoint files for local integrity evidence
+- name: Hash checkpoint files for local integrity evidence once
   ansible.builtin.shell: |
     set -o pipefail
     find '{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}' -type f \
@@ -71,4 +71,4 @@
       > '{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/SHA256SUMS'
   args:
     executable: /bin/bash
-  changed_when: false
+    creates: "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/SHA256SUMS"
