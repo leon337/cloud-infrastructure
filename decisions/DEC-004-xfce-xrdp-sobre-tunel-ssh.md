@@ -17,7 +17,8 @@ Usar XFCE + LightDM + XRDP/xorgxrdp. O XRDP escuta somente em `127.0.0.1:3389`; 
 - desconexão pode preservar sessão;
 - VNC Contabo permanece console de recovery, não transporte primário do desktop;
 - `AllowTcpForwarding yes` continua necessário no SSH;
-- credencial do XRDP deve ser rotacionada depois do bootstrap.
+- rotação da credencial do XRDP permanece dívida conhecida, atualmente
+  `DEFERRED_BY_HUMAN_DECISION`, e não é executada por esta decisão.
 
 ## Validação
 

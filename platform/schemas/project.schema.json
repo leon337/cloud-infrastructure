@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://platform.leandro.dev/schemas/project.schema.json",
+  "title": "Cloud Platform project manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "platform.leandro.dev/v1alpha1"},
+    "kind": {"const": "Project"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenant", "name", "environment"],
+      "properties": {
+        "tenant": {"$ref": "#/$defs/dnsLabel"},
+        "name": {"$ref": "#/$defs/dnsLabel"},
+        "environment": {"enum": ["dev", "staging"]}
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["criticality", "source", "capabilities", "persistence", "sandbox", "preview", "secretRefs", "production"],
+      "properties": {
+        "criticality": {"enum": ["critical", "important", "rebuildable", "disposable"]},
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "revision"],
+          "properties": {
+            "repository": {"type": "string", "format": "uri", "pattern": "^(https://|ssh://|git@)"},
+            "revision": {"type": "string", "minLength": 1, "maxLength": 200}
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["build", "test", "deploy-dev", "preview", "database-dev", "object-storage"]}
+        },
+        "persistence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["git", "devDatabase", "objectStorage", "volumes"],
+          "properties": {
+            "git": {"type": "boolean"},
+            "devDatabase": {"type": "boolean"},
+            "objectStorage": {"type": "boolean"},
+            "volumes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "criticality"],
+                "properties": {
+                  "name": {"$ref": "#/$defs/dnsLabel"},
+                  "criticality": {"enum": ["critical", "important", "rebuildable"]}
+                }
+              }
+            }
+          }
+        },
+        "sandbox": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["disposable", "limits", "network"],
+          "properties": {
+            "disposable": {"const": true},
+            "limits": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["cpuMillicores", "memoryMiB", "pids"],
+              "properties": {
+                "cpuMillicores": {"type": "integer", "minimum": 100, "maximum": 4000},
+                "memoryMiB": {"type": "integer", "minimum": 128, "maximum": 8192},
+                "pids": {"type": "integer", "minimum": 32, "maximum": 2048}
+              }
+            },
+            "network": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["ingress", "egressProfile", "sharedServices"],
+              "properties": {
+                "ingress": {"enum": ["none", "preview-gateway"]},
+                "egressProfile": {"enum": ["none", "development-default", "restricted"]},
+                "sharedServices": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {"enum": ["postgresql", "valkey", "object-storage", "event-backbone", "model-gateway"]}
+                }
+              }
+            }
+          }
+        },
+        "preview": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled"],
+          "properties": {"enabled": {"type": "boolean"}}
+        },
+        "secretRefs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^secret://[a-z0-9][a-z0-9/_-]{2,200}$"}
+        },
+        "production": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["promotionAuthorized", "humanGate"],
+          "properties": {
+            "promotionAuthorized": {"const": false},
+            "humanGate": {"const": "LEANDRO"}
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "dnsLabel": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 63,
+      "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$"
+    }
+  }
+}

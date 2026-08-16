@@ -1,0 +1,31 @@
+apiVersion: platform.leandro.dev/v1alpha1
+kind: ExecutionNode
+metadata:
+  name: node-01
+  environment: dev
+spec:
+  enabled: true
+  roles:
+    - control-plane
+    - execution
+  labels:
+    architecture: x86_64
+    topology: single-node
+  capacityPolicy:
+    hostReserveMemoryMiB: 5120
+    platformHighWaterMemoryMiB: 8192
+    workloadPoolMemoryMiB: 8192
+    uncommittedMemoryMiB: 2048
+    workloadCpuMillicores: 6000
+    minimumRootFreePercent: 20
+  sandboxDefaults:
+    cpuMillicores: 1000
+    memoryMiB: 1024
+    pids: 256
+    maximumConcurrent: 2
+  management:
+    exposure: private-only
+    sshFallback: true
+  productionPromotion:
+    authorized: false
+    gate: LEANDRO

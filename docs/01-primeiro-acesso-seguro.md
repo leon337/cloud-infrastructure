@@ -153,4 +153,6 @@ O texto acima permanece como registro histórico. Depois dele, FASE 1 e FASE 2 f
 - backup proporcional e reboot foram validados;
 - a Cloud Workstation XFCE/XRDP sobre túnel SSH passou nos testes funcionais.
 
-Próximo passo atual: rotação das credenciais temporárias de bootstrap.
+Atualização de 16/08/2026: Q40-D substituiu esse próximo passo. Rotação permanece
+`DEFERRED_BY_HUMAN_DECISION`; o estado corrente está em `../CHECKPOINT.md` e o
+roadmap em `45-revised-implementation-roadmap.md`.

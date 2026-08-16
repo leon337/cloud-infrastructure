@@ -21,6 +21,13 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 | Decisões Platform Discovery Q1–Q40 | `state/platform-discovery.yaml` |
 | Q40 / delegação ao Codex | `docs/39-platform-discovery-checkpoint-028.md` |
 | Missão autorizada ao Codex | `docs/CODEX-EXECUTION-MISSION-001.md` |
+| Mission Acceptance / recovery | `docs/40-mission-acceptance-recovery-report.md` |
+| Requisitos consolidados | `docs/41-consolidated-requirements.md` |
+| Arquitetura e threat model | `docs/42-target-architecture.md`, `docs/43-threat-model-and-autonomy-boundaries.md` |
+| Blueprint e roadmap corrente | `docs/44-infrastructure-blueprint-v1.md`, `docs/45-revised-implementation-roadmap.md` |
+| Technology Mapping | `docs/46-technology-mapping-v1.md`, `DEC-006` |
+| Componentes/versões | `state/components.yaml` |
+| Automação Foundations | `automation/ansible/`, `runbooks/platform-foundation.md` |
 | Missão e arquitetura histórica | `docs/02-missao-e-escopo.md`, `docs/03-arquitetura-e-principios.md` |
 | Plano e estado anterior | `docs/04-plano-mestre.md`, `docs/05-roadmap.md` |
 | Infraestrutura observada | `docs/06-inventario.md` |
@@ -37,11 +44,19 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 - SSH público somente em TCP 22. Login permitido: `ubuntu` por chave dedicada; `PermitRootLogin no`, `PasswordAuthentication no`, `KbdInteractiveAuthentication no`.
 - UFW ativo, default deny incoming, somente OpenSSH; fail2ban/sshd ativo.
 - sudo autenticado validado; NOPASSWD removido. `ubuntu` não pertence mais a `lxd`; daemon e socket LXD estão desabilitados/inativos.
-- Provider VNC `VALIDATED_CURRENTLY`; Rescue `AVAILABLE_CONFIRMED`; snapshots `NOT_CONFIGURED`; backups `NOT_CONTRACTED`; firewall Contabo `NOT_CONFIGURED`.
-- Backup diário sanitizado de configurações ativo, cópia off-host validada por SHA-256 e extração de recuperação testada. Backup amplo de dados continua pendente.
+- Provider VNC `VALIDATED_HISTORICAL_2026_08_15_NOT_RECHECKABLE_FROM_GUEST`;
+  Rescue historicamente confirmado; snapshots `NOT_CONFIGURED`, backups
+  `NOT_CONTRACTED` e firewall Contabo `NOT_CONFIGURED` no último registro humano.
+- Backup diário sanitizado de configurações ativo. Uma cópia off-host observada
+  conferiu por SHA-256; o archive remoto mais recente não foi observado off-host.
+  Houve extração histórica, não restore/rebuild funcional, e os archives atuais
+  normalizam modes para `0640`. Backup amplo de dados continua pendente.
 - XFCE/LightDM + XRDP somente em loopback; acesso gráfico pelo túnel SSH `127.0.0.1:13389 → VPS 127.0.0.1:3389`.
 - Firefox DEB oficial Mozilla, VS Code, terminal XFCE e Thunar validados; clipboard bidirecional, resolução dinâmica, múltiplas janelas, reconnect, logout/login, persistência e reboot passaram.
-- Pós-desktop na validação final com sessão ativa: ~2,2 GiB de 23 GiB usados; ~7,5 GiB de 290 GiB usados; zero updates pendentes no snapshot documentado.
+- Recuperação read-only de 16/08/2026 19:46 UTC: ~6,2 GiB de 23,5 GiB
+  usados e ~10,5 GiB de 289,6 GiB usados, com Firefox/VS Code/Codex e múltiplas
+  sessões ativos; zero units falhas. Os números 2,2/7,5 GiB permanecem baseline
+  histórica pós-desktop.
 
 ## Direção arquitetônica atual
 
@@ -56,7 +71,12 @@ Q40 = `D` por decisão explícita de LEANDRO:
 - secrets continuam proibidos no Git;
 - rotação de credenciais continua `DEFERRED_BY_HUMAN_DECISION`.
 
-A missão vinculante é `docs/CODEX-EXECUTION-MISSION-001.md`.
+A missão vinculante é `docs/CODEX-EXECUTION-MISSION-001.md`. Mission Acceptance e
+Q1–Q40 foram persistidos. O Technology Mapping é suficiente para F1.1, mas mantém
+gaps posteriores explicitamente `CONDITIONAL`. O commit de implementação
+`edd2497d657cc9bc35952f5dfc71090a18dade53` passou nos jobs estático e de
+integração descartável do GitHub Actions run `31972460567`; isso não prova nenhuma
+operação privilegiada na VPS real.
 
 ## Guardrails centrais
 
@@ -77,6 +97,17 @@ Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUD
 
 ## Ponto exato
 
-**CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT**.
+**SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO**.
 
-O próximo executor deve recuperar o estado real do GitHub e da VPS, confirmar branch/HEAD, divergências, riscos, Technology Mapping inicial e o primeiro incremento com rollback. A partir daí, a implementação autorizada por Q40-D deve avançar em slices pequenos, reversíveis, testados e checkpointados.
+F1.1 possui artefatos canônicos, desired state Ansible, schema/manifests, policy de
+secrets, CI e testes. O run commit-bound `31972460567` passou com 37 testes,
+ShellCheck, três syntax-checks Ansible, check mode sem mutação, apply descartável
+`changed=7`, segunda reconciliação `changed=0`, quatro recusas fail-closed,
+rollback e cleanup. Os resultados anteriores da fixture são somente históricos.
+Nada foi aplicado à VPS real; F1.1 permanece `PARTIAL/NOT_APPLIED`.
+
+O próximo executor deve repetir os prechecks read-only frescos e executar somente
+o check mode privilegiado F1.1 no NODE-01. LEANDRO digita a senha sudo diretamente
+no prompt `--ask-become-pass`; ela nunca é enviada ao agente ou registrada. O diff
+deve ser persistido de forma sanitizada e reconciliado antes de qualquer apply.
+Docker, Management Network, produção e rotação não fazem parte desse passo.

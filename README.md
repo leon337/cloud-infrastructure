@@ -12,7 +12,7 @@ Configurar, proteger, documentar e tornar reproduzível a VPS enquanto LEANDRO a
 
 O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada; `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; o GitHub é a memória canônica após validação e publicação.
 
-## Estado operacional — 15/08/2026
+## Estado operacional — baseline reconciliada em 16/08/2026
 
 - FASE 0, FASE 1 e FASE 2: **DONE**.
 - `ubuntu`/publickey é o único login SSH permitido; root e autenticação SSH por senha estão desabilitados pela política efetiva.
@@ -26,8 +26,19 @@ O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/cur
 
 A Cloud Workstation está **FUNCTIONAL_AND_VALIDATED**: XFCE + LightDM, XRDP restrito a `127.0.0.1:3389` e acesso somente por túnel SSH. Firefox oficial em pacote DEB, VS Code, terminal, Thunar, múltiplas janelas, clipboard bidirecional, resolução dinâmica, logout/login, desconexão/reconexão, persistência e reboot foram testados.
 
-Recursos na validação final com sessão gráfica ativa: 8 CPUs, 23 GiB de RAM total (~2,2 GiB usada), raiz de 290 GiB (~7,5 GiB usada).
+Recursos são fatos voláteis. A recuperação da missão observou 8 CPUs, 23 GiB de
+RAM total, sem swap e raiz de 290 GiB; uso atual deve ser medido antes de cada
+slice. Os números de ~2,2 GiB RAM/~7,5 GiB disco pertencem ao snapshot histórico
+da validação final da Workstation.
 
-## Próximo passo exato
+## Implementação atual
 
-Rotacionar as credenciais temporárias de bootstrap sem perder o acesso validado. Não versionar senhas, passphrases, chaves privadas, tokens, API keys, 2FA ou credenciais do provedor.
+Q1–Q39 definem a arquitetura vinculante e Q40-D autoriza o Codex a selecionar as
+tecnologias e implementar incrementalmente a plataforma DEV/lab. A missão está em
+[`docs/CODEX-EXECUTION-MISSION-001.md`](docs/CODEX-EXECUTION-MISSION-001.md) e o
+roadmap corrente em
+[`docs/45-revised-implementation-roadmap.md`](docs/45-revised-implementation-roadmap.md).
+
+Próximo passo exato: concluir `SLICE-001 — Foundations F1.1`, atualmente com
+desired state em validação e aplicação privilegiada pendente. Produção não está
+autorizada e rotação de credenciais permanece `DEFERRED_BY_HUMAN_DECISION`.

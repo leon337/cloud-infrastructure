@@ -1,0 +1,115 @@
+---
+- name: Create the external root-only management marker first
+  ansible.builtin.copy:
+    dest: "{{ platform_foundation_marker }}"
+    owner: root
+    group: root
+    mode: "0600"
+    content: "{{ platform_foundation_marker_content }}"
+
+- name: Create the unprivileged foundation group
+  ansible.builtin.group:
+    name: "{{ platform_foundation_group }}"
+    system: true
+    state: present
+
+- name: Explain check-mode operations requiring the not-yet-created group
+  ansible.builtin.debug:
+    msg: >-
+      Initial check mode cannot resolve a group it only simulated. Account and
+      directory mutations are therefore previewed by validated inputs and
+      exercised in the disposable apply/idempotence integration test.
+  when: platform_foundation_initial_check
+
+- name: Create locked technical accounts
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    comment: "{{ item.comment }}"
+    group: "{{ platform_foundation_group }}"
+    groups: "{{ platform_foundation_group }}"
+    append: false
+    home: "{{ item.home }}"
+    create_home: false
+    shell: "{{ item.shell }}"
+    password_lock: true
+    system: true
+    state: present
+  loop: "{{ platform_foundation_accounts }}"
+  when: not platform_foundation_initial_check
+
+- name: Create persistent foundation namespaces
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ platform_foundation_directories }}"
+  when: not platform_foundation_initial_check
+
+- name: Install the runtime directory declaration
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../../../../platform/tmpfiles.d/cloud-platform.conf"
+    dest: /etc/tmpfiles.d/cloud-platform.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reconcile runtime directories for the current boot
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ platform_foundation_runtime_directories }}"
+  when: not platform_foundation_initial_check
+
+- name: Install accounting-only systemd slices
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../../../../platform/systemd/{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - cloud-platform.slice
+    - cloud-workloads.slice
+  register: platform_foundation_unit_files
+
+- name: Reload systemd after unit reconciliation
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  changed_when: false
+  when: not platform_foundation_initial_check
+
+- name: Verify installed systemd slice syntax
+  ansible.builtin.command:
+    argv:
+      - systemd-analyze
+      - verify
+      - /etc/systemd/system/cloud-platform.slice
+      - /etc/systemd/system/cloud-workloads.slice
+  changed_when: false
+  check_mode: false
+  when: not platform_foundation_initial_check
+
+- name: Read technical-account group memberships
+  ansible.builtin.command:
+    argv: [id, -nG, "{{ item.name }}"]
+  loop: "{{ platform_foundation_accounts }}"
+  register: platform_foundation_account_groups
+  changed_when: false
+  check_mode: false
+  when: not platform_foundation_initial_check
+
+- name: Prove technical accounts have no privileged group
+  ansible.builtin.assert:
+    that:
+      - >-
+        (item.stdout.split() |
+          intersect(platform_foundation_privileged_groups) | length) == 0
+      - item.stdout.split() == [platform_foundation_group]
+    fail_msg: "{{ item.item.name }} has an unexpected group membership."
+  loop: "{{ platform_foundation_account_groups.results }}"
+  when: not platform_foundation_initial_check

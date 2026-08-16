@@ -24,7 +24,10 @@ Nunca versionar senhas, passphrases, chaves privadas, tokens, API keys, códigos
 
 ## Próximo controle
 
-Rotacionar todas as credenciais temporárias de bootstrap. A rotação deve preservar os canais validados e ser seguida de testes independentes de SSH, VNC, XRDP e continuidade.
+Aplicar Foundations F1.1 sem ampliar superfície, mantendo SSH/UFW/XRDP e a
+Workstation invariantes. Docker, Management Network, secret store e exposição
+possuem slices/gates próprios. Rotação de credenciais permanece
+`DEFERRED_BY_HUMAN_DECISION`.
 
 ## HUMAN_GATE
 

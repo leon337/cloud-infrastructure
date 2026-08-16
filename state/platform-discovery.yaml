@@ -1,5 +1,5 @@
-status: CODEX_HANDOFF_AUTHORIZED
-phase: CODEX_TECH_SELECTION_AND_IMPLEMENTATION
+status: CODEX_IMPLEMENTATION_IN_PROGRESS
+phase: FOUNDATIONS_F1_1
 updated_at: 2026-08-16
 checkpoint: docs/39-platform-discovery-checkpoint-028.md
 authority: LEANDRO
@@ -9,6 +9,20 @@ production_promotion_authorized: false
 credential_rotation: DEFERRED_BY_HUMAN_DECISION
 execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
 next_question: NONE
+implementation:
+  mission_acceptance: DONE
+  technology_mapping: docs/46-technology-mapping-v1.md
+  technology_mapping_status: PARTIAL_BASELINE_LATER_CAPABILITIES_CONDITIONAL
+  current_slice: SLICE-001_FOUNDATIONS_F1_1
+  current_slice_status: PARTIAL_DISPOSABLE_CI_PASS_REAL_VPS_NOT_APPLIED
+  validated_implementation_commit: edd2497d657cc9bc35952f5dfc71090a18dade53
+  ci_run_id: 31972460567
+  ci_conclusion: PASS
+  ci_scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
+  real_vps_privileged_check_mode: NOT_EXECUTED
+  next_step: SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
+  production_promotion: NOT_AUTHORIZED
+  credential_rotation: DEFERRED_BY_HUMAN_DECISION
 decisions:
   q1: C
   q2: C

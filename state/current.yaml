@@ -2,15 +2,24 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-16
-documentation_state: CODEX_TECH_SELECTION_AND_IMPLEMENTATION_AUTHORIZED
+documentation_state: SLICE_001_PARTIAL_READY_FOR_REAL_VPS_PRIVILEGED_CHECK_MODE
 continuity:
   historical_validations_preserved: true
-  current_state_independent_validation: NOT_EXECUTED
+  current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
+  current_state_independent_validation_report: governance/CONTINUITY-VALIDATION-2026-08-16-MISSION-001.md
   future_state_validation_policy: PUC_REVALIDATION_REQUIRED
   canonical_entrypoint: CONTEXT.md
   checkpoint: CHECKPOINT.md
   platform_discovery_state: state/platform-discovery.yaml
   codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
+  mission_acceptance_report: docs/40-mission-acceptance-recovery-report.md
+  consolidated_requirements: docs/41-consolidated-requirements.md
+  target_architecture: docs/42-target-architecture.md
+  threat_model: docs/43-threat-model-and-autonomy-boundaries.md
+  infrastructure_blueprint: docs/44-infrastructure-blueprint-v1.md
+  revised_roadmap: docs/45-revised-implementation-roadmap.md
+  technology_mapping: docs/46-technology-mapping-v1.md
+  component_inventory: state/components.yaml
 project:
   name: IMPLEMENTACAO_DA_VPS
   status: ACTIVE
@@ -18,12 +27,12 @@ project:
     phase_0: DONE
     phase_1: DONE
     phase_2_cloud_workstation: DONE
-    future_platform_implementation: AUTHORIZED_INCREMENTAL_DEV_LAB
+    future_platform_implementation: SLICE_001_FOUNDATIONS_PARTIAL
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
+  next_exact_step: SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
 platform_discovery:
-  status: HANDOFF_TO_CODEX_AUTHORIZED
+  status: CODEX_IMPLEMENTATION_IN_PROGRESS
   decision_source: state/platform-discovery.yaml
   checkpoint: docs/39-platform-discovery-checkpoint-028.md
   q1_to_q39: BINDING_ARCHITECTURAL_REQUIREMENTS
@@ -43,26 +52,33 @@ platform_discovery:
     - INFRASTRUCTURE_BLUEPRINT_V1
     - REVISED_IMPLEMENTATION_ROADMAP
     - CODEX_EXECUTION_MISSION
+  target_artifacts_status: CREATED_REVIEWED_BASELINE_WITH_CONDITIONAL_GAPS
 remote_vps:
-  snapshot_at_utc: "2026-08-16T01:58:02Z"
+  snapshot_at_utc: "2026-08-16T19:46:14Z"
   provider: Contabo
   product: Cloud VPS 8
   ipv4: 169.58.171.192
   hostname: vmi3506102
+  machine_id_sha256: 27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
+  machine_id_sha256_classification: HASH_SANITIZED_RAW_NOT_PERSISTED
+  machine_id_hash_input: RAW_VALUE_WITHOUT_TRAILING_NEWLINE
+  machine_id_sha256_observed_at_utc: "2026-08-16T19:46:14Z"
   os: Ubuntu 24.04.4 LTS
   kernel: Linux 6.8.0-137-generic
   architecture: x86-64
   virtualization: KVM_QEMU
   cpu_logical: 8
   ram_total_gib_approx: 23
-  ram_used_after_desktop_gib_approx: 2.2
+  ram_used_current_gib_approx: 6.2
+  ram_available_current_gib_approx: 17.2
+  ram_used_after_desktop_historical_gib_approx: 2.2
   swap_bytes: 0
   storage:
     primary_disk: /dev/sda
     size_gib: 300
     root_filesystem_size_gib_approx: 290
-    root_used_gib_approx: 7.5
-    root_available_gib_approx: 283
+    root_used_gib_approx: 10.5
+    root_available_gib_approx: 279
   network:
     primary_interface: eth0
     manager: systemd-networkd
@@ -71,7 +87,7 @@ remote_vps:
       - "[::]:22/tcp"
     xrdp_listener: "127.0.0.1:3389/tcp"
     xrdp_sesman_listener: "[::1]:3350/tcp"
-    provider_firewall: NOT_CONFIGURED
+    provider_firewall: NOT_CONFIGURED_LAST_HUMAN_RECORD_NOT_RECHECKED_GUEST_ONLY
   firewall:
     ufw_status: active
     default_incoming: deny
@@ -144,19 +160,22 @@ remote_vps:
     logout_login: PASS
     post_reboot_login: PASS
   recovery:
-    provider_vnc: VALIDATED_CURRENTLY
-    provider_rescue: AVAILABLE_CONFIRMED
-    provider_snapshots: NOT_CONFIGURED
-    provider_backups: NOT_CONTRACTED
-    provider_firewall: NOT_CONFIGURED
+    provider_vnc: VALIDATED_HISTORICAL_2026_08_15_NOT_RECHECKABLE_FROM_GUEST
+    provider_rescue: AVAILABLE_CONFIRMED_HISTORICAL_NOT_RECHECKED_GUEST_ONLY
+    provider_snapshots: NOT_CONFIGURED_LAST_HUMAN_RECORD_NOT_RECHECKED_GUEST_ONLY
+    provider_backups: NOT_CONTRACTED_LAST_HUMAN_RECORD_NOT_RECHECKED_GUEST_ONLY
+    provider_firewall: NOT_CONFIGURED_LAST_HUMAN_RECORD_NOT_RECHECKED_GUEST_ONLY
     config_backup:
       timer: active_enabled
       directory_persistence: systemd_tmpfiles
       remote_path: /var/backups/cloud-infrastructure
       offhost_path: /home/leo/Backups/cloud-infrastructure
-      remote_local_sha256_match: true
-      extraction_restore_test: PASS
-      restored_files_tested: 24
+      observed_archive_remote_local_sha256_match: true
+      archive_checksum_and_read_test_current: PASS_TWO_ARCHIVES
+      extraction_test_historical: PASS_24_FILES
+      functional_restore_test: NOT_EXECUTED
+      metadata_preserving_restore: NOT_PROVEN_CURRENT_ARCHIVES_NORMALIZE_MODE_0640
+      latest_remote_archive_offhost_copy: NOT_OBSERVED
     full_data_backup: PENDING
 findings:
   resolved: [FND-SSH-001, FND-SSH-002, FND-SSH-003, FND-LXD-001, FND-SUDO-001, FND-DOC-001, FND-AUDIT-001]
@@ -166,7 +185,7 @@ authorization:
   authority: LEANDRO
   phase_1_and_2_full_access: EXECUTED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
+  next_step: SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
   platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
   codex_technology_selection: AUTHORIZED_BY_Q40_D
   codex_implementation_mission: AUTHORIZED_BY_Q40_D
@@ -174,5 +193,70 @@ authorization:
   future_scope_expansion: HUMAN_GATE_REQUIRED
   historical_executed:
     AUTH-SSH-KEEPALIVE-001: EXECUTED_AND_VALIDATED
+codex_execution:
+  mission: docs/CODEX-EXECUTION-MISSION-001.md
+  mission_acceptance: DONE
+  working_branch: codex/mission-001-foundations-f1-1
+  base_sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
+  current_slice:
+    id: SLICE-001
+    name: FOUNDATIONS_F1_1
+    status: PARTIAL_DISPOSABLE_CI_PASS_REAL_VPS_NOT_APPLIED
+    scope:
+      - CANONICAL_ARCHITECTURE_ARTIFACTS
+      - TECHNOLOGY_MAPPING
+      - ANSIBLE_FOUNDATION
+      - MANIFEST_SCHEMAS
+      - TECHNICAL_ACCOUNT
+      - FHS_NAMESPACES
+      - TMPFILES_RUNTIME_NAMESPACE
+      - SYSTEMD_ACCOUNTING_SLICES
+    prohibited_or_unchanged:
+      - PRODUCTION
+      - CREDENTIAL_ROTATION
+      - SSH
+      - UFW
+      - XRDP
+      - DOCKER_INSTALLATION
+      - NETWORK_LISTENERS
+      - SECRET_VALUES
+    validation:
+      ci_run_id: 31972460567
+      ci_run_url: https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567
+      ci_validated_commit: edd2497d657cc9bc35952f5dfc71090a18dade53
+      ci_conclusion: PASS
+      ci_scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
+      checkpoint_head_ci_run_id: 31973125852
+      checkpoint_head_ci_run_url: https://github.com/leon337/cloud-infrastructure/actions/runs/31973125852
+      checkpoint_head_ci_validated_commit: da7df7070b31c019242900375664ab9eada3894f
+      checkpoint_head_ci_conclusion: PASS
+      checkpoint_head_ci_scope: COMMIT_BOUND_CHECKPOINT_HEAD_NOT_SUBSEQUENT_READ_ONLY_EVIDENCE_UPDATE
+      static_policy_suite: PASS_CI_RUN_31972460567_COMMIT_EDD2497D
+      unit_tests: PASS_37_CI_RUN_31972460567_COMMIT_EDD2497D
+      ansible_syntax: PASS_3_CI_RUN_31972460567_COMMIT_EDD2497D
+      shellcheck: PASS_4_CI_RUN_31972460567_COMMIT_EDD2497D
+      unprivileged_real_vps_target_preflight: PASS_CHANGED_0_NO_MUTATION
+      fresh_pre_privileged_readonly_baseline: PASS_AT_2026_08_16T21_23_21Z_NO_DRIFT_NO_MUTATION
+      fresh_foundation_objects_and_lock: ALL_ABSENT
+      fresh_concurrent_reconcile_and_package_processes: ZERO
+      pre_apply_archive_and_off_host_revalidation: REQUIRED_BEFORE_APPLY_NOT_READ_ONLY_PREVIEW
+      physical_test_inventory_guard: REFUSED_BEFORE_MUTATION_EXIT_2
+      disposable_ubuntu_check_mode: PASS_CI_RUN_31972460567_F1_1_MANAGED_SURFACE_INVARIANT
+      disposable_ubuntu_partial_marker_check_mode: PASS_CI_RUN_31972460567_F1_1_MANAGED_SURFACE_INVARIANT
+      disposable_ubuntu_first_apply: PASS_CI_RUN_31972460567_CHANGED_7
+      disposable_ubuntu_second_apply: PASS_CI_RUN_31972460567_CHANGED_0
+      disposable_ubuntu_security_assertions: PASS_CI_RUN_31972460567
+      disposable_ubuntu_rollback_refusals: PASS_CI_RUN_31972460567_SCENARIOS_4_F1_1_MANAGED_SURFACE_INVARIANT
+      disposable_ubuntu_rollback: PASS_CI_RUN_31972460567_CLEAN
+      disposable_ubuntu_cleanup: PASS_CI_RUN_31972460567_CONTAINER_NAMED_TEST_IMAGE_BUNDLE_REMOVED
+      previous_disposable_fixture_results: HISTORICAL_ONLY_CHANGED_7_THEN_0_AND_CLEANUP_NOT_CURRENT_PROOF
+      real_vps_privileged_check_mode: NOT_EXECUTED
+      real_vps_apply: NOT_EXECUTED
+      real_vps_idempotence: NOT_EXECUTED
+      real_vps_post_apply_invariance: NOT_EXECUTED
+    human_interaction:
+      status: READY_FOR_PRIVILEGED_CHECK_MODE_WAITING_LEANDRO_INTERACTIVE_SUDO
+      reason: DISPOSABLE_CI_PASSED_PRIVILEGED_REAL_VPS_CHECK_MODE_REQUIRES_HUMAN_SUDO
+      secret_must_not_be_sent_to_agent_or_logged: true
 secrets_policy:
   never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]

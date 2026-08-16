@@ -126,3 +126,14 @@ Q40 = D
 ## Próximo passo
 
 Preparar e entregar a missão canônica `CODEX-EXECUTION-MISSION-001`, na qual o Codex recebe a delegação para Technology Mapping + blueprint técnico + implementação incremental da plataforma, mantendo todos os guardrails deste checkpoint.
+
+Atualização de continuidade em 16/08/2026: a missão foi criada e aceita; o
+MISSION ACCEPTANCE + RECOVERY REPORT está em
+`40-mission-acceptance-recovery-report.md` e o slice F1.1 foi iniciado. A revisão
+de safety posterior rebaixou o desired state; a remediação foi vinculada ao commit
+`edd2497d657cc9bc35952f5dfc71090a18dade53` e passou no GitHub Actions run
+`31972460567`, inclusive check mode, apply, `changed=0`, recusas fail-closed,
+rollback e cleanup na VM descartável. Nenhuma operação privilegiada ocorreu na
+VPS real. O próximo passo é somente check mode privilegiado no NODE-01, com sudo
+digitado diretamente por LEANDRO; apply depende da reconciliação desse preview.
+Essa atualização operacional não reabre Q1–Q40.

@@ -1,0 +1,47 @@
+platform_environment: dev
+platform_node_id: node-01
+platform_expected_hostname: vmi3506102
+platform_expected_ansible_host: 169.58.171.192
+platform_expected_machine_id_sha256: 27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
+platform_expected_controller_key_fingerprint: SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg
+platform_repository_root: "{{ playbook_dir }}/../../.."
+
+platform_foundation_group: cloud-platform
+platform_foundation_accounts:
+  - name: platform-core
+    comment: Cloud Platform unprivileged control-plane identity
+    home: /nonexistent
+    shell: /usr/sbin/nologin
+
+platform_foundation_directories:
+  - path: /etc/cloud-platform
+    owner: root
+    group: cloud-platform
+    mode: "0750"
+  - path: /var/lib/cloud-platform
+    owner: root
+    group: cloud-platform
+    mode: "0750"
+  - path: /var/log/cloud-platform
+    owner: root
+    group: cloud-platform
+    mode: "0750"
+  - path: /var/cache/cloud-platform
+    owner: root
+    group: cloud-platform
+    mode: "0750"
+
+platform_foundation_runtime_directories:
+  - path: /run/cloud-platform
+    owner: root
+    group: cloud-platform
+    mode: "0750"
+  - path: /run/cloud-platform/credentials
+    owner: root
+    group: root
+    mode: "0700"
+
+platform_foundation_privileged_groups:
+  - sudo
+  - lxd
+  - docker

@@ -1,0 +1,36 @@
+apiVersion: platform.leandro.dev/v1alpha1
+kind: Project
+metadata:
+  tenant: example-tenant
+  name: example-project
+  environment: dev
+spec:
+  criticality: rebuildable
+  source:
+    repository: https://example.invalid/organization/project.git
+    revision: main
+  capabilities:
+    - build
+    - test
+    - deploy-dev
+  persistence:
+    git: true
+    devDatabase: false
+    objectStorage: false
+    volumes: []
+  sandbox:
+    disposable: true
+    limits:
+      cpuMillicores: 1000
+      memoryMiB: 1024
+      pids: 256
+    network:
+      ingress: none
+      egressProfile: development-default
+      sharedServices: []
+  preview:
+    enabled: false
+  secretRefs: []
+  production:
+    promotionAuthorized: false
+    humanGate: LEANDRO

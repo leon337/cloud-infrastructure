@@ -1,0 +1,22 @@
+platform_environment: test
+platform_node_id: node-01
+platform_repository_root: /workspace/cloud-infrastructure
+
+platform_foundation_group: cloud-platform
+platform_foundation_accounts:
+  - name: platform-core
+    comment: Cloud Platform unprivileged control-plane identity
+    home: /nonexistent
+    shell: /usr/sbin/nologin
+
+platform_foundation_directories:
+  - {path: /etc/cloud-platform, owner: root, group: cloud-platform, mode: "0750"}
+  - {path: /var/lib/cloud-platform, owner: root, group: cloud-platform, mode: "0750"}
+  - {path: /var/log/cloud-platform, owner: root, group: cloud-platform, mode: "0750"}
+  - {path: /var/cache/cloud-platform, owner: root, group: cloud-platform, mode: "0750"}
+
+platform_foundation_runtime_directories:
+  - {path: /run/cloud-platform, owner: root, group: cloud-platform, mode: "0750"}
+  - {path: /run/cloud-platform/credentials, owner: root, group: root, mode: "0700"}
+
+platform_foundation_privileged_groups: [sudo, lxd, docker]

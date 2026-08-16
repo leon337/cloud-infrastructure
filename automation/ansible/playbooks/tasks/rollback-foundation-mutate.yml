@@ -1,0 +1,64 @@
+---
+- name: Remove exact foundation unit and tmpfiles files
+  ansible.builtin.command:
+    argv: [unlink, --, "{{ item.item.destination }}"]
+  loop: "{{ platform_foundation_rollback_managed_files.results }}"
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - item.stat.exists
+  notify: Reload systemd
+
+- name: Atomically remove the empty credentials runtime directory
+  ansible.builtin.command:
+    argv: [rmdir, /run/cloud-platform/credentials]
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - platform_foundation_rollback_runtime_directories.results[1].stat.exists
+
+- name: Atomically remove the empty runtime root
+  ansible.builtin.command:
+    argv: [rmdir, /run/cloud-platform]
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - platform_foundation_rollback_runtime_directories.results[0].stat.exists
+
+- name: Atomically remove empty persistent foundation directories
+  ansible.builtin.command:
+    argv: [rmdir, "{{ item.item.path }}"]
+  loop: "{{ platform_foundation_rollback_directories.results | reverse | list }}"
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - item.stat.exists
+
+- name: Remove the exact technical account without deleting files
+  ansible.builtin.user:
+    name: "{{ item.item.name }}"
+    state: absent
+    remove: false
+    force: false
+  loop: "{{ platform_foundation_rollback_accounts.results }}"
+  when: item.rc == 0
+
+- name: Remove the exact foundation group
+  ansible.builtin.group:
+    name: "{{ platform_foundation_group }}"
+    state: absent
+  when: platform_foundation_rollback_group.rc == 0
+
+- name: Reload systemd before relinquishing rollback provenance
+  ansible.builtin.meta: flush_handlers
+
+- name: Unconditionally reconcile systemd manager state before marker removal
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  changed_when: false
+
+- name: Remove the exact management marker last
+  ansible.builtin.command:
+    argv: [unlink, --, /etc/cloud-platform-foundation.managed]
+  changed_when: true
+  when: not ansible_check_mode

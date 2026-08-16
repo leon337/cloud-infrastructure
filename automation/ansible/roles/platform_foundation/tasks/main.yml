@@ -1,0 +1,382 @@
+---
+- name: Inspect the Docker marker for a local test target
+  ansible.builtin.stat:
+    path: /.dockerenv
+    follow: false
+  register: platform_foundation_dockerenv
+  when: (ansible_connection | default('ssh')) == 'local'
+
+- name: Identify a local test container again inside the role
+  ansible.builtin.command:
+    argv: [systemd-detect-virt, --container]
+  register: platform_foundation_container_virt
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: (ansible_connection | default('ssh')) == 'local'
+
+- name: Verify the supported host and exact DEV/test target
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version == '24.04'
+      - ansible_facts.service_mgr == 'systemd'
+      - ansible_facts.architecture == 'x86_64'
+      - inventory_hostname == 'node-01'
+      - platform_node_id == 'node-01'
+      - >-
+        (
+          (ansible_connection | default('ssh')) == 'local' and
+          platform_environment == 'test' and
+          platform_repository_root == '/workspace/cloud-infrastructure' and
+          platform_foundation_dockerenv.stat.exists and
+          (platform_foundation_dockerenv.stat.isreg | default(false)) and
+          not (platform_foundation_dockerenv.stat.islnk | default(false)) and
+          platform_foundation_container_virt.rc == 0 and
+          platform_foundation_container_virt.stdout == 'docker'
+        ) or (
+          (ansible_connection | default('ssh')) != 'local' and
+          platform_environment == 'dev' and
+          ansible_user == 'ubuntu' and
+          platform_expected_ansible_host == '169.58.171.192' and
+          platform_expected_hostname == 'vmi3506102' and
+          platform_expected_machine_id_sha256 ==
+            '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+          (ansible_host | string) == (platform_expected_ansible_host | string) and
+          ansible_facts.hostname == platform_expected_hostname and
+          (ansible_facts.machine_id | hash('sha256')) ==
+            platform_expected_machine_id_sha256
+        )
+    fail_msg: >-
+      Foundations F1.1 supports only the recorded Ubuntu 24.04 DEV node-01,
+      plus the explicit local disposable-test inventory. Refusing a different
+      host, environment, release, init system, or architecture.
+
+- name: Verify the immutable Foundations F1.1 object allowlist
+  ansible.builtin.assert:
+    that:
+      - platform_foundation_group == 'cloud-platform'
+      - platform_foundation_marker == '/etc/cloud-platform-foundation.managed'
+      - >-
+        (
+          platform_environment == 'dev' and
+          (platform_foundation_marker_content | hash('sha256')) ==
+            '0ece23dea825d4961bba3ae1af84b1a2dd3814adeca4a4bdbb204928039e3e54'
+        ) or (
+          platform_environment == 'test' and
+          (platform_foundation_marker_content | hash('sha256')) ==
+            '6534374d2b10588278f71e045f95b2b4a920976f080e8a4733678d81358b4594'
+        )
+      - platform_foundation_accounts | length == 1
+      - platform_foundation_accounts[0].name == 'platform-core'
+      - platform_foundation_accounts[0].comment == 'Cloud Platform unprivileged control-plane identity'
+      - platform_foundation_accounts[0].home == '/nonexistent'
+      - platform_foundation_accounts[0].shell == '/usr/sbin/nologin'
+      - >-
+        platform_foundation_directories | map(attribute='path') | list ==
+        ['/etc/cloud-platform', '/var/lib/cloud-platform',
+         '/var/log/cloud-platform', '/var/cache/cloud-platform']
+      - >-
+        platform_foundation_directories | map(attribute='owner') | list ==
+        ['root', 'root', 'root', 'root']
+      - >-
+        platform_foundation_directories | map(attribute='group') | list ==
+        ['cloud-platform', 'cloud-platform', 'cloud-platform', 'cloud-platform']
+      - >-
+        platform_foundation_directories | map(attribute='mode') | list ==
+        ['0750', '0750', '0750', '0750']
+      - >-
+        platform_foundation_runtime_directories | map(attribute='path') | list ==
+        ['/run/cloud-platform', '/run/cloud-platform/credentials']
+      - >-
+        platform_foundation_runtime_directories | map(attribute='owner') | list ==
+        ['root', 'root']
+      - >-
+        platform_foundation_runtime_directories | map(attribute='group') | list ==
+        ['cloud-platform', 'root']
+      - >-
+        platform_foundation_runtime_directories | map(attribute='mode') | list ==
+        ['0750', '0700']
+      - >-
+        platform_foundation_managed_files | map(attribute='source') | list ==
+        ['platform/tmpfiles.d/cloud-platform.conf',
+         'platform/systemd/cloud-platform.slice',
+         'platform/systemd/cloud-workloads.slice']
+      - >-
+        platform_foundation_managed_files | map(attribute='destination') | list ==
+        ['/etc/tmpfiles.d/cloud-platform.conf',
+         '/etc/systemd/system/cloud-platform.slice',
+         '/etc/systemd/system/cloud-workloads.slice']
+    fail_msg: >-
+      A variable attempted to expand or redirect the reviewed SLICE-001 object
+      set. Create and review a new slice instead of overriding this allowlist.
+
+- name: Verify unified cgroup v2 is available
+  ansible.builtin.stat:
+    path: /sys/fs/cgroup/cgroup.controllers
+    follow: false
+  register: platform_foundation_cgroup_v2
+
+- name: Refuse a host without unified cgroup v2
+  ansible.builtin.assert:
+    that:
+      - platform_foundation_cgroup_v2.stat.exists
+      - platform_foundation_cgroup_v2.stat.isreg
+    fail_msg: Unified cgroup v2 is required for platform accounting and limits.
+
+- name: Inspect the external management marker without following links
+  ansible.builtin.stat:
+    path: "{{ platform_foundation_marker }}"
+    follow: false
+  register: platform_foundation_marker_state
+
+- name: Validate marker type, owner, and mode before trusting it
+  ansible.builtin.assert:
+    that:
+      - platform_foundation_marker_state.stat.isreg
+      - not (platform_foundation_marker_state.stat.islnk | default(false))
+      - platform_foundation_marker_state.stat.uid == 0
+      - platform_foundation_marker_state.stat.gid == 0
+      - platform_foundation_marker_state.stat.mode == '0600'
+    fail_msg: >-
+      The Foundations marker exists but is not the reviewed root-owned regular
+      file. Refusing to adopt any object.
+  when: platform_foundation_marker_state.stat.exists
+
+- name: Read an existing management marker
+  ansible.builtin.slurp:
+    src: "{{ platform_foundation_marker }}"
+  register: platform_foundation_marker_data
+  when: platform_foundation_marker_state.stat.exists
+
+- name: Validate exact management-marker provenance
+  ansible.builtin.assert:
+    that:
+      - >-
+        (platform_foundation_marker_data.content | b64decode) ==
+        platform_foundation_marker_content
+    fail_msg: >-
+      The Foundations marker content does not exactly identify SLICE-001,
+      this environment, and node-01. Refusing mutation.
+  when: platform_foundation_marker_state.stat.exists
+
+- name: Inspect persistent foundation paths
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    follow: false
+  loop: "{{ platform_foundation_directories }}"
+  register: platform_foundation_existing_paths
+
+- name: Inspect runtime foundation paths
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    follow: false
+  loop: "{{ platform_foundation_runtime_directories }}"
+  register: platform_foundation_existing_runtime_paths
+
+- name: Inspect managed-file destinations
+  ansible.builtin.stat:
+    path: "{{ item.destination }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop: "{{ platform_foundation_managed_files }}"
+  register: platform_foundation_existing_managed_files
+
+- name: Hash reviewed managed-file sources on the controller
+  ansible.builtin.stat:
+    path: "{{ role_path }}/../../../../{{ item.source }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop: "{{ platform_foundation_managed_files }}"
+  register: platform_foundation_source_files
+  become: false
+  delegate_to: localhost
+
+- name: Require regular reviewed managed-file sources
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isreg | default(false)
+      - not (item.stat.islnk | default(false))
+    fail_msg: "Missing or unsafe reviewed source: {{ item.item.source }}."
+  loop: "{{ platform_foundation_source_files.results }}"
+
+- name: Inspect a pre-existing foundation account
+  ansible.builtin.command:
+    argv: [getent, passwd, "{{ item.name }}"]
+  loop: "{{ platform_foundation_accounts }}"
+  register: platform_foundation_existing_accounts
+  changed_when: false
+  failed_when: platform_foundation_existing_accounts.rc not in [0, 2]
+  check_mode: false
+
+- name: Inspect a pre-existing foundation group
+  ansible.builtin.command:
+    argv: [getent, group, "{{ platform_foundation_group }}"]
+  register: platform_foundation_existing_group
+  changed_when: false
+  failed_when: platform_foundation_existing_group.rc not in [0, 2]
+  check_mode: false
+
+- name: Inspect existing technical-account memberships
+  ansible.builtin.command:
+    argv: [id, -nG, "{{ item.name }}"]
+  loop: "{{ platform_foundation_accounts }}"
+  register: platform_foundation_existing_account_groups
+  changed_when: false
+  failed_when: platform_foundation_existing_account_groups.rc not in [0, 1]
+  check_mode: false
+
+- name: Inspect existing technical-account password state
+  ansible.builtin.command:
+    argv: [passwd, -S, "{{ item.name }}"]
+  loop: "{{ platform_foundation_accounts }}"
+  register: platform_foundation_existing_account_passwords
+  changed_when: false
+  failed_when: platform_foundation_existing_account_passwords.rc not in [0, 1]
+  check_mode: false
+  no_log: true
+
+- name: Refuse to adopt any unmarked pre-existing object
+  ansible.builtin.assert:
+    that:
+      - >-
+        platform_foundation_marker_state.stat.exists or
+        (
+          (platform_foundation_existing_paths.results |
+            selectattr('stat.exists') | list | length) == 0 and
+          (platform_foundation_existing_runtime_paths.results |
+            selectattr('stat.exists') | list | length) == 0 and
+          (platform_foundation_existing_managed_files.results |
+            selectattr('stat.exists') | list | length) == 0 and
+          (platform_foundation_existing_accounts.results |
+            selectattr('rc', 'equalto', 0) | list | length) == 0 and
+          platform_foundation_existing_group.rc == 2
+        )
+    fail_msg: >-
+      A reviewed Foundation name already exists without the exact management
+      marker. Refusing ownership, account, content, or permission changes.
+
+- name: Validate existing managed directory types
+  ansible.builtin.assert:
+    that:
+      - >-
+        not item.stat.exists or
+        (
+          item.stat.isdir and
+          not (item.stat.islnk | default(false)) and
+          item.stat.pw_name == item.item.owner and
+          item.stat.gr_name == item.item.group and
+          item.stat.mode == item.item.mode
+        )
+    fail_msg: >-
+      {{ item.item.path }} is not an ordinary managed directory. Refusing to
+      replace or follow it.
+  loop: >-
+    {{ platform_foundation_existing_paths.results +
+       platform_foundation_existing_runtime_paths.results }}
+  when: platform_foundation_marker_state.stat.exists
+
+- name: Validate exact provenance of existing managed files
+  ansible.builtin.assert:
+    that:
+      - >-
+        not item.stat.exists or
+        (
+          item.stat.isreg and
+          not (item.stat.islnk | default(false)) and
+          item.stat.uid == 0 and
+          item.stat.gid == 0 and
+          item.stat.mode == '0644' and
+          item.stat.checksum ==
+            platform_foundation_source_files.results[
+              ansible_loop.index0].stat.checksum
+        )
+    fail_msg: >-
+      {{ item.item.destination }} differs from the reviewed SLICE-001 source,
+      type, owner, or mode. Refusing an implicit overwrite.
+  loop: "{{ platform_foundation_existing_managed_files.results }}"
+  loop_control:
+    extended: true
+  when: platform_foundation_marker_state.stat.exists
+
+- name: Validate any existing managed account before reconciliation
+  ansible.builtin.assert:
+    that:
+      - item.stdout.split(':') | length >= 7
+      - item.stdout.split(':')[4] == item.item.comment
+      - item.stdout.split(':')[5] == item.item.home
+      - item.stdout.split(':')[6] == item.item.shell
+      - platform_foundation_existing_group.rc == 0
+      - >-
+        item.stdout.split(':')[3] ==
+        platform_foundation_existing_group.stdout.split(':')[2]
+    fail_msg: >-
+      {{ item.item.name }} exists but does not exactly match the locked
+      SLICE-001 technical identity. Refusing account takeover.
+  loop: "{{ platform_foundation_existing_accounts.results }}"
+  when:
+    - platform_foundation_marker_state.stat.exists
+    - item.rc == 0
+
+- name: Validate any existing managed account privilege boundary
+  ansible.builtin.assert:
+    that:
+      - >-
+        (item.stdout.split() | difference([platform_foundation_group]) |
+          length) == 0
+      - >-
+        platform_foundation_existing_account_passwords.results[
+          ansible_loop.index0].stdout.split()[1] == 'L'
+    fail_msg: >-
+      {{ item.item.name }} has an unexpected group or unlocked password.
+      Refusing reconciliation.
+  loop: "{{ platform_foundation_existing_account_groups.results }}"
+  loop_control:
+    extended: true
+  when:
+    - platform_foundation_marker_state.stat.exists
+    - item.rc == 0
+
+- name: Validate membership of an existing managed group
+  ansible.builtin.assert:
+    that:
+      - platform_foundation_existing_group.stdout.split(':') | length == 4
+      - >-
+        (platform_foundation_existing_group.stdout.split(':')[3].split(',') |
+          reject('equalto', '') | list |
+          difference(platform_foundation_accounts |
+            map(attribute='name') | list) | length) == 0
+    fail_msg: >-
+      cloud-platform contains an identity outside the reviewed SLICE-001 set.
+      Refusing reconciliation.
+  when:
+    - platform_foundation_marker_state.stat.exists
+    - platform_foundation_existing_group.rc == 0
+
+- name: Record a dependency-missing check-mode preview
+  ansible.builtin.set_fact:
+    platform_foundation_initial_check: >-
+      {{ ansible_check_mode and
+         platform_foundation_existing_group.rc != 0 }}
+
+- name: Acquire the exclusive Foundation mutation lock
+  ansible.builtin.command:
+    argv:
+      - mkdir
+      - /run/lock/cloud-platform-foundation-operation
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Reconcile and verify the Foundation while holding the lock
+  block:
+    - name: Execute the reviewed Foundation mutation set
+      ansible.builtin.include_tasks: reconcile.yml
+  always:
+    - name: Release the exclusive Foundation mutation lock
+      ansible.builtin.command:
+        argv:
+          - rmdir
+          - /run/lock/cloud-platform-foundation-operation
+      changed_when: false
+      when: not ansible_check_mode

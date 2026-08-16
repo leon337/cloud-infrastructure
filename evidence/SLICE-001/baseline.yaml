@@ -1,0 +1,137 @@
+schema_version: 1
+slice: SLICE-001
+classification: SANITIZED_OPERATIONAL_EVIDENCE
+git:
+  verification_scope: PRE_DELTA_RECOVERY_BASELINE
+  verified_at_utc: "2026-08-16T19:45:00Z"
+  repository: leon337/cloud-infrastructure
+  canonical_branch: main
+  canonical_sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
+  origin_main_sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
+  ahead: 0
+  behind: 0
+  worktree_clean: true
+  working_branch: codex/mission-001-foundations-f1-1
+  reviewed_delta_commit: edd2497d657cc9bc35952f5dfc71090a18dade53
+ci:
+  provider: GitHub_Actions
+  workflow: foundation-ci
+  run_id: 31972460567
+  run_url: https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567
+  event: push
+  branch: codex/mission-001-foundations-f1-1
+  head_sha: edd2497d657cc9bc35952f5dfc71090a18dade53
+  created_at_utc: "2026-08-16T21:05:35Z"
+  completed_at_utc: "2026-08-16T21:08:05Z"
+  conclusion: PASS
+  evidence_scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
+  jobs:
+    validate:
+      job_id: 95226880273
+      conclusion: PASS
+      duration_seconds: 23
+    disposable_integration:
+      job_id: 95226938043
+      conclusion: PASS
+      duration_seconds: 119
+      privileged_boundary: GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
+      check_mode: PASS_F1_1_MANAGED_SURFACE_INVARIANT
+      partial_marker_check_mode: PASS_F1_1_MANAGED_SURFACE_INVARIANT
+      first_apply: PASS_CHANGED_7
+      idempotence_reconcile: PASS_CHANGED_0
+      security_assertions: PASS
+      rollback_refusals: PASS_4_SCENARIOS_F1_1_MANAGED_SURFACE_INVARIANT
+      successful_rollback: PASS_CLEAN
+      cleanup: PASS_CONTAINER_NAMED_TEST_IMAGE_BUNDLE_REMOVED
+checkpoint_head_ci:
+  run_id: 31973125852
+  run_url: https://github.com/leon337/cloud-infrastructure/actions/runs/31973125852
+  head_sha: da7df7070b31c019242900375664ab9eada3894f
+  completed_at_utc: "2026-08-16T21:21:53Z"
+  conclusion: PASS
+  validate_job_id: 95228537900
+  validate_duration_seconds: 22
+  disposable_integration_job_id: 95228589869
+  disposable_integration_duration_seconds: 145
+  executable_delta_from_reviewed_commit:
+    - scripts/test_foundation_container.sh: OUTPUT_LABEL_PRECISION_ONLY
+  evidence_scope: CHECKPOINT_HEAD_COMMIT_BOUND_NOT_SUBSEQUENT_READ_ONLY_EVIDENCE_UPDATE
+vps:
+  observed_at_utc: "2026-08-16T19:46:14Z"
+  boot_id: 26f703b0-3037-46fc-a7d2-4d574cc43f3a
+  machine_id_sha256: 27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
+  machine_id_hash_input: RAW_VALUE_WITHOUT_TRAILING_NEWLINE
+  machine_id_raw_persisted: false
+  hostname: vmi3506102
+  os: Ubuntu 24.04.4 LTS
+  kernel: 6.8.0-137-generic
+  python: 3.12.3
+  cgroup_filesystem: cgroup2fs
+  apparmor_enabled: true
+  memory_available_bytes: 18437410816
+  root_available_bytes: 299605925888
+  failed_units: 0
+  sudo_noninteractive: denied
+  public_tcp_listeners:
+    - 0.0.0.0:22
+    - "[::]:22"
+  loopback_tcp_listeners:
+    - 127.0.0.1:3389
+    - "[::1]:3350"
+    - 127.0.0.1:45211
+    - 127.0.0.53:53
+    - 127.0.0.54:53
+  services:
+    ssh_socket: active_enabled
+    ufw: active_enabled
+    fail2ban: active_enabled
+    xrdp: active_enabled
+    xrdp_sesman: active_enabled
+    lightdm: active_indirect
+    lxd_daemon: inactive
+    lxd_socket: inactive_disabled
+    docker: absent
+  object_conflicts:
+    cloud_platform_group: absent
+    platform_core_account: absent
+    foundation_paths: absent
+    foundation_units: absent
+  unprivileged_target_preflight:
+    observed_at_utc: "2026-08-16T20:58:00Z"
+    controller_key_and_ssh_profile: PASS
+    remote_user_ip_hostname_machine_hash: PASS
+    changed: 0
+    failed: 0
+    sudo_requested: false
+    remote_mutation: false
+  physical_test_inventory_guard:
+    observed_at_utc: "2026-08-16T20:59:00Z"
+    result: REFUSED_BEFORE_MUTATION
+    exit_code: 2
+  pre_privileged_check_mode_revalidation:
+    observed_at_utc: "2026-08-16T21:23:21Z"
+    checkpoint_head: da7df7070b31c019242900375664ab9eada3894f
+    controller_and_remote_identity_preflight: PASS_CHANGED_0_NO_SUDO
+    known_host_ed25519_fingerprint: PASS_EXPECTED
+    boot_id_unchanged: true
+    hostname_machine_id_kernel_cgroup_apparmor: PASS_EXPECTED
+    memory_available_kib: 18240916
+    root_available_bytes: 299597164544
+    failed_units: 0
+    listeners_match_initial_baseline: true
+    core_services_match_expected_baseline: true
+    lxd_daemon_inactive: true
+    lxd_socket_inactive_disabled: true
+    docker_and_containerd_units_absent: true
+    foundation_objects_account_group_and_lock: ALL_ABSENT
+    concurrent_ansible_apt_dpkg_unattended_upgrade_processes: 0
+    active_session_count: 6
+    backup_timer: active_enabled
+    backup_service_last_result: success
+    archive_integrity_and_off_host_copy: NOT_REVALIDATED_WITHOUT_PRIVILEGE_REQUIRED_BEFORE_APPLY_NOT_READ_ONLY_PREVIEW
+    remote_mutation: false
+apply:
+  privileged_check_mode: NOT_EXECUTED
+  privileged_apply: NOT_EXECUTED
+  idempotence_reconcile: NOT_EXECUTED
+  post_apply_invariance: NOT_EXECUTED

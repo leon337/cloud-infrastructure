@@ -1,0 +1,26 @@
+# Local execution state
+.venv/
+.ansible/
+*.retry
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Secret-bearing local files are never repository inputs
+.env
+.env.*
+!.env.example
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+credentials/
+
+# Editor and operating-system noise
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store

@@ -2,9 +2,13 @@
 
 Status: **MITIGATED — OPEN**. Severidade atual: **MEDIUM**.
 
-Na VPS não foram encontrados os utilitários comuns `restic`, `borg`, `rclone`, `duplicity` ou `rsnapshot`; apenas o timer de backup do banco do dpkg foi observado.
+Na recuperação de 16/08/2026, Restic/pgBackRest e backup amplo continuavam
+ausentes. O timer sanitizado de configurações estava ativo e íntegro.
 
-O estado de snapshots, backups, firewall, VNC e Rescue System do provedor não foi confirmado ao vivo na Fase B. Portanto não se afirma ausência desses recursos: seu estado permanece **UNCONFIRMED**.
+O painel foi verificado durante F1/F2: VNC foi validado, Rescue estava disponível,
+snapshots/firewall não estavam configurados e backup do provedor não estava
+contratado. A recuperação Codex não reabriu o painel; esses fatos continuam sendo
+a última evidência humana, não observação atual dentro do guest.
 
 Antes de hardening com risco de lockout e antes de considerar a Cloud Workstation pronta, definir e testar caminhos de recuperação proporcionais ao risco.
 
@@ -19,6 +23,18 @@ Antes de hardening com risco de lockout e antes de considerar a Cloud Workstatio
 - extração de recuperação validada com 24 arquivos.
 
 O finding permanece aberto porque dados completos de usuário/workloads, retenção off-host automatizada e reconstrução integral ainda não foram testados. Snapshots continuam ausentes e backup do provedor não foi contratado.
+
+## Limites confirmados na recuperação Codex — 16/08/2026
+
+- dois arquivos remotos passaram checksum e leitura integral do tar;
+- somente o primeiro tinha cópia off-host observada com SHA-256 correspondente;
+- a extração histórica prova legibilidade, não restore funcional;
+- `copy_config()` arquiva todos os arquivos com modo `0640`, inclusive fontes
+  originalmente executáveis como `xrdp/startwm.sh`; restore cego pode quebrar
+  semântica, owner ou mode;
+- o backup é referência proporcional de configuração, não artefato drop-in;
+- o script versionado agora possui bit executável, alinhado ao deployment remoto,
+  mas a preservação de metadata exige um slice próprio com teste de restore.
 
 ## Platform Discovery — Q16 — 16/08/2026
 

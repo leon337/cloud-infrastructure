@@ -1,0 +1,224 @@
+---
+- name: Validate controller identity before opening a remote connection
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+
+  vars:
+    platform_preflight_target: "{{ groups['platform_nodes'] | first }}"
+    platform_preflight_connection: >-
+      {{ hostvars[platform_preflight_target].ansible_connection | default('ssh') }}
+
+  tasks:
+    - name: Require exactly one explicitly named platform target
+      ansible.builtin.assert:
+        that:
+          - groups['platform_nodes'] is defined
+          - groups['platform_nodes'] | length == 1
+          - platform_preflight_target == 'node-01'
+          - platform_preflight_connection in ['ssh', 'local']
+          - >-
+            platform_preflight_connection ==
+            (hostvars[platform_preflight_target].ansible_connection |
+              default('ssh'))
+          - >-
+            platform_preflight_connection == 'local' or
+            hostvars[platform_preflight_target].platform_expected_ansible_host ==
+              '169.58.171.192'
+          - >-
+            platform_preflight_connection == 'local' or
+            hostvars[platform_preflight_target].platform_expected_hostname ==
+              'vmi3506102'
+          - >-
+            platform_preflight_connection == 'local' or
+            hostvars[platform_preflight_target].platform_expected_machine_id_sha256 ==
+              '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107'
+          - >-
+            platform_preflight_connection == 'local' or
+            hostvars[platform_preflight_target].platform_expected_controller_key_fingerprint ==
+              'SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg'
+        fail_msg: >-
+          Foundations F1.1 is single-node and refuses an ambiguous inventory.
+
+    - name: Require the dedicated private-key path before remote gathering
+      ansible.builtin.assert:
+        that:
+          - lookup('env', 'PLATFORM_SSH_KEY_FILE') | length > 0
+          - >-
+            hostvars[platform_preflight_target].ansible_ssh_private_key_file ==
+            lookup('env', 'PLATFORM_SSH_KEY_FILE')
+          - >-
+            hostvars[platform_preflight_target].ansible_private_key_file |
+              default(lookup('env', 'PLATFORM_SSH_KEY_FILE')) ==
+            lookup('env', 'PLATFORM_SSH_KEY_FILE')
+          - hostvars[platform_preflight_target].ansible_port | default(22) | int == 22
+          - >-
+            hostvars[platform_preflight_target].ansible_ssh_common_args.split() ==
+            ['-o', 'IdentitiesOnly=yes',
+             '-o', 'PreferredAuthentications=publickey',
+             '-o', 'PubkeyAuthentication=yes',
+             '-o', 'PasswordAuthentication=no',
+             '-o', 'KbdInteractiveAuthentication=no',
+             '-o', 'StrictHostKeyChecking=yes']
+          - >-
+            hostvars[platform_preflight_target].ansible_password is not defined
+          - >-
+            hostvars[platform_preflight_target].ansible_ssh_pass is not defined
+        fail_msg: >-
+          Set PLATFORM_SSH_KEY_FILE to the dedicated local private-key path.
+          The key is never read from or stored in this repository.
+      when: platform_preflight_connection != 'local'
+
+    - name: Inspect the dedicated private key without following symlinks
+      ansible.builtin.stat:
+        path: "{{ lookup('env', 'PLATFORM_SSH_KEY_FILE') }}"
+        follow: false
+      register: platform_preflight_key_state
+      when: platform_preflight_connection != 'local'
+
+    - name: Refuse a missing, linked, or broadly readable private key
+      ansible.builtin.assert:
+        that:
+          - platform_preflight_key_state.stat.exists
+          - platform_preflight_key_state.stat.isreg | default(false)
+          - not (platform_preflight_key_state.stat.islnk | default(false))
+          - >-
+            platform_preflight_key_state.stat.mode | default('') in
+            ['0400', '0600']
+        fail_msg: >-
+          PLATFORM_SSH_KEY_FILE must be a regular non-symlink private key with
+          mode 0400 or 0600.
+      when: platform_preflight_connection != 'local'
+
+    - name: Read the public fingerprint of the dedicated key
+      ansible.builtin.command:
+        argv:
+          - ssh-keygen
+          - -E
+          - sha256
+          - -lf
+          - "{{ lookup('env', 'PLATFORM_SSH_KEY_FILE') }}"
+      register: platform_preflight_key_fingerprint
+      changed_when: false
+      check_mode: false
+      when: platform_preflight_connection != 'local'
+
+    - name: Require the previously validated controller-key fingerprint
+      ansible.builtin.assert:
+        that:
+          - >-
+            hostvars[platform_preflight_target].platform_expected_controller_key_fingerprint
+            is defined
+          - >-
+            hostvars[platform_preflight_target].platform_expected_controller_key_fingerprint
+            in platform_preflight_key_fingerprint.stdout.split()
+        fail_msg: >-
+          The selected private key does not match the recorded dedicated-key
+          fingerprint. Refusing to connect.
+      when: platform_preflight_connection != 'local'
+
+- name: Validate remote node identity before any privilege escalation
+  hosts: platform_nodes
+  gather_facts: false
+  become: false
+  serial: 1
+
+  tasks:
+    - name: Inspect the Docker fixture marker for a local test target
+      ansible.builtin.stat:
+        path: /.dockerenv
+        follow: false
+      register: platform_preflight_dockerenv
+      when: (ansible_connection | default('ssh')) == 'local'
+
+    - name: Identify the local test virtualization boundary
+      ansible.builtin.command:
+        argv: [systemd-detect-virt, --container]
+      register: platform_preflight_container_virt
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: (ansible_connection | default('ssh')) == 'local'
+
+    - name: Canonicalize the selected local-test inventory path
+      ansible.builtin.command:
+        argv: [realpath, "{{ inventory_file }}"]
+      register: platform_preflight_inventory_realpath
+      changed_when: false
+      check_mode: false
+      when: (ansible_connection | default('ssh')) == 'local'
+
+    - name: Require the exact DEV connection tuple or local disposable test
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == 'node-01'
+          - platform_node_id == 'node-01'
+          - >-
+            (
+              (ansible_connection | default('ssh')) == 'local' and
+              platform_environment == 'test' and
+              platform_preflight_dockerenv.stat.exists and
+              (platform_preflight_dockerenv.stat.isreg | default(false)) and
+              not (platform_preflight_dockerenv.stat.islnk | default(false)) and
+              platform_preflight_container_virt.rc == 0 and
+              platform_preflight_container_virt.stdout == 'docker' and
+              platform_preflight_inventory_realpath.stdout ==
+                '/workspace/cloud-infrastructure/automation/ansible/inventory/test-container/hosts.yml' and
+              platform_repository_root == '/workspace/cloud-infrastructure'
+            ) or (
+              (ansible_connection | default('ssh')) != 'local' and
+              platform_environment == 'dev' and
+              ansible_user == 'ubuntu' and
+              platform_expected_ansible_host == '169.58.171.192' and
+              platform_expected_hostname == 'vmi3506102' and
+              platform_expected_machine_id_sha256 ==
+                '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+              (ansible_host | string) ==
+                (platform_expected_ansible_host | string)
+            )
+        fail_msg: >-
+          Refusing a target outside the recorded DEV node-01 tuple.
+
+    - name: Read the unprivileged remote hostname
+      ansible.builtin.command:
+        argv: [hostname, --short]
+      register: platform_preflight_remote_hostname
+      changed_when: false
+      check_mode: false
+      when: (ansible_connection | default('ssh')) != 'local'
+
+    - name: Hash the normalized remote machine identity without exposing it
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - >-
+            import hashlib,pathlib;
+            value=pathlib.Path('/etc/machine-id').read_text().strip().encode();
+            print(hashlib.sha256(value).hexdigest())
+      register: platform_preflight_remote_machine_id_sha256
+      changed_when: false
+      check_mode: false
+      when: (ansible_connection | default('ssh')) != 'local'
+
+    - name: Read the unprivileged remote login identity
+      ansible.builtin.command:
+        argv: [id, -un]
+      register: platform_preflight_remote_login
+      changed_when: false
+      check_mode: false
+      when: (ansible_connection | default('ssh')) != 'local'
+
+    - name: Require the recorded remote identity before become
+      ansible.builtin.assert:
+        that:
+          - platform_preflight_remote_hostname.stdout == platform_expected_hostname
+          - >-
+            platform_preflight_remote_machine_id_sha256.stdout ==
+            platform_expected_machine_id_sha256
+          - platform_preflight_remote_login.stdout == 'ubuntu'
+        fail_msg: >-
+          Hostname, normalized machine-id hash, or login identity differs from
+          the recorded DEV node. No privileged play will start.
+      when: (ansible_connection | default('ssh')) != 'local'

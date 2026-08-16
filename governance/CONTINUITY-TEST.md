@@ -15,13 +15,16 @@ Objetivo: provar que um novo chat reconstrói o projeto somente a partir do GitH
 9. arquitetura da Cloud Workstation;
 10. resultados funcionais de navegador, VS Code, terminal, arquivos, clipboard, resolução, reconnect e reboot;
 11. findings resolvidos, mitigados e abertos;
-12. decisões DEC-003/DEC-004;
+12. decisões DEC-003 a DEC-006 e Technology Mapping;
 13. regras de secrets/HUMAN_GATE;
-14. por que o próximo passo é rotação de credenciais;
-15. documentos canônicos que sustentam cada resposta.
+14. requisitos Q1–Q40, produção bloqueada e rotação adiada;
+15. estado exato do slice atual, evidências faltantes e próximo passo;
+16. documentos canônicos que sustentam cada resposta.
 
 ## Critério
 
-`CONTINUIDADE COMPLETA` exige respostas sem inventar, distinguir baselines históricas do estado atual e não executar rotação ou nova mudança sem autorização aplicável.
+`CONTINUIDADE COMPLETA` exige respostas sem inventar, distinguir baselines
+históricas do estado atual e preservar Q1–Q39, HUMAN_GATE de produção e a decisão
+de não rotacionar credenciais.
 
 As validações independentes anteriores permanecem válidas apenas para seus snapshots. O estado F1/F2 deve receber novo teste independente depois da publicação.

@@ -1,0 +1,11 @@
+[Unit]
+Description=Cloud Platform control-plane services
+Documentation=https://github.com/leon337/cloud-infrastructure
+
+[Slice]
+CPUAccounting=yes
+MemoryAccounting=yes
+TasksAccounting=yes
+IOAccounting=yes
+CPUWeight=200
+IOWeight=200
