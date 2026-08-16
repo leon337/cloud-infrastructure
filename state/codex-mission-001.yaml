@@ -38,6 +38,7 @@ slice_000:
     infrastructure_blueprint_v1: CREATED
     revised_implementation_roadmap: CREATED
     foundation_technology_mapping: CREATED
+    workflow_event_technology_mapping: CREATED
     readonly_precheck: CREATED_NOT_EXECUTED
     readonly_precheck_files:
       - infra/ansible/ansible.cfg
@@ -66,9 +67,13 @@ technology_mapping:
     technology: Open_Policy_Agent
     status: SELECTED_FOR_PLATFORM_CORE
   workflow_engine:
-    status: PENDING_DEDICATED_MAPPING
+    technology: Temporal
+    topology: SELF_HOSTED_SINGLE_NODE_FIRST_POSTGRESQL_BACKED_DISTRIBUTED_CAPABLE
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
   event_backbone:
-    status: PENDING_DEDICATED_MAPPING
+    technology: NATS_JetStream
+    topology: SINGLE_NODE_FILE_STORE_FIRST_CLUSTER_READY
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
   data_service_plane:
     status: PENDING_DEDICATED_MAPPING
   observability:
@@ -103,7 +108,7 @@ next_actions:
   independent_safe:
     - VERIFY_REPOSITORY_SLICE_AND_NO_SECRET_LEAKAGE
     - PREPARE_FOUNDATION_IDEMPOTENT_ROLES_WITHOUT_APPLYING_NODE_CHANGES
-    - TECHNOLOGY_MAPPING_NEXT_CAPABILITIES_AS_NEEDED
+    - TECHNOLOGY_MAPPING_DATA_SECRETS_OBSERVABILITY_EDGE
   blocked_on_human_gate:
     - AUTHENTICATED_LIVE_NODE_01_PRECHECK
     - RECORD_GITHUB_NODE_DRIFT
