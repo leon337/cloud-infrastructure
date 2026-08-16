@@ -23,8 +23,8 @@
           - mission_checkpoint_id | default('') | length > 0
 
   roles:
-    - role: platform_paths
     - role: prechange_checkpoint
+    - role: platform_paths
     - role: tailscale_client
 
   post_tasks:
