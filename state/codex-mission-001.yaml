@@ -38,7 +38,13 @@ slice_000:
     infrastructure_blueprint_v1: CREATED
     revised_implementation_roadmap: CREATED
     foundation_technology_mapping: CREATED
-    readonly_precheck: PENDING
+    readonly_precheck: CREATED_NOT_EXECUTED
+    readonly_precheck_files:
+      - infra/ansible/ansible.cfg
+      - infra/ansible/inventory/node-01.example.yml
+      - infra/ansible/playbooks/precheck-readonly.yml
+      - infra/ansible/playbooks/precheck-privileged-readonly.yml
+      - infra/ansible/README.md
   node_changes_performed: false
   production_changes_performed: false
   credentials_rotated: false
@@ -95,8 +101,8 @@ findings_carried_forward:
 
 next_actions:
   independent_safe:
-    - CREATE_READONLY_ANSIBLE_PRECHECK
     - VERIFY_REPOSITORY_SLICE_AND_NO_SECRET_LEAKAGE
+    - PREPARE_FOUNDATION_IDEMPOTENT_ROLES_WITHOUT_APPLYING_NODE_CHANGES
     - TECHNOLOGY_MAPPING_NEXT_CAPABILITIES_AS_NEEDED
   blocked_on_human_gate:
     - AUTHENTICATED_LIVE_NODE_01_PRECHECK
