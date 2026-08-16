@@ -1,4 +1,4 @@
-# 13 — Platform Discovery Checkpoint 002 — Q10–Q12
+# 13 — Platform Discovery Checkpoint 002 — Q10–Q13
 
 Data: 2026-08-16
 Status: **DISCOVERY_IN_PROGRESS**
@@ -184,6 +184,61 @@ Princípios derivados:
 - separação entre declaração de necessidade e valor do segredo;
 - mais autonomia deve ser conquistada por melhor controle de identidade e escopo, não por entrega de credenciais administrativas amplas.
 
+## Q13 — Exposição de aplicações, serviços e previews
+
+**Escolha de LEANDRO: C — serviços privados por padrão + gateway de previews temporários/controlados + HTTPS automático.**
+
+### Decisão
+
+A criação de um serviço ou sandbox não deve torná-lo publicamente acessível por padrão. Serviços internos permanecem privados. Quando um projeto ou missão precisar de acesso externo, a exposição deve ser concedida como capacidade explícita da plataforma e intermediada por um gateway central.
+
+Estrutura conceitual:
+
+```text
+Serviço criado
+   -> PRIVATE_BY_DEFAULT
+
+Se precisar de preview
+   -> create_preview()
+   -> gateway cria rota controlada
+   -> HTTPS automático
+   -> política pública/protegida conforme necessidade
+   -> URL temporária ou DEV
+   -> expiração/revogação quando aplicável
+```
+
+### Classes de exposição
+
+- **INTERNAL** — bancos, caches, workers e serviços que não necessitam acesso público;
+- **PROTECTED** — dashboards, aplicações ou previews que exigem autenticação/controle de acesso;
+- **PUBLIC** — somente quando a missão ou aplicação realmente precisar de exposição externa, por exemplo preview público ou webhook.
+
+### Princípios derivados
+
+- private by default;
+- exposure by explicit capability;
+- evitar portas públicas arbitrárias por projeto/sandbox;
+- gateway central para roteamento;
+- HTTPS automático para endpoints expostos;
+- previews temporários devem ser revogáveis e preferencialmente expirarem junto com o sandbox;
+- serviços internos não devem ser expostos à Internet sem necessidade explícita;
+- políticas de autenticação devem poder ser aplicadas a previews protegidos;
+- a tecnologia concreta de gateway/reverse proxy/DNS/TLS ainda não está congelada.
+
+### Capacidades desejadas
+
+O futuro Capability Core poderá evoluir para operações como:
+
+- create_internal_service();
+- create_preview();
+- expose_service();
+- protect_preview();
+- get_service_url();
+- revoke_preview();
+- associar exposição ao projeto/missão/sandbox;
+- remover automaticamente rotas de sandboxes destruídos;
+- registrar logs/auditoria de exposição.
+
 ## Estado das decisões
 
 ```text
@@ -199,10 +254,11 @@ Q9  = C
 Q10 = C
 Q11 = D
 Q12 = C
+Q13 = C
 ```
 
 ## Próximo passo
 
-**DISCOVERY_Q13**.
+**DISCOVERY_Q14**.
 
-A Discovery continua. Nenhuma escolha tecnológica final de banco, runtime, object storage, volumes, reverse proxy, secret manager, CI/CD, observabilidade, Hermes/OpenClaw/Freebuff/OpenHands ou desenho detalhado de MCP deve ser antecipada antes das decisões correspondentes.
+A Discovery continua. Nenhuma escolha tecnológica final de banco, runtime, object storage, volumes, reverse proxy/gateway, secret manager, CI/CD, observabilidade, Hermes/OpenClaw/Freebuff/OpenHands ou desenho detalhado de MCP deve ser antecipada antes das decisões correspondentes.
