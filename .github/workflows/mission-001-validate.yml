@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
+          fetch-depth: 2
 
       - name: Verify repository whitespace
         run: git diff --check HEAD^ HEAD
