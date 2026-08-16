@@ -1,4 +1,4 @@
-# 12 — Platform Discovery Checkpoint 001 — Q1–Q8
+# 12 — Platform Discovery Checkpoint 001 — Q1–Q9
 
 Data: 2026-08-16
 Status: **DISCOVERY_IN_PROGRESS**
@@ -31,9 +31,12 @@ Princípios emergentes:
 - núcleo central de capacidades independente de um único cliente de IA;
 - MCP como uma interface para agentes, não como a infraestrutura inteira;
 - catálogo amplo de capacidades, implementado progressivamente;
-- compute descartável; estado importante explicitamente persistente.
+- compute descartável; estado importante explicitamente persistente;
+- requisitos de infraestrutura declarados junto ao projeto;
+- manifesto declarativo + ações operacionais via MCP/API/CLI;
+- ambientes reconstruíveis a partir de estado versionado quando possível.
 
-## Decisões Q1–Q8
+## Decisões Q1–Q9
 
 ### Q1 — Identidade da infraestrutura
 
@@ -144,6 +147,36 @@ Princípio: **um agente descontrolado não deve conseguir consumir todos os recu
 
 A tecnologia de isolamento ainda não está decidida; containers são candidatos naturais, mas Docker/Podman/Kubernetes ou outra solução permanecem para decisão posterior.
 
+### Q9 — Como o projeto declara o que precisa da plataforma
+
+**Escolha: C — manifesto declarativo por projeto + ferramentas MCP/API/CLI.**
+
+Cada projeto deverá possuir uma definição versionável das capacidades de infraestrutura necessárias, sem congelar ainda o formato concreto do manifesto. Conceitualmente, essa declaração poderá incluir runtime, serviços, banco, storage, preview, limites de recursos e outras dependências.
+
+O manifesto descreve **o estado desejado**; MCP/API/CLI executam **ações operacionais** sobre esse estado.
+
+Exemplo conceitual:
+
+```text
+Projeto
+  -> manifesto declara PostgreSQL + API + worker + storage
+  -> agente pede create_sandbox(missao)
+  -> Capability Core lê a declaração
+  -> cria ambiente compatível
+  -> entrega serviços/preview/logs
+```
+
+Objetivos arquitetônicos desta decisão:
+
+- permitir self-service sem configuração manual repetitiva;
+- facilitar reconstrução de ambientes descartáveis;
+- manter as necessidades do projeto explícitas e versionadas;
+- reduzir dependência da memória de agentes/chats;
+- favorecer portabilidade futura DEV -> produção externa;
+- aproximar a plataforma de infraestrutura declarativa sem exigir GitOps completo desde a primeira versão.
+
+Princípio: **declarar o estado desejado no projeto; operar a plataforma por interfaces controladas.**
+
 ## Arquitetura conceitual emergente
 
 ```text
@@ -166,6 +199,8 @@ A tecnologia de isolamento ainda não está decidida; containers são candidatos
        |          |          |        |          |
        +----------+----------+--------+----------+
                             |
+              Manifesto declarativo por projeto
+                            |
                         CONTABO VPS
                             |
                      LABORATÓRIO DEV
@@ -179,8 +214,9 @@ A tecnologia de isolamento ainda não está decidida; containers são candidatos
 
 ## Não decidido ainda
 
-Nenhuma escolha tecnológica específica está congelada por estas Q1–Q8. Em particular, ainda não está decidido de forma final:
+Nenhuma escolha tecnológica específica está congelada por estas Q1–Q9. Em particular, ainda não está decidido de forma final:
 
+- formato/schema do manifesto de projeto;
 - Docker/Podman/Kubernetes ou outra estratégia de runtime;
 - PostgreSQL/Supabase self-hosted ou outra camada de dados;
 - Redis/filas/cache;
@@ -199,7 +235,7 @@ Esses itens devem ser resolvidos pela continuação da Discovery, não por insta
 
 ## Próximo passo
 
-**DISCOVERY_Q9**.
+**DISCOVERY_Q10**.
 
 Continuar o questionário até existir maturidade suficiente para produzir:
 
