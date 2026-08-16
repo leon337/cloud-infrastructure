@@ -17,7 +17,7 @@ project:
     future_phases_3_to_10: PROVISIONAL_PENDING_PLATFORM_DISCOVERY
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: DISCOVERY_Q8
+  next_exact_step: DISCOVERY_Q9
 platform_discovery:
   status: IN_PROGRESS
   checkpoint: docs/12-platform-discovery-checkpoint-001.md
@@ -53,7 +53,12 @@ platform_discovery:
     status: DECIDED
     choice: C
     decision: DISPOSABLE_COMPUTE_EXPLICITLY_PERSISTENT_IMPORTANT_STATE
-  next_question: Q8
+  q8:
+    status: DECIDED
+    choice: C
+    decision: PROJECT_ISOLATION_PLUS_PER_MISSION_SANDBOX_RESOURCE_LIMITS
+    constraints: [CPU, RAM, DISK, NETWORK, PROCESS, TEMP_FILESYSTEM]
+  next_question: Q9
   target_artifacts:
     - CONSOLIDATED_REQUIREMENTS
     - TARGET_ARCHITECTURE
@@ -182,7 +187,7 @@ findings:
 authorization:
   phase_1_and_2_full_access: EXECUTED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: DISCOVERY_Q8
+  next_step: DISCOVERY_Q9
   future_changes: HUMAN_GATE_REQUIRED
   platform_heavy_implementation: NOT_AUTHORIZED_PENDING_DISCOVERY
   historical_executed:
