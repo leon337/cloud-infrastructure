@@ -1,0 +1,87 @@
+---
+- name: Read-only NODE-01 baseline without privilege escalation
+  hosts: execution_nodes
+  gather_facts: true
+  become: false
+
+  vars:
+    expected_hostname: vmi3506102
+    expected_architecture: x86_64
+    expected_distribution: Ubuntu
+    expected_distribution_major_version: "24"
+
+  tasks:
+    - name: Assert expected node identity from canonical state
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.hostname == expected_hostname
+          - ansible_facts.architecture == expected_architecture
+          - ansible_facts.distribution == expected_distribution
+          - ansible_facts.distribution_major_version == expected_distribution_major_version
+        fail_msg: >-
+          NODE-01 identity differs from the canonical mission baseline.
+          Stop before mutation and record the drift.
+        success_msg: NODE-01 basic identity matches the canonical mission baseline.
+
+    - name: Collect read-only operating-system and resource evidence
+      ansible.builtin.command: "{{ item }}"
+      loop:
+        - uname -a
+        - cat /etc/os-release
+        - nproc
+        - free -b
+        - df -B1 /
+        - uptime
+        - id
+        - groups
+        - ip -brief address
+        - ip route
+        - ss -lntup
+      register: node_readonly_evidence
+      changed_when: false
+      failed_when: false
+
+    - name: Collect read-only service state
+      ansible.builtin.command: "systemctl {{ item.action }} {{ item.unit }}"
+      loop:
+        - { action: is-active, unit: ssh.service }
+        - { action: is-enabled, unit: ssh.service }
+        - { action: is-active, unit: fail2ban.service }
+        - { action: is-enabled, unit: fail2ban.service }
+        - { action: is-active, unit: cloud-infrastructure-config-backup.timer }
+        - { action: is-enabled, unit: cloud-infrastructure-config-backup.timer }
+        - { action: is-active, unit: docker.service }
+        - { action: is-enabled, unit: docker.service }
+        - { action: is-active, unit: tailscaled.service }
+        - { action: is-enabled, unit: tailscaled.service }
+      register: service_readonly_evidence
+      changed_when: false
+      failed_when: false
+
+    - name: Collect read-only account and runtime evidence
+      ansible.builtin.command: "{{ item }}"
+      loop:
+        - getent passwd ubuntu
+        - getent group sudo
+        - getent group lxd
+        - getent group docker
+        - docker version
+        - docker compose version
+        - tailscale version
+        - tailscale status
+        - python3 --version
+      register: account_runtime_evidence
+      changed_when: false
+      failed_when: false
+
+    - name: Display resource evidence for sanitized capture
+      ansible.builtin.debug:
+        var: node_readonly_evidence.results
+
+    - name: Display service evidence for sanitized capture
+      ansible.builtin.debug:
+        var: service_readonly_evidence.results
+
+    - name: Display account and runtime evidence for sanitized capture
+      ansible.builtin.debug:
+        var: account_runtime_evidence.results
