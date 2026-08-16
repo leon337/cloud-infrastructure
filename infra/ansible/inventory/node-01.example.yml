@@ -1,0 +1,13 @@
+all:
+  children:
+    execution_nodes:
+      hosts:
+        node-01:
+          ansible_host: 169.58.171.192
+          ansible_user: ubuntu
+          # The private key path belongs to the operator's secure local environment.
+          # Do not commit a private key, passphrase, password, token or become password.
+          # Example runtime override:
+          #   ansible_ssh_private_key_file=~/.ssh/<approved-existing-key>
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
