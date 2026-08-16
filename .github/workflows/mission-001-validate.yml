@@ -7,12 +7,16 @@ on:
     paths:
       - '.github/workflows/mission-001-validate.yml'
       - 'infra/ansible/**'
-      - 'state/codex-mission-001.yaml'
+      - 'state/**'
+      - 'runbooks/mission-001-*.md'
+      - 'docs/4*.md'
   pull_request:
     paths:
       - '.github/workflows/mission-001-validate.yml'
       - 'infra/ansible/**'
-      - 'state/codex-mission-001.yaml'
+      - 'state/**'
+      - 'runbooks/mission-001-*.md'
+      - 'docs/4*.md'
 
 permissions:
   contents: read
@@ -42,7 +46,7 @@ jobs:
           from pathlib import Path
           import yaml
 
-          roots = [Path('infra/ansible'), Path('state/codex-mission-001.yaml')]
+          roots = [Path('infra/ansible'), Path('state')]
           files = []
           for root in roots:
               if root.is_file():
