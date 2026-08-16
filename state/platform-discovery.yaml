@@ -1,11 +1,11 @@
 status: IN_PROGRESS
 updated_at: 2026-08-16
-checkpoint: docs/12-platform-discovery-checkpoint-001.md
+checkpoint: docs/13-platform-discovery-checkpoint-002.md
 authority: LEANDRO
 implementation_authorized: false
 codex_implementation_mission_authorized: false
 credential_rotation: DEFERRED_BY_HUMAN_DECISION
-next_question: Q10
+next_question: Q11
 decisions:
   q1: C
   q2: C
@@ -16,6 +16,7 @@ decisions:
   q7: C
   q8: C
   q9: C
+  q10: C
 principles:
   - PRIVATE_COMPUTE_DEVELOPMENT_AND_AGENT_EXECUTION_PLATFORM
   - OWN_INFRASTRUCTURE_DEFAULT_FOR_DEV_EXTERNAL_SERVICES_WHEN_ADVANTAGEOUS
@@ -26,6 +27,7 @@ principles:
   - DISPOSABLE_COMPUTE_EXPLICITLY_PERSISTENT_IMPORTANT_STATE
   - PROJECT_ISOLATION_PLUS_PER_MISSION_SANDBOX_RESOURCE_LIMITS
   - DECLARATIVE_PROJECT_MANIFEST_PLUS_MCP_API_CLI_OPERATIONS
+  - PERSISTENT_PROJECT_DEV_DATABASE_PLUS_TEMPORARY_SANDBOX_DATABASES
 target_artifacts:
   - CONSOLIDATED_REQUIREMENTS
   - TARGET_ARCHITECTURE
