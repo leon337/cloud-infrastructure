@@ -12,18 +12,18 @@ Status: **CI/DISPOSABLE PASS — VPS NOT_EXECUTED**
 | State cross-check | `PASS_Q1_Q40_GATES_PRESERVED` | local não privilegiado |
 | Secret/history policy | `PASS` | local não privilegiado |
 | Diff whitespace | `PASS` | local não privilegiado |
-| Unitários/negativos | `PASS_63` | local não privilegiado |
+| Unitários/negativos | `PASS_66` | local não privilegiado |
 | Sintaxe shell | `PASS_6` | Bash/sh parse local |
 | ShellCheck | `PASS_6_V0_11_0` | binário oficial verificado, extraído só em `/tmp` e removido |
 | Ansible syntax | `PASS_6_CORE_2_21_3` | wheel oficial verificado, extraído só em `/tmp` e removido |
-| GitHub Actions | `PASS_31996516019` | commit `fa66f1049bac5540a5b12219186a421cc39dcbc0` |
+| GitHub Actions | `PASS_32004951916` | commit `83166c37a7fa66abd442a04073c5f6d5a3df00c4` |
 | VM descartável | `PASS` | check limpo, apply `changed=13`, reconcilições `changed=0`, sete recusas e rollback limpo |
 | NODE-01 | `NOT_EXECUTED` | F1.1 DONE; check mode liberado, apply ainda bloqueado pelo review do preview |
 
-O desired state nasceu no commit `7015c80759a797bcb141773b79cd9b95f6fbecf1` e
-o delta final exercitado corresponde ao commit `fa66f1049bac5540a5b12219186a421cc39dcbc0`.
-O run commit-bound `31996516019` passou. A primeira tentativa real posterior foi
-recusada no controller antes de contato com o NODE-01, conforme seção abaixo.
+O desired state nasceu no commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`.
+A correção de canonicalização foi exercitada no commit
+`83166c37a7fa66abd442a04073c5f6d5a3df00c4`; os runs commit-bound
+`32004951916` (Docker) e `32004951955` (Foundation) passaram.
 
 Os unitários do helper cobrem symlink, hardlink, path extra, open file por
 processo, troca de inode após freeze e remoção bottom-up limitada às duas raízes
@@ -63,8 +63,25 @@ ocorreu; o log sanitizado tem SHA-256
 A remediação canonicaliza também o repository root com `realpath` antes da
 comparação. A suíte local passou com 65 testes e seis syntax-checks; o preflight
 DEV exato passou sem sudo com `localhost ok=9 changed=0 failed=0` e `node-01
-ok=3 changed=0 failed=0`. O check mode privilegiado continua `NOT_EXECUTED` até
-CI verde do commit da correção.
+ok=3 changed=0 failed=0`. A correção passou na CI Docker `32004951916` e na CI
+Foundation `32004951955`.
+
+## Preview real recusado por falso positivo do vigia APT
+
+Em `2026-08-17T07:38:16Z`, o preview corrigido chegou aos prechecks remotos e
+foi recusado com `changed=0`: `localhost ok=9 failed=0`; `node-01 ok=32
+failed=1`. A regra antiga interpretou o processo permanente
+`unattended-upgrade-shutdown --wait-for-signal` como uma transação de pacote.
+Leitura posterior confirmou zero jobs APT e zero operação de pacote ativa; havia
+somente um vigia ocioso. O log sanitizado possui SHA-256
+`d778572c0958cbc75e6687feee961f3e14d75b950ce64a0032dfa950b8fce3df`.
+
+A remediação substitui a expressão `pgrep` por classificador `/proc` que ignora
+exclusivamente esse vigia ocioso e continua recusando `apt`, `apt-get`, `dpkg`,
+`apt.systemd.daily` e `unattended-upgrade` reais. O mesmo guard é usado no apply
+e rollback. Teste direto read-only no NODE-01 retornou `active=[]` e
+`ignored_idle_shutdown_watchers=1`; a suíte local passou com 66 testes. Novo
+preview continua pendente até CI verde dessa correção.
 
 ## Contrato do NODE-01
 

@@ -459,18 +459,19 @@
       Docker runtime operation lock exists. Classify concurrency or a stale
       transaction before any retry; never remove it recursively.
 
-- name: Inspect package-manager concurrency
-  ansible.builtin.command:
-    argv: [pgrep, -x, 'apt|apt-get|dpkg|unattended-upgr|unattended-upgrade']
+- name: Inspect real package-manager concurrency
+  ansible.builtin.script:
+    cmd: "{{ role_path }}/files/package_manager_guard.py"
+    executable: /usr/bin/python3
   register: platform_docker_package_processes
   changed_when: false
-  failed_when: platform_docker_package_processes.rc not in [0, 1]
+  failed_when: platform_docker_package_processes.rc != 0
   check_mode: false
 
 - name: Refuse a concurrent package operation
   ansible.builtin.assert:
     that:
-      - platform_docker_package_processes.rc == 1
+      - (platform_docker_package_processes.stdout | from_json).active | length == 0
     fail_msg: APT/dpkg/unattended-upgrade is active; refusing Docker reconcile.
 
 - name: Inspect managed Docker payload destinations

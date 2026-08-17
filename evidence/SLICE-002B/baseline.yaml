@@ -97,7 +97,7 @@ provenance:
 validation:
   local_static_suite: PASS_UNPRIVILEGED_REPO_ONLY
   local_static_recorded_at_utc: "2026-08-17T03:22:39Z"
-  local_unit_tests: PASS_63
+  local_unit_tests: PASS_66
   local_yaml_documents: PASS_34
   local_manifest_examples: PASS_2
   local_shell_syntax: PASS_6
@@ -138,7 +138,22 @@ validation:
     change: CANONICALIZE_REPOSITORY_ROOT_WITH_REALPATH_BEFORE_COMPARISON
     local_static_suite: PASS_65_TESTS_6_ANSIBLE_SYNTAX
     unprivileged_exact_dev_preflight: PASS_CHANGED_0_FAILED_0
-    privileged_check_mode_after_fix: NOT_EXECUTED_PENDING_CI
+    correction_ci: PASS_RUN_32004951916_COMMIT_83166C3
+    privileged_check_mode_after_fix: REFUSED_NO_MUTATION_PACKAGE_WATCHER_FALSE_POSITIVE
+  real_vps_check_mode_attempt:
+    attempted_at_utc: "2026-08-17T07:38:16Z"
+    result: REFUSED_NO_MUTATION
+    reason: IDLE_UNATTENDED_UPGRADE_SHUTDOWN_WATCHER_FALSE_POSITIVE
+    localhost_recap: OK_9_CHANGED_0_FAILED_0
+    node_01_recap: OK_32_CHANGED_0_FAILED_1
+    remote_mutation: false
+    sanitized_local_log_sha256: d778572c0958cbc75e6687feee961f3e14d75b950ce64a0032dfa950b8fce3df
+    read_only_classification:
+      active_package_operations: 0
+      ignored_idle_shutdown_watchers: 1
+    remediation: PROCESS_CLASSIFIER_EXCLUDES_ONLY_IDLE_SHUTDOWN_WAIT_FOR_SIGNAL
+    remediation_local_tests: PASS_66
+    remediation_ci: PENDING
   real_vps_check_mode: NOT_EXECUTED
   real_vps_apply: NOT_EXECUTED
   real_vps_idempotence: NOT_EXECUTED

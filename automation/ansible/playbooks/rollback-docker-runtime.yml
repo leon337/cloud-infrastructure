@@ -419,19 +419,22 @@
         follow: false
       register: platform_docker_rollback_lock
 
-    - name: Inspect package-manager concurrency before rollback mutation
-      ansible.builtin.command:
-        argv: [pgrep, -x, 'apt|apt-get|dpkg|unattended-upgr|unattended-upgrade']
+    - name: Inspect real package-manager concurrency before rollback mutation
+      ansible.builtin.script:
+        cmd: "{{ playbook_dir }}/../roles/docker_runtime/files/package_manager_guard.py"
+        executable: /usr/bin/python3
       register: platform_docker_rollback_package_processes
       changed_when: false
-      failed_when: platform_docker_rollback_package_processes.rc not in [0, 1]
+      failed_when: platform_docker_rollback_package_processes.rc != 0
       check_mode: false
 
     - name: Refuse lock or package-manager concurrency
       ansible.builtin.assert:
         that:
           - not platform_docker_rollback_lock.stat.exists
-          - platform_docker_rollback_package_processes.rc == 1
+          - >-
+            (platform_docker_rollback_package_processes.stdout | from_json).active
+            | length == 0
         fail_msg: Concurrent or stale operation blocks Docker rollback.
 
     - name: Preview the bounded rollback after all read-only gates

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import pathlib
 import unittest
@@ -220,6 +221,43 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
             / "main.yml"
         ).read_text(encoding="utf-8")
         self.assertEqual(role.count("selectattr('stdout', 'match', '^ii ')"), 3)
+
+    def test_package_guard_ignores_only_the_idle_shutdown_watcher(self):
+        guard_path = (
+            ROOT
+            / "automation"
+            / "ansible"
+            / "roles"
+            / "docker_runtime"
+            / "files"
+            / "package_manager_guard.py"
+        )
+        spec = importlib.util.spec_from_file_location("package_manager_guard", guard_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        self.assertIsNone(
+            module.classify_process(
+                "unattended-upgr",
+                [
+                    "/usr/bin/python3",
+                    "/usr/share/unattended-upgrades/unattended-upgrade-shutdown",
+                    "--wait-for-signal",
+                ],
+            )
+        )
+        self.assertEqual(
+            module.classify_process(
+                "unattended-upgr", ["/usr/bin/python3", "/usr/bin/unattended-upgrade"]
+            ),
+            "unattended-upgrade",
+        )
+        self.assertEqual(
+            module.classify_process("apt-get", ["/usr/bin/apt-get", "install"]),
+            "apt-get",
+        )
 
     def test_rollback_is_manifest_bounded_and_relinquishes_marker_last(self):
         playbook_root = ROOT / "automation" / "ansible" / "playbooks"
