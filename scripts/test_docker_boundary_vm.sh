@@ -495,6 +495,7 @@ if ! sudo timeout 60s systemctl restart containerd.service; then
   sudo journalctl --no-pager -n 100 -u containerd.service || true
   fail containerd_restart_failed
 fi
+sudo systemctl reset-failed docker.service
 if ! sudo timeout 60s systemctl restart docker.service; then
   sudo systemctl --no-pager --full status docker.service || true
   sudo journalctl --no-pager -n 100 -u docker.service || true
