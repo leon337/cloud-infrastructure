@@ -234,6 +234,7 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
         self.assertNotIn("autoremove: true", combined)
         self.assertNotIn("rm -rf", combined)
         self.assertNotIn("state: touch", combined)
+        self.assertIn("map(attribute='item')", rollback)
         marker = mutate.index("Remove the exact Docker management marker last")
         self.assertGreater(marker, mutate.index("daemon_reload: true"))
         self.assertGreater(marker, mutate.index("runtime-tree-baseline.json"))

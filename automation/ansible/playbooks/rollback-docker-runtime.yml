@@ -486,7 +486,10 @@
           - >-
             (platform_docker_rollback_absent_surface.results |
               selectattr('stat.exists') | list | length) == 0
-        fail_msg: Docker path survived the exact rollback.
+        fail_msg: >-
+          Docker paths survived the exact rollback:
+          {{ platform_docker_rollback_absent_surface.results |
+             selectattr('stat.exists') | map(attribute='item') | list }}
       when: not ansible_check_mode
 
     - name: Inspect package and group absence after rollback
