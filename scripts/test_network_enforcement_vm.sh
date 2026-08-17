@@ -67,10 +67,10 @@ for tool in iptables ip6tables; do
 done
 
 sudo ip link add cpdeadbeef type dummy
-if sudo "$SCRIPT_DESTINATION" rollback >/tmp/network-enforcement-refusal.log 2>&1; then
+if refusal_output=$(sudo "$SCRIPT_DESTINATION" rollback 2>&1); then
   fail rollback_accepted_live_interface
 fi
-grep -q 'managed_interface_still_present' /tmp/network-enforcement-refusal.log ||
+grep -q 'managed_interface_still_present' <<<"$refusal_output" ||
   fail rollback_refusal_reason_missing
 sudo ip link delete cpdeadbeef
 sudo "$SCRIPT_DESTINATION" check >/dev/null || fail refusal_mutated_rules
