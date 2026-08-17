@@ -1,13 +1,14 @@
 schema_version: 1
 slice: SLICE-002C
-classification: SANITIZED_REPO_CONTRACT_EVIDENCE_NOT_OPERATIONAL
-generated_at_utc: "2026-08-17T03:40:41Z"
-status: TECHNOLOGY_ADR_AND_POLICY_COMPILER_LOCAL_PASS_APPLY_AND_DYNAMIC_PROOF_PENDING
+classification: SANITIZED_BASE_ENFORCEMENT_EVIDENCE
+generated_at_utc: "2026-08-17T21:59:04Z"
+status: BASE_ENFORCEMENT_REAL_PASS_FULL_POLICY_PENDING
 git:
   repository: leon337/cloud-infrastructure
-  working_branch: codex/mission-001-foundations-f1-2b-preparation
+  working_branch: codex/mission-001-f1-2c-network-enforcement
   contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
-  remote_branch: BASE_EXISTS_NEW_LOCAL_COMMITS_NOT_PUBLISHED
+  implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
+  remote_branch: PUBLISHED
 authority:
   requirements:
     - CR-020
@@ -22,10 +23,11 @@ authority:
     - TM-10
 contract:
   path: platform/network/f1-2c-contract.yaml
-  status: TECHNOLOGY_SELECTED_REPO_ONLY
-  operational_state: NOT_APPLIED
+  status: TECHNOLOGY_SELECTED_BASE_IMPLEMENTED
+  operational_state: BASE_ENFORCEMENT_APPLIED_FULL_POLICY_NOT_APPLIED
   technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
-  executable_rules_present: false
+  executable_rules_present: true
+  executable_rules_scope: OWNED_FAIL_CLOSED_BASE_CHAINS_ONLY
   policy_compiler_present: true
   policy_compiler_operational_input_allowed: false
   address_families:
@@ -33,22 +35,27 @@ contract:
     - ipv6
   first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
 validation:
-  local_contract_tests: PASS_8_CONTRACT_AND_COMPILER
-  integrated_repo_tests: PASS_70
+  local_contract_tests: PASS_98_INTEGRATED
+  integrated_repo_tests: PASS_98
   yaml_documents: PASS_35
   state_crosscheck: PASS_F1_1_F1_2B_F1_2C_GATES_PRESERVED
   shell_syntax: PASS_6_UNCHANGED
   technology_adr: ACCEPTED_DEC_008
-  disposable_integration: PENDING
-  disposable_ipv4: PENDING
-  disposable_ipv6: PENDING
+  github_actions_run: 32073151044
+  github_actions_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
+  disposable_integration: PASS_BASE_APPLY_IDEMPOTENCE_RESTART_REFUSAL_ROLLBACK
+  disposable_ipv4: PASS_BASE_OWNED_CHAINS
+  disposable_ipv6: PASS_BASE_OWNED_CHAINS
   real_vps_check_mode: NOT_EXECUTED
-  real_vps_apply: NOT_EXECUTED
+  real_vps_apply: PASS_AT_2026_08_17T21_58_36Z_CHANGED_1
+  real_vps_idempotence: PASS_AT_2026_08_17T21_58_57Z_CHANGED_0
+  real_vps_check: PASS_AT_2026_08_17T21_59_01Z
+  real_vps_tests: PASS_AT_2026_08_17T21_59_04Z_98_TESTS
 dependencies:
-  f1_1_real_foundation: BLOCKING_REAL_EXECUTION
-  f1_2b_disposable_runtime: BLOCKING_DYNAMIC_NETWORK_PROOF
-  f1_2b_real_runtime: BLOCKING_REAL_EXECUTION
-  first_workload: BLOCKED_BY_F1_2C
+  f1_1_real_foundation: DONE
+  f1_2b_disposable_runtime: PASS
+  f1_2b_real_runtime: DONE_EMPTY_ROOT_ONLY
+  first_workload: BLOCKED_BY_FULL_F1_2C_NETWORK_DNS_EGRESS_AND_REMAINING_GATES
 production:
   deployment_authorized: false
 credential_rotation:

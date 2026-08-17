@@ -297,12 +297,12 @@ class StateCrosscheckTests(unittest.TestCase):
         cases.append(("adr", {"components": components}, "ADR gate"))
 
         network_baseline = copy.deepcopy(self.network_baseline)
-        network_baseline["validation"]["real_vps_apply"] = "PASS"
+        network_baseline["validation"]["real_vps_apply"] = "NOT_EXECUTED"
         cases.append(
             (
                 "real-node",
                 {"network_baseline": network_baseline},
-                "real-node execution",
+                "real-node base proof",
             )
         )
 

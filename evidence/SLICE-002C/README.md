@@ -1,30 +1,29 @@
-# Evidence — SLICE-002C network enforcement contract
+# Evidence — SLICE-002C network enforcement
 
-Esta pasta registra o avanço repo-only de F1.2c. O contrato fixa os resultados
-de segurança e DEC-008 seleciona o mecanismo, mas ainda não há ruleset aplicável,
-prova dinâmica ou autorização de workload.
+Esta pasta registra o contrato e a base fail-closed de F1.2c. A base foi provada
+em VM descartável e aplicada no NODE-01, mas não autoriza workload: bridges
+internas, DNS por escopo, egress proxy-only e grants continuam pendentes.
 
 ## Cadeia corrente
 
 | Etapa | Estado |
 |---|---|
 | Contrato machine-readable Q20/Q34 | `PASS_LOCAL_COMMIT_B4CBEB0` |
-| Testes de contrato + compilador | `PASS_8` |
-| Suíte integrada do repositório | `PASS_70` |
+| Testes integrados | `PASS_98` |
 | ADR de tecnologia | `ACCEPTED_DEC_008` |
-| Compilador fail-closed | `PASS_LOCAL_EXAMPLE_ONLY` |
-| Apply/DNS/egress implementation | `NOT_IMPLEMENTED` |
-| Integração descartável IPv4/IPv6 | `PENDING` |
-| NODE-01 | `NOT_EXECUTED` |
+| Chains fail-closed próprias | `PASS_BASE_IPV4_IPV6` |
+| DNS/egress/bridges/grants | `PENDING` |
+| Integração descartável IPv4/IPv6 | `PASS_RUN_32073151044` |
+| NODE-01 | `PASS_APPLY_CHANGED_1_IDEMPOTENCE_CHANGED_0` |
 | Primeiro workload | `BLOCKED` |
 
-`PASS_LOCAL` prova apenas que o contrato preserva deny-by-default, escopos,
-grants e gates esperados. Não prova nftables, `DOCKER-USER`, DNS, egress,
-service discovery, firewall, Docker ou conectividade real.
+`PASS_BASE` prova instalação, `DOCKER-USER`, IPv4/IPv6, reinício, recusa e
+rollback das chains próprias. Não prova ainda DNS, egress, service discovery,
+grants nem a matriz completa de conectividade.
 
 ## Próxima evidência necessária
 
-O próximo delta precisa implementar apply/rollback fail-closed. Depois, uma
-fixture descartável precisa provar toda a matriz
-`required_disposable_evidence` em IPv4 e IPv6. Somente essa cadeia, mais as
-dependências F1.1/F1.2b aplicáveis, poderá reavaliar o gate do primeiro workload.
+O próximo delta precisa implementar bridges internas, DNS por escopo, egress
+proxy-only e grants. Depois, a fixture descartável deve provar toda a matriz
+`required_disposable_evidence` em IPv4 e IPv6 antes de reavaliar o primeiro
+workload.

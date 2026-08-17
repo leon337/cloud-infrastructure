@@ -220,22 +220,25 @@ platform_components:
   network_enforcement:
     technology: Docker_iptables_nft_DOCKER_USER_internal_bridges_proxy_egress
     selected_version: F1_2C_CONTRACT_V1
-    observed_version: NOT_APPLIED
-    lifecycle: TECHNOLOGY_ADR_AND_POLICY_COMPILER_LOCAL_PASS_APPLY_AND_DYNAMIC_TESTS_PENDING
+    observed_version: SLICE_002C_BASE_V1
+    lifecycle: BASE_ENFORCEMENT_REAL_PASS_FULL_POLICY_PENDING
     contract:
       path: platform/network/f1-2c-contract.yaml
       commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
-      status: TECHNOLOGY_SELECTED_REPO_ONLY
-      local_tests: PASS_8_CONTRACT_AND_COMPILER
+      status: TECHNOLOGY_SELECTED_BASE_IMPLEMENTED
+      implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
+      local_tests: PASS_98
       address_families:
         - ipv4
         - ipv6
     validation:
       technology_adr: ACCEPTED_DEC_008
-      disposable_integration: PENDING
+      disposable_integration: PASS_RUN_32073151044_BASE_IPV4_IPV6_RESTART_REFUSAL_ROLLBACK
       real_vps_check_mode: NOT_EXECUTED
-      real_vps_apply: NOT_EXECUTED
-      first_workload: BLOCKED_BY_F1_2C
+      real_vps_apply: PASS_AT_2026_08_17T21_58_36Z_CHANGED_1
+      real_vps_idempotence: PASS_AT_2026_08_17T21_58_57Z_CHANGED_0
+      real_vps_check: PASS_AT_2026_08_17T21_59_01Z
+      first_workload: BLOCKED_BY_FULL_F1_2C_NETWORK_DNS_EGRESS_AND_REMAINING_GATES
   disk_isolation:
     technology: UNDECIDED_project_quota_bounded_volume_or_execution_node
     selected_version: null

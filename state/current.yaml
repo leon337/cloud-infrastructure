@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-17
-documentation_state: SLICE_001_DONE_F1_2B_DONE_EMPTY_RUNTIME_F1_2C_CONTRACT_LOCAL_PASS
+documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_BASE_REAL_PASS_FULL_POLICY_PENDING
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
@@ -27,10 +27,10 @@ project:
     phase_0: DONE
     phase_1: DONE
     phase_2_cloud_workstation: DONE
-    future_platform_implementation: SLICE_001_DONE_F1_2B_DONE_F1_2C_CONTRACT_STARTED
+    future_platform_implementation: SLICE_001_DONE_F1_2B_DONE_F1_2C_BASE_ACTIVE
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: SLICE_002C_IMPLEMENTATION_AND_DISPOSABLE_NETWORK_ENFORCEMENT
+  next_exact_step: SLICE_002C_INTERNAL_NETWORK_DNS_EGRESS_COMPLETION
 platform_discovery:
   status: CODEX_IMPLEMENTATION_IN_PROGRESS
   decision_source: state/platform-discovery.yaml
@@ -187,7 +187,7 @@ authorization:
   authority: LEANDRO
   phase_1_and_2_full_access: EXECUTED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: SLICE_002C_IMPLEMENTATION_AND_DISPOSABLE_NETWORK_ENFORCEMENT
+  next_step: SLICE_002C_INTERNAL_NETWORK_DNS_EGRESS_COMPLETION
   platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
   codex_technology_selection: AUTHORIZED_BY_Q40_D
   codex_implementation_mission: AUTHORIZED_BY_Q40_D
@@ -198,9 +198,9 @@ authorization:
 codex_execution:
   mission: docs/CODEX-EXECUTION-MISSION-001.md
   mission_acceptance: DONE
-  working_branch: codex/mission-001-foundations-f1-2b-preparation
+  working_branch: codex/mission-001-f1-2c-network-enforcement
   base_sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
-  active_slice: SLICE_002C_NETWORK_ENFORCEMENT_REPO_AND_DISPOSABLE_ONLY
+  active_slice: SLICE_002C_BASE_REAL_PASS_FULL_POLICY_PENDING
   current_slice:
     id: SLICE-001
     name: FOUNDATIONS_F1_1
@@ -287,15 +287,19 @@ codex_execution:
       real_vps_post_apply_invariance: PASS_AT_2026_08_17T12_15_47Z
       first_workload: BLOCKED_BY_F1_2C
     network_enforcement_f1_2c:
-      status: TECHNOLOGY_ADR_AND_POLICY_COMPILER_LOCAL_PASS_APPLY_AND_DYNAMIC_PROOF_PENDING
+      status: BASE_ENFORCEMENT_REAL_PASS_FULL_POLICY_PENDING
       contract_path: platform/network/f1-2c-contract.yaml
       contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
-      local_validation: PASS_8_CONTRACT_AND_COMPILER_TESTS
+      implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
+      local_validation: PASS_98_TESTS_11_SHELL_SYNTAX_6_ANSIBLE_SYNTAX
       technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
       technology_adr: ACCEPTED_DEC_008
-      disposable_integration: PENDING_NOT_RUN
+      disposable_integration: PASS_RUN_32073151044_COMMIT_D1DA488_BASE_IPV4_IPV6_RESTART_REFUSAL_ROLLBACK
       real_vps_check_mode: NOT_EXECUTED
-      real_vps_apply: NOT_EXECUTED
-      first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
+      real_vps_apply: PASS_AT_2026_08_17T21_58_36Z_CHANGED_1
+      real_vps_idempotence: PASS_AT_2026_08_17T21_58_57Z_CHANGED_0
+      real_vps_check: PASS_AT_2026_08_17T21_59_01Z
+      real_vps_tests: PASS_AT_2026_08_17T21_59_04Z_98_TESTS
+      first_workload: BLOCKED_BY_FULL_F1_2C_NETWORK_DNS_EGRESS_AND_REMAINING_GATES
 secrets_policy:
   never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]

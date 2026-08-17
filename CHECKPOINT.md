@@ -114,7 +114,7 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
   restart e invariância real estão `PASS`; o runtime está vazio e o primeiro
   workload permanece `BLOCKED` por F1.2c.
 
-## SLICE-002C — contrato repo-only
+## SLICE-002C — base de enforcement ativa
 
 - contrato machine-readable versionado em
   `platform/network/f1-2c-contract.yaml`, commit
@@ -123,12 +123,13 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
   host/Management/metadata/control/lateral, sharing por grant e egress por
   profile;
 - DEC-008 seleciona `DOCKER-USER`, bridges internas, DNS por escopo e egress
-  proxy-only; compilador fail-closed passou localmente apenas com input de
-  exemplo, enquanto apply e prova descartável continuam pendentes;
-- quatro testes específicos e suíte integrada de 60 testes/34 YAML passaram;
-- não há ruleset executável, harness dinâmico, network namespace, probe ou
-  mutação real; implementação/integração permanecem `PENDING` e NODE-01
-  `NOT_EXECUTED`;
+  proxy-only; a base fail-closed IPv4/IPv6 foi implementada em chains próprias;
+- o run GitHub `32073151044`, commit `d1da488`, passou apply, idempotência,
+  restart, recusa insegura e rollback em VM descartável;
+- no NODE-01, apply `changed=1`, reconciliação `changed=0`, check e 98 testes
+  passaram entre `2026-08-17T21:58:36Z` e `21:59:04Z`;
+- runtime continua vazio; bridges internas, DNS, proxy de egress, grants e a
+  matriz completa de conectividade continuam `PENDING`;
 - evidência sanitizada: `evidence/SLICE-002C/`.
 
 ## Backup/recovery
@@ -157,17 +158,17 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - rollback só quando os namespaces persistentes estiverem vazios.
 - F1.2b está concluído; não repetir o apply fora de reconciliação controlada e
   nenhum workload é permitido antes de F1.2c.
-- F1.2c repo-only não autoriza workload: ADR, implementation e matriz dinâmica
-  completa em IPv4/IPv6 continuam bloqueantes.
+- a base F1.2c não autoriza workload: a política dinâmica completa de bridges,
+  DNS, egress e grants continua bloqueante.
 
 ## Próximo passo exato
 
-**SLICE_002C_IMPLEMENTATION_AND_DISPOSABLE_NETWORK_ENFORCEMENT**
+**SLICE_002C_INTERNAL_NETWORK_DNS_EGRESS_COMPLETION**
 
-Implementar a DEC-008 e provar a matriz dinâmica IPv4/IPv6 em ambiente
-descartável. Não aplicar no
-NODE-01 nem iniciar container/workload antes dessa prova. Management Network,
-produção e rotação permanecem fora desse passo.
+Completar bridges internas, DNS por escopo, egress proxy-only e grants, e provar
+a matriz dinâmica IPv4/IPv6 em ambiente descartável. Não iniciar workload no
+NODE-01 antes dessa prova. Management Network, produção e rotação permanecem
+fora desse passo.
 
 ## Architecture/Technology Mapping — gaps condicionais
 

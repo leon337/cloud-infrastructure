@@ -3,8 +3,8 @@ kind: NetworkEnforcementContract
 metadata:
   slice: F1.2c
   environment: DEV_LAB
-  status: TECHNOLOGY_SELECTED_REPO_ONLY
-  operational_state: NOT_APPLIED
+  status: TECHNOLOGY_SELECTED_BASE_IMPLEMENTED
+  operational_state: BASE_ENFORCEMENT_APPLIED_FULL_POLICY_NOT_APPLIED
   technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
 authority:
   binding_requirements:
@@ -114,13 +114,13 @@ required_disposable_evidence:
   - restart_and_idempotence
   - rollback_and_cleanup
 gates:
-  static_contract: IMPLEMENTED_REPO_ONLY
+  static_contract: IMPLEMENTED_AND_BASE_RECONCILED
   technology_adr: ACCEPTED_DEC_008
-  disposable_integration: PENDING
-  f1_1_real_foundation: BLOCKING_REAL_EXECUTION
-  f1_2b_disposable_runtime: BLOCKING_DYNAMIC_NETWORK_PROOF
-  f1_2b_real_runtime: BLOCKING_REAL_EXECUTION
-  first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
-  node_01_execution: NOT_AUTHORIZED_BY_THIS_CONTRACT
+  disposable_integration: PASS_BASE_IPV4_IPV6_RESTART_REFUSAL_ROLLBACK
+  f1_1_real_foundation: DONE
+  f1_2b_disposable_runtime: PASS
+  f1_2b_real_runtime: DONE_EMPTY_ROOT_ONLY
+  first_workload: BLOCKED_BY_FULL_NETWORK_DNS_EGRESS_AND_REMAINING_GATES
+  node_01_execution: BASE_ONLY_APPLIED_FULL_POLICY_NOT_AUTHORIZED
   production: NOT_AUTHORIZED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION

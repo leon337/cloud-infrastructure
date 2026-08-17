@@ -15,23 +15,26 @@ class NetworkEnforcementContractTests(unittest.TestCase):
         cls.path = ROOT / "platform" / "network" / "f1-2c-contract.yaml"
         cls.contract = yaml.safe_load(cls.path.read_text(encoding="utf-8"))
 
-    def test_contract_is_repo_only_and_makes_no_operational_claim(self):
+    def test_contract_records_only_the_proven_base_and_keeps_full_policy_closed(self):
         metadata = self.contract["metadata"]
         gates = self.contract["gates"]
 
         self.assertEqual(metadata["slice"], "F1.2c")
         self.assertEqual(metadata["environment"], "DEV_LAB")
-        self.assertEqual(metadata["status"], "TECHNOLOGY_SELECTED_REPO_ONLY")
-        self.assertEqual(metadata["operational_state"], "NOT_APPLIED")
+        self.assertEqual(metadata["status"], "TECHNOLOGY_SELECTED_BASE_IMPLEMENTED")
+        self.assertEqual(
+            metadata["operational_state"],
+            "BASE_ENFORCEMENT_APPLIED_FULL_POLICY_NOT_APPLIED",
+        )
         self.assertEqual(
             metadata["technology_selection"],
             "DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS",
         )
         self.assertEqual(gates["technology_adr"], "ACCEPTED_DEC_008")
-        self.assertEqual(gates["disposable_integration"], "PENDING")
+        self.assertTrue(gates["disposable_integration"].startswith("PASS_BASE_"))
         self.assertEqual(
             gates["node_01_execution"],
-            "NOT_AUTHORIZED_BY_THIS_CONTRACT",
+            "BASE_ONLY_APPLIED_FULL_POLICY_NOT_AUTHORIZED",
         )
         self.assertEqual(gates["production"], "NOT_AUTHORIZED")
         self.assertEqual(
@@ -126,7 +129,7 @@ class NetworkEnforcementContractTests(unittest.TestCase):
         )
         self.assertEqual(
             self.contract["gates"]["first_workload"],
-            "BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES",
+            "BLOCKED_BY_FULL_NETWORK_DNS_EGRESS_AND_REMAINING_GATES",
         )
 
 

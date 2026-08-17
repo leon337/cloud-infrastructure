@@ -36,6 +36,7 @@ F1_2B_REAL_POST_RESTART = (
 F1_2B_REAL_INVARIANCE = "PASS_AT_2026_08_17T12_15_47Z"
 F1_2C_CONTRACT_COMMIT = "b4cbeb066605754d538ff5abe2d294f0759d6f59"
 F1_2C_CONTRACT_PATH = "platform/network/f1-2c-contract.yaml"
+EXPECTED_WORKING_BRANCH = "codex/mission-001-f1-2c-network-enforcement"
 F1_1_REAL_CHECK_MODE_CURRENT = (
     "PASS_AT_2026_08_17T05_48_16Z_CHANGED_SIMULATED_4_"
     "FAILED_0_UNREACHABLE_0_NO_MUTATION"
@@ -322,7 +323,7 @@ def f1_2c_gate_errors(
     network_baseline: dict[str, Any],
     network_contract: dict[str, Any],
 ) -> list[str]:
-    """Require selected F1.2c technology while rejecting operational overclaims."""
+    """Require the proven F1.2c base while keeping the full-policy gate closed."""
     errors: list[str] = []
     current_state = current["codex_execution"]["repo_only_preparations"][
         "network_enforcement_f1_2c"
@@ -353,16 +354,20 @@ def f1_2c_gate_errors(
         errors.append("F1.2c contract file is missing")
 
     metadata = network_contract["metadata"]
-    if metadata["status"] != "TECHNOLOGY_SELECTED_REPO_ONLY":
+    if metadata["status"] != "TECHNOLOGY_SELECTED_BASE_IMPLEMENTED":
         errors.append("F1.2c contract technology checkpoint differs")
-    if metadata["operational_state"] != "NOT_APPLIED":
-        errors.append("F1.2c contract overclaims operational state")
+    if metadata["operational_state"] != "BASE_ENFORCEMENT_APPLIED_FULL_POLICY_NOT_APPLIED":
+        errors.append("F1.2c contract operational state differs")
     if metadata["technology_selection"] != (
         "DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS"
     ):
         errors.append("F1.2c selected technology differs from DEC-008")
-    if network_baseline["contract"]["executable_rules_present"] is not False:
-        errors.append("F1.2c evidence claims executable rules")
+    if network_baseline["contract"]["executable_rules_present"] is not True:
+        errors.append("F1.2c base executable-rule evidence is missing")
+    if network_baseline["contract"].get("executable_rules_scope") != (
+        "OWNED_FAIL_CLOSED_BASE_CHAINS_ONLY"
+    ):
+        errors.append("F1.2c executable-rule scope differs")
     if network_baseline["contract"].get("policy_compiler_present") is not True:
         errors.append("F1.2c policy compiler evidence is missing")
     if network_baseline["contract"].get("policy_compiler_operational_input_allowed") is not False:
@@ -393,7 +398,7 @@ def f1_2c_gate_errors(
         if value != "ACCEPTED_DEC_008":
             errors.append(f"F1.2c ADR gate differs at {location}")
 
-    pending_values = {
+    disposable_values = {
         "current.disposable_integration": current_state[
             "disposable_integration"
         ],
@@ -410,30 +415,34 @@ def f1_2c_gate_errors(
             "disposable_integration"
         ],
     }
-    for location, value in pending_values.items():
-        if not str(value).startswith("PENDING"):
-            errors.append(f"F1.2c pending gate was overclaimed at {location}")
+    for location, value in disposable_values.items():
+        if not str(value).startswith("PASS"):
+            errors.append(f"F1.2c disposable base proof differs at {location}")
 
-    not_executed_values = {
-        "current.real_vps_check_mode": current_state["real_vps_check_mode"],
-        "current.real_vps_apply": current_state["real_vps_apply"],
-        "discovery.real_vps": discovery_state["real_vps"],
-        "components.real_vps_check_mode": component_state["validation"][
-            "real_vps_check_mode"
-        ],
-        "components.real_vps_apply": component_state["validation"][
-            "real_vps_apply"
-        ],
-        "evidence.real_vps_check_mode": network_baseline["validation"][
-            "real_vps_check_mode"
-        ],
-        "evidence.real_vps_apply": network_baseline["validation"][
-            "real_vps_apply"
-        ],
+    check_mode_values = {
+        "current": current_state["real_vps_check_mode"],
+        "components": component_state["validation"]["real_vps_check_mode"],
+        "evidence": network_baseline["validation"]["real_vps_check_mode"],
     }
-    for location, value in not_executed_values.items():
+    for location, value in check_mode_values.items():
         if value != "NOT_EXECUTED":
-            errors.append(f"F1.2c real-node execution was overclaimed at {location}")
+            errors.append(f"F1.2c real-node check-mode evidence differs at {location}")
+
+    real_values = {
+        "current.apply": current_state["real_vps_apply"],
+        "current.idempotence": current_state["real_vps_idempotence"],
+        "current.check": current_state["real_vps_check"],
+        "discovery": discovery_state["real_vps"],
+        "components.apply": component_state["validation"]["real_vps_apply"],
+        "components.idempotence": component_state["validation"]["real_vps_idempotence"],
+        "components.check": component_state["validation"]["real_vps_check"],
+        "evidence.apply": network_baseline["validation"]["real_vps_apply"],
+        "evidence.idempotence": network_baseline["validation"]["real_vps_idempotence"],
+        "evidence.check": network_baseline["validation"]["real_vps_check"],
+    }
+    for location, value in real_values.items():
+        if not (str(value).startswith("PASS") or str(value).startswith("BASE_APPLY")):
+            errors.append(f"F1.2c real-node base proof differs at {location}")
 
     workload_values = {
         "current": current_state["first_workload"],
@@ -707,8 +716,8 @@ def crosscheck_errors(
         errors.append("DEV inventory SSH arguments differ from the strict profile")
     if current["codex_execution"]["base_sha"] != baseline["git"]["canonical_sha"]:
         errors.append("slice base SHA differs from recovered canonical evidence SHA")
-    if current["codex_execution"]["working_branch"] != baseline["git"]["working_branch"]:
-        errors.append("slice working branch differs from baseline evidence")
+    if current["codex_execution"]["working_branch"] != EXPECTED_WORKING_BRANCH:
+        errors.append("current mission working branch differs from the reviewed branch")
 
     required_secret_categories = {
         "passwords",

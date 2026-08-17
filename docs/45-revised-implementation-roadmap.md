@@ -21,7 +21,7 @@ Substitui como roadmap corrente as antigas fases provisórias F3–F10.
 | F1.1 Foundations declarativas | Ansible/schema/namespaces/contas/slices accounting | `DONE` | check mode sem mutação, backup off-host, apply real `changed=7`, idempotência `changed=0` e invariância passaram em `2026-08-17` |
 | F1.2a Management Network | administração privada por identidade/dispositivo | `WAITING_HUMAN_GATE` | conta/plano/policy/onboarding e recovery testados |
 | F1.2b Docker boundary | Docker CE/Compose pinados, root-only, bridge default ausente, sem porta/workload | `DONE` | CI descartável; preview; backup off-host; apply `changed=13`; idempotência e pós-restart `changed=0`; invariância passaram; não satisfaz Q20/Q34 e não libera workload |
-| F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `COMPILER_LOCAL_PASS` | DEC-008 seleciona `DOCKER-USER`, bridges internas e egress proxy-only; compilador fail-closed de exemplo passou; apply, matriz dinâmica allow/deny e rollback continuam `PENDING`; bloqueia primeiro container |
+| F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `BASE_REAL_PASS_FULL_POLICY_PENDING` | base `DOCKER-USER` fail-closed v4/v6 passou em VM e NODE-01; bridges internas, DNS, egress proxy-only, grants e matriz completa continuam `PENDING`; bloqueia primeiro container |
 | F1.3 Observability baseline | host/runtime logs, métricas, audit envelope | `CONDITIONAL` | compliance review de Loki/Grafana AGPL ou alternativa; HUMAN_GATE somente se termos/custo/aceite externo exigirem; limites/retention e interfaces privadas |
 | F1.4 Secret bootstrap foundation | OpenBao instalado, não inicializado/selado | `PLANNED` | nenhum dado real; init/unseal/custódia e revogação do root token inicial permanecem gate humano |
 | F1.5 Off-host recovery foundation | destino Restic, policy, keys e restore fixture | `WAITING_HUMAN_GATE` | destino/custo/custódia, targets provisórios e restore cronometrado; bloqueia dado Critical/Important real |
@@ -86,6 +86,6 @@ F1.2b concluiu código, validação descartável e lifecycle real do runtime vaz
 O primeiro container permanece bloqueado por F1.2c, mesmo que não publique
 portas.
 
-F1.2c possui contrato machine-readable e tecnologia selecionada pela DEC-008.
-Isso permite implementar a fixture, mas ainda não equivale a network enforcement
+F1.2c possui contrato machine-readable, tecnologia selecionada pela DEC-008 e
+base fail-closed ativa. Isso ainda não equivale ao network enforcement completo
 nem reduz os gates IPv4/IPv6, rollback e evidência dinâmica.

@@ -1,25 +1,29 @@
 # SLICE-002C test results
 
-Status: **TECHNOLOGY ADR ACCEPTED — IMPLEMENTATION/DYNAMIC PROOF PENDING — VPS NOT_EXECUTED**
+Status: **BASE ENFORCEMENT PASS — FULL F1.2c POLICY PENDING — FIRST WORKLOAD BLOCKED**
 
 ## Resultado corrente
 
 | Verificação | Resultado | Escopo |
 |---|---|---|
-| Contrato YAML estrito | `PASS` | repo-only |
+| Contrato YAML estrito | `PASS` | desired state |
 | Q20/Q34 e threat controls vinculados | `PASS` | teste estático |
 | IPv4 + IPv6 obrigatórios | `PASS` | teste estático |
-| Deny host/Management/metadata/control/lateral | `PASS` | contrato, não ruleset |
+| Deny host/Management/metadata/control/lateral | `PASS_BASE` | chains próprias; política completa pendente |
 | Sharing por grant e egress por profile | `PASS` | contrato, não conectividade |
 | Gate de primeiro workload | `PASS_BLOCKED` | estado declarativo |
-| Testes específicos | `PASS_8` | contrato + compilador não privilegiado |
-| Suíte integrada | `PASS_70` | não privilegiado |
+| Testes específicos | `PASS` | contrato, compilador e runtime base |
+| Suíte integrada | `PASS_98` | local e snapshot VPS |
 | YAML do repositório | `PASS_35` | parse estrito |
-| Compilação IPv4/IPv6 | `PASS_EXAMPLE_ONLY` | gera somente chains próprias; input operacional recusado |
+| Base IPv4/IPv6 | `PASS` | apply, check, reinício e rollback em VM descartável |
 | ADR/mecanismo | `ACCEPTED_DEC_008` | `DOCKER-USER`, bridges internas e egress proxy-only |
-| Fixture descartável | `PENDING` | não executada |
-| NODE-01 | `NOT_EXECUTED` | nenhuma autorização criada |
+| Fixture descartável | `PASS` | run `32073151044`, commit `d1da488` |
+| NODE-01 apply | `PASS_CHANGED_1` | `2026-08-17T21:58:36Z` |
+| NODE-01 idempotência | `PASS_CHANGED_0` | `2026-08-17T21:58:57Z` |
+| NODE-01 check/test | `PASS` | check + 98 testes; runtime vazio |
 
-Os testes verificam o conteúdo do contrato, a seleção e a separação entre
-`PASS_LOCAL`, `PENDING` e `NOT_EXECUTED`. Não foram executados Docker, firewall,
-network namespace, probe externo, playbook ou comando privilegiado.
+O incremento instala somente chains fail-closed próprias para interfaces futuras
+`cp*`, reaplicadas após restart do Docker. Nenhuma interface, bridge, rede Docker,
+container, imagem ou volume foi criado. A matriz completa de bridges internas,
+DNS por escopo, egress proxy-only e grants continua pendente; por isso este
+resultado não autoriza o primeiro workload nem satisfaz integralmente Q20/Q34.
