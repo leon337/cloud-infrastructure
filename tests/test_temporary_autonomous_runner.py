@@ -110,6 +110,22 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn("production_guard_true", self.bootstrap)
         self.assertIn("DEFERRED_BY_HUMAN_DECISION", self.runner)
 
+    def test_production_guards_match_the_canonical_current_state(self):
+        current = (ROOT / "state" / "current.yaml").read_text(encoding="utf-8")
+        self.assertRegex(
+            current,
+            r"(?m)^\s*production_promotion_authorized:\s+false$",
+        )
+        self.assertRegex(
+            current,
+            r"(?m)^\s*production_promotion:\s+NOT_AUTHORIZED_HUMAN_GATE_REQUIRED$",
+        )
+        self.assertIn("production_promotion_authorized:[[:space:]]+false", self.bootstrap)
+        self.assertIn(
+            "production_promotion:[[:space:]]+NOT_AUTHORIZED_HUMAN_GATE_REQUIRED",
+            self.bootstrap,
+        )
+
     def test_reconcile_requires_a_namespaced_controller_signature(self):
         self.assertIn("ssh-keygen -Y verify", self.bootstrap)
         self.assertIn("ssh-keygen -Y verify", self.runner)
@@ -128,6 +144,17 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn(
             'git -C "$staging/verify.git" bundle verify "$INBOX_BUNDLE"',
             self.runner,
+        )
+
+    def test_missing_libexec_parent_is_created_and_failure_cleanup_is_bounded(self):
+        self.assertIn("libexec_created=false", self.bootstrap)
+        self.assertIn(
+            "install -d -o root -g root -m 0755 /usr/local/libexec",
+            self.bootstrap,
+        )
+        self.assertIn(
+            "if [[ $libexec_created == true ]]; then rmdir /usr/local/libexec",
+            self.bootstrap,
         )
 
     def test_bootstrap_does_not_mutate_access_or_recovery_services(self):

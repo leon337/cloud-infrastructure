@@ -44,6 +44,18 @@ command -v git >/dev/null || refuse git_missing
 command -v ssh-keygen >/dev/null || refuse ssh_keygen_missing
 command -v visudo >/dev/null || refuse visudo_missing
 command -v systemctl >/dev/null || refuse systemctl_missing
+for command_name in flock logger runuser iptables ip ss sysctl stat; do
+  command -v "$command_name" >/dev/null || refuse "required_command_missing:$command_name"
+done
+
+libexec_created=false
+if [[ -e /usr/local/libexec || -L /usr/local/libexec ]]; then
+  [[ -d /usr/local/libexec && ! -L /usr/local/libexec ]] || refuse unsafe_libexec_parent
+  [[ $(stat -c '%U:%G:%a' /usr/local/libexec) == root:root:755 ]] ||
+    refuse unsafe_libexec_parent_metadata
+else
+  libexec_created=true
+fi
 
 for path in \
   "$RUNNER_PATH" "$REVOKE_PATH" "$SUDOERS_PATH" "$SERVICE_PATH" \
@@ -61,6 +73,7 @@ cleanup() {
     rm -f -- "$SUDOERS_PATH" "$RUNNER_PATH" "$REVOKE_PATH" "$SERVICE_PATH" \
       "$TIMER_PATH" "$MARKER"
     rm -rf --one-file-system "$STATE_ROOT" "$LOG_ROOT" /opt/codex-mission-001
+    if [[ $libexec_created == true ]]; then rmdir /usr/local/libexec 2>/dev/null || true; fi
     systemctl daemon-reload >/dev/null 2>&1 || true
   fi
   exit "$exit_code"
@@ -81,15 +94,18 @@ git -C "$workdir/repository" diff --quiet || refuse bundle_worktree_dirty
 git -C "$workdir/repository" diff --cached --quiet || refuse bundle_index_dirty
 [[ -f $workdir/repository/docs/CODEX-EXECUTION-MISSION-001.md ]] || refuse mission_missing
 [[ -f $workdir/repository/state/current.yaml ]] || refuse current_state_missing
-grep -Eq '^[[:space:]]*production:[[:space:]]+false$' \
+grep -Eq '^[[:space:]]*production_promotion_authorized:[[:space:]]+false$' \
   "$workdir/repository/state/current.yaml" ||
   refuse production_guard_missing
-! grep -Eq '^[[:space:]]*production:[[:space:]]+true$' \
+grep -Eq '^[[:space:]]*production_promotion:[[:space:]]+NOT_AUTHORIZED_HUMAN_GATE_REQUIRED$' \
+  "$workdir/repository/state/current.yaml" || refuse production_human_gate_missing
+! grep -Eq '^[[:space:]]*production_promotion_authorized:[[:space:]]+true$' \
   "$workdir/repository/state/current.yaml" || refuse production_guard_true
 grep -q 'DEFERRED_BY_HUMAN_DECISION' "$workdir/repository/state/current.yaml" ||
   refuse credential_rotation_not_deferred
 initial_sha=$(git -C "$workdir/repository" rev-parse HEAD)
 
+install -d -o root -g root -m 0755 /usr/local/libexec
 install -d -o root -g root -m 0755 /opt/codex-mission-001
 install -d -o root -g root -m 0750 "$STATE_ROOT" "$LOG_ROOT"
 install -d -o ubuntu -g ubuntu -m 0700 "$STATE_ROOT/inbox"
@@ -185,9 +201,11 @@ require_repository_guards() {
   git -C "$REPO_ROOT" diff --cached --quiet || return 1
   [[ -f $REPO_ROOT/docs/CODEX-EXECUTION-MISSION-001.md ]] || return 1
   grep -q 'DEFERRED_BY_HUMAN_DECISION' "$REPO_ROOT/state/current.yaml" || return 1
-  grep -Eq '^[[:space:]]*production:[[:space:]]+false$' \
+  grep -Eq '^[[:space:]]*production_promotion_authorized:[[:space:]]+false$' \
     "$REPO_ROOT/state/current.yaml" || return 1
-  ! grep -Eq '^production:[[:space:]]+true$|^[[:space:]]+production:[[:space:]]+true$' \
+  grep -Eq '^[[:space:]]*production_promotion:[[:space:]]+NOT_AUTHORIZED_HUMAN_GATE_REQUIRED$' \
+    "$REPO_ROOT/state/current.yaml" || return 1
+  ! grep -Eq '^[[:space:]]*production_promotion_authorized:[[:space:]]+true$' \
     "$REPO_ROOT/state/current.yaml" || return 1
 }
 
@@ -258,9 +276,11 @@ reconcile_operation() (
   git -C "$staging/repository" diff --cached --quiet || return 1
   [[ -f $staging/repository/docs/CODEX-EXECUTION-MISSION-001.md ]] || return 1
   grep -q 'DEFERRED_BY_HUMAN_DECISION' "$staging/repository/state/current.yaml" || return 1
-  grep -Eq '^[[:space:]]*production:[[:space:]]+false$' \
+  grep -Eq '^[[:space:]]*production_promotion_authorized:[[:space:]]+false$' \
     "$staging/repository/state/current.yaml" || return 1
-  ! grep -Eq '^production:[[:space:]]+true$|^[[:space:]]+production:[[:space:]]+true$' \
+  grep -Eq '^[[:space:]]*production_promotion:[[:space:]]+NOT_AUTHORIZED_HUMAN_GATE_REQUIRED$' \
+    "$staging/repository/state/current.yaml" || return 1
+  ! grep -Eq '^[[:space:]]*production_promotion_authorized:[[:space:]]+true$' \
     "$staging/repository/state/current.yaml" || return 1
   chown -R root:root "$staging/repository"
   find "$staging/repository" -type d -exec chmod go-w {} +
