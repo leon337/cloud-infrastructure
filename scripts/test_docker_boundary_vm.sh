@@ -261,10 +261,18 @@ compare_network_invariants() {
     "$before.iptables6" "$before.iptables6.non-docker"
   normalize_non_docker_iptables \
     "$after.iptables6" "$after.iptables6.non-docker"
-  cmp -s "$before.iptables4.non-docker" "$after.iptables4.non-docker" ||
+  if ! cmp -s "$before.iptables4.non-docker" "$after.iptables4.non-docker"; then
+    printf '%s\n' 'DOCKER_BOUNDARY_NETWORK_DIFF category=non_docker_ipv4_rules' >&2
+    diff -u "$before.iptables4.non-docker" \
+      "$after.iptables4.non-docker" >&2 || true
     fail non_docker_ipv4_rules_changed
-  cmp -s "$before.iptables6.non-docker" "$after.iptables6.non-docker" ||
+  fi
+  if ! cmp -s "$before.iptables6.non-docker" "$after.iptables6.non-docker"; then
+    printf '%s\n' 'DOCKER_BOUNDARY_NETWORK_DIFF category=non_docker_ipv6_rules' >&2
+    diff -u "$before.iptables6.non-docker" \
+      "$after.iptables6.non-docker" >&2 || true
     fail non_docker_ipv6_rules_changed
+  fi
   ! grep -Eiq 'table (ip|ip6|inet) docker-bridges' "$after.nft" ||
     fail experimental_native_nftables_backend_detected
 }
