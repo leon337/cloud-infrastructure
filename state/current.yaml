@@ -291,10 +291,11 @@ codex_execution:
       contract_path: platform/network/f1-2c-contract.yaml
       contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
       implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
-      local_validation: PASS_98_TESTS_11_SHELL_SYNTAX_6_ANSIBLE_SYNTAX
+      local_validation: PASS_100_TESTS_11_SHELL_SYNTAX_6_ANSIBLE_SYNTAX
       technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
       technology_adr: ACCEPTED_DEC_008
-      disposable_integration: PASS_RUN_32073151044_COMMIT_D1DA488_BASE_IPV4_IPV6_RESTART_REFUSAL_ROLLBACK
+      disposable_integration: PASS_RUN_32075348131_COMMIT_1C0D698_BASE_AND_EMPTY_INTERNAL_SCOPE_LIFECYCLE
+      internal_scope_lifecycle: PASS_3_EMPTY_INTERNAL_SCOPES_APPLY_IDEMPOTENCE_REFUSAL_ROLLBACK_DISPOSABLE_ONLY
       real_vps_check_mode: NOT_EXECUTED
       real_vps_apply: PASS_AT_2026_08_17T21_58_36Z_CHANGED_1
       real_vps_idempotence: PASS_AT_2026_08_17T21_58_57Z_CHANGED_0

@@ -12,14 +12,16 @@ internas, DNS por escopo, egress proxy-only e grants continuam pendentes.
 | Testes integrados | `PASS_98` |
 | ADR de tecnologia | `ACCEPTED_DEC_008` |
 | Chains fail-closed próprias | `PASS_BASE_IPV4_IPV6` |
-| DNS/egress/bridges/grants | `PENDING` |
-| Integração descartável IPv4/IPv6 | `PASS_RUN_32073151044` |
+| Bridges internas vazias | `PASS_RUN_32075348131_APPLY_IDEMPOTENCE_REFUSAL_ROLLBACK` |
+| DNS/egress/grants/conectividade | `PENDING` |
+| Integração descartável IPv4/IPv6 | `PASS_RUN_32075348131` |
 | NODE-01 | `PASS_APPLY_CHANGED_1_IDEMPOTENCE_CHANGED_0` |
 | Primeiro workload | `BLOCKED` |
 
 `PASS_BASE` prova instalação, `DOCKER-USER`, IPv4/IPv6, reinício, recusa e
-rollback das chains próprias. Não prova ainda DNS, egress, service discovery,
-grants nem a matriz completa de conectividade.
+rollback das chains próprias. A prova seguinte cobre somente redes internas
+vazias e seu lifecycle; não prova ainda DNS, egress, service discovery, grants
+nem a matriz completa de conectividade.
 
 ## Próxima evidência necessária
 

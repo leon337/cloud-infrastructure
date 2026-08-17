@@ -106,22 +106,24 @@ bloqueia o apply real; F1.2c bloqueia qualquer workload.
 | Lock-in | imagens/Compose usam contratos OCI/abertos; daemon-specific config e networking criam lock-in moderado documentado | `ACCEPTED_MODERATE` |
 | Migração/rollback | marker/prestate/lock externos, baseline e manifesto `find -xdev` limitado às duas raízes substituem remoção recursiva; unitários cobrem symlink/hardlink/open-path/drift/remoção exata | `LOCAL_STATIC_AND_HELPER_PASS_DYNAMIC_CI_PENDING_REMOTE_NOT_APPLICABLE` |
 
-## Contract record repo-only — F1.2c
+## Contract e implementação incremental — F1.2c
 
 O commit `b4cbeb066605754d538ff5abe2d294f0759d6f59` adiciona somente o
 contrato `platform/network/f1-2c-contract.yaml` e quatro testes. Q20/Q34,
 TM-02/TM-03/TM-10, IPv4/IPv6, deny-by-default, grants explícitos, profiles de
 egress, descoberta identity-aware e evidência mínima estão codificados. A
 DEC-008 seleciona `DOCKER-USER`, bridges internas por sandbox, DNS por escopo e
-egress proxy-only; não há ruleset, playbook, harness dinâmico ou prova de
-conectividade.
+egress proxy-only. A base fail-closed foi aplicada no NODE-01 e o lifecycle de
+três bridges internas vazias passou somente na VM descartável; não há ainda
+prova com workload, DNS, proxy ou grant.
 
 | Nível | Estado F1.2c |
 |---|---|
-| Contrato local | `PASS_4_TESTS` |
+| Contrato/local | `PASS_100_INTEGRATED_TESTS` |
 | ADR/mecanismo | `ACCEPTED_DEC_008` |
-| Integração descartável | `PENDING` |
-| NODE-01 | `NOT_EXECUTED` |
+| Integração descartável base | `PASS_RUN_32073151044` |
+| Lifecycle de redes internas vazias | `PASS_RUN_32075348131` |
+| NODE-01 | `BASE_PASS_NETWORK_SCOPES_NOT_APPLIED` |
 | Primeiro workload | `BLOCKED` |
 
 ## Evidência oficial por domínio

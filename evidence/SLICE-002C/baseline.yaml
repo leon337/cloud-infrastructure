@@ -1,13 +1,14 @@
 schema_version: 1
 slice: SLICE-002C
 classification: SANITIZED_BASE_ENFORCEMENT_EVIDENCE
-generated_at_utc: "2026-08-17T21:59:04Z"
+generated_at_utc: "2026-08-17T22:23:00Z"
 status: BASE_ENFORCEMENT_REAL_PASS_FULL_POLICY_PENDING
 git:
   repository: leon337/cloud-infrastructure
   working_branch: codex/mission-001-f1-2c-network-enforcement
   contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
   implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
+  internal_scope_proof_commit: 1c0d698198b239d03b911a0f9de362d3d8f8b9f2
   remote_branch: PUBLISHED
 authority:
   requirements:
@@ -35,15 +36,17 @@ contract:
     - ipv6
   first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
 validation:
-  local_contract_tests: PASS_98_INTEGRATED
-  integrated_repo_tests: PASS_98
-  yaml_documents: PASS_35
+  local_contract_tests: PASS_100_INTEGRATED
+  integrated_repo_tests: PASS_100
+  yaml_documents: PASS_36
   state_crosscheck: PASS_F1_1_F1_2B_F1_2C_GATES_PRESERVED
   shell_syntax: PASS_6_UNCHANGED
   technology_adr: ACCEPTED_DEC_008
-  github_actions_run: 32073151044
-  github_actions_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
-  disposable_integration: PASS_BASE_APPLY_IDEMPOTENCE_RESTART_REFUSAL_ROLLBACK
+  github_actions_run: 32075348131
+  github_actions_commit: 1c0d698198b239d03b911a0f9de362d3d8f8b9f2
+  foundation_actions_run: 32075348113
+  disposable_integration: PASS_BASE_AND_EMPTY_INTERNAL_SCOPE_APPLY_IDEMPOTENCE_REFUSAL_ROLLBACK
+  disposable_internal_scopes: PASS_3_INTERNAL_EMPTY_SCOPES_CHANGED_3_THEN_0_ROLLBACK_3
   disposable_ipv4: PASS_BASE_OWNED_CHAINS
   disposable_ipv6: PASS_BASE_OWNED_CHAINS
   real_vps_check_mode: NOT_EXECUTED

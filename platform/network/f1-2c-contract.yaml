@@ -45,7 +45,7 @@ scope:
     dns: controlled_per_scope_view
     egress: explicit_http_connect_proxy
   decision: decisions/DEC-008-network-enforcement-docker-user-proxy-egress.md
-  implementation_status: POLICY_COMPILER_LOCAL_PASS_APPLY_AND_DISPOSABLE_PROOF_PENDING
+  implementation_status: INTERNAL_SCOPE_LIFECYCLE_DISPOSABLE_PASS_DNS_EGRESS_CONNECTIVITY_PENDING
   address_pools:
     ipv4_candidate: 10.240.0.0/16
     ipv6_reserved_not_enabled: "fd42:434c:4f55::/48"
@@ -116,7 +116,7 @@ required_disposable_evidence:
 gates:
   static_contract: IMPLEMENTED_AND_BASE_RECONCILED
   technology_adr: ACCEPTED_DEC_008
-  disposable_integration: PASS_BASE_IPV4_IPV6_RESTART_REFUSAL_ROLLBACK
+  disposable_integration: PASS_BASE_AND_EMPTY_INTERNAL_SCOPE_LIFECYCLE
   f1_1_real_foundation: DONE
   f1_2b_disposable_runtime: PASS
   f1_2b_real_runtime: DONE_EMPTY_ROOT_ONLY

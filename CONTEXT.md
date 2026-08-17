@@ -135,6 +135,11 @@ base fail-closed IPv4/IPv6 passou no run `32073151044` para `d1da488` e foi
 aplicada no NODE-01: `changed=1`, reconciliação `changed=0`, check e 98 testes
 passaram. O runtime permanece vazio.
 
+O lifecycle declarativo de redes internas vazias passou no commit `1c0d698`,
+run `32075348131`: três scopes foram criados, a reconciliação retornou zero,
+uma rede não gerenciada foi recusada e o rollback removeu as três. A prova foi
+somente descartável; o NODE-01 permaneceu sem bridge, rede ou workload.
+
 O próximo passo é completar e provar bridges internas, DNS por escopo, egress
 proxy-only e grants. O primeiro workload continua bloqueado; Management
 Network, produção e rotação não fazem parte desse passo.

@@ -160,6 +160,9 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
   nenhum workload é permitido antes de F1.2c.
 - a base F1.2c não autoriza workload: a política dinâmica completa de bridges,
   DNS, egress e grants continua bloqueante.
+- o lifecycle declarativo de três bridges internas vazias passou somente na VM
+  descartável (`1c0d698`, run `32075348131`): apply 3, idempotência 0, recusa de
+  rede estranha e rollback 3; nenhuma bridge foi criada no NODE-01.
 
 ## Próximo passo exato
 

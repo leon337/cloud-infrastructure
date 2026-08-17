@@ -36,10 +36,10 @@ implementation:
     contract_path: platform/network/f1-2c-contract.yaml
     contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
     implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
-    local_validation: PASS_98_TESTS
+    local_validation: PASS_100_TESTS
     technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
     technology_adr: ACCEPTED_DEC_008
-    disposable_integration: PASS_RUN_32073151044_BASE_IPV4_IPV6_RESTART_ROLLBACK
+    disposable_integration: PASS_RUN_32075348131_BASE_AND_EMPTY_INTERNAL_SCOPE_LIFECYCLE
     real_vps: BASE_APPLY_AND_IDEMPOTENCE_PASS_FULL_POLICY_PENDING
     first_workload: BLOCKED_BY_FULL_F1_2C_NETWORK_DNS_EGRESS_AND_REMAINING_GATES
   production_promotion: NOT_AUTHORIZED
