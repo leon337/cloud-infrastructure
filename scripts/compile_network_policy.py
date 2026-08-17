@@ -73,7 +73,11 @@ def parse_utc(value: Any, location: str) -> dt.datetime:
     return parsed
 
 
-def load_and_validate(path: pathlib.Path) -> dict[str, Any]:
+def load_and_validate(
+    path: pathlib.Path,
+    *,
+    allowed_statuses: set[str] | None = None,
+) -> dict[str, Any]:
     try:
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
@@ -88,8 +92,9 @@ def load_and_validate(path: pathlib.Path) -> dict[str, Any]:
     metadata = exact_keys(plan["metadata"], METADATA_KEYS, "metadata")
     if metadata["environment"] != "DEV_LAB":
         raise PolicyError("only DEV_LAB is authorized")
-    if metadata["status"] != "EXAMPLE_NOT_OPERATIONAL":
-        raise PolicyError("only an explicitly non-operational plan is accepted")
+    accepted_statuses = allowed_statuses or {"EXAMPLE_NOT_OPERATIONAL"}
+    if metadata["status"] not in accepted_statuses:
+        raise PolicyError("policy status is not accepted by this operation")
     evaluation_time = parse_utc(
         metadata["evaluation_time_utc"], "metadata.evaluation_time_utc"
     )

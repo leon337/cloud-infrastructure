@@ -9,6 +9,8 @@ readonly SCRIPT_DESTINATION=/usr/local/libexec/cloud-platform-network-enforcemen
 readonly UNIT_DESTINATION=/etc/systemd/system/cloud-platform-network-enforcement.service
 readonly DROPIN_DESTINATION=/etc/systemd/system/docker.service.d/20-cloud-platform-network-enforcement.conf
 readonly MARKER=/etc/cloud-platform-network-enforcement.managed
+readonly SCOPES_RECONCILER=/workspace/cloud-infrastructure/scripts/reconcile_network_scopes.py
+readonly SCOPES_POLICY=/workspace/cloud-infrastructure/platform/network/f1-2c-policy.disposable.yaml
 
 fail() {
   printf 'NETWORK_ENFORCEMENT_VM_TEST_FAIL reason=%s\n' "$1" >&2
@@ -25,6 +27,7 @@ case "$(hostname --short)" in node-01 | vmi3506102) fail real_dev_node ;; esac
 systemd-detect-virt --quiet --vm || fail not_disposable_vm
 sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
 [[ -x $SCRIPT_SOURCE && -f $UNIT_SOURCE && -f $DROPIN_SOURCE ]] || fail payload_missing
+[[ -x $SCOPES_RECONCILER && -f $SCOPES_POLICY ]] || fail network_scope_payload_missing
 [[ ! -e $SCRIPT_DESTINATION && ! -L $SCRIPT_DESTINATION ]] || fail script_collision
 [[ ! -e $UNIT_DESTINATION && ! -L $UNIT_DESTINATION ]] || fail unit_collision
 [[ ! -e $DROPIN_DESTINATION && ! -L $DROPIN_DESTINATION ]] || fail dropin_collision
@@ -32,6 +35,11 @@ sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
 sudo systemctl is-active --quiet docker.service || fail docker_inactive
 
 cleanup() {
+  for network in \
+    cloud-scope-cp00000001 cloud-scope-cp00000002 cloud-scope-cp00000003 \
+    cloud-platform-unmanaged-refusal; do
+    sudo docker network rm "$network" >/dev/null 2>&1 || true
+  done
   sudo ip link delete cpdeadbeef >/dev/null 2>&1 || true
   if sudo test -x "$SCRIPT_DESTINATION"; then
     sudo timeout 20s systemctl disable --now cloud-platform-network-enforcement.service \
@@ -71,6 +79,42 @@ for tool in iptables ip6tables; do
     fail egress_forward_jump_missing
 done
 
+export F1_2C_NETWORK_SCOPE_CONFIRM=$EXPECTED_CONFIRMATION
+scope_first=$(sudo --preserve-env=F1_2C_NETWORK_SCOPE_CONFIRM,GITHUB_ACTIONS,RUNNER_ENVIRONMENT,ImageOS \
+  "$SCOPES_RECONCILER" apply "$SCOPES_POLICY")
+grep -q 'NETWORK_SCOPES_APPLY=PASS changed=3' <<<"$scope_first" ||
+  fail network_scope_first_apply_failed
+sudo --preserve-env=F1_2C_NETWORK_SCOPE_CONFIRM,GITHUB_ACTIONS,RUNNER_ENVIRONMENT,ImageOS \
+  "$SCOPES_RECONCILER" check "$SCOPES_POLICY" |
+  grep -q 'NETWORK_SCOPES_CHECK=PASS changed=0' || fail network_scope_check_failed
+scope_second=$(sudo --preserve-env=F1_2C_NETWORK_SCOPE_CONFIRM,GITHUB_ACTIONS,RUNNER_ENVIRONMENT,ImageOS \
+  "$SCOPES_RECONCILER" apply "$SCOPES_POLICY")
+grep -q 'NETWORK_SCOPES_APPLY=PASS changed=0' <<<"$scope_second" ||
+  fail network_scope_not_idempotent
+for interface in cp00000001 cp00000002 cp00000003; do
+  ip link show "$interface" >/dev/null || fail "network_scope_interface_missing=$interface"
+done
+sudo docker network create --internal cloud-platform-unmanaged-refusal >/dev/null
+scope_refusal_log=${RUNNER_TEMP:?}/network-scope-refusal.log
+if sudo --preserve-env=F1_2C_NETWORK_SCOPE_CONFIRM,GITHUB_ACTIONS,RUNNER_ENVIRONMENT,ImageOS \
+  "$SCOPES_RECONCILER" apply "$SCOPES_POLICY" >"$scope_refusal_log" 2>&1; then
+  fail network_scope_accepted_unmanaged_network
+fi
+grep -q 'unexpected_custom_networks=cloud-platform-unmanaged-refusal' \
+  "$scope_refusal_log" || fail network_scope_refusal_reason_missing
+sudo docker network rm cloud-platform-unmanaged-refusal >/dev/null
+scope_rollback=$(sudo --preserve-env=F1_2C_NETWORK_SCOPE_CONFIRM,GITHUB_ACTIONS,RUNNER_ENVIRONMENT,ImageOS \
+  "$SCOPES_RECONCILER" rollback "$SCOPES_POLICY")
+grep -q 'NETWORK_SCOPES_ROLLBACK=PASS changed=3' <<<"$scope_rollback" ||
+  fail network_scope_rollback_failed
+[[ -z $(sudo docker network ls --filter type=custom --quiet) ]] ||
+  fail network_scope_cleanup_incomplete
+for interface in cp00000001 cp00000002 cp00000003; do
+  if ip link show "$interface" >/dev/null 2>&1; then
+    fail "network_scope_interface_survived=$interface"
+  fi
+done
+
 sudo ip link add cpdeadbeef type dummy
 if refusal_output=$(sudo "$SCRIPT_DESTINATION" rollback 2>&1); then
   fail rollback_accepted_live_interface
@@ -104,4 +148,4 @@ sudo unlink -- "$SCRIPT_DESTINATION"
 sudo systemctl daemon-reload
 trap - EXIT
 printf '%s\n' \
-  'NETWORK_ENFORCEMENT_VM_TEST_PASS apply=changed_1 idempotence=changed_0 ipv4=pass ipv6=pass restart=pass refusal=pass rollback=clean'
+  'NETWORK_ENFORCEMENT_VM_TEST_PASS apply=changed_1 idempotence=changed_0 ipv4=pass ipv6=pass internal_scopes=pass scope_refusal=pass scope_rollback=clean restart=pass refusal=pass rollback=clean'
