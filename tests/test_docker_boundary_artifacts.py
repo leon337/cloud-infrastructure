@@ -256,6 +256,7 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
             self.assertIn(required, harness)
         self.assertIn("residual-config (rc) records", harness)
         self.assertIn("stable, exact interface set", harness)
+        self.assertIn("DOCKER_BOUNDARY_NETWORK_DIFF", harness)
         self.assertNotIn("rm -rf", harness)
         self.assertNotIn("apt-get autoremove", harness)
 

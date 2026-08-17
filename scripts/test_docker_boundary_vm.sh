@@ -247,8 +247,11 @@ compare_network_invariants() {
   local category
 
   for category in interfaces routes4 routes6 forward4 forward6 listeners ufw; do
-    cmp -s "$before.$category" "$after.$category" ||
+    if ! cmp -s "$before.$category" "$after.$category"; then
+      printf 'DOCKER_BOUNDARY_NETWORK_DIFF category=%s\n' "$category" >&2
+      diff -u "$before.$category" "$after.$category" >&2 || true
       fail "network_invariant_changed=$category"
+    fi
   done
   normalize_non_docker_iptables \
     "$before.iptables4" "$before.iptables4.non-docker"
