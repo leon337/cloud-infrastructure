@@ -75,7 +75,7 @@ em implementação. A prova na fixture descartável não substitui a prova na VP
 | Maturidade/manutenção | Ansible Core 2.21.3 e Python 3.12 são fixados; lifecycle/release vêm das fontes oficiais abaixo | `SELECTED` |
 | Licença/custo | Ansible GPL-3.0-or-later; PyYAML/jsonschema MIT; nenhum plano comercial selecionado | `RECORDED` |
 | Simplicidade operacional | agentless, módulos builtin, um inventory e playbooks separados de preflight/apply/rollback | `SELECTED` |
-| Backup/restore/rebuild | desired state está no Git e F1.1 não contém dado de aplicação; rollback vazio e reconstrução da fixture passaram, enquanto recovery real continua condicionado ao apply | `SATISFIED_DISPOSABLE_CI_REMOTE_NOT_APPLIED` |
+| Backup/restore/rebuild | desired state está no Git e F1.1 não contém dado de aplicação; backup off-host e apply/idempotência reais passaram; rollback vazio/rebuild continuam provados somente na fixture | `SATISFIED_F1_1_WITH_OPEN_FULL_REBUILD_GAP` |
 | Portabilidade | inventory e role separam controller/node; F1.1 pressupõe Ubuntu 24.04 + systemd/cgroup v2 declarados | `SELECTED_WITH_OS_CONSTRAINT` |
 | Evolução multi-node | grupos de inventory e `ExecutionNode` preservam expansão; este slice só autoriza exatamente `node-01` | `DESIGNED_NOT_TESTED_MULTI_NODE` |
 | API/CLI/MCP | CLI Ansible é interface do controller; agentes futuros só poderão acioná-la por capability, nunca receber sudo/inventory secreto | `CLI_SELECTED_FUTURE_MEDIATION_REQUIRED` |

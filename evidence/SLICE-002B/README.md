@@ -17,7 +17,7 @@ NODE-01.
 | VM descartável — segunda reconciliação | `PASS_CHANGED_0` |
 | VM descartável — security/restart/negative checks | `PASS` |
 | VM descartável — rollback e cleanup | `PASS_CLEAN` |
-| Pré-requisito F1.1 no NODE-01 | `BLOCKED_NOT_APPLIED` |
+| Pré-requisito F1.1 no NODE-01 | `DONE_APPLY_7_IDEMPOTENCE_0_INVARIANCE_PASS` |
 | Check mode F1.2b no NODE-01 | `NOT_EXECUTED` |
 | Apply F1.2b no NODE-01 | `NOT_EXECUTED` |
 | Primeiro workload no NODE-01 | `BLOCKED_BY_F1_2C` |
@@ -30,8 +30,8 @@ posterior também não muda o escopo do run commit-bound.
 
 ## Limite da evidência
 
-O último baseline read-only conhecido continua em SLICE-001, onde Docker e
-containerd estavam ausentes. F1.2b não reobservou nem alterou a VPS. O teste
+O fechamento real F1.1 em `2026-08-17T06:58:43Z` confirmou Docker e containerd
+ausentes e liberou somente o check mode F1.2b. F1.2b ainda não alterou a VPS. O teste
 privilegiado completo é permitido somente em VM descartável comprovada pelo
 harness, nunca na Workstation ou no NODE-01.
 

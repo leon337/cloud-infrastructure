@@ -22,7 +22,7 @@ Esta matriz impede lacunas silenciosas de memória.
 | Findings | `findings/` | SSH/LXD/sudo resolvidos; backup mitigado/aberto; histórico preservado |
 | Recovery | `recovery/RECOVERY-PLAYBOOK.md` | VNC, SSH, XRDP e backup proporcional cobertos; reconstrução ampla pendente |
 | Runbooks | `runbooks/` | acesso/recovery e Foundations F1.1 cobertos |
-| Evidência de implementação | `evidence/` | Desired state e integração descartável registrados; preview real F1.1 passou sem mutação; apply/idempotência/invariância pendentes |
+| Evidência de implementação | `evidence/` | F1.1 real DONE com backup/apply/idempotência/invariância; F1.2b pronto somente para preview real |
 | Histórico de sessões | `history/` | auditorias, F1/F2 e Mission Acceptance/F1.1 preservadas |
 | Estado imediato | `CHECKPOINT.md` | coberto |
 | Estado legível por máquina | `state/current.yaml` | coberto |

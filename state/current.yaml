@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-17
-documentation_state: SLICE_001_REAL_CHECK_MODE_PASS_APPLY_GATE_F1_2B_REPO_READY_F1_2C_CONTRACT_LOCAL_PASS
+documentation_state: SLICE_001_DONE_F1_2B_REAL_CHECK_MODE_READY_F1_2C_CONTRACT_LOCAL_PASS
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
@@ -27,10 +27,10 @@ project:
     phase_0: DONE
     phase_1: DONE
     phase_2_cloud_workstation: DONE
-    future_platform_implementation: SLICE_001_PARTIAL_F1_2B_REPO_READY_F1_2C_CONTRACT_STARTED
+    future_platform_implementation: SLICE_001_DONE_F1_2B_READY_F1_2C_CONTRACT_STARTED
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: SLICE_001_REAL_VPS_PREAPPLY_BACKUP_REVALIDATION_AND_APPLY_HUMAN_INTERACTIVE_SUDO
+  next_exact_step: SLICE_002B_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
 platform_discovery:
   status: CODEX_IMPLEMENTATION_IN_PROGRESS
   decision_source: state/platform-discovery.yaml
@@ -175,7 +175,9 @@ remote_vps:
       extraction_test_historical: PASS_24_FILES
       functional_restore_test: NOT_EXECUTED
       metadata_preserving_restore: NOT_PROVEN_CURRENT_ARCHIVES_NORMALIZE_MODE_0640
-      latest_remote_archive_offhost_copy: NOT_OBSERVED
+      latest_remote_archive_offhost_copy: PASS_AT_2026_08_17T06_35_55Z
+      latest_archive_basename: cloud-infrastructure-config-20260816T221340Z.tar.gz
+      latest_archive_sha256: c05c02ef781740c9ab12cc301ec4a98617996e0020fe78777b3b08040d70c5d7
     full_data_backup: PENDING
 findings:
   resolved: [FND-SSH-001, FND-SSH-002, FND-SSH-003, FND-LXD-001, FND-SUDO-001, FND-DOC-001, FND-AUDIT-001]
@@ -185,7 +187,7 @@ authorization:
   authority: LEANDRO
   phase_1_and_2_full_access: EXECUTED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: SLICE_001_REAL_VPS_PREAPPLY_BACKUP_REVALIDATION_AND_APPLY_HUMAN_INTERACTIVE_SUDO
+  next_step: SLICE_002B_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
   platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
   codex_technology_selection: AUTHORIZED_BY_Q40_D
   codex_implementation_mission: AUTHORIZED_BY_Q40_D
@@ -201,7 +203,7 @@ codex_execution:
   current_slice:
     id: SLICE-001
     name: FOUNDATIONS_F1_1
-    status: PARTIAL_REAL_VPS_CHECK_MODE_PASS_APPLY_NOT_EXECUTED
+    status: DONE_REAL_VPS_APPLY_IDEMPOTENCE_INVARIANCE_PASS
     scope:
       - CANONICAL_ARCHITECTURE_ARTIFACTS
       - TECHNOLOGY_MAPPING
@@ -239,7 +241,7 @@ codex_execution:
       fresh_pre_privileged_readonly_baseline: PASS_AT_2026_08_16T21_23_21Z_NO_DRIFT_NO_MUTATION
       fresh_foundation_objects_and_lock: ALL_ABSENT
       fresh_concurrent_reconcile_and_package_processes: ZERO
-      pre_apply_archive_and_off_host_revalidation: REQUIRED_BEFORE_APPLY_NOT_READ_ONLY_PREVIEW
+      pre_apply_archive_and_off_host_revalidation: PASS_AT_2026_08_17T06_35_55Z_REMOTE_INTEGRITY_OFFHOST_HASH_MATCH
       physical_test_inventory_guard: REFUSED_BEFORE_MUTATION_EXIT_2
       disposable_ubuntu_check_mode: PASS_CI_RUN_31972460567_F1_1_MANAGED_SURFACE_INVARIANT
       disposable_ubuntu_partial_marker_check_mode: PASS_CI_RUN_31972460567_F1_1_MANAGED_SURFACE_INVARIANT
@@ -253,12 +255,14 @@ codex_execution:
       real_vps_privileged_check_mode: PASS_AT_2026_08_17T05_48_16Z_CHANGED_SIMULATED_4_FAILED_0_UNREACHABLE_0_NO_MUTATION
       real_vps_privileged_check_mode_log_sha256: 370d53f6dd1c9138cc0bab7ce852edb32f05d4f8c0b7359d7fb372f8edd479d6
       real_vps_post_check_mode_readonly_invariance: PASS_AT_2026_08_17T05_52_15Z
-      real_vps_apply: NOT_EXECUTED
-      real_vps_idempotence: NOT_EXECUTED
-      real_vps_post_apply_invariance: NOT_EXECUTED
+      real_vps_apply: PASS_AT_2026_08_17T06_48_33Z_CHANGED_7_FAILED_0_UNREACHABLE_0
+      real_vps_apply_log_sha256: a82d0ac67ed2f941507107ee1008d36475f7ebf5cdab0580605e60899cc5a5d4
+      real_vps_idempotence: PASS_AT_2026_08_17T06_57_50Z_CHANGED_0_FAILED_0_UNREACHABLE_0
+      real_vps_idempotence_log_sha256: 2c6e2bf1924e7a1ee735035b9b6da35e7cf18cdc982a9c8212288db47ffa0d4b
+      real_vps_post_apply_invariance: PASS_AT_2026_08_17T06_58_43Z
     human_interaction:
-      status: PRIVILEGED_CHECK_MODE_PASS_READY_FOR_PREAPPLY_REVALIDATION_AND_APPLY_WAITING_LEANDRO_INTERACTIVE_SUDO
-      reason: REAL_VPS_CHECK_MODE_AND_POST_PREVIEW_INVARIANCE_PASSED_APPLY_REQUIRES_FRESH_BACKUP_GATE_AND_HUMAN_SUDO
+      status: COMPLETED_FOR_F1_1_NEXT_HUMAN_INTERACTION_IS_F1_2B_CHECK_MODE
+      reason: F1_1_REAL_APPLY_IDEMPOTENCE_AND_INVARIANCE_PASSED
       secret_must_not_be_sent_to_agent_or_logged: true
   repo_only_preparations:
     docker_runtime_f1_2b:
@@ -269,8 +273,8 @@ codex_execution:
       local_scope: UNPRIVILEGED_REPO_ONLY_NO_TARGET_PLAYBOOK_EXECUTION
       github_actions: PASS_RUN_31996516019_COMMIT_FA66F10
       disposable_vm_lifecycle: PASS_CHECK_APPLY_IDEMPOTENCE_SECURITY_RESTART_REFUSALS_ROLLBACK_CLEANUP
-      real_vps_check_mode: NOT_EXECUTED_BLOCKED_BY_F1_1
-      real_vps_apply: NOT_EXECUTED_BLOCKED_BY_F1_1
+      real_vps_check_mode: NOT_EXECUTED_READY_AFTER_F1_1
+      real_vps_apply: NOT_EXECUTED_BLOCKED_PENDING_CHECK_MODE_RECONCILIATION
       first_workload: BLOCKED_BY_F1_2C
     network_enforcement_f1_2c:
       status: CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_AND_DYNAMIC_PROOF_PENDING

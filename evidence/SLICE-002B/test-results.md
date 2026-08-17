@@ -18,7 +18,7 @@ Status: **CI/DISPOSABLE PASS — VPS NOT_EXECUTED**
 | Ansible syntax | `PASS_6_CORE_2_21_3` | wheel oficial verificado, extraído só em `/tmp` e removido |
 | GitHub Actions | `PASS_31996516019` | commit `fa66f1049bac5540a5b12219186a421cc39dcbc0` |
 | VM descartável | `PASS` | check limpo, apply `changed=13`, reconcilições `changed=0`, sete recusas e rollback limpo |
-| NODE-01 | `NOT_EXECUTED` | bloqueado por F1.1 |
+| NODE-01 | `NOT_EXECUTED` | F1.1 DONE; check mode liberado, apply ainda bloqueado pelo review do preview |
 
 O desired state nasceu no commit `7015c80759a797bcb141773b79cd9b95f6fbecf1` e
 o delta final exercitado corresponde ao commit `fa66f1049bac5540a5b12219186a421cc39dcbc0`.

@@ -9,8 +9,8 @@ NODE-01 NOT_EXECUTED**.
 
 ## Gates e guardrails
 
-- F1.1 precisa estar aplicado, reconciliado com `changed=0`, documentado e com
-  invariância aprovada antes de qualquer check/apply F1.2b no NODE-01;
+- F1.1 foi aplicado, reconciliado com `changed=0`, documentado e aprovado; isso
+  libera somente o check mode F1.2b no NODE-01 até nova reconciliação;
 - o primeiro workload, inclusive fixture no NODE-01, depende de F1.2c;
 - executar somente no alvo DEV `node-01`, com segunda sessão SSH funcional;
 - autenticação sudo é digitada diretamente por LEANDRO; nunca usar senha em
@@ -59,8 +59,7 @@ nunca conteúdo secreto de config do host.
 
 ## Preview e apply no NODE-01
 
-Enquanto F1.1 não estiver concluído, estes comandos são referência bloqueada e
-não devem ser executados. Depois do checkpoint e de CI verde no mesmo commit:
+F1.1 está concluído e CI está verde; executar primeiro somente o preview:
 
 ```bash
 cd automation/ansible

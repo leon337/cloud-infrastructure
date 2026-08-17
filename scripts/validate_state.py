@@ -33,6 +33,13 @@ F1_1_REAL_CHECK_MODE_EVIDENCE = (
     "PASS_REAL_VPS_CHECK_MODE_FAILED_0_UNREACHABLE_0_"
     "MANAGED_SURFACE_INVARIANT"
 )
+F1_1_REAL_APPLY_CURRENT = (
+    "PASS_AT_2026_08_17T06_48_33Z_CHANGED_7_FAILED_0_UNREACHABLE_0"
+)
+F1_1_REAL_IDEMPOTENCE_CURRENT = (
+    "PASS_AT_2026_08_17T06_57_50Z_CHANGED_0_FAILED_0_UNREACHABLE_0"
+)
+F1_1_REAL_INVARIANCE_CURRENT = "PASS_AT_2026_08_17T06_58_43Z"
 EXPECTED_DECISIONS = {
     f"q{number}": "D" if number in {5, 11, 28, 40} else "C"
     for number in range(1, 41)
@@ -227,9 +234,26 @@ def f1_2b_gate_errors(
     for location, value in not_executed_values.items():
         if value != "NOT_EXECUTED":
             errors.append(f"F1.2b real-node execution was overclaimed at {location}")
-    for key in ("real_vps_check_mode", "real_vps_apply"):
-        if current_state[key] != "NOT_EXECUTED_BLOCKED_BY_F1_1":
+    expected_current_real_state = {
+        "real_vps_check_mode": "NOT_EXECUTED_READY_AFTER_F1_1",
+        "real_vps_apply": "NOT_EXECUTED_BLOCKED_PENDING_CHECK_MODE_RECONCILIATION",
+    }
+    for key, expected in expected_current_real_state.items():
+        if current_state[key] != expected:
             errors.append(f"F1.2b real-node gate changed at current.{key}")
+    if discovery_state["real_gate"] != "READY_FOR_PRIVILEGED_CHECK_MODE_AFTER_F1_1_DONE":
+        errors.append("F1.2b discovery gate does not reflect completed F1.1")
+    expected_foundation_dependency = {
+        "f1_1_real_vps_status": "DONE",
+        "f1_1_privileged_check_mode": "PASS_NO_MUTATION",
+        "f1_1_apply": "PASS_CHANGED_7",
+        "f1_1_idempotence": "PASS_CHANGED_0",
+        "f1_1_post_apply_invariance": "PASS",
+        "f1_2b_real_vps_gate": "READY_FOR_PRIVILEGED_CHECK_MODE",
+    }
+    for key, expected in expected_foundation_dependency.items():
+        if docker_baseline["dependency"][key] != expected:
+            errors.append(f"F1.2b F1.1 dependency evidence differs at {key}")
 
     workload_values = {
         "current": current_state["first_workload"],
@@ -484,21 +508,54 @@ def crosscheck_errors(
     ):
         errors.append("F1.1 post-preview managed surface is not invariant")
 
-    for key in (
-        "real_vps_apply",
-        "real_vps_idempotence",
-        "real_vps_post_apply_invariance",
-    ):
-        if current_validation[key] != "NOT_EXECUTED":
-            errors.append(f"{key} changed without pre-apply evidence reconciliation")
+    real_f1_1_values = {
+        "current.apply": current_validation["real_vps_apply"],
+        "current.idempotence": current_validation["real_vps_idempotence"],
+        "current.invariance": current_validation["real_vps_post_apply_invariance"],
+        "discovery.apply": discovery["implementation"]["real_vps_apply"],
+        "discovery.idempotence": discovery["implementation"]["real_vps_idempotence"],
+        "discovery.invariance": discovery["implementation"][
+            "real_vps_post_apply_invariance"
+        ],
+        "components.apply": components["platform_components"]["foundation"][
+            "ci_validation"
+        ]["real_vps_apply"],
+        "components.idempotence": components["platform_components"]["foundation"][
+            "ci_validation"
+        ]["real_vps_idempotence"],
+        "components.invariance": components["platform_components"]["foundation"][
+            "ci_validation"
+        ]["real_vps_post_apply_invariance"],
+        "evidence.apply": baseline["apply"]["privileged_apply"],
+        "evidence.idempotence": baseline["apply"]["idempotence_reconcile"],
+        "evidence.invariance": baseline["apply"]["post_apply_invariance"],
+    }
+    expected_real_f1_1_values = {
+        "current.apply": F1_1_REAL_APPLY_CURRENT,
+        "current.idempotence": F1_1_REAL_IDEMPOTENCE_CURRENT,
+        "current.invariance": F1_1_REAL_INVARIANCE_CURRENT,
+        "discovery.apply": "PASS_AT_2026_08_17T06_48_33Z_CHANGED_7",
+        "discovery.idempotence": "PASS_AT_2026_08_17T06_57_50Z_CHANGED_0",
+        "discovery.invariance": F1_1_REAL_INVARIANCE_CURRENT,
+        "components.apply": "PASS_AT_2026_08_17T06_48_33Z_CHANGED_7",
+        "components.idempotence": "PASS_AT_2026_08_17T06_57_50Z_CHANGED_0",
+        "components.invariance": F1_1_REAL_INVARIANCE_CURRENT,
+        "evidence.apply": "PASS_REAL_VPS_CHANGED_7_FAILED_0_UNREACHABLE_0",
+        "evidence.idempotence": "PASS_REAL_VPS_CHANGED_0_FAILED_0_UNREACHABLE_0",
+        "evidence.invariance": "PASS_REAL_VPS_AT_2026_08_17T06_58_43Z",
+    }
+    for location, expected in expected_real_f1_1_values.items():
+        if real_f1_1_values[location] != expected:
+            errors.append(f"F1.1 real completion evidence differs at {location}")
 
-    for key in (
-        "privileged_apply",
-        "idempotence_reconcile",
-        "post_apply_invariance",
-    ):
-        if baseline["apply"][key] != "NOT_EXECUTED":
-            errors.append(f"baseline apply.{key} changed before real VPS evidence exists")
+    apply_recap = baseline["apply"]["privileged_apply_evidence"]["node_01_recap"]
+    idempotence_recap = baseline["apply"]["idempotence_evidence"]["node_01_recap"]
+    if apply_recap["changed"] != 7 or apply_recap["failed"] != 0:
+        errors.append("F1.1 real apply recap is not the reviewed changed=7 success")
+    if idempotence_recap["changed"] != 0 or idempotence_recap["failed"] != 0:
+        errors.append("F1.1 real idempotence recap is not changed=0 success")
+    if baseline["apply"]["pre_apply_backup"]["remote_mutation"] is not False:
+        errors.append("F1.1 pre-apply backup validation claims remote mutation")
 
     snapshot = current["remote_vps"]["snapshot_at_utc"]
     if components["observed_at_utc"] != snapshot:
@@ -670,7 +727,7 @@ def main() -> int:
         "STATE_CROSSCHECK_PASS decisions=Q1-Q40-exact "
         f"artifacts={len(CANONICAL_PATH_KEYS)} "
         "gates=F1.1+F1.2b+F1.2c-preserved "
-        "real_apply=NOT_EXECUTED timestamps=aligned"
+        "f1_1_real_apply=PASS f1_2b_real_apply=NOT_EXECUTED timestamps=aligned"
     )
     return 0
 

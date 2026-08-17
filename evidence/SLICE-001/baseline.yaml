@@ -162,6 +162,51 @@ apply:
     post_preview_core_services: PASS_EXPECTED
     post_preview_lxd_daemon_and_socket: INACTIVE
     post_preview_docker_and_containerd: ABSENT
-  privileged_apply: NOT_EXECUTED
-  idempotence_reconcile: NOT_EXECUTED
-  post_apply_invariance: NOT_EXECUTED
+  pre_apply_backup:
+    validated_at_utc: "2026-08-17T06:35:55Z"
+    result: PASS_REMOTE_INTEGRITY_AND_OFFHOST_HASH_MATCH
+    archive_basename: cloud-infrastructure-config-20260816T221340Z.tar.gz
+    archive_size_bytes: 28743
+    archive_entries: 39
+    archive_sha256: c05c02ef781740c9ab12cc301ec4a98617996e0020fe78777b3b08040d70c5d7
+    offhost_path: /home/leo/Backups/cloud-infrastructure/cloud-infrastructure-config-20260816T221340Z.tar.gz
+    sanitized_local_log_sha256: 094111a2650a36081f3edabe89b3153cbe600775f15ad6982a285b3c0929a538
+    remote_mutation: false
+  privileged_apply: PASS_REAL_VPS_CHANGED_7_FAILED_0_UNREACHABLE_0
+  privileged_apply_evidence:
+    completed_at_utc: "2026-08-17T06:48:33Z"
+    controller_commit: d5df519b1b21afee10fc82841b74dbd61d3a3615
+    foundation_ci_run_id: 31999692227
+    docker_boundary_ci_run_id: 31999692210
+    sanitized_local_log_sha256: a82d0ac67ed2f941507107ee1008d36475f7ebf5cdab0580605e60899cc5a5d4
+    node_01_recap:
+      ok: 36
+      changed: 7
+      unreachable: 0
+      failed: 0
+      skipped: 14
+    password_or_private_key_persisted: false
+  idempotence_reconcile: PASS_REAL_VPS_CHANGED_0_FAILED_0_UNREACHABLE_0
+  idempotence_evidence:
+    completed_at_utc: "2026-08-17T06:57:50Z"
+    sanitized_local_log_sha256: 2c6e2bf1924e7a1ee735035b9b6da35e7cf18cdc982a9c8212288db47ffa0d4b
+    node_01_recap:
+      ok: 44
+      changed: 0
+      unreachable: 0
+      failed: 0
+      skipped: 6
+  post_apply_invariance: PASS_REAL_VPS_AT_2026_08_17T06_58_43Z
+  post_apply_evidence:
+    failed_units: 0
+    core_services: PASS_EXPECTED
+    lxd_daemon_and_socket: INACTIVE_SOCKET_DISABLED
+    docker_and_containerd: ABSENT
+    foundation_lock: ABSENT
+    marker_provenance: PASS_ROOT_ROOT_0600_EXACT_CONTENT
+    platform_core_identity: PASS_LOCKED_NOLOGIN_ONLY_CLOUD_PLATFORM_GROUP
+    managed_paths_and_files: PASS_EXACT_OWNER_GROUP_MODE_AND_PROVENANCE
+    runtime_credentials: PASS_ROOT_ROOT_0700
+    accounting_slices: PASS_LOADED_ZERO_TASKS
+    platform_network_listeners_added: 0
+    reboot_required: false

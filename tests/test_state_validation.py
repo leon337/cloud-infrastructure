@@ -115,6 +115,27 @@ class StateCrosscheckTests(unittest.TestCase):
             )
         )
 
+    def test_real_f1_1_completion_overclaim_or_drift_is_rejected(self):
+        baseline = copy.deepcopy(self.baseline)
+        baseline["apply"]["idempotence_evidence"]["node_01_recap"]["changed"] = 1
+        self.assertTrue(
+            any(
+                "idempotence recap" in error
+                for error in self.errors_for(baseline=baseline)
+            )
+        )
+
+        current = copy.deepcopy(self.current)
+        current["codex_execution"]["current_slice"]["validation"][
+            "real_vps_apply"
+        ] = "PASS_WITHOUT_EVIDENCE"
+        self.assertTrue(
+            any(
+                "completion evidence differs" in error
+                for error in self.errors_for(current=current)
+            )
+        )
+
     def test_replacing_q1_with_q41_is_rejected(self):
         discovery = copy.deepcopy(self.discovery)
         discovery["decisions"].pop("q1")

@@ -17,12 +17,12 @@ Atualizado em 2026-08-17 após validação repo-only do desired state
 - F1.1: commit de implementação
   `edd2497d657cc9bc35952f5dfc71090a18dade53` aprovado no GitHub Actions run
   `31972460567`, inclusive VM descartável privilegiada; VPS real **NOT_APPLIED**
-  e slice `PARTIAL`; check mode real passou sem mutação em
-  `2026-08-17T05:48:16Z`, mas apply/idempotência/invariância seguem pendentes.
+  e slice `DONE`; check mode, backup off-host, apply `changed=7`, idempotência
+  `changed=0` e invariância real passaram em `2026-08-17`.
 - F1.2b: apply/rollback, pin APT, preflight, helper de árvore e harness
   concluídos a partir do desired-state commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`;
   commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` e GitHub run
-  `31996516019` `PASS`; NODE-01 `NOT_EXECUTED/BLOCKED_BY_F1_1`.
+  `31996516019` `PASS`; NODE-01 `NOT_EXECUTED/READY_FOR_CHECK_MODE`.
 
 ## Artefatos canônicos criados
 
@@ -140,8 +140,7 @@ foi executado no host nesta atualização.
 
 ## Guardrails do próximo passo
 
-- a VM GitHub descartável provou a remediação F1.1 para `edd2497d` e o check
-  mode real passou com `failed=0`, `unreachable=0` e nenhuma mutação;
+- F1.1 real está concluído com apply, idempotência e invariância comprovados;
 - LEANDRO digita sudo diretamente nas operações humanas; senha nunca é
   enviada/registrada;
 - manter segunda sessão SSH e revalidar concorrência antes do apply;
@@ -159,14 +158,13 @@ foi executado no host nesta atualização.
 
 ## Próximo passo exato
 
-**SLICE_001_REAL_VPS_PREAPPLY_BACKUP_REVALIDATION_AND_APPLY_HUMAN_INTERACTIVE_SUDO**
+**SLICE_002B_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO**
 
-Revalidar backup e ausência de concorrência, então executar o apply F1.1 na VPS
-com `--ask-become-pass`, com LEANDRO digitando a senha sudo diretamente e sem
-registro. Em seguida exigir segunda reconciliação `changed=0` e invariance checks.
-Até essas provas passarem, F1.1 permanece `PARTIAL/NOT_APPLIED`, nunca `DONE`.
-Docker/network F1.2 reais, Management Network, produção e rotação não fazem parte
-desse passo.
+Executar somente o check mode F1.2b na VPS com `--ask-become-pass`, com LEANDRO
+digitando a senha sudo diretamente e sem registro. Inspecionar o delta de pacote,
+systemd e firewall antes de qualquer apply. Nenhum container/workload é
+autorizado; F1.2c, Management Network, produção e rotação permanecem fora desse
+passo.
 
 ## Architecture/Technology Mapping — gaps condicionais
 

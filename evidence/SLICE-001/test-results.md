@@ -100,6 +100,40 @@ policy, local links, 34 YAML documents, two manifests, exact state cross-check,
 64 unit/negative tests, six shell syntax checks and six Ansible syntax checks.
 ShellCheck was unavailable on this controller and remains required in CI.
 
+## Real NODE-01 apply, idempotence and invariance
+
+The latest configuration archive passed remote checksum and full listing at
+`2026-08-17T06:35:55Z`; 28,743 bytes and 39 entries were fetched off-host with
+matching SHA-256
+`c05c02ef781740c9ab12cc301ec4a98617996e0020fe78777b3b08040d70c5d7`.
+The VPS was not mutated by that validation.
+
+The real apply completed at `2026-08-17T06:48:33Z` from commit `d5df519`:
+
+```text
+localhost: ok=6 changed=0 unreachable=0 failed=0 skipped=0
+node-01:   ok=36 changed=7 unreachable=0 failed=0 skipped=14
+```
+
+The second reconcile completed at `2026-08-17T06:57:50Z`:
+
+```text
+localhost: ok=6 changed=0 unreachable=0 failed=0 skipped=0
+node-01:   ok=44 changed=0 unreachable=0 failed=0 skipped=6
+```
+
+The privileged reconcile validated marker provenance, exact owner/group/modes,
+`/run/cloud-platform/credentials` as `root:root 0700`, the locked nologin
+technical account and absence of privileged groups. The read-only external probe
+at `2026-08-17T06:58:43Z` confirmed zero failed units, no mutation lock, loaded
+empty slices, essential services unchanged, LXD inactive, Docker/containerd
+absent and zero platform listeners added. No reboot was required.
+
+The post-completion reconciliation passed the local strict suite: secret/history
+policy, links, 34 YAML documents, two manifests, exact state cross-check, 65
+unit/negative tests, six shell syntax checks and six Ansible syntax checks.
+ShellCheck remains required in CI for the evidence commit.
+
 ## Commit-bound disposable Ubuntu 24.04/systemd integration
 
 GitHub Actions run
@@ -166,5 +200,5 @@ Run `31972460567` proves implementation commit `edd2497d`; the later run
 fixture. This subsequent read-only evidence/state update changes no executable
 artifact and is not represented as having already passed another CI run. Those
 CI runs do not prove real-node behavior; the separately recorded interactive
-preview proves only privileged check mode without mutation. Apply, idempotence,
-post-apply invariance and rollback on the real VPS remain `NOT_EXECUTED`.
+preview, apply, idempotence and post-apply probes provide the real-node evidence.
+Rollback on the real VPS remains `NOT_EXECUTED` because no failure required it.

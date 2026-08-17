@@ -56,8 +56,8 @@ platform_components:
   foundation:
     technology: systemd_slices_tmpfiles_fhs_namespaces
     selected_version: systemd-255-compatible
-    observed_version: NOT_APPLIED
-    lifecycle: DESIRED_STATE_CI_VALIDATED_DISPOSABLE_REAL_VPS_CHECK_MODE_PASS_APPLY_NOT_EXECUTED
+    observed_version: systemd_255_255.4-1ubuntu8.17
+    lifecycle: DONE_REAL_VPS_APPLY_IDEMPOTENCE_INVARIANCE_PASS
     ci_validation:
       commit: edd2497d657cc9bc35952f5dfc71090a18dade53
       run_id: 31972460567
@@ -65,6 +65,9 @@ platform_components:
       scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
       disposable_integration: PASS
       real_vps_privileged_check_mode: PASS_AT_2026_08_17T05_48_16Z_NO_MUTATION
+      real_vps_apply: PASS_AT_2026_08_17T06_48_33Z_CHANGED_7
+      real_vps_idempotence: PASS_AT_2026_08_17T06_57_50Z_CHANGED_0
+      real_vps_post_apply_invariance: PASS_AT_2026_08_17T06_58_43Z
   management_network:
     technology: Tailscale
     selected_version: RESOLVE_AT_SLICE
@@ -74,7 +77,7 @@ platform_components:
     technology: Docker_Engine_and_Compose_plugin
     selected_version: Docker_Engine_29.7.2
     observed_version: ABSENT
-    lifecycle: SELECTED_REPO_DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_VPS_NOT_EXECUTED_BLOCKED_BY_F1_1
+    lifecycle: SELECTED_REPO_DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_VPS_CHECK_MODE_READY
     decision: DEC-007
     source:
       repository: https://download.docker.com/linux/ubuntu

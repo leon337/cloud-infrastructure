@@ -15,12 +15,12 @@ git:
   ci_scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
   remote_branch: PUBLISHED
 dependency:
-  f1_1_real_vps_status: PARTIAL_NOT_APPLIED
-  f1_1_privileged_check_mode: NOT_EXECUTED
-  f1_1_apply: NOT_EXECUTED
-  f1_1_idempotence: NOT_EXECUTED
-  f1_1_post_apply_invariance: NOT_EXECUTED
-  f1_2b_real_vps_gate: BLOCKED_UNTIL_F1_1_RECONCILED_AND_CHECKPOINTED
+  f1_1_real_vps_status: DONE
+  f1_1_privileged_check_mode: PASS_NO_MUTATION
+  f1_1_apply: PASS_CHANGED_7
+  f1_1_idempotence: PASS_CHANGED_0
+  f1_1_post_apply_invariance: PASS
+  f1_2b_real_vps_gate: READY_FOR_PRIVILEGED_CHECK_MODE
   first_workload_gate: BLOCKED_UNTIL_F1_2C_NETWORK_ENFORCEMENT_VALIDATED
 selection:
   repository: https://download.docker.com/linux/ubuntu

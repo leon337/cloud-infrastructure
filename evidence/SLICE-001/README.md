@@ -21,9 +21,10 @@ preparação não prova aplicação na VPS.
 | Fresh pre-preview DEV baseline | `PASS_READ_ONLY_AT_2026-08-16T21:23:21Z` |
 | Real VPS privileged check mode | `PASS_NO_MUTATION_AT_2026-08-17T05:48:16Z` |
 | Post-preview read-only invariance | `PASS_AT_2026-08-17T05:52:15Z` |
-| VPS apply | `NOT_EXECUTED` |
-| Second reconcile `changed=0` | `NOT_EXECUTED` |
-| Post-apply invariance | `NOT_EXECUTED` |
+| Pre-apply backup/off-host hash | `PASS_AT_2026-08-17T06:35:55Z` |
+| VPS apply | `PASS_CHANGED_7_AT_2026-08-17T06:48:33Z` |
+| Second reconcile `changed=0` | `PASS_AT_2026-08-17T06:57:50Z` |
+| Post-apply invariance | `PASS_AT_2026-08-17T06:58:43Z` |
 | Rollback drill | `NOT_EXECUTED` |
 
 `NOT_EXECUTED` nunca deve ser interpretado como `PASS`.
@@ -51,3 +52,10 @@ O log local sanitizado tem SHA-256
 `370d53f6dd1c9138cc0bab7ce852edb32f05d4f8c0b7359d7fb372f8edd479d6`;
 nenhuma senha ou chave foi persistida. A leitura posterior confirmou todos os
 objetos F1.1 ainda ausentes e os serviços essenciais invariantes.
+
+Depois da reconciliação do preview, o backup mais recente passou checksum,
+listagem de 39 entradas e cópia off-host com SHA-256 correspondente. O apply
+real teve `changed=7`, a segunda reconciliação teve `changed=0` e os checks finais
+confirmaram proveniência/permissões, conta bloqueada, slices vazias, zero units
+falhas, serviços essenciais invariantes, LXD inativo e Docker ausente. F1.1 está
+`DONE`; rollback real não foi necessário nem executado.
