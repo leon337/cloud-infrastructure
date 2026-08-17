@@ -1,0 +1,112 @@
+api_version: cloud-platform/v1alpha1
+kind: NetworkEnforcementContract
+metadata:
+  slice: F1.2c
+  environment: DEV_LAB
+  status: REPO_CONTRACT_ONLY
+  operational_state: NOT_APPLIED
+  technology_selection: UNRESOLVED
+authority:
+  binding_requirements:
+    - CR-020
+    - CR-034
+  binding_invariants:
+    - INV-002
+    - INV-003
+    - INV-007
+  threat_controls:
+    - TM-02
+    - TM-03
+    - TM-10
+scope:
+  address_families:
+    - ipv4
+    - ipv6
+  workload_scopes:
+    - tenant
+    - project
+    - mission
+    - sandbox
+  protected_zones:
+    - host
+    - management
+    - metadata
+    - control
+  candidate_mechanisms:
+    packet_filter:
+      - nftables
+      - DOCKER-USER
+    dns_and_egress:
+      - controlled_dns_proxy
+      - explicit_egress_proxy
+      - packet_filter_allowlist
+  candidate_status: UNSELECTED_REQUIRES_ADR_AND_DISPOSABLE_PROOF
+default_policy:
+  ingress: DENY
+  published_ports: DENY
+  host_access: DENY
+  management_access: DENY
+  metadata_access: DENY
+  control_plane_access: DENY
+  cross_tenant: DENY
+  cross_project: DENY
+  cross_mission: DENY
+  cross_sandbox: DENY
+  private_destination_access: DENY
+  shared_service_access: DENY_WITHOUT_EXPLICIT_IDENTITY_GRANT
+  internet_egress: DENY_WITHOUT_EXPLICIT_PROFILE
+  unknown_identity: DENY
+  policy_unavailable: DENY
+egress_profiles:
+  required_names:
+    - none
+    - restricted
+    - development-default
+  definitions: PENDING_TECHNOLOGY_SELECTION
+  requirements:
+    none: DENY_DNS_AND_ALL_DESTINATIONS
+    restricted: ALLOW_ONLY_CONTROLLED_DNS_AND_EXPLICIT_DESTINATIONS
+    development-default: ALLOW_USEFUL_INTERNET_BY_EXPLICIT_VERSIONED_POLICY
+service_discovery:
+  naming_required: true
+  identity_aware_authorization_required: true
+  raw_ip_or_container_name_grants_authority: false
+  cross_scope_resolution: DENY_WITHOUT_EXPLICIT_GRANT
+sharing:
+  implicit_shared_networks: FORBIDDEN
+  explicit_grant_dimensions:
+    - source_identity
+    - source_tenant
+    - source_project
+    - destination_service_identity
+    - destination_port_protocol
+    - egress_profile
+    - expiry
+  missing_or_invalid_grant: DENY
+required_disposable_evidence:
+  - baseline_and_post_ruleset_ipv4
+  - baseline_and_post_ruleset_ipv6
+  - external_ingress_probe_ipv4
+  - external_ingress_probe_ipv6
+  - deny_host_management_metadata_control
+  - deny_cross_tenant_project_mission_sandbox
+  - allow_explicit_shared_service_grant
+  - deny_revoked_or_expired_shared_service_grant
+  - egress_profile_none
+  - egress_profile_restricted
+  - egress_profile_development_default
+  - controlled_dns_and_identity_aware_discovery
+  - policy_dependency_failure_denies
+  - restart_and_idempotence
+  - rollback_and_cleanup
+gates:
+  static_contract: IMPLEMENTED_REPO_ONLY
+  technology_adr: PENDING
+  disposable_integration: PENDING
+  f1_1_real_foundation: BLOCKING_REAL_EXECUTION
+  f1_2b_disposable_runtime: BLOCKING_DYNAMIC_NETWORK_PROOF
+  f1_2b_real_runtime: BLOCKING_REAL_EXECUTION
+  first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
+  node_01_execution: NOT_AUTHORIZED_BY_THIS_CONTRACT
+  production: NOT_AUTHORIZED
+  credential_rotation: DEFERRED_BY_HUMAN_DECISION
