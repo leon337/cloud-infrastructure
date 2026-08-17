@@ -4,8 +4,10 @@ set -Eeuo pipefail
 readonly EXPECTED_CONFIRMATION=GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
 readonly SCRIPT_SOURCE=/workspace/cloud-infrastructure/platform/network/cloud-platform-network-enforcement
 readonly UNIT_SOURCE=/workspace/cloud-infrastructure/platform/systemd/cloud-platform-network-enforcement.service
+readonly DROPIN_SOURCE=/workspace/cloud-infrastructure/platform/systemd/docker.service.network-enforcement.conf
 readonly SCRIPT_DESTINATION=/usr/local/libexec/cloud-platform-network-enforcement
 readonly UNIT_DESTINATION=/etc/systemd/system/cloud-platform-network-enforcement.service
+readonly DROPIN_DESTINATION=/etc/systemd/system/docker.service.d/20-cloud-platform-network-enforcement.conf
 readonly MARKER=/etc/cloud-platform-network-enforcement.managed
 
 fail() {
@@ -22,9 +24,10 @@ fail() {
 case "$(hostname --short)" in node-01 | vmi3506102) fail real_dev_node ;; esac
 systemd-detect-virt --quiet --vm || fail not_disposable_vm
 sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
-[[ -x $SCRIPT_SOURCE && -f $UNIT_SOURCE ]] || fail payload_missing
+[[ -x $SCRIPT_SOURCE && -f $UNIT_SOURCE && -f $DROPIN_SOURCE ]] || fail payload_missing
 [[ ! -e $SCRIPT_DESTINATION && ! -L $SCRIPT_DESTINATION ]] || fail script_collision
 [[ ! -e $UNIT_DESTINATION && ! -L $UNIT_DESTINATION ]] || fail unit_collision
+[[ ! -e $DROPIN_DESTINATION && ! -L $DROPIN_DESTINATION ]] || fail dropin_collision
 [[ ! -e $MARKER && ! -L $MARKER ]] || fail marker_collision
 sudo systemctl is-active --quiet docker.service || fail docker_inactive
 
@@ -38,6 +41,7 @@ cleanup() {
     fi
   fi
   sudo unlink -- "$UNIT_DESTINATION" >/dev/null 2>&1 || true
+  sudo unlink -- "$DROPIN_DESTINATION" >/dev/null 2>&1 || true
   sudo unlink -- "$SCRIPT_DESTINATION" >/dev/null 2>&1 || true
   sudo systemctl daemon-reload >/dev/null 2>&1 || true
 }
@@ -46,6 +50,7 @@ trap cleanup EXIT
 sudo install -d -o root -g root -m 0755 /usr/local/libexec
 sudo install -o root -g root -m 0755 "$SCRIPT_SOURCE" "$SCRIPT_DESTINATION"
 sudo install -o root -g root -m 0644 "$UNIT_SOURCE" "$UNIT_DESTINATION"
+sudo install -o root -g root -m 0644 "$DROPIN_SOURCE" "$DROPIN_DESTINATION"
 
 first_output=$(sudo "$SCRIPT_DESTINATION" apply)
 grep -q 'NETWORK_ENFORCEMENT_APPLY=PASS changed=1' <<<"$first_output" ||
@@ -94,6 +99,7 @@ for tool in iptables ip6tables; do
 done
 
 sudo unlink -- "$UNIT_DESTINATION"
+sudo unlink -- "$DROPIN_DESTINATION"
 sudo unlink -- "$SCRIPT_DESTINATION"
 sudo systemctl daemon-reload
 trap - EXIT

@@ -2,7 +2,6 @@
 Description=Cloud Platform DEV workload network enforcement
 Documentation=https://github.com/leon337/cloud-infrastructure
 After=docker.service
-PartOf=docker.service
 ConditionPathExists=/etc/cloud-platform-network-enforcement.managed
 
 [Service]

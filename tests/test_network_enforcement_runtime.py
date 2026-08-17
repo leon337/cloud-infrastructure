@@ -9,6 +9,9 @@ SCRIPT = (ROOT / "platform/network/cloud-platform-network-enforcement").read_tex
 UNIT = (ROOT / "platform/systemd/cloud-platform-network-enforcement.service").read_text(
     encoding="utf-8"
 )
+DROPIN = (
+    ROOT / "platform/systemd/docker.service.network-enforcement.conf"
+).read_text(encoding="utf-8")
 HARNESS = (ROOT / "scripts/test_network_enforcement_vm.sh").read_text(encoding="utf-8")
 
 
@@ -58,13 +61,16 @@ class NetworkEnforcementRuntimeTests(unittest.TestCase):
 
     def test_systemd_reapplies_after_docker_without_shell(self):
         self.assertIn("After=docker.service", UNIT)
-        self.assertIn("PartOf=docker.service", UNIT)
         self.assertIn("Type=oneshot", UNIT)
         self.assertIn(
             "ExecStart=/usr/local/libexec/cloud-platform-network-enforcement apply",
             UNIT,
         )
         self.assertNotIn("/bin/sh", UNIT)
+        self.assertEqual(
+            DROPIN,
+            "[Service]\nExecStartPost=/usr/local/libexec/cloud-platform-network-enforcement apply\n",
+        )
 
     def test_disposable_harness_covers_apply_restart_refusal_and_rollback(self):
         self.assertIn("GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY", HARNESS)
