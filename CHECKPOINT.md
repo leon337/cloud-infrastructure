@@ -19,9 +19,9 @@ Atualizado em 2026-08-17 após validação repo-only do desired state
   `31972460567`, inclusive VM descartável privilegiada; VPS real **NOT_APPLIED**
   e slice `PARTIAL`, pronto para check mode privilegiado com interação humana.
 - F1.2b: apply/rollback, pin APT, preflight, helper de árvore e harness
-  concluídos no commit local `7015c80759a797bcb141773b79cd9b95f6fbecf1`;
-  validação local não privilegiada `PASS`, GitHub CI/VM descartável `PENDING` e
-  NODE-01 `NOT_EXECUTED/BLOCKED_BY_F1_1`.
+  concluídos a partir do desired-state commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`;
+  commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` e GitHub run
+  `31996516019` `PASS`; NODE-01 `NOT_EXECUTED/BLOCKED_BY_F1_1`.
 
 ## Artefatos canônicos criados
 
@@ -103,12 +103,13 @@ foi executado no host nesta atualização.
 - install exige versão/path/digest do índice APT autenticado e suprime autostart;
 - helper de rollback compara baseline, usa `find -xdev` nos dois roots literais,
   congela device/inode e recusa symlink, hardlink, mount, open path e drift;
-- harness GitHub-hosted implementa check sem mutação, apply, `changed=0`,
-  restart, invariância, recusas, rollback e cleanup, mas não foi executado;
-- suíte local: 55 unitários/negativos, 32 YAML, dois manifests, seis scripts com
+- harness GitHub-hosted executou check sem mutação, apply `changed=13`,
+  reconciliação/restart `changed=0`, invariância, sete recusas, rollback e cleanup
+  no run `31996516019` para o commit `fa66f10`;
+- suíte local/CI: 63 unitários/negativos, 34 YAML, dois manifests, seis scripts com
   sintaxe/ShellCheck e seis syntax-checks Ansible, todos `PASS`;
-- CI GitHub e lifecycle privilegiado descartável permanecem `PENDING`; VPS
-  permanece `NOT_EXECUTED` e o primeiro workload permanece `BLOCKED`.
+- CI GitHub e lifecycle privilegiado descartável estão `PASS`; VPS permanece
+  `NOT_EXECUTED` e o primeiro workload permanece `BLOCKED`.
 
 ## SLICE-002C — contrato repo-only
 
@@ -150,8 +151,8 @@ foi executado no host nesta atualização.
 - depois do apply exigir segunda execução `changed=0`, negações, modes e
   invariância de listeners/SSH/UFW/fail2ban/XRDP/LXD/units;
 - rollback só quando os namespaces persistentes estiverem vazios.
-- F1.2b real permanece bloqueado mesmo com desired state local pronto; sua CI
-  dinâmica também precisa passar no mesmo commit antes de qualquer preview.
+- F1.2b real permanece bloqueado mesmo com desired state e CI descartável
+  aprovados; F1.1 real precisa ser concluído antes de qualquer preview F1.2b.
 - F1.2c repo-only não autoriza workload: ADR, implementation e matriz dinâmica
   completa em IPv4/IPv6 continuam bloqueantes.
 

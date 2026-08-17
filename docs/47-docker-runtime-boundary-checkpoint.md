@@ -1,7 +1,7 @@
 # 47 — Docker runtime boundary F1.2b checkpoint
 
 Data: 2026-08-17
-Status: **REPO DESIRED STATE LOCAL-STATIC PASS — CI PENDING — REAL VPS NOT_EXECUTED**
+Status: **REPO DESIRED STATE + DISPOSABLE CI PASS — REAL VPS NOT_EXECUTED**
 Ambiente autorizado: **DEV/lab somente**
 
 ## Objetivo
@@ -19,10 +19,10 @@ serviço de plataforma, não cria workload e não satisfaz Q20/Q34.
 - por isso F1.2b pode avançar em código/CI, mas check/apply real está bloqueado;
 - F1.2c network enforcement bloqueia o primeiro container no NODE-01.
 
-O branch foi recuperado limpo em `d849caa0eafdc231d2782be602be1a2263758b7b`.
-Apply/rollback, role, preflight, pin APT, helper de árvore, harness e CI foram
-concluídos no commit local
-`7015c80759a797bcb141773b79cd9b95f6fbecf1`.
+O desired state nasceu no commit
+`7015c80759a797bcb141773b79cd9b95f6fbecf1`. Apply/rollback, role, preflight,
+pin APT, helper de árvore, harness e CI foram exercitados no commit publicado
+`fa66f1049bac5540a5b12219186a421cc39dcbc0`, run `31996516019`.
 
 Nenhuma inspeção nova ou mutação foi executada na VPS para produzir este
 checkpoint.
@@ -87,9 +87,9 @@ saem antes do daemon-reload; o marker é o último objeto removido.
 |---|---|
 | Decisão, pins e boundary | `RECORDED` |
 | Desired state integrado | `PASS_LOCAL_COMMIT_7015C80` |
-| Local static/fail-closed suite final | `PASS_55_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX` |
-| CI GitHub commit-bound | `PENDING` |
-| Disposable check/apply/changed=0/restart/rollback | `PENDING` |
+| Local static/fail-closed suite final | `PASS_63_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX` |
+| CI GitHub commit-bound | `PASS_RUN_31996516019_COMMIT_FA66F10` |
+| Disposable check/apply/changed=0/restart/rollback | `PASS` |
 | NODE-01 check/apply/changed=0/invariância | `NOT_EXECUTED` |
 | Q20/Q34 network enforcement | `BLOCKED_BY_F1_2C` |
 
@@ -98,7 +98,7 @@ host real, e instalação vazia não prova isolamento de workload.
 
 ## Próximo passo exato
 
-1. publicar explicitamente o commit e obter CI verde em VM descartável;
+1. preservar a evidência commit-bound `fa66f10`/run `31996516019`;
 2. manter NODE-01 bloqueado até F1.1 ser aplicado/reconciliado/checkpointed;
 3. executar somente o preview real F1.2b após novo checkpoint/human sudo;
 4. usar o contrato F1.2c `b4cbeb0` para selecionar o mecanismo em ADR e provar a

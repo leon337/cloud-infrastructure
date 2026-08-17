@@ -20,6 +20,8 @@ EXPECTED_MACHINE_ID_SHA256 = (
 F1_2B_DESIRED_STATE_COMMIT = (
     "7015c80759a797bcb141773b79cd9b95f6fbecf1"
 )
+F1_2B_TESTED_COMMIT = "fa66f1049bac5540a5b12219186a421cc39dcbc0"
+F1_2B_CI_RUN_ID = 31996516019
 F1_2C_CONTRACT_COMMIT = "b4cbeb066605754d538ff5abe2d294f0759d6f59"
 F1_2C_CONTRACT_PATH = "platform/network/f1-2c-contract.yaml"
 EXPECTED_DECISIONS = {
@@ -156,7 +158,7 @@ def f1_2b_gate_errors(
         if not str(value).startswith("PASS_"):
             errors.append(f"F1.2b local validation is no longer PASS at {location}")
 
-    pending_values = {
+    ci_values = {
         "current.github_actions": current_state["github_actions"],
         "current.disposable_vm_lifecycle": current_state[
             "disposable_vm_lifecycle"
@@ -187,9 +189,15 @@ def f1_2b_gate_errors(
             "disposable_vm_rollback"
         ],
     }
-    for location, value in pending_values.items():
-        if not str(value).startswith("PENDING"):
-            errors.append(f"F1.2b disposable CI was overclaimed at {location}")
+    for location, value in ci_values.items():
+        if not str(value).startswith("PASS"):
+            errors.append(f"F1.2b disposable CI lost PASS evidence at {location}")
+    if docker_baseline["git"].get("tested_commit") != F1_2B_TESTED_COMMIT:
+        errors.append("F1.2b tested commit differs from the green CI run")
+    if docker_baseline["git"].get("ci_run_id") != F1_2B_CI_RUN_ID:
+        errors.append("F1.2b CI run id differs from the recorded green run")
+    if docker_baseline["git"].get("ci_conclusion") != "PASS":
+        errors.append("F1.2b CI conclusion is no longer PASS")
 
     not_executed_values = {
         "components.real_vps_check_mode": component_state[

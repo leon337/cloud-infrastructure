@@ -1,6 +1,6 @@
 # SLICE-002B test results
 
-Status: **LOCAL STATIC PASS — CI PENDING — VPS NOT_EXECUTED**
+Status: **CI/DISPOSABLE PASS — VPS NOT_EXECUTED**
 
 ## Resultado corrente
 
@@ -8,27 +8,27 @@ Status: **LOCAL STATIC PASS — CI PENDING — VPS NOT_EXECUTED**
 |---|---|---|
 | Pins/checksums/fingerprints/licenças documentados | `RECORDED` | decisão e inventário |
 | Links Markdown locais | `PASS` | local não privilegiado |
-| YAML estrito | `PASS_32` | local não privilegiado |
+| YAML estrito | `PASS_34` | local não privilegiado |
 | State cross-check | `PASS_Q1_Q40_GATES_PRESERVED` | local não privilegiado |
 | Secret/history policy | `PASS` | local não privilegiado |
 | Diff whitespace | `PASS` | local não privilegiado |
-| Unitários/negativos | `PASS_55` | local não privilegiado |
+| Unitários/negativos | `PASS_63` | local não privilegiado |
 | Sintaxe shell | `PASS_6` | Bash/sh parse local |
 | ShellCheck | `PASS_6_V0_11_0` | binário oficial verificado, extraído só em `/tmp` e removido |
 | Ansible syntax | `PASS_6_CORE_2_21_3` | wheel oficial verificado, extraído só em `/tmp` e removido |
-| GitHub Actions | `PENDING` | nenhum run GitHub commit-bound registrado |
-| VM descartável | `PENDING` | nenhuma alegação de apply |
+| GitHub Actions | `PASS_31996516019` | commit `fa66f1049bac5540a5b12219186a421cc39dcbc0` |
+| VM descartável | `PASS` | check limpo, apply `changed=13`, reconcilições `changed=0`, sete recusas e rollback limpo |
 | NODE-01 | `NOT_EXECUTED` | bloqueado por F1.1 |
 
-O código de runtime exercitado corresponde ao desired-state commit
-`7015c80759a797bcb141773b79cd9b95f6fbecf1`; a suíte inclui também o gate de
-coerência desta camada de checkpoint/estado. Nenhum playbook foi executado
-contra inventário/host; somente `--syntax-check`. CI permanecerá `PENDING` até
-existir run verde ligado ao mesmo commit publicado.
+O desired state nasceu no commit `7015c80759a797bcb141773b79cd9b95f6fbecf1` e
+o delta final exercitado corresponde ao commit `fa66f1049bac5540a5b12219186a421cc39dcbc0`.
+O run commit-bound `31996516019` passou; nenhum playbook foi executado contra o
+inventário DEV ou NODE-01.
 
 Os unitários do helper cobrem symlink, hardlink, path extra, open file por
 processo, troca de inode após freeze e remoção bottom-up limitada às duas raízes
-temporárias. Isso não substitui o lifecycle privilegiado na VM descartável.
+temporárias. A CI complementa esses unitários com o lifecycle privilegiado na
+VM descartável; nenhum dos dois substitui prova no NODE-01.
 
 ## Contrato do teste descartável
 

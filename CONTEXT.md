@@ -107,13 +107,15 @@ rollback e cleanup. Os resultados anteriores da fixture são somente históricos
 Nada foi aplicado à VPS real; F1.1 permanece `PARTIAL/NOT_APPLIED`.
 
 Em paralelo ao gate real F1.1, F1.2b Docker boundary concluiu desired state,
-apply/rollback, pin APT, helper de árvore e harness no commit local
+apply/rollback, pin APT, helper de árvore e harness no desired-state commit
 `7015c80759a797bcb141773b79cd9b95f6fbecf1`. A validação local não privilegiada
-passou com 55 testes, ShellCheck em seis scripts e syntax-check de seis playbooks.
-GitHub CI/VM descartável continuam `PENDING`; nenhum playbook foi executado
-contra host/inventory, Docker/containerd continuam ausentes no último baseline
-real e o apply F1.2b continua bloqueado por F1.1. Nenhum workload é autorizado
-antes de F1.2c.
+passou com 63 testes, ShellCheck em seis scripts e syntax-check de seis playbooks.
+O commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` passou no GitHub
+Actions run `31996516019`: check sem mutação, apply `changed=13`, reconciliação e
+restart `changed=0`, sete recusas, rollback e cleanup. Isso ocorreu somente na VM
+descartável; Docker/containerd continuam ausentes no último baseline real e o
+apply F1.2b continua bloqueado por F1.1. Nenhum workload é autorizado antes de
+F1.2c.
 
 O menor avanço independente seguinte criou o contrato repo-only F1.2c em
 `platform/network/f1-2c-contract.yaml`, commit

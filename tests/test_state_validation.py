@@ -195,8 +195,14 @@ class StateCrosscheckTests(unittest.TestCase):
         components = copy.deepcopy(self.components)
         components["platform_components"]["container_runtime"]["validation"][
             "ci"
-        ] = "PASS_WITHOUT_RUN"
-        cases.append(("ci", {"components": components}, "disposable CI"))
+        ] = "PENDING_WITHOUT_RUN"
+        cases.append(("ci", {"components": components}, "lost PASS"))
+
+        docker_baseline = copy.deepcopy(self.docker_baseline)
+        docker_baseline["git"]["tested_commit"] = "0" * 40
+        cases.append(
+            ("tested-commit", {"docker_baseline": docker_baseline}, "tested commit")
+        )
 
         docker_baseline = copy.deepcopy(self.docker_baseline)
         docker_baseline["validation"]["real_vps_apply"] = "PASS"
