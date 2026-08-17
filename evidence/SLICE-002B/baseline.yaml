@@ -163,6 +163,15 @@ validation:
     node_01: OK_43_CHANGED_SIMULATED_1_FAILED_0_UNREACHABLE_0
   real_vps_check_mode_log_sha256: 425ad91cc3d81b84fe7218bea9064a21efd2b5372c6ebed6e82280b1ffa0ef4b
   real_vps_post_check_mode_invariance: PASS_AT_2026_08_17T08_38_33Z
+  post_preview_checkpoint_ci_attempt:
+    run_id: 32011753061
+    commit: 01839c2716fe813e6a723216d59a55b2942578c2
+    static_validation: PASS
+    disposable_integration: FAIL_HOSTED_RUNNER_AUXILIARY_PCI_INTERFACE_HOT_ADD
+    docker_managed_interface_observed: false
+    real_vps_mutation: false
+    remediation: FILTER_ONLY_GITHUB_HOSTED_ENP_DIGITS_S_DIGITS_KEEP_DOCKER_ROUTE_FIREWALL_GATES
+    remediation_ci: PENDING
   real_vps_apply: NOT_EXECUTED
   real_vps_idempotence: NOT_EXECUTED
   real_vps_post_apply_invariance: NOT_EXECUTED

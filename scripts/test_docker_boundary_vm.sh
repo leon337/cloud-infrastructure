@@ -214,11 +214,17 @@ expect_refusal() {
 capture_network_state() {
   local prefix=$1
 
-  # Interface flags/qdisc on a hosted runner may change transiently without an
-  # interface being added. The contract is the stable, exact interface set;
-  # routes, forwarding, listeners and firewall state are checked separately.
+  # Interface flags/qdisc on a hosted runner may change transiently. Azure may
+  # also hot-add a GitHub-hosted auxiliary PCI interface named enP<digits>s<digits>
+  # after job start. Docker does not create that namespace. Ignore only that
+  # exact hosted-runner-only name. The contract remains the stable, exact interface set
+  # after that provider normalization; docker0/br-* remain hard
+  # failures, while routes, forwarding, listeners and firewall stay exact.
   ip -o link show |
-    awk -F': ' '{name=$2; sub(/@.*/, "", name); print name}' |
+    awk -F': ' '{name=$2; sub(/@.*/, "", name); \
+      if (ENVIRON["GITHUB_ACTIONS"] == "true" && \
+          ENVIRON["RUNNER_ENVIRONMENT"] == "github-hosted" && \
+          name ~ /^enP[0-9]+s[0-9]+$/) next; print name}' |
     LC_ALL=C sort >"$prefix.interfaces"
   ip -4 route show table all >"$prefix.routes4"
   ip -6 route show table all >"$prefix.routes6"
@@ -283,6 +289,8 @@ compare_network_invariants() {
   fi
   ! grep -Eiq 'table (ip|ip6|inet) docker-bridges' "$after.nft" ||
     fail experimental_native_nftables_backend_detected
+  ! grep -Eq '^(docker0|br-[[:alnum:]_.-]+)$' "$after.interfaces" ||
+    fail docker_managed_interface_detected
 }
 
 cleanup_foundation_fixture() {

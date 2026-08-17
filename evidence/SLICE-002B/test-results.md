@@ -97,10 +97,17 @@ marker e lock ausentes; nenhum listener 2375/2376; serviços SSH/UFW/fail2ban,
 XRDP/sesman/LightDM ativos; LXD service/socket inativos. O apply continua
 `NOT_EXECUTED` e separado do preview.
 
+O primeiro CI do checkpoint (`32011753061`, commit `01839c2`) passou static mas
+recusou a VM porque a infraestrutura GitHub/Azure adicionou durante o job a NIC
+auxiliar `enP58396s1`. Não houve interface Docker. O harness passou a ignorar
+somente, em GitHub-hosted runner, o padrão auxiliar PCI `enP<digits>s<digits>`;
+`docker0`, `br-*`, routes, forwarding, listeners e firewall continuam gates
+exatos. A VPS não foi tocada por essa falha; a nova CI está pendente.
+
 ## Contrato do NODE-01
 
 F1.1 já possui check/apply, idempotência, invariância e checkpoint reconciliados.
-Depois do CI da correção, o NODE-01 pode executar somente check mode e deve provar
-baseline/delta de listeners, interfaces, routes, sysctls,
-UFW/rulesets, grupos, services e Workstation. Instalação sem workload não prova
-Q20/Q34; o primeiro container permanece bloqueado por F1.2c.
+O check mode F1.2b passou; depois da nova CI, o NODE-01 pode executar somente o
+apply vazio, seguido de idempotência e comparação de listeners, interfaces,
+routes, sysctls, UFW/rulesets, grupos, services e Workstation. Instalação sem
+workload não prova Q20/Q34; o primeiro container permanece bloqueado por F1.2c.
