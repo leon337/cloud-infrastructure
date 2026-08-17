@@ -213,7 +213,12 @@ expect_refusal() {
 capture_network_state() {
   local prefix=$1
 
-  ip -o link show >"$prefix.interfaces"
+  # Interface flags/qdisc on a hosted runner may change transiently without an
+  # interface being added. The contract is the stable, exact interface set;
+  # routes, forwarding, listeners and firewall state are checked separately.
+  ip -o link show |
+    awk -F': ' '{name=$2; sub(/@.*/, "", name); print name}' |
+    LC_ALL=C sort >"$prefix.interfaces"
   ip -4 route show table all >"$prefix.routes4"
   ip -6 route show table all >"$prefix.routes6"
   sysctl -n net.ipv4.ip_forward >"$prefix.forward4"
