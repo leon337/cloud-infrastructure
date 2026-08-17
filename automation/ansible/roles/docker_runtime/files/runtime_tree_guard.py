@@ -22,12 +22,15 @@ RUNTIME_ROOTS = (
     pathlib.Path("/var/lib/docker"),
     pathlib.Path("/var/lib/containerd"),
 )
+DOCKER_BACKING_BLOCK_DEVICE = pathlib.Path(
+    "/var/lib/docker/volumes/backingFsBlockDev"
+)
 STATE_ROOT = pathlib.Path("/var/lib/cloud-platform/runtime-boundaries/docker")
 BASELINE_PATH = STATE_ROOT / "runtime-tree-baseline.json"
 REMOVAL_PATH = STATE_ROOT / "runtime-tree-removal.json"
 FIND = "/usr/bin/find"
 FINDMNT = "/usr/bin/findmnt"
-SCHEMA = 1
+SCHEMA = 2
 ALLOWED_ACTIONS = {"snapshot", "verify", "prepare-removal", "remove"}
 
 
@@ -40,6 +43,8 @@ def _kind(mode: int, path: pathlib.Path) -> str:
         return "directory"
     if stat.S_ISREG(mode):
         return "file"
+    if stat.S_ISBLK(mode) and path == DOCKER_BACKING_BLOCK_DEVICE:
+        return "block_device"
     raise GuardError(
         "runtime tree contains a non-regular entry: "
         f"path={path} type_bits={stat.S_IFMT(mode):#o}"
@@ -115,12 +120,20 @@ def scan_runtime_trees(
             item_kind = _kind(item_stat.st_mode, path)
             if item_stat.st_dev != root_device:
                 raise GuardError(f"runtime entry crossed a device boundary: {path}")
+            if (
+                item_kind == "block_device"
+                and item_stat.st_rdev != root_device
+            ):
+                raise GuardError(
+                    "Docker backing block device does not identify its runtime "
+                    f"filesystem: {path}"
+                )
             if item_stat.st_uid != expected_uid or item_stat.st_gid != expected_gid:
                 raise GuardError(f"runtime entry is not owned by the expected identity: {path}")
             if item_stat.st_mode & 0o022:
                 raise GuardError(f"runtime entry is group/other writable: {path}")
-            if item_kind == "file" and item_stat.st_nlink != 1:
-                raise GuardError(f"runtime file has multiple hardlinks: {path}")
+            if item_kind in {"file", "block_device"} and item_stat.st_nlink != 1:
+                raise GuardError(f"runtime unlink target has multiple hardlinks: {path}")
             _require_not_mountpoint(path, findmnt_binary)
             entries.append(
                 {
@@ -132,13 +145,14 @@ def scan_runtime_trees(
                     "mode": stat.S_IMODE(item_stat.st_mode),
                     "device": item_stat.st_dev,
                     "inode": item_stat.st_ino,
+                    "rdev": item_stat.st_rdev,
                 }
             )
     return sorted(entries, key=lambda item: item["path"])
 
 
 def _stable_entries(entries: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    stable_keys = ("path", "root", "kind", "uid", "gid", "mode")
+    stable_keys = ("path", "root", "kind", "uid", "gid", "mode", "rdev")
     return [
         {key: entry[key] for key in stable_keys}
         for entry in sorted(entries, key=lambda item: item["path"])
@@ -256,6 +270,7 @@ def _validate_manifest_shape(
         "uid",
         "gid",
         "mode",
+        "rdev",
     }
     if removal:
         expected_entry_keys.update({"device", "inode"})
@@ -263,12 +278,19 @@ def _validate_manifest_shape(
     for entry in entries:
         if not isinstance(entry, dict) or set(entry) != expected_entry_keys:
             raise GuardError("manifest entry keys differ from the contract")
-        if entry["kind"] not in {"directory", "file"}:
+        if entry["kind"] not in {"directory", "file", "block_device"}:
             raise GuardError("manifest entry has an unsupported type")
         path = pathlib.Path(entry["path"])
         root = pathlib.Path(entry["root"])
         if root not in roots or not _is_within(path, root):
             raise GuardError("manifest entry escapes a literal runtime root")
+        if (
+            entry["kind"] == "block_device"
+            and path != DOCKER_BACKING_BLOCK_DEVICE
+        ):
+            raise GuardError("manifest contains an unreviewed block device")
+        if entry["kind"] != "block_device" and entry["rdev"] != 0:
+            raise GuardError("regular runtime entry has a device identity")
         if entry["path"] in seen:
             raise GuardError("manifest contains a duplicate path")
         seen.add(entry["path"])
@@ -410,11 +432,12 @@ def remove_from_manifest(
             or item_stat.st_uid != entry["uid"]
             or item_stat.st_gid != entry["gid"]
             or stat.S_IMODE(item_stat.st_mode) != entry["mode"]
+            or item_stat.st_rdev != entry["rdev"]
         ):
             raise GuardError(f"runtime entry changed after manifest freeze: {path}")
-        if item_kind == "file":
+        if item_kind in {"file", "block_device"}:
             if item_stat.st_nlink != 1:
-                raise GuardError(f"runtime file gained a hardlink: {path}")
+                raise GuardError(f"runtime unlink target gained a hardlink: {path}")
             path.unlink()
         else:
             path.rmdir()

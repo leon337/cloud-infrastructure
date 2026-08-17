@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import pathlib
+import stat
 import tempfile
 import unittest
 
@@ -102,6 +103,20 @@ class DockerRuntimeTreeGuardTests(unittest.TestCase):
         with self.assertRaisesRegex(runtime_tree_guard.GuardError, "hardlinks"):
             self._snapshot()
         self.assertEqual(outside.read_bytes(), b"preserve")
+
+    def test_only_literal_docker_backing_block_device_is_allowlisted(self) -> None:
+        self.assertEqual(
+            runtime_tree_guard._kind(
+                stat.S_IFBLK | 0o600,
+                runtime_tree_guard.DOCKER_BACKING_BLOCK_DEVICE,
+            ),
+            "block_device",
+        )
+        with self.assertRaisesRegex(runtime_tree_guard.GuardError, "non-regular"):
+            runtime_tree_guard._kind(
+                stat.S_IFBLK | 0o600,
+                pathlib.Path("/var/lib/containerd/unreviewed-device"),
+            )
 
     def test_prepare_and_remove_consumes_only_frozen_exact_paths(self) -> None:
         nested = self.docker_root / "network" / "files"
