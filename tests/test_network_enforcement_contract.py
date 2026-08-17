@@ -57,6 +57,11 @@ class NetworkEnforcementContractTests(unittest.TestCase):
         self.assertEqual(selected["policy_entry_chain"], "DOCKER-USER")
         self.assertEqual(selected["owned_chain"], "CLOUD-PLATFORM-FWD")
         self.assertEqual(selected["workload_network_mode"], "internal")
+        self.assertFalse(selected["inter_container_communication"])
+        self.assertEqual(
+            selected["host_ip_forwarding"],
+            "enabled_only_with_default_drop_and_explicit_grants",
+        )
         self.assertEqual(selected["egress"], "explicit_http_connect_proxy")
         self.assertTrue(scope["address_pools"]["collision_check_required"])
 

@@ -221,12 +221,12 @@ platform_components:
     technology: Docker_iptables_nft_DOCKER_USER_internal_bridges_proxy_egress
     selected_version: F1_2C_CONTRACT_V1
     observed_version: NOT_APPLIED
-    lifecycle: TECHNOLOGY_ADR_ACCEPTED_IMPLEMENTATION_AND_DYNAMIC_NEGATIVE_TESTS_REQUIRED_BEFORE_FIRST_WORKLOAD
+    lifecycle: TECHNOLOGY_ADR_AND_POLICY_COMPILER_LOCAL_PASS_APPLY_AND_DYNAMIC_TESTS_PENDING
     contract:
       path: platform/network/f1-2c-contract.yaml
       commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
       status: TECHNOLOGY_SELECTED_REPO_ONLY
-      local_tests: PASS_4
+      local_tests: PASS_8_CONTRACT_AND_COMPILER
       address_families:
         - ipv4
         - ipv6

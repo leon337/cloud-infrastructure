@@ -39,10 +39,13 @@ scope:
     owned_chain: CLOUD-PLATFORM-FWD
     network_driver: bridge
     workload_network_mode: internal
+    inter_container_communication: false
+    workload_identity_cardinality: one_execution_identity_per_bridge
+    host_ip_forwarding: enabled_only_with_default_drop_and_explicit_grants
     dns: controlled_per_scope_view
     egress: explicit_http_connect_proxy
   decision: decisions/DEC-008-network-enforcement-docker-user-proxy-egress.md
-  implementation_status: PENDING_REQUIRES_DISPOSABLE_PROOF
+  implementation_status: POLICY_COMPILER_LOCAL_PASS_APPLY_AND_DISPOSABLE_PROOF_PENDING
   address_pools:
     ipv4_candidate: 10.240.0.0/16
     ipv6_reserved_not_enabled: "fd42:434c:4f55::/48"

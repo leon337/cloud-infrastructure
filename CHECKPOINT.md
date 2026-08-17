@@ -123,7 +123,8 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
   host/Management/metadata/control/lateral, sharing por grant e egress por
   profile;
 - DEC-008 seleciona `DOCKER-USER`, bridges internas, DNS por escopo e egress
-  proxy-only; implementação e prova descartável continuam pendentes;
+  proxy-only; compilador fail-closed passou localmente apenas com input de
+  exemplo, enquanto apply e prova descartável continuam pendentes;
 - quatro testes específicos e suíte integrada de 60 testes/34 YAML passaram;
 - não há ruleset executável, harness dinâmico, network namespace, probe ou
   mutação real; implementação/integração permanecem `PENDING` e NODE-01

@@ -9,10 +9,11 @@ prova dinâmica ou autorização de workload.
 | Etapa | Estado |
 |---|---|
 | Contrato machine-readable Q20/Q34 | `PASS_LOCAL_COMMIT_B4CBEB0` |
-| Testes específicos do contrato | `PASS_4` |
-| Suíte integrada do repositório | `PASS_60` |
+| Testes de contrato + compilador | `PASS_8` |
+| Suíte integrada do repositório | `PASS_70` |
 | ADR de tecnologia | `ACCEPTED_DEC_008` |
-| Ruleset/DNS/egress implementation | `NOT_IMPLEMENTED` |
+| Compilador fail-closed | `PASS_LOCAL_EXAMPLE_ONLY` |
+| Apply/DNS/egress implementation | `NOT_IMPLEMENTED` |
 | Integração descartável IPv4/IPv6 | `PENDING` |
 | NODE-01 | `NOT_EXECUTED` |
 | Primeiro workload | `BLOCKED` |

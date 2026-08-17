@@ -1,0 +1,42 @@
+api_version: cloud-platform/v1alpha1
+kind: NetworkPolicyPlan
+metadata:
+  environment: DEV_LAB
+  evaluation_time_utc: "2026-08-17T12:00:00Z"
+  status: EXAMPLE_NOT_OPERATIONAL
+addressing:
+  ipv4_pool: 10.240.0.0/16
+  protected_ipv4:
+    - 10.0.0.0/8
+    - 100.64.0.0/10
+    - 169.254.0.0/16
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+  protected_ipv6:
+    - "::1/128"
+    - "fc00::/7"
+    - "fe80::/10"
+sandboxes:
+  - identity: tenant-a.project-a.mission-a.sandbox-none
+    interface: cp00000001
+    subnet_ipv4: 10.240.1.0/24
+    gateway_ipv4: 10.240.1.1
+    egress_profile: none
+  - identity: tenant-a.project-a.mission-a.sandbox-dev
+    interface: cp00000002
+    subnet_ipv4: 10.240.2.0/24
+    gateway_ipv4: 10.240.2.1
+    egress_profile: development-default
+  - identity: platform.shared.registry
+    interface: cp00000003
+    subnet_ipv4: 10.240.3.0/24
+    gateway_ipv4: 10.240.3.1
+    egress_profile: restricted
+shared_service_grants:
+  - grant_id: grant-registry-read
+    source_interface: cp00000002
+    destination_interface: cp00000003
+    destination_ipv4: 10.240.3.10
+    protocol: tcp
+    destination_port: 5000
+    valid_until_utc: "2026-08-18T12:00:00Z"

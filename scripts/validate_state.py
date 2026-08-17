@@ -363,6 +363,10 @@ def f1_2c_gate_errors(
         errors.append("F1.2c selected technology differs from DEC-008")
     if network_baseline["contract"]["executable_rules_present"] is not False:
         errors.append("F1.2c evidence claims executable rules")
+    if network_baseline["contract"].get("policy_compiler_present") is not True:
+        errors.append("F1.2c policy compiler evidence is missing")
+    if network_baseline["contract"].get("policy_compiler_operational_input_allowed") is not False:
+        errors.append("F1.2c compiler prematurely allows operational input")
 
     local_values = {
         "current": current_state["local_validation"],

@@ -32,10 +32,10 @@ implementation:
     real_gate: DONE_EMPTY_RUNTIME_FIRST_WORKLOAD_BLOCKED_BY_F1_2C
     first_workload: BLOCKED_BY_F1_2C
   f1_2c_repo_only:
-    status: TECHNOLOGY_ADR_ACCEPTED_IMPLEMENTATION_AND_DYNAMIC_PROOF_PENDING
+    status: TECHNOLOGY_ADR_AND_POLICY_COMPILER_LOCAL_PASS_APPLY_AND_DYNAMIC_PROOF_PENDING
     contract_path: platform/network/f1-2c-contract.yaml
     contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
-    local_validation: PASS_4_CONTRACT_TESTS
+    local_validation: PASS_8_CONTRACT_AND_COMPILER_TESTS
     technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
     technology_adr: ACCEPTED_DEC_008
     disposable_integration: PENDING_NOT_RUN

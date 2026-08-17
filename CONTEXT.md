@@ -130,9 +130,10 @@ O menor avanço independente seguinte criou o contrato repo-only F1.2c em
 `b4cbeb066605754d538ff5abe2d294f0759d6f59`. Quatro testes específicos e a
 suíte integrada de 60 testes/34 YAML passaram. O contrato fixa deny-by-default,
 IPv4/IPv6, zonas protegidas, grants, perfis e evidência requerida, mas mantém
-DEC-008 aceita o mecanismo `DOCKER-USER`/bridges internas/egress proxy-only;
-implementação e integração continuam `PENDING`, NODE-01 `NOT_EXECUTED` e o
-primeiro workload `BLOCKED`. Nenhum ruleset foi aplicado.
+DEC-008 aceita o mecanismo `DOCKER-USER`/bridges internas/egress proxy-only. O
+compilador estrito de exemplo passou localmente; apply e integração continuam
+`PENDING`, NODE-01 `NOT_EXECUTED` e o primeiro workload `BLOCKED`. Nenhum
+ruleset foi aplicado.
 
 O próximo passo é implementar e provar F1.2c em ambiente descartável.
 O primeiro workload continua bloqueado; Management Network, produção e rotação

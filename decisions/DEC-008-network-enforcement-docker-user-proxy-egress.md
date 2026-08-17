@@ -40,8 +40,12 @@ Selecionar a alternativa 5:
 - cada sandbox recebe bridge determinística própria, nunca rede compartilhada
   implícita; somente gateways de plataforma podem participar de mais de uma
   rede, sob grant explícito e auditável;
-- bridges de workload nascem `internal`; não há forwarding/NAT direto para a
-  Internet e nenhuma porta pode ser publicada pelo executor;
+- bridges de workload nascem `internal` e com inter-container communication
+  desabilitada; não há forwarding/NAT direto para a Internet e nenhuma porta
+  pode ser publicada pelo executor;
+- cada bridge representa uma única identidade de execução; o host habilita IP
+  forwarding somente junto do default-drop e grants explícitos, sem forwarding
+  genérico entre interfaces não pertencentes à plataforma;
 - `none` não recebe DNS nem proxy; `restricted` recebe DNS controlado e proxy
   com destinos explícitos; `development-default` recebe DNS controlado e proxy
   HTTP(S) com policy versionada;

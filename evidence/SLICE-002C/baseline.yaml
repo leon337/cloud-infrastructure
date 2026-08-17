@@ -2,7 +2,7 @@ schema_version: 1
 slice: SLICE-002C
 classification: SANITIZED_REPO_CONTRACT_EVIDENCE_NOT_OPERATIONAL
 generated_at_utc: "2026-08-17T03:40:41Z"
-status: TECHNOLOGY_ADR_ACCEPTED_IMPLEMENTATION_AND_DYNAMIC_PROOF_PENDING
+status: TECHNOLOGY_ADR_AND_POLICY_COMPILER_LOCAL_PASS_APPLY_AND_DYNAMIC_PROOF_PENDING
 git:
   repository: leon337/cloud-infrastructure
   working_branch: codex/mission-001-foundations-f1-2b-preparation
@@ -26,14 +26,16 @@ contract:
   operational_state: NOT_APPLIED
   technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
   executable_rules_present: false
+  policy_compiler_present: true
+  policy_compiler_operational_input_allowed: false
   address_families:
     - ipv4
     - ipv6
   first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
 validation:
-  local_contract_tests: PASS_4
-  integrated_repo_tests: PASS_60
-  yaml_documents: PASS_34
+  local_contract_tests: PASS_8_CONTRACT_AND_COMPILER
+  integrated_repo_tests: PASS_70
+  yaml_documents: PASS_35
   state_crosscheck: PASS_F1_1_F1_2B_F1_2C_GATES_PRESERVED
   shell_syntax: PASS_6_UNCHANGED
   technology_adr: ACCEPTED_DEC_008
