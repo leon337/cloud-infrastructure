@@ -5,8 +5,8 @@
     state: stopped
     enabled: false
   loop:
-    - docker.service
     - docker.socket
+    - docker.service
     - containerd.service
 
 - name: Prove Docker runtime processes stopped
@@ -22,6 +22,31 @@
     that:
       - platform_docker_rollback_stopped_processes.rc == 1
     fail_msg: A Docker/containerd process survived stop; refusing deletion.
+
+- name: Reinspect the exact Docker socket after all runtime processes stop
+  ansible.builtin.stat:
+    path: /run/docker.sock
+    follow: false
+  register: platform_docker_rollback_stopped_socket
+
+- name: Require the stopped socket to retain the reviewed provenance
+  ansible.builtin.assert:
+    that:
+      - not platform_docker_rollback_stopped_socket.stat.exists or
+        platform_docker_rollback_stopped_socket.stat.issock
+      - not platform_docker_rollback_stopped_socket.stat.exists or
+        platform_docker_rollback_stopped_socket.stat.uid == 0
+      - not platform_docker_rollback_stopped_socket.stat.exists or
+        platform_docker_rollback_stopped_socket.stat.gid == 0
+      - not platform_docker_rollback_stopped_socket.stat.exists or
+        platform_docker_rollback_stopped_socket.stat.mode == '0600'
+    fail_msg: The stopped Docker socket changed provenance; refusing unlink.
+
+- name: Unlink only the exact stopped Docker socket
+  ansible.builtin.command:
+    argv: [unlink, --, /run/docker.sock]
+  changed_when: true
+  when: platform_docker_rollback_stopped_socket.stat.exists
 
 - name: Reverify the stopped runtime tree against the empty baseline
   ansible.builtin.script:

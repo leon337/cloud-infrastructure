@@ -230,6 +230,11 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
         combined = rollback + mutate
         self.assertIn("runtime_tree_guard.py prepare-removal", mutate)
         self.assertIn("runtime_tree_guard.py remove", mutate)
+        self.assertLess(
+            mutate.index("- docker.socket"), mutate.index("- docker.service")
+        )
+        self.assertIn("argv: [unlink, --, /run/docker.sock]", mutate)
+        self.assertIn("stat.issock", mutate)
         self.assertIn("autoremove: false", mutate)
         self.assertNotIn("autoremove: true", combined)
         self.assertNotIn("rm -rf", combined)
