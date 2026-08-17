@@ -152,6 +152,16 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
             "install -d -o root -g root -m 0755 /usr/local/libexec",
             self.bootstrap,
         )
+
+    def test_inbox_parent_allows_only_ubuntu_traversal(self):
+        self.assertIn(
+            'install -d -o root -g ubuntu -m 0710 "$STATE_ROOT"',
+            self.bootstrap,
+        )
+        self.assertIn(
+            'install -d -o ubuntu -g ubuntu -m 0700 "$STATE_ROOT/inbox"',
+            self.bootstrap,
+        )
         self.assertIn(
             "if [[ $libexec_created == true ]]; then rmdir /usr/local/libexec",
             self.bootstrap,

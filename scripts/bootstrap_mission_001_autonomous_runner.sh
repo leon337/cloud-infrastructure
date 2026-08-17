@@ -107,7 +107,8 @@ initial_sha=$(git -C "$workdir/repository" rev-parse HEAD)
 
 install -d -o root -g root -m 0755 /usr/local/libexec
 install -d -o root -g root -m 0755 /opt/codex-mission-001
-install -d -o root -g root -m 0750 "$STATE_ROOT" "$LOG_ROOT"
+install -d -o root -g ubuntu -m 0710 "$STATE_ROOT"
+install -d -o root -g root -m 0750 "$LOG_ROOT"
 install -d -o ubuntu -g ubuntu -m 0700 "$STATE_ROOT/inbox"
 mv "$workdir/repository" "$REPO_ROOT"
 chown -R root:root "$REPO_ROOT"

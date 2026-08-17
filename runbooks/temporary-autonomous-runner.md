@@ -18,6 +18,8 @@ SSH válida da chave de controlador já registrada (namespace exclusivo da miss�
 arquivo regular `ubuntu:ubuntu 0600`, link count 1, máximo 64 MiB, branch exata,
 worktree limpa, produção bloqueada e rotação deferred. O snapshot instalado volta a ser
 `root:root` e não gravável por grupo/outros.
+O diretório-pai de estado é `root:ubuntu 0710`: `ubuntu` pode atravessar apenas
+até sua caixa `0700`, mas não listar nem modificar o estado root-owned.
 
 Cada execução registra timestamp, operação, Git SHA e resultado em
 `/var/log/codex-mission-001/runner.log` e no journal. Um timer absoluto remove o
