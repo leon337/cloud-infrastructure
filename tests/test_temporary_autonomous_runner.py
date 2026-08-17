@@ -125,6 +125,14 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertNotIn("sshd_config", self.bootstrap)
         self.assertNotIn("credential rotation", self.bootstrap.lower())
 
+    def test_status_and_check_fail_explicitly_on_forbidden_runtime_state(self):
+        self.assertIn(
+            "if systemctl is-active --quiet snap.lxd.daemon.service; then return 1; fi",
+            self.runner,
+        )
+        self.assertIn("if ip -o link show", self.runner)
+        self.assertIn("if ss -Hlnptu", self.runner)
+
     def test_no_password_capture_or_persistence_mechanism_exists(self):
         lowered = self.bootstrap.lower()
         for forbidden in (

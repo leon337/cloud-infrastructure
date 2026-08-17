@@ -196,8 +196,8 @@ status_operation() {
   printf 'GIT_SHA=%s\n' "$sha"
   printf 'EXPIRES_EPOCH=%s\n' "$expires_epoch"
   systemctl is-active ssh ufw fail2ban xrdp xrdp-sesman docker containerd
-  ! systemctl is-active --quiet snap.lxd.daemon.service
-  ! systemctl is-active --quiet snap.lxd.daemon.unix.socket
+  if systemctl is-active --quiet snap.lxd.daemon.service; then return 1; fi
+  if systemctl is-active --quiet snap.lxd.daemon.unix.socket; then return 1; fi
   [[ $(stat -c '%U:%G:%a' /var/run/docker.sock) == root:root:600 ]]
 }
 
@@ -211,8 +211,9 @@ check_operation() {
     iptables -C DOCKER-USER -j CLOUD-PLATFORM-FWD
   fi
   [[ $(sysctl -n net.ipv6.conf.all.forwarding) == 0 ]]
-  ! ip -o link show | awk -F': ' '{print $2}' | grep -Eq '^(docker0|br-|cp[0-9a-f]{8})(@|$)'
-  ! ss -Hlnptu | grep -Eq '(^|:)(2375|2376)([[:space:]]|$)'
+  if ip -o link show | awk -F': ' '{print $2}' |
+      grep -Eq '^(docker0|br-|cp[0-9a-f]{8})(@|$)'; then return 1; fi
+  if ss -Hlnptu | grep -Eq '(^|:)(2375|2376)([[:space:]]|$)'; then return 1; fi
   printf 'MISSION_RUNNER_CHECK=PASS\n'
 }
 
