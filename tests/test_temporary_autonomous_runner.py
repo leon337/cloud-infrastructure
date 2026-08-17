@@ -194,6 +194,7 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn("GIT_CONFIG_COUNT=1", self.runner)
         self.assertIn("GIT_CONFIG_KEY_0=safe.directory", self.runner)
         self.assertIn('GIT_CONFIG_VALUE_0="$test_root"', self.runner)
+        self.assertIn("PYTHON=/usr/bin/python3", self.runner)
         self.assertNotIn("safe.directory '*'", self.runner)
 
     def test_reviewed_apply_updates_only_the_exact_known_runner(self):
@@ -201,11 +202,11 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
             ROOT / "automation" / "mission-001" / "operations" / "apply"
         ).read_text(encoding="utf-8")
         self.assertIn(
-            "OLD_RUNNER_SHA256=c388e8cb3b37e08d5cffe86f3330fe1f207af6c150e9e1f80b5f185ebadd3645",
+            "OLD_RUNNER_SHA256=59d3cd7d14a64727d06bf23a142f26299754710a18dc76509729decc62492958",
             operation,
         )
         self.assertIn(
-            "DESIRED_RUNNER_SHA256=59d3cd7d14a64727d06bf23a142f26299754710a18dc76509729decc62492958",
+            "DESIRED_RUNNER_SHA256=4da7430f033aa8f0580205ee117a3d9d32b44f1d38bc2b386589f3ecce710d06",
             operation,
         )
         self.assertIn("install -o root -g root -m 0755", operation)

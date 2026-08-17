@@ -251,6 +251,7 @@ test_operation() (
   runuser -u ubuntu -- env \
     PATH=/home/ubuntu/cloud-infrastructure/.venv/bin:/usr/bin:/bin \
     HOME=/home/ubuntu \
+    PYTHON=/usr/bin/python3 \
     GIT_CONFIG_COUNT=1 \
     GIT_CONFIG_KEY_0=safe.directory \
     GIT_CONFIG_VALUE_0="$test_root" \
