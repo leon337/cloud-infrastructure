@@ -23,6 +23,17 @@ F1_2B_DESIRED_STATE_COMMIT = (
 F1_2B_TESTED_COMMIT = "fa66f1049bac5540a5b12219186a421cc39dcbc0"
 F1_2B_CI_RUN_ID = 31996516019
 F1_2B_REAL_CHECK_MODE = "PASS_AT_2026_08_17T08_37_46Z_NO_MUTATION"
+F1_2B_REAL_APPLY = (
+    "PASS_AT_2026_08_17T09_25_38Z_CHANGED_13_FAILED_0_UNREACHABLE_0"
+)
+F1_2B_REAL_IDEMPOTENCE = (
+    "PASS_AT_2026_08_17T10_16_20Z_CHANGED_0_FAILED_0_UNREACHABLE_0"
+)
+F1_2B_REAL_RESTART = "PASS_AT_2026_08_17T11_26_44Z"
+F1_2B_REAL_POST_RESTART = (
+    "PASS_AT_2026_08_17T12_07_29Z_CHANGED_0_FAILED_0_UNREACHABLE_0"
+)
+F1_2B_REAL_INVARIANCE = "PASS_AT_2026_08_17T12_15_47Z"
 F1_2C_CONTRACT_COMMIT = "b4cbeb066605754d538ff5abe2d294f0759d6f59"
 F1_2C_CONTRACT_PATH = "platform/network/f1-2c-contract.yaml"
 F1_1_REAL_CHECK_MODE_CURRENT = (
@@ -225,35 +236,62 @@ def f1_2b_gate_errors(
         if value != F1_2B_REAL_CHECK_MODE:
             errors.append(f"F1.2b real check-mode evidence differs at {location}")
 
-    not_executed_values = {
-        "components.real_vps_apply": component_state["real_vps_apply"],
-        "evidence.real_vps_apply": evidence_validation["real_vps_apply"],
-        "evidence.real_vps_idempotence": evidence_validation[
-            "real_vps_idempotence"
-        ],
-        "evidence.real_vps_post_apply_invariance": evidence_validation[
-            "real_vps_post_apply_invariance"
-        ],
+    completed_real_values = {
+        "components.real_vps_apply": (
+            component_state["real_vps_apply"], F1_2B_REAL_APPLY
+        ),
+        "components.real_vps_idempotence": (
+            component_state["real_vps_idempotence"], F1_2B_REAL_IDEMPOTENCE
+        ),
+        "components.real_vps_restart": (
+            component_state["real_vps_restart"], F1_2B_REAL_RESTART
+        ),
+        "components.real_vps_post_restart": (
+            component_state["real_vps_post_restart"], F1_2B_REAL_POST_RESTART
+        ),
+        "components.real_vps_post_apply_invariance": (
+            component_state["real_vps_post_apply_invariance"], F1_2B_REAL_INVARIANCE
+        ),
+        "evidence.real_vps_apply": (
+            evidence_validation["real_vps_apply"], F1_2B_REAL_APPLY
+        ),
+        "evidence.real_vps_idempotence": (
+            evidence_validation["real_vps_idempotence"], F1_2B_REAL_IDEMPOTENCE
+        ),
+        "evidence.real_vps_restart": (
+            evidence_validation["real_vps_restart"], F1_2B_REAL_RESTART
+        ),
+        "evidence.real_vps_post_restart": (
+            evidence_validation["real_vps_post_restart"], F1_2B_REAL_POST_RESTART
+        ),
+        "evidence.real_vps_post_apply_invariance": (
+            evidence_validation["real_vps_post_apply_invariance"],
+            F1_2B_REAL_INVARIANCE,
+        ),
     }
-    for location, value in not_executed_values.items():
-        if value != "NOT_EXECUTED":
-            errors.append(f"F1.2b real-node execution was overclaimed at {location}")
+    for location, (value, expected) in completed_real_values.items():
+        if value != expected:
+            errors.append(f"F1.2b completed real evidence differs at {location}")
     expected_current_real_state = {
         "real_vps_check_mode": F1_2B_REAL_CHECK_MODE,
-        "real_vps_apply": "NOT_EXECUTED_READY_AFTER_CHECK_MODE_RECONCILIATION",
+        "real_vps_apply": F1_2B_REAL_APPLY,
+        "real_vps_idempotence": F1_2B_REAL_IDEMPOTENCE,
+        "real_vps_restart": F1_2B_REAL_RESTART,
+        "real_vps_post_restart": F1_2B_REAL_POST_RESTART,
+        "real_vps_post_apply_invariance": F1_2B_REAL_INVARIANCE,
     }
     for key, expected in expected_current_real_state.items():
         if current_state[key] != expected:
             errors.append(f"F1.2b real-node gate changed at current.{key}")
-    if discovery_state["real_gate"] != "CHECK_MODE_PASS_READY_FOR_REVIEWED_APPLY_HUMAN_SUDO":
-        errors.append("F1.2b discovery gate does not reflect passed real check mode")
+    if discovery_state["real_gate"] != "DONE_EMPTY_RUNTIME_FIRST_WORKLOAD_BLOCKED_BY_F1_2C":
+        errors.append("F1.2b discovery gate does not reflect completed empty runtime")
     expected_foundation_dependency = {
         "f1_1_real_vps_status": "DONE",
         "f1_1_privileged_check_mode": "PASS_NO_MUTATION",
         "f1_1_apply": "PASS_CHANGED_7",
         "f1_1_idempotence": "PASS_CHANGED_0",
         "f1_1_post_apply_invariance": "PASS",
-        "f1_2b_real_vps_gate": "CHECK_MODE_PASS_READY_FOR_REVIEWED_APPLY",
+        "f1_2b_real_vps_gate": "DONE_EMPTY_RUNTIME",
     }
     for key, expected in expected_foundation_dependency.items():
         if docker_baseline["dependency"][key] != expected:
@@ -731,7 +769,7 @@ def main() -> int:
         "STATE_CROSSCHECK_PASS decisions=Q1-Q40-exact "
         f"artifacts={len(CANONICAL_PATH_KEYS)} "
         "gates=F1.1+F1.2b+F1.2c-preserved "
-        "f1_1_real_apply=PASS f1_2b_real_apply=NOT_EXECUTED timestamps=aligned"
+        "f1_1_real_apply=PASS f1_2b_real_apply=PASS timestamps=aligned"
     )
     return 0
 

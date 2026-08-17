@@ -97,7 +97,7 @@ Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUD
 
 ## Ponto exato
 
-**SLICE_002B_REAL_VPS_APPLY_HUMAN_INTERACTIVE_SUDO**.
+**SLICE_002C_TECHNOLOGY_ADR_AND_DISPOSABLE_NETWORK_ENFORCEMENT**.
 
 F1.1 possui artefatos canônicos, desired state Ansible, schema/manifests, policy de
 secrets, CI e testes. O run commit-bound `31972460567` passou com 37 testes,
@@ -116,12 +116,14 @@ apply/rollback, pin APT, helper de árvore e harness no desired-state commit
 passou com 63 testes, ShellCheck em seis scripts e syntax-check de seis playbooks.
 O commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` passou no GitHub
 Actions run `31996516019`: check sem mutação, apply `changed=13`, reconciliação e
-restart `changed=0`, sete recusas, rollback e cleanup. Isso ocorreu somente na VM
-descartável; Docker/containerd continuam ausentes no último baseline real e o
-o check mode real F1.2b passou sem mutação em `2026-08-17T08:37:46Z`. A leitura
-pós-preview confirmou Docker/containerd ainda ausentes e serviços essenciais
-invariantes. O apply Docker continua separado e nenhum workload é autorizado
-antes de F1.2c.
+restart `changed=0`, sete recusas, rollback e cleanup. Depois dessa prova na VM
+descartável, o check mode real F1.2b passou sem mutação em
+`2026-08-17T08:37:46Z`. A leitura pós-preview confirmou o baseline e liberou o
+lifecycle real controlado descrito abaixo.
+
+F1.2b foi concluído depois do preview: backup fresco copiado off-host, apply
+`changed=13`, idempotência `changed=0`, restart, nova reconciliação `changed=0` e
+invariância final passaram. O runtime permanece vazio e root-only.
 
 O menor avanço independente seguinte criou o contrato repo-only F1.2c em
 `platform/network/f1-2c-contract.yaml`, commit
@@ -131,7 +133,6 @@ IPv4/IPv6, zonas protegidas, grants, perfis e evidência requerida, mas mantém
 tecnologia `UNRESOLVED`, ADR/integração `PENDING`, NODE-01 `NOT_EXECUTED` e o
 primeiro workload `BLOCKED`. Nenhum ruleset ou mecanismo de rede foi aplicado.
 
-O próximo passo de host é executar o apply vazio F1.2b no NODE-01, com LEANDRO
-digitando sudo diretamente, seguido imediatamente de idempotência e invariância.
-O primeiro workload continua bloqueado por F1.2c; Management Network, produção e
-rotação não fazem parte desse passo.
+O próximo passo é selecionar, documentar e provar F1.2c em ambiente descartável.
+O primeiro workload continua bloqueado; Management Network, produção e rotação
+não fazem parte desse passo.

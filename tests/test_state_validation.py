@@ -252,7 +252,7 @@ class StateCrosscheckTests(unittest.TestCase):
             (
                 "real-node",
                 {"docker_baseline": docker_baseline},
-                "real-node execution",
+                "completed real evidence",
             )
         )
 

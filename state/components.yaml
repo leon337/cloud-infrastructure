@@ -76,8 +76,8 @@ platform_components:
   container_runtime:
     technology: Docker_Engine_and_Compose_plugin
     selected_version: Docker_Engine_29.7.2
-    observed_version: ABSENT
-    lifecycle: SELECTED_REPO_DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_VPS_CHECK_MODE_PASS_APPLY_READY
+    observed_version: Docker_Engine_29.7.2_containerd_2.3.3_Buildx_0.36.1_Compose_5.4.0
+    lifecycle: DONE_EMPTY_ROOT_ONLY_RUNTIME_FIRST_WORKLOAD_BLOCKED_BY_F1_2C
     decision: DEC-007
     source:
       repository: https://download.docker.com/linux/ubuntu
@@ -126,7 +126,11 @@ platform_components:
       ci: PASS_RUN_31996516019_COMMIT_FA66F10
       disposable_vm: PASS_CHECK_APPLY_IDEMPOTENCE_SECURITY_RESTART_REFUSALS_ROLLBACK_CLEANUP
       real_vps_check_mode: PASS_AT_2026_08_17T08_37_46Z_NO_MUTATION
-      real_vps_apply: NOT_EXECUTED
+      real_vps_apply: PASS_AT_2026_08_17T09_25_38Z_CHANGED_13_FAILED_0_UNREACHABLE_0
+      real_vps_idempotence: PASS_AT_2026_08_17T10_16_20Z_CHANGED_0_FAILED_0_UNREACHABLE_0
+      real_vps_restart: PASS_AT_2026_08_17T11_26_44Z
+      real_vps_post_restart: PASS_AT_2026_08_17T12_07_29Z_CHANGED_0_FAILED_0_UNREACHABLE_0
+      real_vps_post_apply_invariance: PASS_AT_2026_08_17T12_15_47Z
       first_workload: BLOCKED_BY_F1_2C
   capability_core:
     technology: Go_OpenAPI_3_1_2_OPA_Rego_v1

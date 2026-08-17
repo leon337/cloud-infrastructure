@@ -1,6 +1,6 @@
 # SLICE-002B test results
 
-Status: **CI/DISPOSABLE + REAL CHECK MODE PASS — APPLY NOT_EXECUTED**
+Status: **DONE — CI/DISPOSABLE + REAL EMPTY RUNTIME PASS**
 
 ## Resultado corrente
 
@@ -18,7 +18,7 @@ Status: **CI/DISPOSABLE + REAL CHECK MODE PASS — APPLY NOT_EXECUTED**
 | Ansible syntax | `PASS_6_CORE_2_21_3` | wheel oficial verificado, extraído só em `/tmp` e removido |
 | GitHub Actions | `PASS_32004951916` | commit `83166c37a7fa66abd442a04073c5f6d5a3df00c4` |
 | VM descartável | `PASS` | check limpo, apply `changed=13`, reconcilições `changed=0`, sete recusas e rollback limpo |
-| NODE-01 | `CHECK_MODE_PASS_NO_MUTATION` | apply ainda `NOT_EXECUTED`; primeiro workload bloqueado por F1.2c |
+| NODE-01 | `DONE_EMPTY_RUNTIME` | apply `changed=13`; idempotência e pós-restart `changed=0`; primeiro workload bloqueado por F1.2c |
 
 O desired state nasceu no commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`.
 A correção de canonicalização foi exercitada no commit
@@ -94,20 +94,37 @@ a mensagem declarativa de plano do check mode. O log sanitizado tem SHA-256
 
 A leitura pós-preview em `2026-08-17T08:38:33Z` confirmou Docker/containerd,
 marker e lock ausentes; nenhum listener 2375/2376; serviços SSH/UFW/fail2ban,
-XRDP/sesman/LightDM ativos; LXD service/socket inativos. O apply continua
-`NOT_EXECUTED` e separado do preview.
+XRDP/sesman/LightDM ativos; LXD service/socket inativos. Naquele checkpoint, o
+apply ainda não havia sido executado; o lifecycle posterior está registrado
+abaixo.
 
 O primeiro CI do checkpoint (`32011753061`, commit `01839c2`) passou static mas
 recusou a VM porque a infraestrutura GitHub/Azure adicionou durante o job a NIC
 auxiliar `enP58396s1`. Não houve interface Docker. O harness passou a ignorar
 somente, em GitHub-hosted runner, o padrão auxiliar PCI `enP<digits>s<digits>`;
 `docker0`, `br-*`, routes, forwarding, listeners e firewall continuam gates
-exatos. A VPS não foi tocada por essa falha; a nova CI está pendente.
+exatos. A VPS não foi tocada por essa falha; a correção passou no run
+`32012205069`, commit `966230d`.
 
 ## Contrato do NODE-01
 
 F1.1 já possui check/apply, idempotência, invariância e checkpoint reconciliados.
-O check mode F1.2b passou; depois da nova CI, o NODE-01 pode executar somente o
-apply vazio, seguido de idempotência e comparação de listeners, interfaces,
-routes, sysctls, UFW/rulesets, grupos, services e Workstation. Instalação sem
+O check mode F1.2b passou e autorizou somente o lifecycle vazio posteriormente
+concluído: apply, idempotência, restart e comparação de listeners, interfaces,
+routes, sysctls, UFW/rulesets, grupos, serviços e Workstation. Instalação sem
 workload não prova Q20/Q34; o primeiro container permanece bloqueado por F1.2c.
+
+## Lifecycle real concluído
+
+O backup fresco `cloud-infrastructure-config-20260817T085908Z.tar.gz` possui 39
+entradas, SHA-256 remoto/off-host correspondente e log sanitizado registrado. O
+apply real terminou em `2026-08-17T09:25:38Z` com `changed=13`, `failed=0`; a
+segunda reconciliação em `10:16:20Z` teve `changed=0`. Docker/containerd foram
+reiniciados em `11:26:44Z` e a reconciliação pós-restart em `12:07:29Z` voltou a
+ter `changed=0`.
+
+A auditoria final em `12:15:47Z` confirmou versões pinadas, zero units falhas,
+socket `root:root 0600`, grupo vazio, acesso de `ubuntu` negado, serviços
+essenciais ativos, LXD inativo, forwarding zero, nenhuma interface
+`docker0`/`br-*`, portas 2375/2376 fechadas e SSH público preservado. O runtime
+está vazio; F1.2c continua bloqueando qualquer container.

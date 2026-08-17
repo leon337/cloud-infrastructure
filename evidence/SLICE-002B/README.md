@@ -1,8 +1,7 @@
 # Evidence — SLICE-002B Docker runtime boundary
 
 Esta pasta contém o contrato e a evidência sanitizada do desired state e da
-integração privilegiada em VM descartável, além do preview real sem mutação. O
-apply no NODE-01 continua não executado.
+integração privilegiada em VM descartável e o lifecycle real do runtime vazio.
 
 ## Cadeia corrente
 
@@ -19,20 +18,22 @@ apply no NODE-01 continua não executado.
 | VM descartável — rollback e cleanup | `PASS_CLEAN` |
 | Pré-requisito F1.1 no NODE-01 | `DONE_APPLY_7_IDEMPOTENCE_0_INVARIANCE_PASS` |
 | Check mode F1.2b no NODE-01 | `PASS_NO_MUTATION_2026-08-17T08:37:46Z` |
-| Apply F1.2b no NODE-01 | `NOT_EXECUTED` |
+| Apply F1.2b no NODE-01 | `PASS_CHANGED_13` |
+| Idempotência/restart/reconciliação | `PASS_CHANGED_0` |
 | Primeiro workload no NODE-01 | `BLOCKED_BY_F1_2C` |
 
 O run `31996516019` está ligado ao commit
 `fa66f1049bac5540a5b12219186a421cc39dcbc0` e cobre APT, systemd, Docker vazio,
 limites de socket/rede, recusas e rollback na VM descartável. O guard corrigido
-passou no run `32007871491`, commit `9e9ae28`. O apply `NOT_EXECUTED` no NODE-01
-nunca deve ser interpretado como `PASS`.
+passou no run `32007871491`, commit `9e9ae28`; o checkpoint passou no run
+`32012205069`, commit `966230d`. O lifecycle real está registrado no baseline.
 
 ## Limite da evidência
 
 O fechamento real F1.1 em `2026-08-17T06:58:43Z` confirmou Docker e containerd
 ausentes e liberou o check mode F1.2b. O preview passou sem mutação e a leitura
-posterior confirmou o runtime ainda ausente. O teste
+posterior confirmou o runtime ainda ausente. Depois de backup novo off-host, o
+apply vazio, a idempotência, o restart e a reconciliação pós-restart passaram. O teste
 privilegiado completo é permitido somente em VM descartável comprovada pelo
 harness, nunca na Workstation ou no NODE-01.
 

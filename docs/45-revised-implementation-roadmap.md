@@ -20,8 +20,8 @@ Substitui como roadmap corrente as antigas fases provisórias F3–F10.
 | S0 Recovery | GitHub/VPS/Q1–Q40 reconciliados | `DONE` | report canônico e drift registrado |
 | F1.1 Foundations declarativas | Ansible/schema/namespaces/contas/slices accounting | `DONE` | check mode sem mutação, backup off-host, apply real `changed=7`, idempotência `changed=0` e invariância passaram em `2026-08-17` |
 | F1.2a Management Network | administração privada por identidade/dispositivo | `WAITING_HUMAN_GATE` | conta/plano/policy/onboarding e recovery testados |
-| F1.2b Docker boundary | Docker CE/Compose pinados, root-only, bridge default ausente, sem porta/workload | `PARTIAL` | desired state `7015c80`; CI descartável completa passou; preview NODE-01 passou sem mutação em `2026-08-17T08:37:46Z`; apply `NOT_EXECUTED`; não satisfaz Q20/Q34 |
-| F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `CONTRACT_STARTED` | contrato Q20/Q34 local-static `PASS` no commit `b4cbeb0`; tecnologia/ADR, implementation, F1.2b, matriz dinâmica allow/deny e rollback continuam `PENDING`; bloqueia primeiro container |
+| F1.2b Docker boundary | Docker CE/Compose pinados, root-only, bridge default ausente, sem porta/workload | `DONE` | CI descartável; preview; backup off-host; apply `changed=13`; idempotência e pós-restart `changed=0`; invariância passaram; não satisfaz Q20/Q34 e não libera workload |
+| F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `CONTRACT_STARTED` | contrato Q20/Q34 local-static `PASS` no commit `b4cbeb0`; tecnologia/ADR, implementação, matriz dinâmica allow/deny e rollback continuam `PENDING`; bloqueia primeiro container |
 | F1.3 Observability baseline | host/runtime logs, métricas, audit envelope | `CONDITIONAL` | compliance review de Loki/Grafana AGPL ou alternativa; HUMAN_GATE somente se termos/custo/aceite externo exigirem; limites/retention e interfaces privadas |
 | F1.4 Secret bootstrap foundation | OpenBao instalado, não inicializado/selado | `PLANNED` | nenhum dado real; init/unseal/custódia e revogação do root token inicial permanecem gate humano |
 | F1.5 Off-host recovery foundation | destino Restic, policy, keys e restore fixture | `WAITING_HUMAN_GATE` | destino/custo/custódia, targets provisórios e restore cronometrado; bloqueia dado Critical/Important real |
@@ -82,10 +82,9 @@ inicial de domínio/DNS, criar/revogar preview DEV dentro do namespace, quota e
 grant aprovados é autônomo; novo domínio, custo ou produção volta ao gate. Rotação
 de credenciais não faz parte deste roadmap enquanto permanecer adiada por LEANDRO.
 
-F1.2b concluiu código, validação local e integração descartável commit-bound em
-paralelo ao gate F1.1. Isso não autoriza check/apply no NODE-01: a fundação real
-continua pendente. O primeiro container permanece bloqueado por F1.2c, mesmo que
-não publique portas.
+F1.2b concluiu código, validação descartável e lifecycle real do runtime vazio.
+O primeiro container permanece bloqueado por F1.2c, mesmo que não publique
+portas.
 
 F1.2c avançou somente até um contrato machine-readable repo-only. Isso permite
 desenhar a ADR e a fixture sem depender do HUMAN_GATE F1.1, mas não equivale a

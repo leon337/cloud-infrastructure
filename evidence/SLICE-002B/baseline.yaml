@@ -2,7 +2,7 @@ schema_version: 1
 slice: SLICE-002B
 classification: SANITIZED_CI_EVIDENCE_NOT_OPERATIONAL
 generated_at_utc: "2026-08-17T05:09:14Z"
-status: REPO_DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_CHECK_MODE_PASS_APPLY_NOT_EXECUTED
+status: DONE_REAL_EMPTY_RUNTIME_APPLY_IDEMPOTENCE_RESTART_INVARIANCE_PASS
 git:
   repository: leon337/cloud-infrastructure
   working_branch: codex/mission-001-foundations-f1-2b-preparation
@@ -23,7 +23,7 @@ dependency:
   f1_1_apply: PASS_CHANGED_7
   f1_1_idempotence: PASS_CHANGED_0
   f1_1_post_apply_invariance: PASS
-  f1_2b_real_vps_gate: CHECK_MODE_PASS_READY_FOR_REVIEWED_APPLY
+  f1_2b_real_vps_gate: DONE_EMPTY_RUNTIME
   first_workload_gate: BLOCKED_UNTIL_F1_2C_NETWORK_ENFORCEMENT_VALIDATED
 selection:
   repository: https://download.docker.com/linux/ubuntu
@@ -171,10 +171,23 @@ validation:
     docker_managed_interface_observed: false
     real_vps_mutation: false
     remediation: FILTER_ONLY_GITHUB_HOSTED_ENP_DIGITS_S_DIGITS_KEEP_DOCKER_ROUTE_FIREWALL_GATES
-    remediation_ci: PENDING
-  real_vps_apply: NOT_EXECUTED
-  real_vps_idempotence: NOT_EXECUTED
-  real_vps_post_apply_invariance: NOT_EXECUTED
+    remediation_ci: PASS_RUN_32012205069_COMMIT_966230D
+  real_vps_preapply_backup:
+    created_at_utc: "2026-08-17T08:59:08Z"
+    archive_basename: cloud-infrastructure-config-20260817T085908Z.tar.gz
+    archive_entries: 39
+    archive_size: 28819
+    archive_sha256: 8143e60329c8a453f264d898b59314c5d38fdb36699ea1dfa48686df1c524c30
+    offhost_hash_match: true
+    sanitized_log_sha256: 0afee1c6e2c4f1b3fb1394df094d4b9e64343ad9b7d6872ea8c56d964f103f58
+  real_vps_apply: PASS_AT_2026_08_17T09_25_38Z_CHANGED_13_FAILED_0_UNREACHABLE_0
+  real_vps_apply_log_sha256: 7e3eaf1a328d07b181469cb4c6dae31ec48be6dbe11f5720347da673c521ac5c
+  real_vps_idempotence: PASS_AT_2026_08_17T10_16_20Z_CHANGED_0_FAILED_0_UNREACHABLE_0
+  real_vps_idempotence_log_sha256: 42fd0abf73266274d9e1628819a6ea339422d61f90066b1ae701ea80388948fc
+  real_vps_restart: PASS_AT_2026_08_17T11_26_44Z
+  real_vps_post_restart: PASS_AT_2026_08_17T12_07_29Z_CHANGED_0_FAILED_0_UNREACHABLE_0
+  real_vps_post_restart_log_sha256: 3938d076c30d8d425795b9a10a5cbc333189dfd40f64a811a1dee53b1146a622
+  real_vps_post_apply_invariance: PASS_AT_2026_08_17T12_15_47Z
 production:
   deployment_authorized: false
 credential_rotation:

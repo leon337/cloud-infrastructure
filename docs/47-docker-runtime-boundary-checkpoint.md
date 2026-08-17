@@ -1,7 +1,7 @@
 # 47 — Docker runtime boundary F1.2b checkpoint
 
 Data: 2026-08-17
-Status: **REPO/DISPOSABLE CI + REAL CHECK MODE PASS — APPLY NOT_EXECUTED**
+Status: **DONE — REAL EMPTY RUNTIME APPLY/IDEMPOTENCE/RESTART PASS**
 Ambiente autorizado: **DEV/lab somente**
 
 ## Objetivo
@@ -15,9 +15,8 @@ serviço de plataforma, não cria workload e não satisfaz Q20/Q34.
 - base da branch: `e4503af12bf81806e8c2508eb108c4dc4c264784`;
 - F1.1 está `DONE` no NODE-01 com apply, idempotência e invariância;
 - o preview real F1.2b passou sem mutação em `2026-08-17T08:37:46Z`;
-- a leitura posterior confirmou Docker/containerd ainda ausentes e serviços
-  essenciais invariantes; apply, idempotência e invariância permanecem
-  `NOT_EXECUTED`;
+- backup fresco off-host, apply vazio `changed=13`, idempotência `changed=0`,
+  restart, reconciliação pós-restart `changed=0` e invariância passaram;
 - F1.2c network enforcement bloqueia o primeiro container no NODE-01.
 
 O desired state nasceu no commit
@@ -91,7 +90,7 @@ saem antes do daemon-reload; o marker é o último objeto removido.
 | CI GitHub commit-bound | `PASS_RUN_31996516019_COMMIT_FA66F10` |
 | Disposable check/apply/changed=0/restart/rollback | `PASS` |
 | NODE-01 check mode | `PASS_NO_MUTATION` |
-| NODE-01 apply/changed=0/invariância | `NOT_EXECUTED` |
+| NODE-01 apply/changed=0/restart/invariância | `PASS` |
 | Q20/Q34 network enforcement | `BLOCKED_BY_F1_2C` |
 
 `PENDING`/`NOT_EXECUTED` não são `PASS`. VM descartável não prova firewall do
@@ -100,9 +99,8 @@ host real, e instalação vazia não prova isolamento de workload.
 ## Próximo passo exato
 
 1. preservar a evidência commit-bound `fa66f10`/run `31996516019`;
-2. executar o apply vazio F1.2b somente após reconciliar este preview e obter
-   sudo humano interativo;
-3. validar idempotência e invariância antes de promover o slice;
+2. preservar o runtime vazio e não entregar o socket a agentes;
+3. implementar e provar F1.2c antes do primeiro container;
 4. usar o contrato F1.2c `b4cbeb0` para selecionar o mecanismo em ADR e provar a
    matriz dinâmica antes do primeiro container.
 

@@ -1,6 +1,6 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-17 após o preview real sem mutação do
+Atualizado em 2026-08-17 após a conclusão real do
 `SLICE-002B — Docker runtime boundary`.
 
 ## Estado durável
@@ -23,7 +23,8 @@ Atualizado em 2026-08-17 após o preview real sem mutação do
   concluídos a partir do desired-state commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`;
   commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` e GitHub run
   `31996516019` `PASS`; correções passaram nos runs `32004951916` e
-  `32007871491`; preview NODE-01 `PASS_NO_MUTATION`, apply `NOT_EXECUTED`.
+  `32007871491`; preview NODE-01 sem mutação, backup off-host, apply
+  `changed=13`, idempotência e pós-restart `changed=0` e invariância `PASS`.
 
 ## Artefatos canônicos criados
 
@@ -72,10 +73,10 @@ Atualizado em 2026-08-17 após o preview real sem mutação do
 - timer de backup ativo e último serviço `success`; checksum/archive e cópia
   off-host devem ser revalidados antes do apply, não deste preview sem mutação.
 
-A prova na fixture não substitui check mode, apply, idempotência ou invariância na
-VPS real; todas essas linhas reais continuam `NOT_EXECUTED`.
+A prova na fixture não substituiu a VPS real. Depois dela, check mode, backup,
+apply, idempotência, restart e invariância também passaram no NODE-01.
 
-## Estado real da VPS antes do apply
+## Baseline real da VPS antes do apply
 
 Snapshot read-only: `2026-08-16T19:46:14Z`.
 
@@ -96,7 +97,7 @@ Snapshot read-only: `2026-08-16T19:46:14Z`.
 O preview F1.2b revalidou o host sem mutação. Docker/containerd, marker, lock e
 listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 
-## SLICE-002B — estado repo-only
+## SLICE-002B — estado concluído
 
 - branch recuperado limpo em `d849caa0eafdc231d2782be602be1a2263758b7b`;
 - role/playbooks de apply e rollback versionados com target/allowlist imutáveis;
@@ -109,8 +110,9 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
   no run `31996516019` para o commit `fa66f10`;
 - suíte local/CI: 66 unitários/negativos, 34 YAML, dois manifests, seis scripts com
   sintaxe/ShellCheck e seis syntax-checks Ansible, todos `PASS`;
-- CI GitHub, lifecycle descartável e check mode real estão `PASS`; apply VPS
-  permanece `NOT_EXECUTED` e o primeiro workload permanece `BLOCKED`.
+- CI GitHub, lifecycle descartável, check mode, backup, apply, idempotência,
+  restart e invariância real estão `PASS`; o runtime está vazio e o primeiro
+  workload permanece `BLOCKED` por F1.2c.
 
 ## SLICE-002C — contrato repo-only
 
@@ -143,7 +145,7 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - F1.1 real está concluído com apply, idempotência e invariância comprovados;
 - LEANDRO digita sudo diretamente nas operações humanas; senha nunca é
   enviada/registrada;
-- manter segunda sessão SSH e revalidar concorrência antes do apply;
+- manter segunda sessão SSH e revalidar concorrência antes de futuras mutações;
 - usar `runbooks/platform-foundation.md`;
 - F1.1 não instala pacote/runtime, não cria listener e não toca
   SSH/UFW/XRDP/Workstation/credenciais;
@@ -151,20 +153,19 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - depois do apply exigir segunda execução `changed=0`, negações, modes e
   invariância de listeners/SSH/UFW/fail2ban/XRDP/LXD/units;
 - rollback só quando os namespaces persistentes estiverem vazios.
-- F1.2b apply está liberado somente após este checkpoint, com sudo humano,
-  seguido de idempotência e invariância; nenhum workload é permitido.
+- F1.2b está concluído; não repetir o apply fora de reconciliação controlada e
+  nenhum workload é permitido antes de F1.2c.
 - F1.2c repo-only não autoriza workload: ADR, implementation e matriz dinâmica
   completa em IPv4/IPv6 continuam bloqueantes.
 
 ## Próximo passo exato
 
-**SLICE_002B_REAL_VPS_APPLY_HUMAN_INTERACTIVE_SUDO**
+**SLICE_002C_TECHNOLOGY_ADR_AND_DISPOSABLE_NETWORK_ENFORCEMENT**
 
-O check mode F1.2b passou sem mutação, com pós-check invariável. Executar o apply
-vazio com `--ask-become-pass`, LEANDRO digitando a senha diretamente e sem
-registro; depois exigir segunda reconciliação `changed=0` e invariância completa.
-Nenhum container/workload é autorizado; F1.2c, Management Network, produção e
-rotação permanecem fora desse passo.
+Selecionar e documentar a tecnologia de enforcement de rede, implementar e
+provar a matriz dinâmica IPv4/IPv6 em ambiente descartável. Não aplicar no
+NODE-01 nem iniciar container/workload antes dessa prova. Management Network,
+produção e rotação permanecem fora desse passo.
 
 ## Architecture/Technology Mapping — gaps condicionais
 
