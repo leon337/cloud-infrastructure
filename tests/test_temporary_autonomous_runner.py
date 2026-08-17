@@ -200,13 +200,20 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
             operation,
         )
         self.assertIn(
-            "DESIRED_RUNNER_SHA256=bb25ea6a952872881f09ed4fe150b7549059ca5d0b0ea0feda1fc08563cd0eef",
+            "DESIRED_RUNNER_SHA256=d5ca57ef518abd9362b8d64177c3a7c8bed12dc5b77d1455f821930471c20f31",
             operation,
         )
         self.assertIn("install -o root -g root -m 0755", operation)
         self.assertNotIn("systemctl", operation)
         self.assertNotIn("/etc/sudoers", operation)
         self.assertNotIn("docker", operation.lower())
+
+    def test_reconcile_normalizes_signed_snapshot_readability(self):
+        self.assertEqual(self.bootstrap.count('chmod -R a+rX,go-w "$REPO_ROOT"'), 1)
+        self.assertEqual(
+            self.runner.count('chmod -R a+rX,go-w "$staging/repository"'),
+            1,
+        )
 
     def test_no_password_capture_or_persistence_mechanism_exists(self):
         lowered = self.bootstrap.lower()

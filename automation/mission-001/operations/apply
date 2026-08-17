@@ -6,7 +6,7 @@ readonly EXPECTED_HOST=vmi3506102
 readonly EXPECTED_MACHINE_ID_SHA256=27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
 readonly RUNNER_PATH=/usr/local/sbin/codex-mission-001-runner
 readonly OLD_RUNNER_SHA256=34cdd4b132b70f6b242413ba769cd8028aad6b083f8a5e2d15f1617a332e3be2
-readonly DESIRED_RUNNER_SHA256=bb25ea6a952872881f09ed4fe150b7549059ca5d0b0ea0feda1fc08563cd0eef
+readonly DESIRED_RUNNER_SHA256=d5ca57ef518abd9362b8d64177c3a7c8bed12dc5b77d1455f821930471c20f31
 
 refuse() {
   printf 'MISSION_APPLY_REFUSED reason=%s\n' "$1" >&2
@@ -30,6 +30,12 @@ if [[ $current_sha256 == "$DESIRED_RUNNER_SHA256" ]]; then
   exit 0
 fi
 [[ $current_sha256 == "$OLD_RUNNER_SHA256" ]] || refuse runner_content_drift
+
+[[ -d $MISSION_REPOSITORY && ! -L $MISSION_REPOSITORY ]] || refuse repository_unsafe
+[[ $(stat -c '%U:%G' "$MISSION_REPOSITORY") == root:root ]] ||
+  refuse repository_owner_drift
+chown -R root:root "$MISSION_REPOSITORY"
+chmod -R a+rX,go-w "$MISSION_REPOSITORY"
 
 bootstrap="$MISSION_REPOSITORY/scripts/bootstrap_mission_001_autonomous_runner.sh"
 [[ -f $bootstrap && ! -L $bootstrap ]] || refuse bootstrap_source_missing

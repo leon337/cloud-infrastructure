@@ -112,8 +112,7 @@ install -d -o root -g root -m 0750 "$LOG_ROOT"
 install -d -o ubuntu -g ubuntu -m 0700 "$STATE_ROOT/inbox"
 mv "$workdir/repository" "$REPO_ROOT"
 chown -R root:root "$REPO_ROOT"
-find "$REPO_ROOT" -type d -exec chmod go-w {} +
-find "$REPO_ROOT" -type f -exec chmod go-w {} +
+chmod -R a+rX,go-w "$REPO_ROOT"
 
 expires_epoch=$(( $(date -u +%s) + 43200 ))
 expires_calendar=$(date -u -d "@$expires_epoch" '+%Y-%m-%d %H:%M:%S UTC')
@@ -287,8 +286,7 @@ reconcile_operation() (
   ! grep -Eq '^[[:space:]]*production_promotion_authorized:[[:space:]]+true$' \
     "$staging/repository/state/current.yaml" || return 1
   chown -R root:root "$staging/repository"
-  find "$staging/repository" -type d -exec chmod go-w {} +
-  find "$staging/repository" -type f -exec chmod go-w {} +
+  chmod -R a+rX,go-w "$staging/repository"
   [[ ! -L $previous ]] || return 1
   if [[ -e $previous ]]; then
     [[ -d $previous && $(stat -c '%U:%G' "$previous") == root:root ]] || return 1
