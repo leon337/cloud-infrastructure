@@ -176,6 +176,18 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
         self.assertTrue(apply[1]["become"])
         self.assertTrue(rollback[1]["become"])
 
+    def test_controller_preflight_uses_the_selected_inventory_source(self):
+        preflight = (
+            ROOT
+            / "automation"
+            / "ansible"
+            / "playbooks"
+            / "docker-runtime-controller-preflight.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("ansible_inventory_sources | length == 1", preflight)
+        self.assertIn("ansible_inventory_sources | first", preflight)
+        self.assertNotIn('{{ inventory_file }}', preflight)
+
     def test_reconcile_validates_index_digest_before_suppressed_install(self):
         reconcile = (
             ROOT

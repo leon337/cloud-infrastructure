@@ -17,6 +17,8 @@
         that:
           - groups['platform_nodes'] is defined
           - groups['platform_nodes'] | length == 1
+          - ansible_inventory_sources is defined
+          - ansible_inventory_sources | length == 1
           - platform_docker_preflight_target == 'node-01'
           - platform_docker_preflight_connection in ['ssh', 'local']
           - >-
@@ -27,7 +29,7 @@
 
     - name: Canonicalize the selected inventory
       ansible.builtin.command:
-        argv: [realpath, "{{ inventory_file }}"]
+        argv: [realpath, "{{ ansible_inventory_sources | first }}"]
       register: platform_docker_preflight_inventory
       changed_when: false
       check_mode: false
