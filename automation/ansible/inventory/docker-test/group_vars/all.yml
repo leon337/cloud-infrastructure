@@ -1,0 +1,8 @@
+---
+# This inventory is destructive by design and is accepted only when immutable
+# process-environment evidence identifies a GitHub-hosted Ubuntu 24.04 runner.
+platform_environment: test
+platform_node_id: node-01
+platform_repository_root: /workspace/cloud-infrastructure
+platform_docker_test_boundary: github-hosted-ubuntu24-disposable
+platform_docker_test_destructive_confirm: false

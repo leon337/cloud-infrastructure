@@ -1,0 +1,31 @@
+{
+  "allow-direct-routing": false,
+  "bridge": "none",
+  "cgroup-parent": "cloud-workloads.slice",
+  "default-cgroupns-mode": "private",
+  "default-network-opts": {
+    "bridge": {
+      "com.docker.network.bridge.host_binding_ipv4": "127.0.0.1"
+    }
+  },
+  "exec-opts": [
+    "native.cgroupdriver=systemd"
+  ],
+  "experimental": false,
+  "firewall-backend": "iptables",
+  "group": "root",
+  "icc": false,
+  "ip": "127.0.0.1",
+  "ip-forward": false,
+  "ip-masq": false,
+  "ip6tables": true,
+  "iptables": true,
+  "ipv6": false,
+  "live-restore": false,
+  "log-driver": "local",
+  "log-opts": {
+    "max-file": "3",
+    "max-size": "10m"
+  },
+  "no-new-privileges": true
+}

@@ -1,0 +1,70 @@
+---
+platform_docker_marker: /etc/cloud-platform-docker-runtime.managed
+platform_docker_state_root: /var/lib/cloud-platform/runtime-boundaries/docker
+platform_docker_prestate: /var/lib/cloud-platform/runtime-boundaries/docker/prestate.json
+platform_docker_transaction: /var/lib/cloud-platform/runtime-boundaries/docker/transaction.json
+platform_docker_lock: /run/lock/cloud-platform-docker-runtime-operation
+
+platform_docker_daemon_config: /etc/docker/daemon.json
+platform_docker_apt_key: /etc/apt/keyrings/docker.asc
+platform_docker_apt_source: /etc/apt/sources.list.d/docker.sources
+platform_docker_service_override: /etc/systemd/system/docker.service.d/10-cloud-platform-boundary.conf
+platform_docker_socket_override: /etc/systemd/system/docker.socket.d/10-cloud-platform-root-only.conf
+platform_containerd_service_override: /etc/systemd/system/containerd.service.d/10-cloud-platform-boundary.conf
+
+platform_docker_key_sha256: 1500c1f56fa9e26b9b8f42452a553675796ade0807cdce11975eb98170b3a570
+platform_docker_key_primary_fingerprint: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+platform_docker_key_signing_fingerprint: D3306A018370199E527AE7997EA0A9C3F273FCD8
+
+platform_docker_packages:
+  - name: docker-ce
+    version: 5:29.7.2-1~ubuntu.24.04~noble
+    sha256: 8243f97d569a0fa33ea32417e399e9f524e7d75d3898fa9d24e0eadaa486af68
+  - name: docker-ce-cli
+    version: 5:29.7.2-1~ubuntu.24.04~noble
+    sha256: 920a5fa031f33f2dd5b56b4a9bc4c725bc9549d6007004a6610a469873ec69fe
+  - name: containerd.io
+    version: 2.3.3-1~ubuntu.24.04~noble
+    sha256: 3a2c59a92b4c57d247f26ea37c6f1913aefee9e6f8d64815c47505e6de0033db
+  - name: docker-buildx-plugin
+    version: 0.36.1-1~ubuntu.24.04~noble
+    sha256: 405be4bdbd70052880583da5d181c8e1c06e61f1a5b230ad2ad124e04318def2
+  - name: docker-compose-plugin
+    version: 5.4.0-1~ubuntu.24.04~noble
+    sha256: f7890c92ea2d356bc7ea7ac351a854bde8d7c446da6102126a9d9fac9ea0583c
+
+platform_docker_managed_payloads:
+  - source: platform/docker/docker.asc
+    destination: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+    sha256: 1500c1f56fa9e26b9b8f42452a553675796ade0807cdce11975eb98170b3a570
+  - source: platform/docker/daemon.json
+    destination: /etc/docker/daemon.json
+    mode: "0600"
+    sha256: cd1257f75c740c5e635949e948a13e26807baa653e2d9265c096d26b8ec0e03b
+  - source: platform/docker/docker.sources
+    destination: /etc/apt/sources.list.d/docker.sources
+    mode: "0644"
+    sha256: 8f33259a79a8149bed86c66e103fb4c3fa70f9219cd7ff315b6cc30988afef0c
+  - source: platform/docker/systemd/docker.service.conf
+    destination: /etc/systemd/system/docker.service.d/10-cloud-platform-boundary.conf
+    mode: "0644"
+    sha256: cb7a51bfb0c2962e47753d16f1cab0ffef141f68f4ca97bc5e05c817227c6826
+  - source: platform/docker/systemd/docker.socket.conf
+    destination: /etc/systemd/system/docker.socket.d/10-cloud-platform-root-only.conf
+    mode: "0644"
+    sha256: 86290046a524cff63452237c94a9e7d869730f9774a0fc923a21f800f5cccf25
+  - source: platform/docker/systemd/containerd.service.conf
+    destination: /etc/systemd/system/containerd.service.d/10-cloud-platform-boundary.conf
+    mode: "0644"
+    sha256: cb7a51bfb0c2962e47753d16f1cab0ffef141f68f4ca97bc5e05c817227c6826
+
+platform_docker_marker_content: |-
+  managed_by=cloud-infrastructure
+  slice=SLICE-002B
+  schema=1
+  environment={{ platform_environment }}
+  node=node-01
+  runtime=docker-ce
+  docker_ce=5:29.7.2-1~ubuntu.24.04~noble
+  containerd_io=2.3.3-1~ubuntu.24.04~noble

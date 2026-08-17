@@ -1,0 +1,195 @@
+---
+- name: Refuse an ambiguous Docker-boundary controller or target
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+
+  vars:
+    platform_docker_preflight_target: "{{ groups['platform_nodes'] | first }}"
+    platform_docker_preflight_connection: >-
+      {{ hostvars[platform_docker_preflight_target].ansible_connection |
+         default('ssh') }}
+
+  tasks:
+    - name: Require the single reviewed node and connection type
+      ansible.builtin.assert:
+        that:
+          - groups['platform_nodes'] is defined
+          - groups['platform_nodes'] | length == 1
+          - platform_docker_preflight_target == 'node-01'
+          - platform_docker_preflight_connection in ['ssh', 'local']
+          - >-
+            platform_docker_preflight_connection ==
+            (hostvars[platform_docker_preflight_target].ansible_connection |
+             default('ssh'))
+        fail_msg: Docker F1.2b accepts one explicitly named DEV/test node only.
+
+    - name: Canonicalize the selected inventory
+      ansible.builtin.command:
+        argv: [realpath, "{{ inventory_file }}"]
+      register: platform_docker_preflight_inventory
+      changed_when: false
+      check_mode: false
+
+    - name: Require immutable GitHub-hosted runner evidence for a local target
+      ansible.builtin.assert:
+        that:
+          - lookup('env', 'GITHUB_ACTIONS') == 'true'
+          - lookup('env', 'RUNNER_ENVIRONMENT') == 'github-hosted'
+          - lookup('env', 'RUNNER_OS') == 'Linux'
+          - lookup('env', 'RUNNER_ARCH') == 'X64'
+          - lookup('env', 'ImageOS') == 'ubuntu24'
+          - lookup('env', 'GITHUB_WORKSPACE') == '/workspace/cloud-infrastructure'
+          - platform_environment == 'test'
+          - platform_node_id == 'node-01'
+          - platform_repository_root == '/workspace/cloud-infrastructure'
+          - platform_docker_test_boundary == 'github-hosted-ubuntu24-disposable'
+          - platform_docker_test_destructive_confirm | bool
+          - >-
+            platform_docker_preflight_inventory.stdout ==
+            '/workspace/cloud-infrastructure/automation/ansible/inventory/docker-test/hosts.yml'
+        fail_msg: >-
+          A local Docker-boundary run is destructive and is allowed only on the
+          exact disposable GitHub-hosted Ubuntu 24.04 runner after explicit
+          confirmation. It is forbidden on a workstation or persistent host.
+      when: platform_docker_preflight_connection == 'local'
+
+    - name: Require the exact DEV controller tuple before remote gathering
+      ansible.builtin.assert:
+        that:
+          - platform_environment == 'dev'
+          - platform_node_id == 'node-01'
+          - platform_expected_ansible_host == '169.58.171.192'
+          - platform_expected_hostname == 'vmi3506102'
+          - >-
+            platform_expected_machine_id_sha256 ==
+            '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107'
+          - >-
+            platform_expected_controller_key_fingerprint ==
+            'SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg'
+          - hostvars[platform_docker_preflight_target].ansible_user == 'ubuntu'
+          - >-
+            (hostvars[platform_docker_preflight_target].ansible_host | string) ==
+            '169.58.171.192'
+          - >-
+            platform_docker_preflight_inventory.stdout ==
+            (platform_repository_root +
+             '/automation/ansible/inventory/dev/hosts.yml')
+        fail_msg: Docker F1.2b refuses a remote target outside recorded DEV.
+      when: platform_docker_preflight_connection != 'local'
+
+    - name: Require the dedicated private-key path for DEV
+      ansible.builtin.assert:
+        that:
+          - lookup('env', 'PLATFORM_SSH_KEY_FILE') | length > 0
+          - >-
+            hostvars[platform_docker_preflight_target].ansible_ssh_private_key_file ==
+            lookup('env', 'PLATFORM_SSH_KEY_FILE')
+          - >-
+            hostvars[platform_docker_preflight_target].ansible_port |
+            default(22) | int == 22
+          - >-
+            hostvars[platform_docker_preflight_target].ansible_password is not defined
+          - >-
+            hostvars[platform_docker_preflight_target].ansible_ssh_pass is not defined
+        fail_msg: DEV requires the recorded dedicated SSH key, never a password.
+      when: platform_docker_preflight_connection != 'local'
+
+    - name: Inspect the dedicated DEV key without following links
+      ansible.builtin.stat:
+        path: "{{ lookup('env', 'PLATFORM_SSH_KEY_FILE') }}"
+        follow: false
+      register: platform_docker_preflight_key
+      when: platform_docker_preflight_connection != 'local'
+
+    - name: Require a private, regular DEV key
+      ansible.builtin.assert:
+        that:
+          - platform_docker_preflight_key.stat.exists
+          - platform_docker_preflight_key.stat.isreg | default(false)
+          - not (platform_docker_preflight_key.stat.islnk | default(false))
+          - platform_docker_preflight_key.stat.mode in ['0400', '0600']
+        fail_msg: The dedicated DEV key must be a non-symlink 0400/0600 file.
+      when: platform_docker_preflight_connection != 'local'
+
+    - name: Read the dedicated DEV key fingerprint
+      ansible.builtin.command:
+        argv:
+          - ssh-keygen
+          - -E
+          - sha256
+          - -lf
+          - "{{ lookup('env', 'PLATFORM_SSH_KEY_FILE') }}"
+      register: platform_docker_preflight_key_fingerprint
+      changed_when: false
+      check_mode: false
+      when: platform_docker_preflight_connection != 'local'
+
+    - name: Require the recorded dedicated DEV key fingerprint
+      ansible.builtin.assert:
+        that:
+          - >-
+            'SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg' in
+            platform_docker_preflight_key_fingerprint.stdout.split()
+        fail_msg: The selected controller key is not the recorded DEV key.
+      when: platform_docker_preflight_connection != 'local'
+
+- name: Prove node identity before privilege escalation
+  hosts: platform_nodes
+  gather_facts: false
+  become: false
+  serial: 1
+
+  tasks:
+    - name: Read unprivileged node identity
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - >-
+            import hashlib, pathlib, socket;
+            value=pathlib.Path('/etc/machine-id').read_text().strip().encode();
+            print(socket.gethostname().split('.')[0]);
+            print(hashlib.sha256(value).hexdigest())
+      register: platform_docker_preflight_node_identity
+      changed_when: false
+      check_mode: false
+
+    - name: Read unprivileged login identity
+      ansible.builtin.command:
+        argv: [id, -un]
+      register: platform_docker_preflight_login
+      changed_when: false
+      check_mode: false
+
+    - name: Require recorded DEV identity or immutable runner evidence
+      ansible.builtin.assert:
+        that:
+          - >-
+            (
+              (ansible_connection | default('ssh')) == 'local' and
+              lookup('env', 'GITHUB_ACTIONS') == 'true' and
+              lookup('env', 'RUNNER_ENVIRONMENT') == 'github-hosted' and
+              lookup('env', 'RUNNER_OS') == 'Linux' and
+              lookup('env', 'RUNNER_ARCH') == 'X64' and
+              lookup('env', 'ImageOS') == 'ubuntu24' and
+              lookup('env', 'GITHUB_WORKSPACE') ==
+                '/workspace/cloud-infrastructure' and
+              platform_environment == 'test' and
+              platform_repository_root == '/workspace/cloud-infrastructure' and
+              platform_docker_test_boundary ==
+                'github-hosted-ubuntu24-disposable' and
+              platform_docker_test_destructive_confirm | bool
+            ) or (
+              (ansible_connection | default('ssh')) != 'local' and
+              platform_environment == 'dev' and
+              ansible_user == 'ubuntu' and
+              (ansible_host | string) == '169.58.171.192' and
+              platform_docker_preflight_node_identity.stdout_lines[0] ==
+                'vmi3506102' and
+              platform_docker_preflight_node_identity.stdout_lines[1] ==
+                '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+              platform_docker_preflight_login.stdout == 'ubuntu'
+            )
+        fail_msg: Node identity changed; Docker F1.2b refuses privilege escalation.

@@ -1,0 +1,5 @@
+---
+# Confirmation is intentionally false. The immutable target/environment checks
+# in tasks/main.yml also use literal values because Ansible extra vars have the
+# highest precedence.
+platform_docker_test_destructive_confirm: false
