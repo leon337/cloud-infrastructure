@@ -34,6 +34,13 @@
       changed_when: false
       check_mode: false
 
+    - name: Canonicalize the selected repository root
+      ansible.builtin.command:
+        argv: [realpath, "{{ platform_repository_root }}"]
+      register: platform_docker_preflight_repository_root
+      changed_when: false
+      check_mode: false
+
     - name: Require immutable GitHub-hosted runner evidence for a local target
       ansible.builtin.assert:
         that:
@@ -76,7 +83,7 @@
             '169.58.171.192'
           - >-
             platform_docker_preflight_inventory.stdout ==
-            (platform_repository_root +
+            (platform_docker_preflight_repository_root.stdout +
              '/automation/ansible/inventory/dev/hosts.yml')
         fail_msg: Docker F1.2b refuses a remote target outside recorded DEV.
       when: platform_docker_preflight_connection != 'local'

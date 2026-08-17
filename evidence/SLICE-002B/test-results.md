@@ -22,8 +22,8 @@ Status: **CI/DISPOSABLE PASS — VPS NOT_EXECUTED**
 
 O desired state nasceu no commit `7015c80759a797bcb141773b79cd9b95f6fbecf1` e
 o delta final exercitado corresponde ao commit `fa66f1049bac5540a5b12219186a421cc39dcbc0`.
-O run commit-bound `31996516019` passou; nenhum playbook foi executado contra o
-inventário DEV ou NODE-01.
+O run commit-bound `31996516019` passou. A primeira tentativa real posterior foi
+recusada no controller antes de contato com o NODE-01, conforme seção abaixo.
 
 Os unitários do helper cobrem symlink, hardlink, path extra, open file por
 processo, troca de inode após freeze e remoção bottom-up limitada às duas raízes
@@ -51,10 +51,25 @@ A VM GitHub-hosted Ubuntu 24.04 deve recusar alvo não descartável e executar:
 Não é válido usar a Workstation, o NODE-01 ou um container privilegiado local
 como substituto da VM descartável. A fixture não prova firewall do host real.
 
+## Preflight real recusado e corrigido
+
+Em `2026-08-17T07:11:25Z`, a primeira tentativa de check mode foi recusada no
+controller antes de contato com o NODE-01: `localhost ok=2 changed=0 failed=1`.
+A comparação usava o inventário canonicalizado contra um repository root ainda
+contendo componentes `..`. Nenhuma autenticação sudo, tarefa remota ou mutação
+ocorreu; o log sanitizado tem SHA-256
+`c4e9debd48d7b7a1eae77bc2a6e2707e64c0447412c1de42305047bd1464f956`.
+
+A remediação canonicaliza também o repository root com `realpath` antes da
+comparação. A suíte local passou com 65 testes e seis syntax-checks; o preflight
+DEV exato passou sem sudo com `localhost ok=9 changed=0 failed=0` e `node-01
+ok=3 changed=0 failed=0`. O check mode privilegiado continua `NOT_EXECUTED` até
+CI verde do commit da correção.
+
 ## Contrato do NODE-01
 
-Nenhuma etapa F1.2b real pode começar enquanto F1.1 não tiver check/apply,
-idempotência, invariância e checkpoint reconciliados. Depois de autorizado, o
-NODE-01 deve provar baseline/delta de listeners, interfaces, routes, sysctls,
+F1.1 já possui check/apply, idempotência, invariância e checkpoint reconciliados.
+Depois do CI da correção, o NODE-01 pode executar somente check mode e deve provar
+baseline/delta de listeners, interfaces, routes, sysctls,
 UFW/rulesets, grupos, services e Workstation. Instalação sem workload não prova
 Q20/Q34; o primeiro container permanece bloqueado por F1.2c.

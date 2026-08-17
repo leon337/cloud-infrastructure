@@ -126,6 +126,19 @@ validation:
   disposable_vm_restart: PASS_CHANGED_0
   disposable_vm_negative_cases: PASS_SCENARIOS_7_NO_MUTATION
   disposable_vm_rollback: PASS_CLEAN_WITH_CLEANUP
+  real_vps_preflight_attempt:
+    attempted_at_utc: "2026-08-17T07:11:25Z"
+    result: REFUSED_BEFORE_REMOTE_GATHERING
+    reason: NONCANONICAL_REPOSITORY_ROOT_STRING_COMPARISON
+    localhost_recap: OK_2_CHANGED_0_FAILED_1
+    node_01_contacted: false
+    remote_mutation: false
+    sanitized_local_log_sha256: c4e9debd48d7b7a1eae77bc2a6e2707e64c0447412c1de42305047bd1464f956
+  real_vps_preflight_remediation:
+    change: CANONICALIZE_REPOSITORY_ROOT_WITH_REALPATH_BEFORE_COMPARISON
+    local_static_suite: PASS_65_TESTS_6_ANSIBLE_SYNTAX
+    unprivileged_exact_dev_preflight: PASS_CHANGED_0_FAILED_0
+    privileged_check_mode_after_fix: NOT_EXECUTED_PENDING_CI
   real_vps_check_mode: NOT_EXECUTED
   real_vps_apply: NOT_EXECUTED
   real_vps_idempotence: NOT_EXECUTED

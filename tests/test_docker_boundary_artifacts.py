@@ -186,6 +186,8 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("ansible_inventory_sources | length == 1", preflight)
         self.assertIn("ansible_inventory_sources | first", preflight)
+        self.assertIn("Canonicalize the selected repository root", preflight)
+        self.assertIn("platform_docker_preflight_repository_root.stdout", preflight)
         self.assertNotIn('{{ inventory_file }}', preflight)
 
     def test_reconcile_validates_index_digest_before_suppressed_install(self):
