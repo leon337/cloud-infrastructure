@@ -146,6 +146,7 @@ readonly SUDOERS_PATH=/etc/sudoers.d/91-codex-mission-001-temporary
 readonly ALLOWED_OPERATIONS='check apply test reconcile rollback status'
 
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export GIT_OPTIONAL_LOCKS=0
 unset BASH_ENV CDPATH ENV GIT_CONFIG_COUNT GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM \
   GIT_DIR GIT_WORK_TREE LD_LIBRARY_PATH LD_PRELOAD PYTHONPATH
 umask 077

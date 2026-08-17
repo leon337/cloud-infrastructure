@@ -196,11 +196,11 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
             ROOT / "automation" / "mission-001" / "operations" / "apply"
         ).read_text(encoding="utf-8")
         self.assertIn(
-            "OLD_RUNNER_SHA256=34cdd4b132b70f6b242413ba769cd8028aad6b083f8a5e2d15f1617a332e3be2",
+            "OLD_RUNNER_SHA256=d5ca57ef518abd9362b8d64177c3a7c8bed12dc5b77d1455f821930471c20f31",
             operation,
         )
         self.assertIn(
-            "DESIRED_RUNNER_SHA256=d5ca57ef518abd9362b8d64177c3a7c8bed12dc5b77d1455f821930471c20f31",
+            "DESIRED_RUNNER_SHA256=36945487cd448a76f75a5bc8761a7d46547ae148acdcc9aed0ab3af768571d7d",
             operation,
         )
         self.assertIn("install -o root -g root -m 0755", operation)
@@ -214,6 +214,9 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
             self.runner.count('chmod -R a+rX,go-w "$staging/repository"'),
             1,
         )
+
+    def test_privileged_git_checks_do_not_rewrite_the_index(self):
+        self.assertIn("export GIT_OPTIONAL_LOCKS=0", self.runner)
 
     def test_no_password_capture_or_persistence_mechanism_exists(self):
         lowered = self.bootstrap.lower()
