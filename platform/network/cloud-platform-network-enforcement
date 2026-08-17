@@ -63,11 +63,11 @@ expected_fwd_rules() {
     "-N $chain" \
     "-A $chain -m conntrack --ctstate INVALID -j DROP" \
     "-A $chain -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT" \
-    "-A $chain -i cp+ -d 10.0.0.0/8 -j DROP" \
-    "-A $chain -i cp+ -d 100.64.0.0/10 -j DROP" \
-    "-A $chain -i cp+ -d 169.254.0.0/16 -j DROP" \
-    "-A $chain -i cp+ -d 172.16.0.0/12 -j DROP" \
-    "-A $chain -i cp+ -d 192.168.0.0/16 -j DROP" \
+    "-A $chain -d 10.0.0.0/8 -i cp+ -j DROP" \
+    "-A $chain -d 100.64.0.0/10 -i cp+ -j DROP" \
+    "-A $chain -d 169.254.0.0/16 -i cp+ -j DROP" \
+    "-A $chain -d 172.16.0.0/12 -i cp+ -j DROP" \
+    "-A $chain -d 192.168.0.0/16 -i cp+ -j DROP" \
     "-A $chain -i cp+ -j DROP" \
     "-A $chain -o cp+ -j DROP" \
     "-A $chain -j RETURN"
