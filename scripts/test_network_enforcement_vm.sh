@@ -95,13 +95,13 @@ for interface in cp00000001 cp00000002 cp00000003; do
   ip link show "$interface" >/dev/null || fail "network_scope_interface_missing=$interface"
 done
 sudo docker network create --internal cloud-platform-unmanaged-refusal >/dev/null
-scope_refusal_log=${RUNNER_TEMP:?}/network-scope-refusal.log
-if sudo --preserve-env=F1_2C_NETWORK_SCOPE_CONFIRM,GITHUB_ACTIONS,RUNNER_ENVIRONMENT,ImageOS \
-  "$SCOPES_RECONCILER" apply "$SCOPES_POLICY" >"$scope_refusal_log" 2>&1; then
+if scope_refusal_output=$(sudo \
+  --preserve-env=F1_2C_NETWORK_SCOPE_CONFIRM,GITHUB_ACTIONS,RUNNER_ENVIRONMENT,ImageOS \
+  "$SCOPES_RECONCILER" apply "$SCOPES_POLICY" 2>&1); then
   fail network_scope_accepted_unmanaged_network
 fi
 grep -q 'unexpected_custom_networks=cloud-platform-unmanaged-refusal' \
-  "$scope_refusal_log" || fail network_scope_refusal_reason_missing
+  <<<"$scope_refusal_output" || fail network_scope_refusal_reason_missing
 sudo docker network rm cloud-platform-unmanaged-refusal >/dev/null
 scope_rollback=$(sudo --preserve-env=F1_2C_NETWORK_SCOPE_CONFIRM,GITHUB_ACTIONS,RUNNER_ENVIRONMENT,ImageOS \
   "$SCOPES_RECONCILER" rollback "$SCOPES_POLICY")
