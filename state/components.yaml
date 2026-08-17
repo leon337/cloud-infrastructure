@@ -218,20 +218,20 @@ platform_components:
     observed_version: ABSENT
     lifecycle: SELECTED_PLANNED_F5
   network_enforcement:
-    technology: UNDECIDED_nftables_DOCKER_USER_egress_policy
-    selected_version: null
+    technology: Docker_iptables_nft_DOCKER_USER_internal_bridges_proxy_egress
+    selected_version: F1_2C_CONTRACT_V1
     observed_version: NOT_APPLIED
-    lifecycle: REPO_CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_ADR_AND_DYNAMIC_NEGATIVE_TESTS_REQUIRED_BEFORE_FIRST_WORKLOAD
+    lifecycle: TECHNOLOGY_ADR_ACCEPTED_IMPLEMENTATION_AND_DYNAMIC_NEGATIVE_TESTS_REQUIRED_BEFORE_FIRST_WORKLOAD
     contract:
       path: platform/network/f1-2c-contract.yaml
       commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
-      status: REPO_CONTRACT_ONLY
+      status: TECHNOLOGY_SELECTED_REPO_ONLY
       local_tests: PASS_4
       address_families:
         - ipv4
         - ipv6
     validation:
-      technology_adr: PENDING
+      technology_adr: ACCEPTED_DEC_008
       disposable_integration: PENDING
       real_vps_check_mode: NOT_EXECUTED
       real_vps_apply: NOT_EXECUTED

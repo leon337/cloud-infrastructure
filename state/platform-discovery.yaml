@@ -23,7 +23,7 @@ implementation:
   real_vps_apply: PASS_AT_2026_08_17T06_48_33Z_CHANGED_7
   real_vps_idempotence: PASS_AT_2026_08_17T06_57_50Z_CHANGED_0
   real_vps_post_apply_invariance: PASS_AT_2026_08_17T06_58_43Z
-  next_step: SLICE_002C_TECHNOLOGY_ADR_AND_DISPOSABLE_NETWORK_ENFORCEMENT
+  next_step: SLICE_002C_IMPLEMENTATION_AND_DISPOSABLE_NETWORK_ENFORCEMENT
   f1_2b_repo_only:
     status: DONE_REAL_EMPTY_RUNTIME_APPLY_IDEMPOTENCE_RESTART_INVARIANCE_PASS
     commit: 7015c80759a797bcb141773b79cd9b95f6fbecf1
@@ -32,12 +32,12 @@ implementation:
     real_gate: DONE_EMPTY_RUNTIME_FIRST_WORKLOAD_BLOCKED_BY_F1_2C
     first_workload: BLOCKED_BY_F1_2C
   f1_2c_repo_only:
-    status: CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_AND_DYNAMIC_PROOF_PENDING
+    status: TECHNOLOGY_ADR_ACCEPTED_IMPLEMENTATION_AND_DYNAMIC_PROOF_PENDING
     contract_path: platform/network/f1-2c-contract.yaml
     contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
     local_validation: PASS_4_CONTRACT_TESTS
-    technology_selection: UNRESOLVED
-    technology_adr: PENDING
+    technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
+    technology_adr: ACCEPTED_DEC_008
     disposable_integration: PENDING_NOT_RUN
     real_vps: NOT_EXECUTED
     first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES

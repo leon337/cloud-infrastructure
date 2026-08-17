@@ -21,10 +21,13 @@ class NetworkEnforcementContractTests(unittest.TestCase):
 
         self.assertEqual(metadata["slice"], "F1.2c")
         self.assertEqual(metadata["environment"], "DEV_LAB")
-        self.assertEqual(metadata["status"], "REPO_CONTRACT_ONLY")
+        self.assertEqual(metadata["status"], "TECHNOLOGY_SELECTED_REPO_ONLY")
         self.assertEqual(metadata["operational_state"], "NOT_APPLIED")
-        self.assertEqual(metadata["technology_selection"], "UNRESOLVED")
-        self.assertEqual(gates["technology_adr"], "PENDING")
+        self.assertEqual(
+            metadata["technology_selection"],
+            "DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS",
+        )
+        self.assertEqual(gates["technology_adr"], "ACCEPTED_DEC_008")
         self.assertEqual(gates["disposable_integration"], "PENDING")
         self.assertEqual(
             gates["node_01_execution"],
@@ -48,10 +51,14 @@ class NetworkEnforcementContractTests(unittest.TestCase):
             set(scope["workload_scopes"]),
             {"tenant", "project", "mission", "sandbox"},
         )
-        self.assertEqual(
-            scope["candidate_status"],
-            "UNSELECTED_REQUIRES_ADR_AND_DISPOSABLE_PROOF",
-        )
+        selected = scope["selected_mechanisms"]
+        self.assertEqual(selected["docker_firewall_backend"], "iptables")
+        self.assertEqual(selected["host_frontend"], "iptables-nft")
+        self.assertEqual(selected["policy_entry_chain"], "DOCKER-USER")
+        self.assertEqual(selected["owned_chain"], "CLOUD-PLATFORM-FWD")
+        self.assertEqual(selected["workload_network_mode"], "internal")
+        self.assertEqual(selected["egress"], "explicit_http_connect_proxy")
+        self.assertTrue(scope["address_pools"]["collision_check_required"])
 
     def test_default_policy_is_fail_closed_and_sharing_is_explicit(self):
         policy = self.contract["default_policy"]

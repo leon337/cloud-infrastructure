@@ -1,6 +1,6 @@
 # SLICE-002C test results
 
-Status: **CONTRACT LOCAL PASS — ADR/DYNAMIC PROOF PENDING — VPS NOT_EXECUTED**
+Status: **TECHNOLOGY ADR ACCEPTED — IMPLEMENTATION/DYNAMIC PROOF PENDING — VPS NOT_EXECUTED**
 
 ## Resultado corrente
 
@@ -15,10 +15,10 @@ Status: **CONTRACT LOCAL PASS — ADR/DYNAMIC PROOF PENDING — VPS NOT_EXECUTED
 | Testes específicos | `PASS_4` | não privilegiado |
 | Suíte integrada | `PASS_60` | não privilegiado |
 | YAML do repositório | `PASS_34` | parse estrito |
-| ADR/mecanismo | `PENDING` | não selecionado |
+| ADR/mecanismo | `ACCEPTED_DEC_008` | `DOCKER-USER`, bridges internas e egress proxy-only |
 | Fixture descartável | `PENDING` | não executada |
 | NODE-01 | `NOT_EXECUTED` | nenhuma autorização criada |
 
-Os testes verificam o conteúdo do contrato e a separação entre `PASS_LOCAL`,
-`PENDING` e `NOT_EXECUTED`. Não foram executados Docker, firewall, network
-namespace, probe externo, playbook ou comando privilegiado.
+Os testes verificam o conteúdo do contrato, a seleção e a separação entre
+`PASS_LOCAL`, `PENDING` e `NOT_EXECUTED`. Não foram executados Docker, firewall,
+network namespace, probe externo, playbook ou comando privilegiado.

@@ -293,8 +293,8 @@ class StateCrosscheckTests(unittest.TestCase):
         components = copy.deepcopy(self.components)
         components["platform_components"]["network_enforcement"]["validation"][
             "technology_adr"
-        ] = "PASS_WITHOUT_ADR"
-        cases.append(("adr", {"components": components}, "pending gate"))
+        ] = "PENDING"
+        cases.append(("adr", {"components": components}, "ADR gate"))
 
         network_baseline = copy.deepcopy(self.network_baseline)
         network_baseline["validation"]["real_vps_apply"] = "PASS"

@@ -10,5 +10,6 @@ Decisões canônicas da infraestrutura.
 - `DEC-005-foundation-declarativa-e-accounting.md` — Ansible/schema e slices F1.1 sem limites cegos.
 - `DEC-006-technology-mapping-v1.md` — baseline tecnológica e implantação controlada por lifecycle.
 - `DEC-007-docker-runtime-boundary.md` — Docker CE pinado, vazio e root-only; workloads bloqueados por F1.2c.
+- `DEC-008-network-enforcement-docker-user-proxy-egress.md` — redes internas por sandbox, policy em `DOCKER-USER` e egress somente por DNS/proxy controlados.
 
 Novas decisões devem registrar contexto, alternativas, escolha, motivo, consequências, status e possibilidade de revisão.

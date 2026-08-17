@@ -322,7 +322,7 @@ def f1_2c_gate_errors(
     network_baseline: dict[str, Any],
     network_contract: dict[str, Any],
 ) -> list[str]:
-    """Reject claims beyond the repo-only F1.2c contract checkpoint."""
+    """Require selected F1.2c technology while rejecting operational overclaims."""
     errors: list[str] = []
     current_state = current["codex_execution"]["repo_only_preparations"][
         "network_enforcement_f1_2c"
@@ -353,12 +353,14 @@ def f1_2c_gate_errors(
         errors.append("F1.2c contract file is missing")
 
     metadata = network_contract["metadata"]
-    if metadata["status"] != "REPO_CONTRACT_ONLY":
-        errors.append("F1.2c contract no longer identifies as repo-only")
+    if metadata["status"] != "TECHNOLOGY_SELECTED_REPO_ONLY":
+        errors.append("F1.2c contract technology checkpoint differs")
     if metadata["operational_state"] != "NOT_APPLIED":
         errors.append("F1.2c contract overclaims operational state")
-    if metadata["technology_selection"] != "UNRESOLVED":
-        errors.append("F1.2c technology was selected without an ADR checkpoint")
+    if metadata["technology_selection"] != (
+        "DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS"
+    ):
+        errors.append("F1.2c selected technology differs from DEC-008")
     if network_baseline["contract"]["executable_rules_present"] is not False:
         errors.append("F1.2c evidence claims executable rules")
 
@@ -372,28 +374,34 @@ def f1_2c_gate_errors(
         if not str(value).startswith("PASS_"):
             errors.append(f"F1.2c local contract validation changed at {location}")
 
-    pending_values = {
+    adr_values = {
         "current.technology_adr": current_state["technology_adr"],
-        "current.disposable_integration": current_state[
-            "disposable_integration"
-        ],
         "discovery.technology_adr": discovery_state["technology_adr"],
-        "discovery.disposable_integration": discovery_state[
-            "disposable_integration"
-        ],
         "components.technology_adr": component_state["validation"][
             "technology_adr"
-        ],
-        "components.disposable_integration": component_state["validation"][
-            "disposable_integration"
         ],
         "evidence.technology_adr": network_baseline["validation"][
             "technology_adr"
         ],
+        "contract.technology_adr": network_contract["gates"]["technology_adr"],
+    }
+    for location, value in adr_values.items():
+        if value != "ACCEPTED_DEC_008":
+            errors.append(f"F1.2c ADR gate differs at {location}")
+
+    pending_values = {
+        "current.disposable_integration": current_state[
+            "disposable_integration"
+        ],
+        "discovery.disposable_integration": discovery_state[
+            "disposable_integration"
+        ],
+        "components.disposable_integration": component_state["validation"][
+            "disposable_integration"
+        ],
         "evidence.disposable_integration": network_baseline["validation"][
             "disposable_integration"
         ],
-        "contract.technology_adr": network_contract["gates"]["technology_adr"],
         "contract.disposable_integration": network_contract["gates"][
             "disposable_integration"
         ],

@@ -30,7 +30,7 @@ project:
     future_platform_implementation: SLICE_001_DONE_F1_2B_DONE_F1_2C_CONTRACT_STARTED
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: SLICE_002C_TECHNOLOGY_ADR_AND_DISPOSABLE_NETWORK_ENFORCEMENT
+  next_exact_step: SLICE_002C_IMPLEMENTATION_AND_DISPOSABLE_NETWORK_ENFORCEMENT
 platform_discovery:
   status: CODEX_IMPLEMENTATION_IN_PROGRESS
   decision_source: state/platform-discovery.yaml
@@ -187,7 +187,7 @@ authorization:
   authority: LEANDRO
   phase_1_and_2_full_access: EXECUTED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: SLICE_002C_TECHNOLOGY_ADR_AND_DISPOSABLE_NETWORK_ENFORCEMENT
+  next_step: SLICE_002C_IMPLEMENTATION_AND_DISPOSABLE_NETWORK_ENFORCEMENT
   platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
   codex_technology_selection: AUTHORIZED_BY_Q40_D
   codex_implementation_mission: AUTHORIZED_BY_Q40_D
@@ -287,12 +287,12 @@ codex_execution:
       real_vps_post_apply_invariance: PASS_AT_2026_08_17T12_15_47Z
       first_workload: BLOCKED_BY_F1_2C
     network_enforcement_f1_2c:
-      status: CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_AND_DYNAMIC_PROOF_PENDING
+      status: TECHNOLOGY_ADR_ACCEPTED_IMPLEMENTATION_AND_DYNAMIC_PROOF_PENDING
       contract_path: platform/network/f1-2c-contract.yaml
       contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
       local_validation: PASS_4_CONTRACT_TESTS
-      technology_selection: UNRESOLVED
-      technology_adr: PENDING
+      technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
+      technology_adr: ACCEPTED_DEC_008
       disposable_integration: PENDING_NOT_RUN
       real_vps_check_mode: NOT_EXECUTED
       real_vps_apply: NOT_EXECUTED

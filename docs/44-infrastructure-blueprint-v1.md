@@ -63,7 +63,7 @@ Depois de baseline medido:
 | Desired state | Ansible Core 2.21.3 + JSON Schema | controller → SSH/sudo humano | `F1_1_DONE_REAL_APPLY_IDEMPOTENCE_INVARIANCE_PASS` |
 | Management Network | Tailscale com grants explícitos | serviço host | `WAITING_HUMAN_GATE` |
 | Container runtime | Docker CE 29.7.2 + containerd.io 2.3.3 + Buildx 0.36.1 + Compose 5.4.0 | serviço host, root-only, bridge default ausente, sem workload/porta | `F1_2B_REPO_AND_DISPOSABLE_CI_PASS; REAL_CHECK_MODE_READY; REAL_APPLY_NOT_EXECUTED` |
-| Network/egress | nftables/`DOCKER-USER` + DNS/egress mechanism a selecionar | host + bridges segregadas | `F1_2C_REPO_CONTRACT_LOCAL_PASS; TECHNOLOGY_ADR_AND_DYNAMIC_PROOF_PENDING; FIRST_WORKLOAD_BLOCKED` |
+| Network/egress | Docker `iptables-nft` + `DOCKER-USER`, bridges internas e egress proxy-only | host + bridges segregadas | `F1_2C_DEC_008_ACCEPTED; IMPLEMENTATION_AND_DYNAMIC_PROOF_PENDING; FIRST_WORKLOAD_BLOCKED` |
 | Disk isolation | project quota/XFS, volume/bloco limitado ou execution node a testar | por sandbox/workload | `DECISION_PENDING; Q8_NOT_YET_PROVEN` |
 | Capability Core | Go + OpenAPI 3.1.2 + OPA/Rego v1 | container/unix socket | `PLANNED_F2` |
 | PostgreSQL foundation | major após Keycloak/Temporal/pgBackRest compat test | container/volume sem dado real antes de backup/cofre | `PLANNED_F2_2; DEPENDS_F1_5_F1_6_FOR_REAL_STATE` |
@@ -101,16 +101,16 @@ F1.2b seleciona os cinco pacotes exatos e a chave pública oficial em DEC-007. O
 source é Docker `stable/noble/amd64`, o daemon usa backend `iptables` pelo
 frontend iptables-nft do Noble e o socket é `root:root 0600`; não existe API TCP
 nem membro no grupo `docker`. Apply/rollback, pin APT, preflight, helper de árvore
-e harness estão versionados e passaram validação local não privilegiada; CI
-descartável está pendente. O estado real continua ausente e o apply no NODE-01 é
-liberado somente para check mode após F1.1 aplicado, reconciliado e checkpointed.
+e harness passaram validação local e CI descartável. O runtime vazio foi aplicado
+no NODE-01, reconciliado com `changed=0`, reiniciado e auditado sem workload.
 
-F1.2c iniciou somente seu contrato repo-only no commit
+F1.2c iniciou seu contrato repo-only no commit
 `b4cbeb066605754d538ff5abe2d294f0759d6f59`. O contrato torna obrigatórios
 deny-by-default, IPv4/IPv6, isolamento tenant/project/mission/sandbox, zonas
 host/Management/metadata/control protegidas, sharing por grant, egress por
-profile, service discovery identity-aware e matriz de evidência. Ele não
-seleciona nem implementa nftables, `DOCKER-USER`, DNS ou egress.
+profile, service discovery identity-aware e matriz de evidência. DEC-008 agora
+seleciona `DOCKER-USER`, bridges internas por sandbox, DNS por escopo e egress
+proxy-only, mas ainda não há implementação ou prova dinâmica.
 
 F1.2b instala Docker sem publicar porta ou workload. Antes de qualquer container:
 

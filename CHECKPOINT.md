@@ -122,11 +122,12 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - preserva Q20/Q34, TM-02/TM-03/TM-10, IPv4/IPv6, deny de
   host/Management/metadata/control/lateral, sharing por grant e egress por
   profile;
-- tecnologia continua `UNRESOLVED`; nftables, `DOCKER-USER`, DNS e egress são
-  apenas candidatos até ADR e prova descartável;
+- DEC-008 seleciona `DOCKER-USER`, bridges internas, DNS por escopo e egress
+  proxy-only; implementação e prova descartável continuam pendentes;
 - quatro testes específicos e suíte integrada de 60 testes/34 YAML passaram;
 - não há ruleset executável, harness dinâmico, network namespace, probe ou
-  mutação real; ADR/integração permanecem `PENDING` e NODE-01 `NOT_EXECUTED`;
+  mutação real; implementação/integração permanecem `PENDING` e NODE-01
+  `NOT_EXECUTED`;
 - evidência sanitizada: `evidence/SLICE-002C/`.
 
 ## Backup/recovery
@@ -160,10 +161,10 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 
 ## Próximo passo exato
 
-**SLICE_002C_TECHNOLOGY_ADR_AND_DISPOSABLE_NETWORK_ENFORCEMENT**
+**SLICE_002C_IMPLEMENTATION_AND_DISPOSABLE_NETWORK_ENFORCEMENT**
 
-Selecionar e documentar a tecnologia de enforcement de rede, implementar e
-provar a matriz dinâmica IPv4/IPv6 em ambiente descartável. Não aplicar no
+Implementar a DEC-008 e provar a matriz dinâmica IPv4/IPv6 em ambiente
+descartável. Não aplicar no
 NODE-01 nem iniciar container/workload antes dessa prova. Management Network,
 produção e rotação permanecem fora desse passo.
 

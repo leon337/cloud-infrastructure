@@ -3,9 +3,9 @@ kind: NetworkEnforcementContract
 metadata:
   slice: F1.2c
   environment: DEV_LAB
-  status: REPO_CONTRACT_ONLY
+  status: TECHNOLOGY_SELECTED_REPO_ONLY
   operational_state: NOT_APPLIED
-  technology_selection: UNRESOLVED
+  technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
 authority:
   binding_requirements:
     - CR-020
@@ -32,15 +32,21 @@ scope:
     - management
     - metadata
     - control
-  candidate_mechanisms:
-    packet_filter:
-      - nftables
-      - DOCKER-USER
-    dns_and_egress:
-      - controlled_dns_proxy
-      - explicit_egress_proxy
-      - packet_filter_allowlist
-  candidate_status: UNSELECTED_REQUIRES_ADR_AND_DISPOSABLE_PROOF
+  selected_mechanisms:
+    docker_firewall_backend: iptables
+    host_frontend: iptables-nft
+    policy_entry_chain: DOCKER-USER
+    owned_chain: CLOUD-PLATFORM-FWD
+    network_driver: bridge
+    workload_network_mode: internal
+    dns: controlled_per_scope_view
+    egress: explicit_http_connect_proxy
+  decision: decisions/DEC-008-network-enforcement-docker-user-proxy-egress.md
+  implementation_status: PENDING_REQUIRES_DISPOSABLE_PROOF
+  address_pools:
+    ipv4_candidate: 10.240.0.0/16
+    ipv6_reserved_not_enabled: "fd42:434c:4f55::/48"
+    collision_check_required: true
 default_policy:
   ingress: DENY
   published_ports: DENY
@@ -62,7 +68,10 @@ egress_profiles:
     - none
     - restricted
     - development-default
-  definitions: PENDING_TECHNOLOGY_SELECTION
+  definitions:
+    none: NO_DNS_NO_PROXY_NO_DIRECT_EGRESS
+    restricted: CONTROLLED_DNS_AND_PROXY_EXPLICIT_DESTINATIONS
+    development-default: CONTROLLED_DNS_AND_VERSIONED_HTTP_CONNECT_PROXY_POLICY
   requirements:
     none: DENY_DNS_AND_ALL_DESTINATIONS
     restricted: ALLOW_ONLY_CONTROLLED_DNS_AND_EXPLICIT_DESTINATIONS
@@ -72,6 +81,8 @@ service_discovery:
   identity_aware_authorization_required: true
   raw_ip_or_container_name_grants_authority: false
   cross_scope_resolution: DENY_WITHOUT_EXPLICIT_GRANT
+  implementation: CORE_ISSUED_RECORDS_PER_SCOPE_DNS_VIEW
+  docker_embedded_name_or_raw_ip_is_authority: false
 sharing:
   implicit_shared_networks: FORBIDDEN
   explicit_grant_dimensions:
@@ -101,7 +112,7 @@ required_disposable_evidence:
   - rollback_and_cleanup
 gates:
   static_contract: IMPLEMENTED_REPO_ONLY
-  technology_adr: PENDING
+  technology_adr: ACCEPTED_DEC_008
   disposable_integration: PENDING
   f1_1_real_foundation: BLOCKING_REAL_EXECUTION
   f1_2b_disposable_runtime: BLOCKING_DYNAMIC_NETWORK_PROOF

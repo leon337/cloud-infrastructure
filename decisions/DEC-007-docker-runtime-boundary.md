@@ -1,6 +1,6 @@
 # DEC-007 — Docker runtime rootful com fronteira vazia e root-only
 
-Status: **ACCEPTED — REPO DESIRED STATE LOCAL-STATIC PASS — CI/REAL BLOCKED**
+Status: **ACCEPTED — DONE EMPTY RUNTIME — WORKLOAD BLOCKED BY F1.2c**
 
 ## Contexto
 
@@ -10,11 +10,9 @@ que ainda pertencem a F1.2c. Instalar o runtime com defaults criaria bridge,
 forwarding e uma superfície de publicação capaz de contornar a expectativa do
 UFW antes que essa policy fosse provada.
 
-F1.1 continua `PARTIAL`: check mode privilegiado, apply, segunda reconciliação e
-invariância no NODE-01 permanecem `NOT_EXECUTED`. O desired state F1.2b e seu
-harness foram concluídos no repositório e passaram validação local não
-privilegiada; CI/integração descartável e qualquer check/apply real permanecem
-pendentes. O apply real depende do checkpoint de F1.1.
+F1.1 e F1.2b foram concluídos no NODE-01. O runtime vazio passou CI descartável,
+check mode, backup off-host, apply, reconciliação `changed=0`, restart e
+invariância. F1.2c ainda bloqueia qualquer workload.
 
 ## Alternativas
 

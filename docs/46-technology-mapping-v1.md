@@ -35,9 +35,9 @@ data de consulta e texto de licença no decision record sem copiar secrets.
 | Desired state | **Ansible Core 2.21.3 — SELECTED** | shell, Nix, OpenTofu | Agentless, idempotente e adequado ao host existente. Shell é frágil para drift; Nix exigiria redesenho do OS; OpenTofu fica para recursos de provedor. Rollback explícito por objeto/backup. |
 | Manifest | **YAML + JSON Schema 2020-12 — SELECTED** | schema ad hoc, CUE | Compatível com OpenAPI 3.1, tooling amplo e rejeição de campos desconhecidos. Evolução por `apiVersion`. |
 | Management Network | **Tailscale — CONDITIONAL/HUMAN_GATE** | Headscale, WireGuard puro | Cliente Linux é open source, mas coordination server é proprietário/gerenciado e o plano limita recursos/audit features. A vantagem deliberada Q2 é identidade/dispositivo/policy com menor operação; plano, termos, IdP, logs e migração devem ser aprovados. Headscale no único nó cria dependência circular; WireGuard não entrega sozinho IdP/policy/audit. SSH público é rollback transitório no onboarding. |
-| Runtime | **Docker CE 29.7.2 + containerd.io 2.3.3 + Buildx 0.36.1 + Compose 5.4.0 — SELECTED/IMPLEMENTING por Q17** | `docker.io`, convenience script, Podman, Kubernetes, Docker rootless | DEC-007 fixa pacotes oficiais Noble `amd64`, socket root-only, grupo vazio e runtime sem bridge/workload. Desired state/harness passaram local-static; uninstall usa provenance/baseline/manifesto fail-closed. CI dinâmica e VPS ainda não provadas. |
+| Runtime | **Docker CE 29.7.2 + containerd.io 2.3.3 + Buildx 0.36.1 + Compose 5.4.0 — DONE EMPTY RUNTIME por Q17** | `docker.io`, convenience script, Podman, Kubernetes, Docker rootless | DEC-007 fixa pacotes oficiais Noble `amd64`, socket root-only, grupo vazio e runtime sem bridge/workload. CI descartável, apply real, idempotência, restart e invariância passaram; uninstall usa provenance/baseline/manifesto fail-closed. |
 | Resource isolation | **cgroup v2 + systemd + AppArmor/seccomp — SELECTED** | apenas limites Compose, VM/nested virt, gVisor | Nativo e econômico. gVisor permanece candidato para código hostil; containers não são declarados equivalentes a VM. |
-| Network/egress/service discovery | **CONDITIONAL — REPO CONTRACT PASS; ADR antes do primeiro workload** | nftables/`DOCKER-USER` + DNS proxy, egress proxy, firewall dedicado/execution node | O contrato F1.2c fixa v4/v6, host/metadata/Management/control/lateral deny, shared grants, Internet por perfil, identidade e evidência. Nenhum candidato foi selecionado ou implementado; instalar daemon sem workload não satisfaz Q20/Q34. |
+| Network/egress/service discovery | **SELECTED — IMPLEMENTATION/DYNAMIC PROOF PENDING** | Docker `iptables-nft` + `DOCKER-USER`, bridges internas por sandbox, DNS por escopo e egress proxy-only | DEC-008 fixa o mecanismo. O contrato F1.2c mantém v4/v6, host/metadata/Management/control/lateral deny, grants, Internet por perfil e evidência. Ainda não há ruleset aplicado; instalar daemon sem workload não satisfaz Q20/Q34. |
 | Disk isolation | **DECISION PENDING** | project quota/XFS, volume/bloco limitado, execution node dedicado | cgroup e ext4/overlay2 não impõem quota rígida do writable layer. Monitoramento/admission sozinho não satisfaz Q8/Q25; sandbox permanece `PARTIAL` até teste de uma alternativa. |
 | Capability Core | **Go 1.26.x + OpenAPI 3.1.2 — SELECTED** | Python/FastAPI, OpenAPI 3.2 | Binário pequeno e portável; 3.1 possui compatibilidade madura com JSON Schema. Contratos separam executores e permitem reimplementação. |
 | Policy | **OPA/Rego v1 embutido — SELECTED** | OpenFGA, Cedar, OPA sidecar | Rego cobre contexto, risco, tempo e ambiente. OpenFGA é forte em relações, mas não substitui policy contextual. Adapter permite sidecar posterior. |
@@ -112,13 +112,14 @@ O commit `b4cbeb066605754d538ff5abe2d294f0759d6f59` adiciona somente o
 contrato `platform/network/f1-2c-contract.yaml` e quatro testes. Q20/Q34,
 TM-02/TM-03/TM-10, IPv4/IPv6, deny-by-default, grants explícitos, profiles de
 egress, descoberta identity-aware e evidência mínima estão codificados. A
-seleção tecnológica continua `UNRESOLVED`; não há ruleset, playbook, harness
-dinâmico ou prova de conectividade.
+DEC-008 seleciona `DOCKER-USER`, bridges internas por sandbox, DNS por escopo e
+egress proxy-only; não há ruleset, playbook, harness dinâmico ou prova de
+conectividade.
 
 | Nível | Estado F1.2c |
 |---|---|
 | Contrato local | `PASS_4_TESTS` |
-| ADR/mecanismo | `PENDING` |
+| ADR/mecanismo | `ACCEPTED_DEC_008` |
 | Integração descartável | `PENDING` |
 | NODE-01 | `NOT_EXECUTED` |
 | Primeiro workload | `BLOCKED` |
