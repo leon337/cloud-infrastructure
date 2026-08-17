@@ -87,7 +87,10 @@ class DockerRuntimeTreeGuardTests(unittest.TestCase):
         outside.write_bytes(b"preserve")
         outside.chmod(0o640)
         (self.docker_root / "escape").symlink_to(outside)
-        with self.assertRaisesRegex(runtime_tree_guard.GuardError, "non-regular"):
+        with self.assertRaisesRegex(
+            runtime_tree_guard.GuardError,
+            r"non-regular entry: path=.*escape type_bits=0o120000",
+        ):
             self._snapshot()
         (self.docker_root / "escape").unlink()
 

@@ -35,12 +35,15 @@ class GuardError(RuntimeError):
     """A fail-closed runtime-tree invariant was not met."""
 
 
-def _kind(mode: int) -> str:
+def _kind(mode: int, path: pathlib.Path) -> str:
     if stat.S_ISDIR(mode):
         return "directory"
     if stat.S_ISREG(mode):
         return "file"
-    raise GuardError("runtime tree contains a non-regular entry")
+    raise GuardError(
+        "runtime tree contains a non-regular entry: "
+        f"path={path} type_bits={stat.S_IFMT(mode):#o}"
+    )
 
 
 def _is_within(path: pathlib.Path, root: pathlib.Path) -> bool:
@@ -109,7 +112,7 @@ def scan_runtime_trees(
                 raise GuardError(f"find escaped literal runtime root: {path}")
             _require_safe_name(path)
             item_stat = path.lstat()
-            item_kind = _kind(item_stat.st_mode)
+            item_kind = _kind(item_stat.st_mode, path)
             if item_stat.st_dev != root_device:
                 raise GuardError(f"runtime entry crossed a device boundary: {path}")
             if item_stat.st_uid != expected_uid or item_stat.st_gid != expected_gid:
@@ -399,7 +402,7 @@ def remove_from_manifest(
     for entry in entries:
         path = pathlib.Path(entry["path"])
         item_stat = path.lstat()
-        item_kind = _kind(item_stat.st_mode)
+        item_kind = _kind(item_stat.st_mode, path)
         if (
             item_kind != entry["kind"]
             or item_stat.st_dev != entry["device"]
