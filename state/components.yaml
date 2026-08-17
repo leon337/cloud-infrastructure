@@ -214,7 +214,21 @@ platform_components:
     technology: UNDECIDED_nftables_DOCKER_USER_egress_policy
     selected_version: null
     observed_version: NOT_APPLIED
-    lifecycle: DECISION_AND_NEGATIVE_TESTS_REQUIRED_BEFORE_FIRST_WORKLOAD
+    lifecycle: REPO_CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_ADR_AND_DYNAMIC_NEGATIVE_TESTS_REQUIRED_BEFORE_FIRST_WORKLOAD
+    contract:
+      path: platform/network/f1-2c-contract.yaml
+      commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
+      status: REPO_CONTRACT_ONLY
+      local_tests: PASS_4
+      address_families:
+        - ipv4
+        - ipv6
+    validation:
+      technology_adr: PENDING
+      disposable_integration: PENDING
+      real_vps_check_mode: NOT_EXECUTED
+      real_vps_apply: NOT_EXECUTED
+      first_workload: BLOCKED_BY_F1_2C
   disk_isolation:
     technology: UNDECIDED_project_quota_bounded_volume_or_execution_node
     selected_version: null

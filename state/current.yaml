@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-17
-documentation_state: SLICE_001_REAL_GATE_WITH_F1_2B_REPO_READY_LOCAL_STATIC_CI_PENDING
+documentation_state: SLICE_001_REAL_GATE_F1_2B_REPO_READY_F1_2C_CONTRACT_LOCAL_PASS
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
@@ -27,7 +27,7 @@ project:
     phase_0: DONE
     phase_1: DONE
     phase_2_cloud_workstation: DONE
-    future_platform_implementation: SLICE_001_PARTIAL_F1_2B_REPO_READY_CI_PENDING
+    future_platform_implementation: SLICE_001_PARTIAL_F1_2B_REPO_READY_F1_2C_CONTRACT_STARTED
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
   next_exact_step: SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
@@ -270,5 +270,16 @@ codex_execution:
       real_vps_check_mode: NOT_EXECUTED_BLOCKED_BY_F1_1
       real_vps_apply: NOT_EXECUTED_BLOCKED_BY_F1_1
       first_workload: BLOCKED_BY_F1_2C
+    network_enforcement_f1_2c:
+      status: CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_AND_DYNAMIC_PROOF_PENDING
+      contract_path: platform/network/f1-2c-contract.yaml
+      contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
+      local_validation: PASS_4_CONTRACT_TESTS
+      technology_selection: UNRESOLVED
+      technology_adr: PENDING
+      disposable_integration: PENDING_NOT_RUN
+      real_vps_check_mode: NOT_EXECUTED
+      real_vps_apply: NOT_EXECUTED
+      first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
 secrets_policy:
   never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]

@@ -115,6 +115,14 @@ contra host/inventory, Docker/containerd continuam ausentes no último baseline
 real e o apply F1.2b continua bloqueado por F1.1. Nenhum workload é autorizado
 antes de F1.2c.
 
+O menor avanço independente seguinte criou o contrato repo-only F1.2c em
+`platform/network/f1-2c-contract.yaml`, commit
+`b4cbeb066605754d538ff5abe2d294f0759d6f59`. Quatro testes específicos e a
+suíte integrada de 60 testes/34 YAML passaram. O contrato fixa deny-by-default,
+IPv4/IPv6, zonas protegidas, grants, perfis e evidência requerida, mas mantém
+tecnologia `UNRESOLVED`, ADR/integração `PENDING`, NODE-01 `NOT_EXECUTED` e o
+primeiro workload `BLOCKED`. Nenhum ruleset ou mecanismo de rede foi aplicado.
+
 O próximo passo de host continua sendo repetir prechecks read-only frescos e
 executar somente o check mode privilegiado F1.1 no NODE-01. LEANDRO digita a
 senha sudo diretamente no prompt `--ask-become-pass`; ela nunca é enviada ao

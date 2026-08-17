@@ -1,0 +1,53 @@
+schema_version: 1
+slice: SLICE-002C
+classification: SANITIZED_REPO_CONTRACT_EVIDENCE_NOT_OPERATIONAL
+generated_at_utc: "2026-08-17T03:40:41Z"
+status: CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_AND_DYNAMIC_PROOF_PENDING
+git:
+  repository: leon337/cloud-infrastructure
+  working_branch: codex/mission-001-foundations-f1-2b-preparation
+  contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
+  remote_branch: BASE_EXISTS_NEW_LOCAL_COMMITS_NOT_PUBLISHED
+authority:
+  requirements:
+    - CR-020
+    - CR-034
+  invariants:
+    - INV-002
+    - INV-003
+    - INV-007
+  threat_controls:
+    - TM-02
+    - TM-03
+    - TM-10
+contract:
+  path: platform/network/f1-2c-contract.yaml
+  status: REPO_CONTRACT_ONLY
+  operational_state: NOT_APPLIED
+  technology_selection: UNRESOLVED
+  executable_rules_present: false
+  address_families:
+    - ipv4
+    - ipv6
+  first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
+validation:
+  local_contract_tests: PASS_4
+  integrated_repo_tests: PASS_60
+  yaml_documents: PASS_34
+  state_crosscheck: PASS_F1_1_F1_2B_F1_2C_GATES_PRESERVED
+  shell_syntax: PASS_6_UNCHANGED
+  technology_adr: PENDING
+  disposable_integration: PENDING
+  disposable_ipv4: PENDING
+  disposable_ipv6: PENDING
+  real_vps_check_mode: NOT_EXECUTED
+  real_vps_apply: NOT_EXECUTED
+dependencies:
+  f1_1_real_foundation: BLOCKING_REAL_EXECUTION
+  f1_2b_disposable_runtime: BLOCKING_DYNAMIC_NETWORK_PROOF
+  f1_2b_real_runtime: BLOCKING_REAL_EXECUTION
+  first_workload: BLOCKED_BY_F1_2C
+production:
+  deployment_authorized: false
+credential_rotation:
+  status: DEFERRED_BY_HUMAN_DECISION

@@ -91,7 +91,7 @@ Snapshot read-only: `2026-08-16T19:46:14Z`.
 - múltiplas sessões Firefox/VS Code/Codex ativas;
 - `sudo -n` negado conforme política.
 
-Nenhuma dessas observações foi reaberta durante F1.2b repo-only. Nenhum
+Nenhuma dessas observações foi reaberta durante F1.2b/F1.2c repo-only. Nenhum
 playbook, `sudo`, package manager, Docker, systemd, firewall ou network mutation
 foi executado no host nesta atualização.
 
@@ -107,8 +107,23 @@ foi executado no host nesta atualização.
   restart, invariância, recusas, rollback e cleanup, mas não foi executado;
 - suíte local: 55 unitários/negativos, 32 YAML, dois manifests, seis scripts com
   sintaxe/ShellCheck e seis syntax-checks Ansible, todos `PASS`;
-- CI GitHub e lifecycle privilegiado descartável permanecem `PENDING`; VPS e
-  primeiro workload permanecem `NOT_EXECUTED`.
+- CI GitHub e lifecycle privilegiado descartável permanecem `PENDING`; VPS
+  permanece `NOT_EXECUTED` e o primeiro workload permanece `BLOCKED`.
+
+## SLICE-002C — contrato repo-only
+
+- contrato machine-readable versionado em
+  `platform/network/f1-2c-contract.yaml`, commit
+  `b4cbeb066605754d538ff5abe2d294f0759d6f59`;
+- preserva Q20/Q34, TM-02/TM-03/TM-10, IPv4/IPv6, deny de
+  host/Management/metadata/control/lateral, sharing por grant e egress por
+  profile;
+- tecnologia continua `UNRESOLVED`; nftables, `DOCKER-USER`, DNS e egress são
+  apenas candidatos até ADR e prova descartável;
+- quatro testes específicos e suíte integrada de 60 testes/34 YAML passaram;
+- não há ruleset executável, harness dinâmico, network namespace, probe ou
+  mutação real; ADR/integração permanecem `PENDING` e NODE-01 `NOT_EXECUTED`;
+- evidência sanitizada: `evidence/SLICE-002C/`.
 
 ## Backup/recovery
 
@@ -137,6 +152,8 @@ foi executado no host nesta atualização.
 - rollback só quando os namespaces persistentes estiverem vazios.
 - F1.2b real permanece bloqueado mesmo com desired state local pronto; sua CI
   dinâmica também precisa passar no mesmo commit antes de qualquer preview.
+- F1.2c repo-only não autoriza workload: ADR, implementation e matriz dinâmica
+  completa em IPv4/IPv6 continuam bloqueantes.
 
 ## Próximo passo exato
 
@@ -146,15 +163,16 @@ Executar apenas o check mode F1.1 na VPS com `--ask-become-pass`, com LEANDRO
 digitando a senha sudo diretamente e sem registro. Inspecionar o diff e reconciliar
 evidência antes de qualquer apply. Até que apply, segunda reconciliação e
 invariance checks passem na VPS, F1.1 permanece `PARTIAL/NOT_APPLIED`, nunca
-`DONE`. Docker F1.2, Management Network, produção e rotação não fazem parte desse
-passo.
+`DONE`. Docker/network F1.2 reais, Management Network, produção e rotação não
+fazem parte desse passo.
 
 ## Architecture/Technology Mapping — gaps condicionais
 
 - worker não chama Node Agent diretamente; toda capability privilegiada volta ao
   Core e é revalidada localmente;
 - PostgreSQL foundation precede Keycloak;
-- network/egress/service discovery e quota de disco bloqueiam o primeiro workload;
+- o contrato de network/egress/service discovery existe, mas ADR/prova dinâmica
+  e quota de disco ainda bloqueiam o primeiro workload;
 - dados Critical/Important dependem de backup off-host e restore por classe;
 - Loki/Grafana dependem de review AGPL; runner, cache OCI local, audit ledger,
   mensageria Q38, DNS, object storage e Model Gateway final continuam

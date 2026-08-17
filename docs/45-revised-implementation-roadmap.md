@@ -21,7 +21,7 @@ Substitui como roadmap corrente as antigas fases provisórias F3–F10.
 | F1.1 Foundations declarativas | Ansible/schema/namespaces/contas/slices accounting | `PARTIAL` | commit `edd2497d`/run `31972460567` passou estática e integração descartável; executar somente check mode privilegiado humano no NODE-01 e reconciliar o diff antes de qualquer apply |
 | F1.2a Management Network | administração privada por identidade/dispositivo | `WAITING_HUMAN_GATE` | conta/plano/policy/onboarding e recovery testados |
 | F1.2b Docker boundary | Docker CE/Compose pinados, root-only, bridge default ausente, sem porta/workload | `IMPLEMENTING` | desired state/harness local-static `PASS` no commit `7015c80`; CI descartável `PENDING`; NODE-01 `NOT_EXECUTED` e bloqueado até F1.1 reconciliado; não satisfaz Q20/Q34 |
-| F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `CONDITIONAL` | ADR nftables/`DOCKER-USER`/DNS, F1.2b, matriz allow/deny e rollback; bloqueia primeiro container |
+| F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `CONTRACT_STARTED` | contrato Q20/Q34 local-static `PASS` no commit `b4cbeb0`; tecnologia/ADR, implementation, F1.2b, matriz dinâmica allow/deny e rollback continuam `PENDING`; bloqueia primeiro container |
 | F1.3 Observability baseline | host/runtime logs, métricas, audit envelope | `CONDITIONAL` | compliance review de Loki/Grafana AGPL ou alternativa; HUMAN_GATE somente se termos/custo/aceite externo exigirem; limites/retention e interfaces privadas |
 | F1.4 Secret bootstrap foundation | OpenBao instalado, não inicializado/selado | `PLANNED` | nenhum dado real; init/unseal/custódia e revogação do root token inicial permanecem gate humano |
 | F1.5 Off-host recovery foundation | destino Restic, policy, keys e restore fixture | `WAITING_HUMAN_GATE` | destino/custo/custódia, targets provisórios e restore cronometrado; bloqueia dado Critical/Important real |
@@ -86,3 +86,7 @@ F1.2b concluiu código e validação local em paralelo ao gate F1.1; a integraç
 descartável continua pendente e nenhuma preparação autoriza check/apply no
 NODE-01. O primeiro container permanece bloqueado por F1.2c, mesmo que não
 publique portas.
+
+F1.2c avançou somente até um contrato machine-readable repo-only. Isso permite
+desenhar a ADR e a fixture sem depender do HUMAN_GATE F1.1, mas não equivale a
+network enforcement nem reduz os gates IPv4/IPv6, rollback e evidência dinâmica.

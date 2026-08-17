@@ -101,8 +101,8 @@ host real, e instalação vazia não prova isolamento de workload.
 1. publicar explicitamente o commit e obter CI verde em VM descartável;
 2. manter NODE-01 bloqueado até F1.1 ser aplicado/reconciliado/checkpointed;
 3. executar somente o preview real F1.2b após novo checkpoint/human sudo;
-4. depois de F1.2b real vazio, selecionar/provar F1.2c antes do primeiro
-   container.
+4. usar o contrato F1.2c `b4cbeb0` para selecionar o mecanismo em ADR e provar a
+   matriz dinâmica antes do primeiro container.
 
 Nenhum item deste checkpoint autoriza produção, rotação de credenciais ou acesso
 Docker irrestrito a agentes.

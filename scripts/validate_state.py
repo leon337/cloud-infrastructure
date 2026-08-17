@@ -20,6 +20,8 @@ EXPECTED_MACHINE_ID_SHA256 = (
 F1_2B_DESIRED_STATE_COMMIT = (
     "7015c80759a797bcb141773b79cd9b95f6fbecf1"
 )
+F1_2C_CONTRACT_COMMIT = "b4cbeb066605754d538ff5abe2d294f0759d6f59"
+F1_2C_CONTRACT_PATH = "platform/network/f1-2c-contract.yaml"
 EXPECTED_DECISIONS = {
     f"q{number}": "D" if number in {5, 11, 28, 40} else "C"
     for number in range(1, 41)
@@ -230,12 +232,143 @@ def f1_2b_gate_errors(
     return errors
 
 
+def f1_2c_gate_errors(
+    current: dict[str, Any],
+    discovery: dict[str, Any],
+    components: dict[str, Any],
+    network_baseline: dict[str, Any],
+    network_contract: dict[str, Any],
+) -> list[str]:
+    """Reject claims beyond the repo-only F1.2c contract checkpoint."""
+    errors: list[str] = []
+    current_state = current["codex_execution"]["repo_only_preparations"][
+        "network_enforcement_f1_2c"
+    ]
+    discovery_state = discovery["implementation"]["f1_2c_repo_only"]
+    component_state = components["platform_components"]["network_enforcement"]
+
+    commit_values = {
+        "current": current_state["contract_commit"],
+        "discovery": discovery_state["contract_commit"],
+        "components": component_state["contract"]["commit"],
+        "evidence": network_baseline["git"]["contract_commit"],
+    }
+    for location, value in commit_values.items():
+        if value != F1_2C_CONTRACT_COMMIT:
+            errors.append(f"F1.2c contract commit differs at {location}")
+
+    path_values = {
+        "current": current_state["contract_path"],
+        "discovery": discovery_state["contract_path"],
+        "components": component_state["contract"]["path"],
+        "evidence": network_baseline["contract"]["path"],
+    }
+    for location, value in path_values.items():
+        if value != F1_2C_CONTRACT_PATH:
+            errors.append(f"F1.2c contract path differs at {location}")
+    if not (ROOT / F1_2C_CONTRACT_PATH).is_file():
+        errors.append("F1.2c contract file is missing")
+
+    metadata = network_contract["metadata"]
+    if metadata["status"] != "REPO_CONTRACT_ONLY":
+        errors.append("F1.2c contract no longer identifies as repo-only")
+    if metadata["operational_state"] != "NOT_APPLIED":
+        errors.append("F1.2c contract overclaims operational state")
+    if metadata["technology_selection"] != "UNRESOLVED":
+        errors.append("F1.2c technology was selected without an ADR checkpoint")
+    if network_baseline["contract"]["executable_rules_present"] is not False:
+        errors.append("F1.2c evidence claims executable rules")
+
+    local_values = {
+        "current": current_state["local_validation"],
+        "discovery": discovery_state["local_validation"],
+        "components": component_state["contract"]["local_tests"],
+        "evidence": network_baseline["validation"]["local_contract_tests"],
+    }
+    for location, value in local_values.items():
+        if not str(value).startswith("PASS_"):
+            errors.append(f"F1.2c local contract validation changed at {location}")
+
+    pending_values = {
+        "current.technology_adr": current_state["technology_adr"],
+        "current.disposable_integration": current_state[
+            "disposable_integration"
+        ],
+        "discovery.technology_adr": discovery_state["technology_adr"],
+        "discovery.disposable_integration": discovery_state[
+            "disposable_integration"
+        ],
+        "components.technology_adr": component_state["validation"][
+            "technology_adr"
+        ],
+        "components.disposable_integration": component_state["validation"][
+            "disposable_integration"
+        ],
+        "evidence.technology_adr": network_baseline["validation"][
+            "technology_adr"
+        ],
+        "evidence.disposable_integration": network_baseline["validation"][
+            "disposable_integration"
+        ],
+        "contract.technology_adr": network_contract["gates"]["technology_adr"],
+        "contract.disposable_integration": network_contract["gates"][
+            "disposable_integration"
+        ],
+    }
+    for location, value in pending_values.items():
+        if not str(value).startswith("PENDING"):
+            errors.append(f"F1.2c pending gate was overclaimed at {location}")
+
+    not_executed_values = {
+        "current.real_vps_check_mode": current_state["real_vps_check_mode"],
+        "current.real_vps_apply": current_state["real_vps_apply"],
+        "discovery.real_vps": discovery_state["real_vps"],
+        "components.real_vps_check_mode": component_state["validation"][
+            "real_vps_check_mode"
+        ],
+        "components.real_vps_apply": component_state["validation"][
+            "real_vps_apply"
+        ],
+        "evidence.real_vps_check_mode": network_baseline["validation"][
+            "real_vps_check_mode"
+        ],
+        "evidence.real_vps_apply": network_baseline["validation"][
+            "real_vps_apply"
+        ],
+    }
+    for location, value in not_executed_values.items():
+        if value != "NOT_EXECUTED":
+            errors.append(f"F1.2c real-node execution was overclaimed at {location}")
+
+    workload_values = {
+        "current": current_state["first_workload"],
+        "discovery": discovery_state["first_workload"],
+        "components": component_state["validation"]["first_workload"],
+        "evidence": network_baseline["dependencies"]["first_workload"],
+        "contract": network_contract["gates"]["first_workload"],
+    }
+    for location, value in workload_values.items():
+        if "BLOCKED" not in str(value):
+            errors.append(f"F1.2c first-workload gate changed at {location}")
+
+    if network_baseline["production"]["deployment_authorized"] is not False:
+        errors.append("F1.2c evidence authorized production")
+    if network_contract["gates"]["production"] != "NOT_AUTHORIZED":
+        errors.append("F1.2c contract authorized production")
+    if network_baseline["credential_rotation"]["status"] != DEFERRED_ROTATION:
+        errors.append("F1.2c evidence no longer defers credential rotation")
+
+    return errors
+
+
 def crosscheck_errors(
     current: dict[str, Any],
     discovery: dict[str, Any],
     components: dict[str, Any],
     baseline: dict[str, Any],
     docker_baseline: dict[str, Any],
+    network_baseline: dict[str, Any],
+    network_contract: dict[str, Any],
     inventory_hosts: dict[str, Any],
     inventory_vars: dict[str, Any],
 ) -> list[str]:
@@ -294,6 +427,15 @@ def crosscheck_errors(
     current_validation = current["codex_execution"]["current_slice"]["validation"]
     errors.extend(stale_f1_1_gate_errors(current))
     errors.extend(f1_2b_gate_errors(current, discovery, components, docker_baseline))
+    errors.extend(
+        f1_2c_gate_errors(
+            current,
+            discovery,
+            components,
+            network_baseline,
+            network_contract,
+        )
+    )
     for key in (
         "real_vps_privileged_check_mode",
         "real_vps_apply",
@@ -443,6 +585,10 @@ def main() -> int:
         docker_baseline = load_yaml(
             ROOT / "evidence" / "SLICE-002B" / "baseline.yaml"
         )
+        network_baseline = load_yaml(
+            ROOT / "evidence" / "SLICE-002C" / "baseline.yaml"
+        )
+        network_contract = load_yaml(ROOT / F1_2C_CONTRACT_PATH)
         inventory_hosts = load_yaml(
             ROOT / "automation" / "ansible" / "inventory" / "dev" / "hosts.yml"
         )
@@ -461,6 +607,8 @@ def main() -> int:
             components,
             baseline,
             docker_baseline,
+            network_baseline,
+            network_contract,
             inventory_hosts,
             inventory_vars,
         )
@@ -474,7 +622,8 @@ def main() -> int:
 
     print(
         "STATE_CROSSCHECK_PASS decisions=Q1-Q40-exact "
-        f"artifacts={len(CANONICAL_PATH_KEYS)} gates=F1.1+F1.2b-preserved "
+        f"artifacts={len(CANONICAL_PATH_KEYS)} "
+        "gates=F1.1+F1.2b+F1.2c-preserved "
         "real_apply=NOT_EXECUTED timestamps=aligned"
     )
     return 0

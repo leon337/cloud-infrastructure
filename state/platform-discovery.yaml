@@ -1,5 +1,5 @@
 status: CODEX_IMPLEMENTATION_IN_PROGRESS
-phase: FOUNDATIONS_F1_1_REAL_GATE_F1_2B_REPO_READY
+phase: FOUNDATIONS_F1_1_REAL_GATE_F1_2B_REPO_READY_F1_2C_CONTRACT_STARTED
 updated_at: 2026-08-17
 checkpoint: docs/39-platform-discovery-checkpoint-028.md
 authority: LEANDRO
@@ -28,6 +28,16 @@ implementation:
     github_actions: PENDING_NOT_RUN
     real_gate: BLOCKED_UNTIL_F1_1_RECONCILED_AND_CHECKPOINTED
     first_workload: BLOCKED_BY_F1_2C
+  f1_2c_repo_only:
+    status: CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_AND_DYNAMIC_PROOF_PENDING
+    contract_path: platform/network/f1-2c-contract.yaml
+    contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
+    local_validation: PASS_4_CONTRACT_TESTS
+    technology_selection: UNRESOLVED
+    technology_adr: PENDING
+    disposable_integration: PENDING_NOT_RUN
+    real_vps: NOT_EXECUTED
+    first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
   production_promotion: NOT_AUTHORIZED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
 decisions:

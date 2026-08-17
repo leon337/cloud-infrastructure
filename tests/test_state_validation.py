@@ -27,6 +27,12 @@ class StateCrosscheckTests(unittest.TestCase):
         cls.docker_baseline = MODULE.load_yaml(
             ROOT / "evidence" / "SLICE-002B" / "baseline.yaml"
         )
+        cls.network_baseline = MODULE.load_yaml(
+            ROOT / "evidence" / "SLICE-002C" / "baseline.yaml"
+        )
+        cls.network_contract = MODULE.load_yaml(
+            ROOT / "platform" / "network" / "f1-2c-contract.yaml"
+        )
         cls.inventory_hosts = MODULE.load_yaml(
             ROOT / "automation" / "ansible" / "inventory" / "dev" / "hosts.yml"
         )
@@ -48,6 +54,8 @@ class StateCrosscheckTests(unittest.TestCase):
         components=None,
         baseline=None,
         docker_baseline=None,
+        network_baseline=None,
+        network_contract=None,
         inventory_hosts=None,
         inventory_vars=None,
     ):
@@ -60,6 +68,16 @@ class StateCrosscheckTests(unittest.TestCase):
                 copy.deepcopy(self.docker_baseline)
                 if docker_baseline is None
                 else docker_baseline
+            ),
+            (
+                copy.deepcopy(self.network_baseline)
+                if network_baseline is None
+                else network_baseline
+            ),
+            (
+                copy.deepcopy(self.network_contract)
+                if network_contract is None
+                else network_contract
             ),
             (
                 copy.deepcopy(self.inventory_hosts)
@@ -195,6 +213,50 @@ class StateCrosscheckTests(unittest.TestCase):
             "first_workload"
         ] = "AUTHORIZED"
         cases.append(("workload", {"discovery": discovery}, "first-workload gate"))
+
+        for label, arguments, expected_error in cases:
+            with self.subTest(label=label):
+                self.assertTrue(
+                    any(
+                        expected_error in error
+                        for error in self.errors_for(**arguments)
+                    )
+                )
+
+    def test_f1_2c_repo_contract_overclaims_are_rejected(self):
+        cases = []
+
+        current = copy.deepcopy(self.current)
+        current["codex_execution"]["repo_only_preparations"][
+            "network_enforcement_f1_2c"
+        ]["contract_commit"] = "0" * 40
+        cases.append(("commit", {"current": current}, "contract commit"))
+
+        components = copy.deepcopy(self.components)
+        components["platform_components"]["network_enforcement"]["validation"][
+            "technology_adr"
+        ] = "PASS_WITHOUT_ADR"
+        cases.append(("adr", {"components": components}, "pending gate"))
+
+        network_baseline = copy.deepcopy(self.network_baseline)
+        network_baseline["validation"]["real_vps_apply"] = "PASS"
+        cases.append(
+            (
+                "real-node",
+                {"network_baseline": network_baseline},
+                "real-node execution",
+            )
+        )
+
+        network_contract = copy.deepcopy(self.network_contract)
+        network_contract["gates"]["first_workload"] = "AUTHORIZED"
+        cases.append(
+            (
+                "workload",
+                {"network_contract": network_contract},
+                "first-workload gate",
+            )
+        )
 
         for label, arguments, expected_error in cases:
             with self.subTest(label=label):

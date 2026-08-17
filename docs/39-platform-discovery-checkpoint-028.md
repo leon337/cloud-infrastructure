@@ -145,3 +145,10 @@ passou; GitHub CI/VM descartável e qualquer execução no NODE-01 permanecem
 `PENDING`/`NOT_EXECUTED`. F1.1 continua sendo o próximo passo de host e F1.2c
 continua bloqueando o primeiro workload. Essa preparação também não reabre
 Q1–Q40.
+
+O menor incremento independente seguinte registrou o contrato repo-only F1.2c
+no commit `b4cbeb066605754d538ff5abe2d294f0759d6f59`. Ele fixa os resultados
+Q20/Q34 e o gate do primeiro workload, mas não seleciona mecanismo nem contém
+ruleset aplicável. Quatro testes específicos e a suíte integrada local passaram;
+ADR, integração descartável e NODE-01 permanecem respectivamente
+`PENDING`/`PENDING`/`NOT_EXECUTED`. Essa preparação também não reabre Q1–Q40.

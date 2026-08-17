@@ -1,0 +1,29 @@
+# Evidence — SLICE-002C network enforcement contract
+
+Esta pasta registra somente o início repo-only de F1.2c. O contrato fixa os
+resultados de segurança que uma implementação futura precisa provar, mas não
+seleciona tecnologia, não contém ruleset aplicável e não autoriza workload.
+
+## Cadeia corrente
+
+| Etapa | Estado |
+|---|---|
+| Contrato machine-readable Q20/Q34 | `PASS_LOCAL_COMMIT_B4CBEB0` |
+| Testes específicos do contrato | `PASS_4` |
+| Suíte integrada do repositório | `PASS_60` |
+| ADR de tecnologia | `PENDING` |
+| Ruleset/DNS/egress implementation | `NOT_IMPLEMENTED` |
+| Integração descartável IPv4/IPv6 | `PENDING` |
+| NODE-01 | `NOT_EXECUTED` |
+| Primeiro workload | `BLOCKED` |
+
+`PASS_LOCAL` prova apenas que o contrato preserva deny-by-default, escopos,
+grants e gates esperados. Não prova nftables, `DOCKER-USER`, DNS, egress,
+service discovery, firewall, Docker ou conectividade real.
+
+## Próxima evidência necessária
+
+Uma ADR ainda precisa selecionar o mecanismo e definir apply/rollback
+fail-closed. Depois, uma fixture descartável precisa provar toda a matriz
+`required_disposable_evidence` em IPv4 e IPv6. Somente essa cadeia, mais as
+dependências F1.1/F1.2b aplicáveis, poderá reavaliar o gate do primeiro workload.

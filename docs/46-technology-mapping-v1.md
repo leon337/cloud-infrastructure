@@ -1,7 +1,8 @@
 # 46 — TECHNOLOGY MAPPING V1
 
-Status: **PARTIAL SELECTION BASELINE — F1.1 ACCEPTED; F1.2B REPO-READY/CI PENDING**
+Status: **PARTIAL SELECTION — F1.2B REPO-READY/CI PENDING; F1.2C CONTRACT STARTED**
 Research cut: 2026-08-16
+Contract checkpoint: 2026-08-17
 Authority: Q40-D
 
 `SELECTED` significa escolha arquitetônica, não instalação. `CONDITIONAL` exige
@@ -36,7 +37,7 @@ data de consulta e texto de licença no decision record sem copiar secrets.
 | Management Network | **Tailscale — CONDITIONAL/HUMAN_GATE** | Headscale, WireGuard puro | Cliente Linux é open source, mas coordination server é proprietário/gerenciado e o plano limita recursos/audit features. A vantagem deliberada Q2 é identidade/dispositivo/policy com menor operação; plano, termos, IdP, logs e migração devem ser aprovados. Headscale no único nó cria dependência circular; WireGuard não entrega sozinho IdP/policy/audit. SSH público é rollback transitório no onboarding. |
 | Runtime | **Docker CE 29.7.2 + containerd.io 2.3.3 + Buildx 0.36.1 + Compose 5.4.0 — SELECTED/IMPLEMENTING por Q17** | `docker.io`, convenience script, Podman, Kubernetes, Docker rootless | DEC-007 fixa pacotes oficiais Noble `amd64`, socket root-only, grupo vazio e runtime sem bridge/workload. Desired state/harness passaram local-static; uninstall usa provenance/baseline/manifesto fail-closed. CI dinâmica e VPS ainda não provadas. |
 | Resource isolation | **cgroup v2 + systemd + AppArmor/seccomp — SELECTED** | apenas limites Compose, VM/nested virt, gVisor | Nativo e econômico. gVisor permanece candidato para código hostil; containers não são declarados equivalentes a VM. |
-| Network/egress/service discovery | **CONDITIONAL — ADR antes do primeiro workload** | nftables/`DOCKER-USER` + DNS proxy, egress proxy, firewall dedicado/execution node | Docker DNS resolve nomes, não identidade. O ADR deve provar v4/v6, host/metadata/Management/lateral deny, shared grants, Internet por perfil, auditoria e rollback sem `iptables=false`. Instalar daemon sem workload não satisfaz Q20/Q34. |
+| Network/egress/service discovery | **CONDITIONAL — REPO CONTRACT PASS; ADR antes do primeiro workload** | nftables/`DOCKER-USER` + DNS proxy, egress proxy, firewall dedicado/execution node | O contrato F1.2c fixa v4/v6, host/metadata/Management/control/lateral deny, shared grants, Internet por perfil, identidade e evidência. Nenhum candidato foi selecionado ou implementado; instalar daemon sem workload não satisfaz Q20/Q34. |
 | Disk isolation | **DECISION PENDING** | project quota/XFS, volume/bloco limitado, execution node dedicado | cgroup e ext4/overlay2 não impõem quota rígida do writable layer. Monitoramento/admission sozinho não satisfaz Q8/Q25; sandbox permanece `PARTIAL` até teste de uma alternativa. |
 | Capability Core | **Go 1.26.x + OpenAPI 3.1.2 — SELECTED** | Python/FastAPI, OpenAPI 3.2 | Binário pequeno e portável; 3.1 possui compatibilidade madura com JSON Schema. Contratos separam executores e permitem reimplementação. |
 | Policy | **OPA/Rego v1 embutido — SELECTED** | OpenFGA, Cedar, OPA sidecar | Rego cobre contexto, risco, tempo e ambiente. OpenFGA é forte em relações, mas não substitui policy contextual. Adapter permite sidecar posterior. |
@@ -104,6 +105,23 @@ bloqueia o apply real; F1.2c bloqueia qualquer workload.
 | Observabilidade/auditoria | logging `local` limitado e snapshots de units/listeners/network/ruleset estão no harness; métricas/listener e stack central não fazem parte do slice | `HARNESS_STATIC_PASS_DYNAMIC_CI_PENDING_REMOTE_NOT_EXECUTED` |
 | Lock-in | imagens/Compose usam contratos OCI/abertos; daemon-specific config e networking criam lock-in moderado documentado | `ACCEPTED_MODERATE` |
 | Migração/rollback | marker/prestate/lock externos, baseline e manifesto `find -xdev` limitado às duas raízes substituem remoção recursiva; unitários cobrem symlink/hardlink/open-path/drift/remoção exata | `LOCAL_STATIC_AND_HELPER_PASS_DYNAMIC_CI_PENDING_REMOTE_NOT_APPLICABLE` |
+
+## Contract record repo-only — F1.2c
+
+O commit `b4cbeb066605754d538ff5abe2d294f0759d6f59` adiciona somente o
+contrato `platform/network/f1-2c-contract.yaml` e quatro testes. Q20/Q34,
+TM-02/TM-03/TM-10, IPv4/IPv6, deny-by-default, grants explícitos, profiles de
+egress, descoberta identity-aware e evidência mínima estão codificados. A
+seleção tecnológica continua `UNRESOLVED`; não há ruleset, playbook, harness
+dinâmico ou prova de conectividade.
+
+| Nível | Estado F1.2c |
+|---|---|
+| Contrato local | `PASS_4_TESTS` |
+| ADR/mecanismo | `PENDING` |
+| Integração descartável | `PENDING` |
+| NODE-01 | `NOT_EXECUTED` |
+| Primeiro workload | `BLOCKED` |
 
 ## Evidência oficial por domínio
 
