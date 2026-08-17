@@ -238,19 +238,24 @@ check_operation() {
   printf 'MISSION_RUNNER_CHECK=PASS\n'
 }
 
-test_operation() {
+test_operation() (
   require_repository_guards || return 1
-  local test_path="$REPO_ROOT/scripts/test.sh"
+  local test_root test_path
+  test_root=$(mktemp -d /run/codex-mission-001-test.XXXXXX)
+  trap 'rm -rf --one-file-system "$test_root"' EXIT
+  cp -a -- "$REPO_ROOT/." "$test_root/"
+  chown -R ubuntu:ubuntu "$test_root"
+  chmod -R u+rwX,go-rwx "$test_root"
+  test_path="$test_root/scripts/test.sh"
   [[ -f $test_path && ! -L $test_path ]] || return 1
-  [[ $(stat -c '%U:%G' "$test_path") == root:root ]] || return 1
   runuser -u ubuntu -- env \
     PATH=/home/ubuntu/cloud-infrastructure/.venv/bin:/usr/bin:/bin \
     HOME=/home/ubuntu \
     GIT_CONFIG_COUNT=1 \
     GIT_CONFIG_KEY_0=safe.directory \
-    GIT_CONFIG_VALUE_0="$REPO_ROOT" \
+    GIT_CONFIG_VALUE_0="$test_root" \
     "$test_path"
-}
+)
 
 reconcile_operation() (
   [[ -f $INBOX_BUNDLE && ! -L $INBOX_BUNDLE && \

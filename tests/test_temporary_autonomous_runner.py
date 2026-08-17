@@ -185,10 +185,15 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn("if ip -o link show", self.runner)
         self.assertIn("if ss -Hlnptu", self.runner)
 
-    def test_unprivileged_tests_trust_only_the_exact_root_owned_snapshot(self):
+    def test_unprivileged_tests_use_only_a_private_ephemeral_snapshot(self):
+        self.assertIn("mktemp -d /run/codex-mission-001-test.XXXXXX", self.runner)
+        self.assertIn('cp -a -- "$REPO_ROOT/." "$test_root/"', self.runner)
+        self.assertIn('chown -R ubuntu:ubuntu "$test_root"', self.runner)
+        self.assertIn('chmod -R u+rwX,go-rwx "$test_root"', self.runner)
+        self.assertIn('rm -rf --one-file-system "$test_root"', self.runner)
         self.assertIn("GIT_CONFIG_COUNT=1", self.runner)
         self.assertIn("GIT_CONFIG_KEY_0=safe.directory", self.runner)
-        self.assertIn('GIT_CONFIG_VALUE_0="$REPO_ROOT"', self.runner)
+        self.assertIn('GIT_CONFIG_VALUE_0="$test_root"', self.runner)
         self.assertNotIn("safe.directory '*'", self.runner)
 
     def test_reviewed_apply_updates_only_the_exact_known_runner(self):
@@ -196,11 +201,11 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
             ROOT / "automation" / "mission-001" / "operations" / "apply"
         ).read_text(encoding="utf-8")
         self.assertIn(
-            "OLD_RUNNER_SHA256=d5ca57ef518abd9362b8d64177c3a7c8bed12dc5b77d1455f821930471c20f31",
+            "OLD_RUNNER_SHA256=36945487cd448a76f75a5bc8761a7d46547ae148acdcc9aed0ab3af768571d7d",
             operation,
         )
         self.assertIn(
-            "DESIRED_RUNNER_SHA256=36945487cd448a76f75a5bc8761a7d46547ae148acdcc9aed0ab3af768571d7d",
+            "DESIRED_RUNNER_SHA256=c388e8cb3b37e08d5cffe86f3330fe1f207af6c150e9e1f80b5f185ebadd3645",
             operation,
         )
         self.assertIn("install -o root -g root -m 0755", operation)
