@@ -490,7 +490,16 @@ CURRENT_STAGE=network_enforcement_base
 "$BUNDLE_ROOT/scripts/test_network_enforcement_vm.sh"
 
 CURRENT_STAGE=restart_and_reconcile
-sudo systemctl restart containerd.service docker.service
+if ! sudo timeout 60s systemctl restart containerd.service; then
+  sudo systemctl --no-pager --full status containerd.service || true
+  sudo journalctl --no-pager -n 100 -u containerd.service || true
+  fail containerd_restart_failed
+fi
+if ! sudo timeout 60s systemctl restart docker.service; then
+  sudo systemctl --no-pager --full status docker.service || true
+  sudo journalctl --no-pager -n 100 -u docker.service || true
+  fail docker_restart_failed
+fi
 run_playbook "$RUNNER_TEMP/docker-boundary-post-restart.log" \
   "$APPLY_PLAYBOOK" --diff -e "$TEST_CONFIRMATION"
 grep -Eq 'changed=0 .*failed=0' \
