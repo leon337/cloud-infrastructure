@@ -1,8 +1,8 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-16
-documentation_state: SLICE_001_PARTIAL_READY_FOR_REAL_VPS_PRIVILEGED_CHECK_MODE
+updated_at: 2026-08-17
+documentation_state: SLICE_001_REAL_GATE_WITH_F1_2B_REPO_READY_LOCAL_STATIC_CI_PENDING
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
@@ -27,7 +27,7 @@ project:
     phase_0: DONE
     phase_1: DONE
     phase_2_cloud_workstation: DONE
-    future_platform_implementation: SLICE_001_FOUNDATIONS_PARTIAL
+    future_platform_implementation: SLICE_001_PARTIAL_F1_2B_REPO_READY_CI_PENDING
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
   next_exact_step: SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
@@ -258,5 +258,17 @@ codex_execution:
       status: READY_FOR_PRIVILEGED_CHECK_MODE_WAITING_LEANDRO_INTERACTIVE_SUDO
       reason: DISPOSABLE_CI_PASSED_PRIVILEGED_REAL_VPS_CHECK_MODE_REQUIRES_HUMAN_SUDO
       secret_must_not_be_sent_to_agent_or_logged: true
+  repo_only_preparations:
+    docker_runtime_f1_2b:
+      status: DESIRED_STATE_LOCAL_STATIC_PASS_CI_PENDING_REAL_NOT_EXECUTED
+      recovered_head: d849caa0eafdc231d2782be602be1a2263758b7b
+      desired_state_commit: 7015c80759a797bcb141773b79cd9b95f6fbecf1
+      local_validation: PASS_55_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX
+      local_scope: UNPRIVILEGED_REPO_ONLY_NO_TARGET_PLAYBOOK_EXECUTION
+      github_actions: PENDING_NOT_RUN
+      disposable_vm_lifecycle: PENDING_NOT_RUN
+      real_vps_check_mode: NOT_EXECUTED_BLOCKED_BY_F1_1
+      real_vps_apply: NOT_EXECUTED_BLOCKED_BY_F1_1
+      first_workload: BLOCKED_BY_F1_2C
 secrets_policy:
   never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]

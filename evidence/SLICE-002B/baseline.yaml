@@ -1,14 +1,15 @@
 schema_version: 1
 slice: SLICE-002B
 classification: SANITIZED_PREPARATION_EVIDENCE_NOT_OPERATIONAL
-generated_at_utc: "2026-08-17T01:41:58Z"
-status: IMPLEMENTING
+generated_at_utc: "2026-08-17T03:22:39Z"
+status: REPO_DESIRED_STATE_LOCAL_STATIC_PASS_CI_PENDING_REAL_NOT_EXECUTED
 git:
   repository: leon337/cloud-infrastructure
   working_branch: codex/mission-001-foundations-f1-2b-preparation
   base_commit: e4503af12bf81806e8c2508eb108c4dc4c264784
-  desired_state_commit: PENDING
-  remote_branch: NOT_PUBLISHED
+  recovered_head: d849caa0eafdc231d2782be602be1a2263758b7b
+  desired_state_commit: 7015c80759a797bcb141773b79cd9b95f6fbecf1
+  remote_branch: BASE_EXISTS_NEW_LOCAL_COMMITS_NOT_PUBLISHED
 dependency:
   f1_1_real_vps_status: PARTIAL_NOT_APPLIED
   f1_1_privileged_check_mode: NOT_EXECUTED
@@ -81,13 +82,38 @@ provenance:
     - /var/lib/docker
     - /var/lib/containerd
   rollback_scan_contract: FIND_XDEV_LITERAL_ROOTS_PREVERIFIED_MANIFEST_ONLY
+  runtime_tree_baseline: /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-baseline.json
+  removal_manifest: /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-removal.json
+  incomplete_transaction_policy: REFUSE_AUTOMATIC_RETRY_OR_ROLLBACK_CLASSIFICATION_REQUIRED
   forbidden_deletion_methods:
     - rm_recursive
     - glob
     - broad_parent_find
     - apt_autoremove
 validation:
-  local_static_suite: PENDING
+  local_static_suite: PASS_UNPRIVILEGED_REPO_ONLY
+  local_static_recorded_at_utc: "2026-08-17T03:22:39Z"
+  local_unit_tests: PASS_55
+  local_yaml_documents: PASS_32
+  local_manifest_examples: PASS_2
+  local_shell_syntax: PASS_6
+  local_shellcheck:
+    status: PASS_6
+    version: 0.11.0
+    archive_sha256_verified: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+    execution: OFFICIAL_BINARY_EXTRACTED_TO_TMP_ONLY_THEN_REMOVED
+  local_ansible_syntax:
+    status: PASS_6
+    version: 2.21.3
+    wheel_sha256_verified: 9e7dd367f7dc5d5e9fc5ae1baf8af9c4edc09e916a73a40108a3f32e3ad93f10
+    execution: OFFICIAL_WHEEL_EXTRACTED_TO_TMP_ONLY_THEN_REMOVED
+  local_tree_guard_negative_cases:
+    symlink: PASS
+    hardlink: PASS
+    path_drift: PASS
+    open_process_path: PASS
+    inode_toctou: PASS
+    exact_bottom_up_removal: PASS
   github_actions: PENDING
   disposable_vm_check_mode: PENDING
   disposable_vm_apply: PENDING
@@ -104,4 +130,3 @@ production:
   deployment_authorized: false
 credential_rotation:
   status: DEFERRED_BY_HUMAN_DECISION
-

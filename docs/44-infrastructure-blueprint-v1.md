@@ -62,7 +62,7 @@ Depois de baseline medido:
 |---|---|---|---|
 | Desired state | Ansible Core 2.21.3 + JSON Schema | controller → SSH/sudo humano | `F1_1_PARTIAL_CI_PASS_REAL_VPS_NOT_APPLIED; NEXT_PRIVILEGED_CHECK_MODE` |
 | Management Network | Tailscale com grants explícitos | serviço host | `WAITING_HUMAN_GATE` |
-| Container runtime | Docker CE 29.7.2 + containerd.io 2.3.3 + Buildx 0.36.1 + Compose 5.4.0 | serviço host, root-only, bridge default ausente, sem workload/porta | `IMPLEMENTING_F1_2B; CI_PENDING; REAL_VPS_NOT_EXECUTED; BLOCKED_BY_F1_1` |
+| Container runtime | Docker CE 29.7.2 + containerd.io 2.3.3 + Buildx 0.36.1 + Compose 5.4.0 | serviço host, root-only, bridge default ausente, sem workload/porta | `F1_2B_REPO_DESIRED_STATE_LOCAL_STATIC_PASS; CI_PENDING; REAL_VPS_NOT_EXECUTED; BLOCKED_BY_F1_1` |
 | Network/egress | nftables/`DOCKER-USER` + DNS/egress mechanism a selecionar | host + bridges segregadas | `DECISION_PENDING_BEFORE_FIRST_WORKLOAD` |
 | Disk isolation | project quota/XFS, volume/bloco limitado ou execution node a testar | por sandbox/workload | `DECISION_PENDING; Q8_NOT_YET_PROVEN` |
 | Capability Core | Go + OpenAPI 3.1.2 + OPA/Rego v1 | container/unix socket | `PLANNED_F2` |
@@ -100,9 +100,10 @@ slice; `docs/46-technology-mapping-v1.md` é a fonte de trade-offs.
 F1.2b seleciona os cinco pacotes exatos e a chave pública oficial em DEC-007. O
 source é Docker `stable/noble/amd64`, o daemon usa backend `iptables` pelo
 frontend iptables-nft do Noble e o socket é `root:root 0600`; não existe API TCP
-nem membro no grupo `docker`. O estado real continua ausente: CI está pendente e
-o apply no NODE-01 é bloqueado até F1.1 ser aplicado, reconciliado e
-checkpointed.
+nem membro no grupo `docker`. Apply/rollback, pin APT, preflight, helper de árvore
+e harness estão versionados e passaram validação local não privilegiada; CI
+descartável está pendente. O estado real continua ausente e o apply no NODE-01 é
+bloqueado até F1.1 ser aplicado, reconciliado e checkpointed.
 
 F1.2b instala Docker sem publicar porta ou workload. Antes de qualquer container:
 
@@ -179,6 +180,7 @@ Para F1.1, o run `31972460567` validou o commit `edd2497d` na VM descartável. O
 checkpoint corrente autoriza somente check mode privilegiado no NODE-01 com sudo
 humano; não autoriza inferir apply, idempotência ou invariância na VPS.
 
-F1.2b está somente em preparação de desired state. Sua CI ainda é `PENDING` e
+F1.2b concluiu o desired state repo-only no commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`
+e passou a suíte estática local; CI/integração descartável ainda são `PENDING` e
 nenhuma execução ocorreu na VPS. Mesmo após CI verde, o gate F1.1 acima continua
 bloqueando check/apply F1.2b real; nenhum atalho de prazo altera essa dependência.

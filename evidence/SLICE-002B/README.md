@@ -1,15 +1,16 @@
 # Evidence — SLICE-002B Docker runtime boundary
 
-Esta pasta contém o contrato e a evidência sanitizada de preparação do runtime.
-Neste checkpoint, nenhum resultado prova instalação no NODE-01.
+Esta pasta contém o contrato e a evidência sanitizada do desired state repo-only
+do runtime. Neste checkpoint, nenhum resultado prova integração privilegiada ou
+instalação no NODE-01.
 
 ## Cadeia corrente
 
 | Etapa | Estado |
 |---|---|
 | Seleção/pins/licença | `RECORDED` |
-| Desired state | `IMPLEMENTING` |
-| Suíte estática local do delta final | `PENDING` |
+| Desired state | `PASS_LOCAL_COMMIT_7015C80` |
+| Suíte estática local do delta final | `PASS_55_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX` |
 | CI estática | `PENDING` |
 | VM Ubuntu 24.04 descartável — check mode | `PENDING` |
 | VM descartável — apply | `PENDING` |
@@ -21,9 +22,11 @@ Neste checkpoint, nenhum resultado prova instalação no NODE-01.
 | Apply F1.2b no NODE-01 | `NOT_EXECUTED` |
 | Primeiro workload no NODE-01 | `BLOCKED_BY_F1_2C` |
 
-`PENDING` e `NOT_EXECUTED` nunca devem ser interpretados como `PASS`. Uma execução
-CI futura precisa registrar URL, run ID, commit e jobs no `baseline.yaml`; texto
-manual não pode antecipar o resultado.
+`PENDING` e `NOT_EXECUTED` nunca devem ser interpretados como `PASS`. O PASS local
+cobre parsing/policies/unitários/ShellCheck/syntax-check, não APT, systemd,
+Docker, firewall ou rollback dinâmicos. Uma execução CI futura precisa registrar
+URL, run ID, commit e jobs no `baseline.yaml`; texto manual não pode antecipar o
+resultado.
 
 ## Limite da evidência
 
@@ -35,4 +38,3 @@ harness, nunca na Workstation ou no NODE-01.
 Mesmo depois de CI verde e instalação vazia, F1.2b não prova Q20/Q34 e não
 autoriza workloads. F1.2c precisa demonstrar isolamento, egress e service
 discovery antes do primeiro container.
-

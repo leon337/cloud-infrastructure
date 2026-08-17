@@ -1,7 +1,7 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-16 após Mission Acceptance, revisão arquitetônica, revisão
-de safety e CI descartável do `SLICE-001 — Foundations F1.1`.
+Atualizado em 2026-08-17 após validação repo-only do desired state
+`SLICE-002B — Docker runtime boundary`; o gate real F1.1 permanece inalterado.
 
 ## Estado durável
 
@@ -18,6 +18,10 @@ de safety e CI descartável do `SLICE-001 — Foundations F1.1`.
   `edd2497d657cc9bc35952f5dfc71090a18dade53` aprovado no GitHub Actions run
   `31972460567`, inclusive VM descartável privilegiada; VPS real **NOT_APPLIED**
   e slice `PARTIAL`, pronto para check mode privilegiado com interação humana.
+- F1.2b: apply/rollback, pin APT, preflight, helper de árvore e harness
+  concluídos no commit local `7015c80759a797bcb141773b79cd9b95f6fbecf1`;
+  validação local não privilegiada `PASS`, GitHub CI/VM descartável `PENDING` e
+  NODE-01 `NOT_EXECUTED/BLOCKED_BY_F1_1`.
 
 ## Artefatos canônicos criados
 
@@ -87,6 +91,25 @@ Snapshot read-only: `2026-08-16T19:46:14Z`.
 - múltiplas sessões Firefox/VS Code/Codex ativas;
 - `sudo -n` negado conforme política.
 
+Nenhuma dessas observações foi reaberta durante F1.2b repo-only. Nenhum
+playbook, `sudo`, package manager, Docker, systemd, firewall ou network mutation
+foi executado no host nesta atualização.
+
+## SLICE-002B — estado repo-only
+
+- branch recuperado limpo em `d849caa0eafdc231d2782be602be1a2263758b7b`;
+- role/playbooks de apply e rollback versionados com target/allowlist imutáveis;
+- chave/source/pin/config/drop-ins versionados e verificados por SHA-256;
+- install exige versão/path/digest do índice APT autenticado e suprime autostart;
+- helper de rollback compara baseline, usa `find -xdev` nos dois roots literais,
+  congela device/inode e recusa symlink, hardlink, mount, open path e drift;
+- harness GitHub-hosted implementa check sem mutação, apply, `changed=0`,
+  restart, invariância, recusas, rollback e cleanup, mas não foi executado;
+- suíte local: 55 unitários/negativos, 32 YAML, dois manifests, seis scripts com
+  sintaxe/ShellCheck e seis syntax-checks Ansible, todos `PASS`;
+- CI GitHub e lifecycle privilegiado descartável permanecem `PENDING`; VPS e
+  primeiro workload permanecem `NOT_EXECUTED`.
+
 ## Backup/recovery
 
 - timer sanitizado ativo e último resultado de serviço `success`;
@@ -100,8 +123,8 @@ Snapshot read-only: `2026-08-16T19:46:14Z`.
 
 ## Guardrails do próximo passo
 
-- a VM GitHub descartável já provou a remediação de safety para `edd2497d`; o
-  próximo passo permitido é somente check mode privilegiado na VPS real;
+- a VM GitHub descartável já provou a remediação F1.1 para `edd2497d`; o próximo
+  passo permitido no host real é somente check mode privilegiado F1.1;
 - LEANDRO digita sudo diretamente no check mode; senha nunca é
   enviada/registrada;
 - manter segunda sessão SSH e revalidar concorrência antes do apply;
@@ -112,6 +135,8 @@ Snapshot read-only: `2026-08-16T19:46:14Z`.
 - depois do apply exigir segunda execução `changed=0`, negações, modes e
   invariância de listeners/SSH/UFW/fail2ban/XRDP/LXD/units;
 - rollback só quando os namespaces persistentes estiverem vazios.
+- F1.2b real permanece bloqueado mesmo com desired state local pronto; sua CI
+  dinâmica também precisa passar no mesmo commit antes de qualquer preview.
 
 ## Próximo passo exato
 

@@ -1,5 +1,5 @@
 schema_version: 1
-updated_at: 2026-08-16
+updated_at: 2026-08-17
 environment: DEV_LAB
 node: node-01
 source:
@@ -74,7 +74,7 @@ platform_components:
     technology: Docker_Engine_and_Compose_plugin
     selected_version: Docker_Engine_29.7.2
     observed_version: ABSENT
-    lifecycle: SELECTED_IMPLEMENTING_F1_2B_CI_PENDING_REAL_VPS_NOT_EXECUTED_BLOCKED_BY_F1_1
+    lifecycle: SELECTED_REPO_DESIRED_STATE_LOCAL_STATIC_PASS_CI_PENDING_REAL_VPS_NOT_EXECUTED_BLOCKED_BY_F1_1
     decision: DEC-007
     source:
       repository: https://download.docker.com/linux/ubuntu
@@ -117,7 +117,9 @@ platform_components:
       daemon_slice: cloud-platform.slice
       future_workload_slice: cloud-workloads.slice
     validation:
-      local_static: PENDING
+      desired_state_commit: 7015c80759a797bcb141773b79cd9b95f6fbecf1
+      local_static: PASS_55_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX
+      local_scope: UNPRIVILEGED_REPO_ONLY_NO_PLAYBOOK_TARGET_EXECUTION
       ci: PENDING
       disposable_vm: PENDING
       real_vps_check_mode: NOT_EXECUTED

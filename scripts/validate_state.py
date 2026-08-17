@@ -17,6 +17,9 @@ DEFERRED_ROTATION = "DEFERRED_BY_HUMAN_DECISION"
 EXPECTED_MACHINE_ID_SHA256 = (
     "27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107"
 )
+F1_2B_DESIRED_STATE_COMMIT = (
+    "7015c80759a797bcb141773b79cd9b95f6fbecf1"
+)
 EXPECTED_DECISIONS = {
     f"q{number}": "D" if number in {5, 11, 28, 40} else "C"
     for number in range(1, 41)
@@ -114,11 +117,125 @@ def stale_f1_1_gate_errors(
     return errors
 
 
+def f1_2b_gate_errors(
+    current: dict[str, Any],
+    discovery: dict[str, Any],
+    components: dict[str, Any],
+    docker_baseline: dict[str, Any],
+) -> list[str]:
+    """Keep local, disposable-CI and real-node F1.2b claims distinct."""
+    errors: list[str] = []
+    current_state = current["codex_execution"]["repo_only_preparations"][
+        "docker_runtime_f1_2b"
+    ]
+    discovery_state = discovery["implementation"]["f1_2b_repo_only"]
+    component_state = components["platform_components"]["container_runtime"][
+        "validation"
+    ]
+    evidence_validation = docker_baseline["validation"]
+
+    commit_values = {
+        "current": current_state["desired_state_commit"],
+        "discovery": discovery_state["commit"],
+        "components": component_state["desired_state_commit"],
+        "evidence": docker_baseline["git"]["desired_state_commit"],
+    }
+    for location, value in commit_values.items():
+        if value != F1_2B_DESIRED_STATE_COMMIT:
+            errors.append(f"F1.2b desired-state commit differs at {location}")
+
+    local_values = {
+        "current": current_state["local_validation"],
+        "discovery": discovery_state["local_validation"],
+        "components": component_state["local_static"],
+        "evidence": evidence_validation["local_static_suite"],
+    }
+    for location, value in local_values.items():
+        if not str(value).startswith("PASS_"):
+            errors.append(f"F1.2b local validation is no longer PASS at {location}")
+
+    pending_values = {
+        "current.github_actions": current_state["github_actions"],
+        "current.disposable_vm_lifecycle": current_state[
+            "disposable_vm_lifecycle"
+        ],
+        "discovery.github_actions": discovery_state["github_actions"],
+        "components.ci": component_state["ci"],
+        "components.disposable_vm": component_state["disposable_vm"],
+        "evidence.github_actions": evidence_validation["github_actions"],
+        "evidence.disposable_vm_check_mode": evidence_validation[
+            "disposable_vm_check_mode"
+        ],
+        "evidence.disposable_vm_apply": evidence_validation[
+            "disposable_vm_apply"
+        ],
+        "evidence.disposable_vm_idempotence": evidence_validation[
+            "disposable_vm_idempotence"
+        ],
+        "evidence.disposable_vm_security": evidence_validation[
+            "disposable_vm_security"
+        ],
+        "evidence.disposable_vm_restart": evidence_validation[
+            "disposable_vm_restart"
+        ],
+        "evidence.disposable_vm_negative_cases": evidence_validation[
+            "disposable_vm_negative_cases"
+        ],
+        "evidence.disposable_vm_rollback": evidence_validation[
+            "disposable_vm_rollback"
+        ],
+    }
+    for location, value in pending_values.items():
+        if not str(value).startswith("PENDING"):
+            errors.append(f"F1.2b disposable CI was overclaimed at {location}")
+
+    not_executed_values = {
+        "components.real_vps_check_mode": component_state[
+            "real_vps_check_mode"
+        ],
+        "components.real_vps_apply": component_state["real_vps_apply"],
+        "evidence.real_vps_check_mode": evidence_validation[
+            "real_vps_check_mode"
+        ],
+        "evidence.real_vps_apply": evidence_validation["real_vps_apply"],
+        "evidence.real_vps_idempotence": evidence_validation[
+            "real_vps_idempotence"
+        ],
+        "evidence.real_vps_post_apply_invariance": evidence_validation[
+            "real_vps_post_apply_invariance"
+        ],
+    }
+    for location, value in not_executed_values.items():
+        if value != "NOT_EXECUTED":
+            errors.append(f"F1.2b real-node execution was overclaimed at {location}")
+    for key in ("real_vps_check_mode", "real_vps_apply"):
+        if current_state[key] != "NOT_EXECUTED_BLOCKED_BY_F1_1":
+            errors.append(f"F1.2b real-node gate changed at current.{key}")
+
+    workload_values = {
+        "current": current_state["first_workload"],
+        "discovery": discovery_state["first_workload"],
+        "components": component_state["first_workload"],
+        "evidence": docker_baseline["dependency"]["first_workload_gate"],
+    }
+    for location, value in workload_values.items():
+        if "BLOCKED" not in str(value) or "F1_2C" not in str(value):
+            errors.append(f"F1.2b first-workload gate changed at {location}")
+
+    if docker_baseline["production"]["deployment_authorized"] is not False:
+        errors.append("F1.2b evidence authorized production")
+    if docker_baseline["credential_rotation"]["status"] != DEFERRED_ROTATION:
+        errors.append("F1.2b evidence no longer defers credential rotation")
+
+    return errors
+
+
 def crosscheck_errors(
     current: dict[str, Any],
     discovery: dict[str, Any],
     components: dict[str, Any],
     baseline: dict[str, Any],
+    docker_baseline: dict[str, Any],
     inventory_hosts: dict[str, Any],
     inventory_vars: dict[str, Any],
 ) -> list[str]:
@@ -176,6 +293,7 @@ def crosscheck_errors(
 
     current_validation = current["codex_execution"]["current_slice"]["validation"]
     errors.extend(stale_f1_1_gate_errors(current))
+    errors.extend(f1_2b_gate_errors(current, discovery, components, docker_baseline))
     for key in (
         "real_vps_privileged_check_mode",
         "real_vps_apply",
@@ -322,6 +440,9 @@ def main() -> int:
         discovery = load_yaml(ROOT / "state" / "platform-discovery.yaml")
         components = load_yaml(ROOT / "state" / "components.yaml")
         baseline = load_yaml(ROOT / "evidence" / "SLICE-001" / "baseline.yaml")
+        docker_baseline = load_yaml(
+            ROOT / "evidence" / "SLICE-002B" / "baseline.yaml"
+        )
         inventory_hosts = load_yaml(
             ROOT / "automation" / "ansible" / "inventory" / "dev" / "hosts.yml"
         )
@@ -339,6 +460,7 @@ def main() -> int:
             discovery,
             components,
             baseline,
+            docker_baseline,
             inventory_hosts,
             inventory_vars,
         )
@@ -352,7 +474,7 @@ def main() -> int:
 
     print(
         "STATE_CROSSCHECK_PASS decisions=Q1-Q40-exact "
-        f"artifacts={len(CANONICAL_PATH_KEYS)} gates=preserved "
+        f"artifacts={len(CANONICAL_PATH_KEYS)} gates=F1.1+F1.2b-preserved "
         "real_apply=NOT_EXECUTED timestamps=aligned"
     )
     return 0

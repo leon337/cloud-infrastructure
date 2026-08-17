@@ -24,6 +24,9 @@ class StateCrosscheckTests(unittest.TestCase):
         cls.discovery = MODULE.load_yaml(ROOT / "state" / "platform-discovery.yaml")
         cls.components = MODULE.load_yaml(ROOT / "state" / "components.yaml")
         cls.baseline = MODULE.load_yaml(ROOT / "evidence" / "SLICE-001" / "baseline.yaml")
+        cls.docker_baseline = MODULE.load_yaml(
+            ROOT / "evidence" / "SLICE-002B" / "baseline.yaml"
+        )
         cls.inventory_hosts = MODULE.load_yaml(
             ROOT / "automation" / "ansible" / "inventory" / "dev" / "hosts.yml"
         )
@@ -44,6 +47,7 @@ class StateCrosscheckTests(unittest.TestCase):
         discovery=None,
         components=None,
         baseline=None,
+        docker_baseline=None,
         inventory_hosts=None,
         inventory_vars=None,
     ):
@@ -52,6 +56,11 @@ class StateCrosscheckTests(unittest.TestCase):
             copy.deepcopy(self.discovery) if discovery is None else discovery,
             copy.deepcopy(self.components) if components is None else components,
             copy.deepcopy(self.baseline) if baseline is None else baseline,
+            (
+                copy.deepcopy(self.docker_baseline)
+                if docker_baseline is None
+                else docker_baseline
+            ),
             (
                 copy.deepcopy(self.inventory_hosts)
                 if inventory_hosts is None
@@ -155,6 +164,46 @@ class StateCrosscheckTests(unittest.TestCase):
         self.assertTrue(
             any("reopens passed F1.1 disposable gate" in error for error in errors)
         )
+
+    def test_f1_2b_evidence_level_drift_is_rejected(self):
+        cases = []
+
+        current = copy.deepcopy(self.current)
+        current["codex_execution"]["repo_only_preparations"][
+            "docker_runtime_f1_2b"
+        ]["desired_state_commit"] = "0" * 40
+        cases.append(("commit", {"current": current}, "desired-state commit"))
+
+        components = copy.deepcopy(self.components)
+        components["platform_components"]["container_runtime"]["validation"][
+            "ci"
+        ] = "PASS_WITHOUT_RUN"
+        cases.append(("ci", {"components": components}, "disposable CI"))
+
+        docker_baseline = copy.deepcopy(self.docker_baseline)
+        docker_baseline["validation"]["real_vps_apply"] = "PASS"
+        cases.append(
+            (
+                "real-node",
+                {"docker_baseline": docker_baseline},
+                "real-node execution",
+            )
+        )
+
+        discovery = copy.deepcopy(self.discovery)
+        discovery["implementation"]["f1_2b_repo_only"][
+            "first_workload"
+        ] = "AUTHORIZED"
+        cases.append(("workload", {"discovery": discovery}, "first-workload gate"))
+
+        for label, arguments, expected_error in cases:
+            with self.subTest(label=label):
+                self.assertTrue(
+                    any(
+                        expected_error in error
+                        for error in self.errors_for(**arguments)
+                    )
+                )
 
 
 if __name__ == "__main__":

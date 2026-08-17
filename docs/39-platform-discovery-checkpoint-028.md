@@ -137,3 +137,11 @@ rollback e cleanup na VM descartável. Nenhuma operação privilegiada ocorreu n
 VPS real. O próximo passo é somente check mode privilegiado no NODE-01, com sudo
 digitado diretamente por LEANDRO; apply depende da reconciliação desse preview.
 Essa atualização operacional não reabre Q1–Q40.
+
+Atualização repo-only em 17/08/2026: F1.2b Docker boundary concluiu role,
+apply/rollback, pin APT, preflight, helper de árvore, harness e testes no commit
+local `7015c80759a797bcb141773b79cd9b95f6fbecf1`. A suíte local não privilegiada
+passou; GitHub CI/VM descartável e qualquer execução no NODE-01 permanecem
+`PENDING`/`NOT_EXECUTED`. F1.1 continua sendo o próximo passo de host e F1.2c
+continua bloqueando o primeiro workload. Essa preparação também não reabre
+Q1–Q40.

@@ -1,6 +1,6 @@
 # DEC-007 — Docker runtime rootful com fronteira vazia e root-only
 
-Status: **ACCEPTED FOR F1.2B IMPLEMENTATION — REAL VPS APPLY BLOCKED**
+Status: **ACCEPTED — REPO DESIRED STATE LOCAL-STATIC PASS — CI/REAL BLOCKED**
 
 ## Contexto
 
@@ -11,9 +11,10 @@ forwarding e uma superfície de publicação capaz de contornar a expectativa do
 UFW antes que essa policy fosse provada.
 
 F1.1 continua `PARTIAL`: check mode privilegiado, apply, segunda reconciliação e
-invariância no NODE-01 permanecem `NOT_EXECUTED`. Portanto F1.2b pode ser
-implementado e testado somente em fixture descartável; o apply real depende do
-checkpoint de F1.1.
+invariância no NODE-01 permanecem `NOT_EXECUTED`. O desired state F1.2b e seu
+harness foram concluídos no repositório e passaram validação local não
+privilegiada; CI/integração descartável e qualquer check/apply real permanecem
+pendentes. O apply real depende do checkpoint de F1.1.
 
 ## Alternativas
 
@@ -74,6 +75,12 @@ O daemon é rootful, com as seguintes fronteiras obrigatórias:
 - package post-install não pode iniciar o daemon antes de a configuração ser
   validada; o start ocorre apenas depois dos prechecks.
 
+O pin APT versionado fixa os cinco candidatos com prioridade `1001`; o apply
+também confere no índice autenticado a versão, o path Noble/stable e o SHA-256
+de cada `.deb` antes da instalação. `policy_rc_d=101` impede autostart de package
+scripts, e a execução recusa uma policy host-wide preexistente em vez de
+sobrescrevê-la.
+
 O marker de provenance fica fora das árvores removíveis em
 `/etc/cloud-platform-docker-runtime.managed`, `root:root 0600`, com conteúdo
 exato do slice. Lock e prestate/sentinel ficam respectivamente em
@@ -111,14 +118,22 @@ de runtime não existiam antes de F1.2b e quando não houver containers, imagens
 volumes, redes customizadas, build cache, swarm, membros no grupo, processos,
 mounts ou arquivos não atribuíveis ao runtime vazio.
 
-Dentro do lock exclusivo, o preflight cria um manifesto imutável da árvore a
-partir de `find -xdev` invocado separadamente apenas nos caminhos literais
-`/var/lib/docker` e `/var/lib/containerd`. Ele recusa symlinks, hardlinks,
-mountpoints, troca de device/inode, path fora das raízes e qualquer entrada não
-allowlisted. A fase mutante consome somente esse manifesto já verificado,
-reconfere tipo/inode e remove folhas exatas em ordem bottom-up; as raízes saem
-por `rmdir`. É proibido `rm -rf`, glob, `find` sobre pai amplo ou
-`apt autoremove`.
+Após o primeiro start vazio e com os serviços parados, o apply congela um
+baseline exato de paths/tipos/owners/modes que só pode ter surgido das raízes
+comprovadamente ausentes no prestate. Dentro do lock exclusivo, o rollback
+invoca `find -xdev` separadamente apenas nos caminhos literais
+`/var/lib/docker` e `/var/lib/containerd`, compara a árvore ao baseline e cria
+um manifesto imutável de remoção com device/inode correntes. Ele recusa
+symlinks, hardlinks, mountpoints, processo com path aberto, troca de
+device/inode, path fora das raízes e qualquer entrada fora do baseline. A fase
+mutante consome somente esse manifesto, reconfere tipo/inode e remove folhas
+exatas em ordem bottom-up; as raízes saem por `rmdir`. É proibido `rm -rf`,
+glob, `find` sobre pai amplo ou `apt autoremove`.
+
+Um sentinel de apply incompleto não é retomado nem apagado automaticamente. O
+playbook de rollback corrente aceita somente deployment completo com baseline
+íntegro; estado transacional parcial exige classificação explícita antes de uma
+extensão de recovery, preservando fail-closed.
 
 Depois, removem-se apenas os cinco pacotes e arquivos de config/source/key/drop-in
 com provenance exata, recarrega-se systemd e remove-se o marker por último.
@@ -129,4 +144,3 @@ Qualquer drift aborta antes da primeira remoção.
 Revisar antes do primeiro workload, major upgrade, troca do backend do firewall,
 mudança de cgroup/systemd, introdução de nó adicional ou necessidade comprovada
 de runtime rootless. A revisão não pode reduzir Q17/Q20/Q34 sem decisão humana.
-

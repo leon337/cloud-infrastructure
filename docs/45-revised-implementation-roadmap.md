@@ -20,7 +20,7 @@ Substitui como roadmap corrente as antigas fases provisórias F3–F10.
 | S0 Recovery | GitHub/VPS/Q1–Q40 reconciliados | `DONE` | report canônico e drift registrado |
 | F1.1 Foundations declarativas | Ansible/schema/namespaces/contas/slices accounting | `PARTIAL` | commit `edd2497d`/run `31972460567` passou estática e integração descartável; executar somente check mode privilegiado humano no NODE-01 e reconciliar o diff antes de qualquer apply |
 | F1.2a Management Network | administração privada por identidade/dispositivo | `WAITING_HUMAN_GATE` | conta/plano/policy/onboarding e recovery testados |
-| F1.2b Docker boundary | Docker CE/Compose pinados, root-only, bridge default ausente, sem porta/workload | `IMPLEMENTING` | desired state/CI descartável `PENDING`; NODE-01 `NOT_EXECUTED` e bloqueado até F1.1 reconciliado; snapshot ruleset, v4/v6 e uninstall fail-closed; não satisfaz Q20/Q34 |
+| F1.2b Docker boundary | Docker CE/Compose pinados, root-only, bridge default ausente, sem porta/workload | `IMPLEMENTING` | desired state/harness local-static `PASS` no commit `7015c80`; CI descartável `PENDING`; NODE-01 `NOT_EXECUTED` e bloqueado até F1.1 reconciliado; não satisfaz Q20/Q34 |
 | F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `CONDITIONAL` | ADR nftables/`DOCKER-USER`/DNS, F1.2b, matriz allow/deny e rollback; bloqueia primeiro container |
 | F1.3 Observability baseline | host/runtime logs, métricas, audit envelope | `CONDITIONAL` | compliance review de Loki/Grafana AGPL ou alternativa; HUMAN_GATE somente se termos/custo/aceite externo exigirem; limites/retention e interfaces privadas |
 | F1.4 Secret bootstrap foundation | OpenBao instalado, não inicializado/selado | `PLANNED` | nenhum dado real; init/unseal/custódia e revogação do root token inicial permanecem gate humano |
@@ -82,6 +82,7 @@ inicial de domínio/DNS, criar/revogar preview DEV dentro do namespace, quota e
 grant aprovados é autônomo; novo domínio, custo ou produção volta ao gate. Rotação
 de credenciais não faz parte deste roadmap enquanto permanecer adiada por LEANDRO.
 
-F1.2b pode concluir código e integração descartável em paralelo ao gate F1.1,
-mas essa preparação não autoriza check/apply no NODE-01. O primeiro container
-permanece bloqueado por F1.2c, mesmo que não publique portas.
+F1.2b concluiu código e validação local em paralelo ao gate F1.1; a integração
+descartável continua pendente e nenhuma preparação autoriza check/apply no
+NODE-01. O primeiro container permanece bloqueado por F1.2c, mesmo que não
+publique portas.

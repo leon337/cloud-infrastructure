@@ -4,7 +4,8 @@ Escopo: instalar Docker CE/CLI, containerd, Buildx e Compose em DEV/lab, sem
 workload, imagem, volume, bridge, porta publicada ou acesso não-root ao socket.
 Não inclui F1.2c, Management Network nem produção.
 
-Status operacional: **IMPLEMENTING; CI PENDING; NODE-01 NOT_EXECUTED**.
+Status operacional: **REPO DESIRED STATE LOCAL-STATIC PASS; CI PENDING;
+NODE-01 NOT_EXECUTED**.
 
 ## Gates e guardrails
 
@@ -19,7 +20,8 @@ Status operacional: **IMPLEMENTING; CI PENDING; NODE-01 NOT_EXECUTED**.
 - não adicionar membros ao grupo `docker` e não abrir API TCP/porta pública;
 - não alterar SSH, UFW policy, XRDP/LightDM, backup ou credenciais;
 - abortar diante de package manager/reconcile concorrente, unit falha, lock,
-  objeto Docker preexistente ou collision em config/source/key/marker.
+  objeto Docker preexistente, `policy-rc.d` host-wide ou collision em
+  config/source/key/pin/marker.
 
 O teste privilegiado completo só pode rodar em VM Ubuntu 24.04 descartável
 identificada pelo harness. Nunca o execute na Workstation física ou na VPS.
@@ -50,7 +52,7 @@ Antes de qualquer operação privilegiada:
    preexistente não é adotado;
 9. confirmar lock ausente e ausência de Ansible/apt/dpkg/unattended-upgrade
    concorrente;
-10. executar suíte estática e syntax check.
+10. executar suíte estática, ShellCheck e os seis syntax-checks.
 
 O prestate sanitizado registra apenas metadados, hashes e enumerações necessárias;
 nunca conteúdo secreto de config do host.
@@ -103,8 +105,9 @@ em fixture.
 
 ## Rollback vazio e fail-closed
 
-O comando permanece bloqueado até haver desired state e CI verde no mesmo
-commit. Requer confirmação explícita própria do playbook:
+O playbook existe e passou apenas validação estática local. O comando permanece
+bloqueado até haver CI verde no mesmo commit e deployment real elegível. Requer
+confirmação explícita própria:
 
 ```bash
 cd automation/ansible
@@ -117,12 +120,18 @@ O rollback precisa recusar, sem mutação, diante de marker/prestate adulterado,
 versão diferente, membro no grupo, qualquer objeto Docker, swarm, build cache,
 processo, mount ou conteúdo não atribuível ao runtime vazio.
 
-Sob lock exclusivo, o preflight congela e valida o manifesto retornado por
-`find -xdev` separadamente nos literais `/var/lib/docker` e
-`/var/lib/containerd`. São recusados symlink, hardlink, mountpoint, device/inode
-alterado e path fora dessas raízes. A remoção usa somente as entradas exatas do
-manifesto, revalidadas e em ordem bottom-up; as raízes são removidas com
-`rmdir`. Nunca usar `rm -rf`, glob, raiz/pai genérico ou autoremove.
+O apply congela o baseline exato da árvore criada a partir de roots inicialmente
+ausentes. Sob lock exclusivo, o rollback executa `find -xdev` separadamente nos
+literais `/var/lib/docker` e `/var/lib/containerd`, compara paths/tipos/modes ao
+baseline e congela device/inode no manifesto de remoção. São recusados symlink,
+hardlink, mountpoint, processo com path aberto, device/inode alterado e path
+fora dessas raízes. A remoção usa somente as entradas exatas do manifesto,
+revalidadas e em ordem bottom-up; as raízes são removidas com `rmdir`. Nunca
+usar `rm -rf`, glob, raiz/pai genérico ou autoremove.
+
+`transaction.json` presente indica apply incompleto. O rollback atual recusa
+esse estado e não tenta completar ou apagar parcialmente: preservar marker,
+prestate, lock status e objetos para classificação e extensão de recovery.
 
 Depois de provar ausência do runtime, remover apenas pacotes e arquivos com
 provenance exata, executar daemon-reload e remover o marker por último. Restaurar
@@ -142,4 +151,3 @@ investigação, nunca remoção recursiva.
 Persistir resultados sanitizados em `evidence/SLICE-002B/`: SHA, pin/digest,
 timestamp, contagens, hashes, invariantes, deltas classificados e PASS/FAIL por
 etapa. `PENDING` e `NOT_EXECUTED` nunca equivalem a `PASS`.
-

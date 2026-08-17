@@ -106,8 +106,19 @@ ShellCheck, três syntax-checks Ansible, check mode sem mutação, apply descart
 rollback e cleanup. Os resultados anteriores da fixture são somente históricos.
 Nada foi aplicado à VPS real; F1.1 permanece `PARTIAL/NOT_APPLIED`.
 
-O próximo executor deve repetir os prechecks read-only frescos e executar somente
-o check mode privilegiado F1.1 no NODE-01. LEANDRO digita a senha sudo diretamente
-no prompt `--ask-become-pass`; ela nunca é enviada ao agente ou registrada. O diff
-deve ser persistido de forma sanitizada e reconciliado antes de qualquer apply.
-Docker, Management Network, produção e rotação não fazem parte desse passo.
+Em paralelo ao gate real F1.1, F1.2b Docker boundary concluiu desired state,
+apply/rollback, pin APT, helper de árvore e harness no commit local
+`7015c80759a797bcb141773b79cd9b95f6fbecf1`. A validação local não privilegiada
+passou com 55 testes, ShellCheck em seis scripts e syntax-check de seis playbooks.
+GitHub CI/VM descartável continuam `PENDING`; nenhum playbook foi executado
+contra host/inventory, Docker/containerd continuam ausentes no último baseline
+real e o apply F1.2b continua bloqueado por F1.1. Nenhum workload é autorizado
+antes de F1.2c.
+
+O próximo passo de host continua sendo repetir prechecks read-only frescos e
+executar somente o check mode privilegiado F1.1 no NODE-01. LEANDRO digita a
+senha sudo diretamente no prompt `--ask-become-pass`; ela nunca é enviada ao
+agente ou registrada. O diff deve ser persistido de forma sanitizada e
+reconciliado antes de qualquer apply. Docker real, Management Network, produção
+e rotação não fazem parte desse passo; trabalho repo-only independente pode
+continuar sem converter `PENDING`/`NOT_EXECUTED` em `PASS`.

@@ -1,7 +1,7 @@
 # 47 — Docker runtime boundary F1.2b checkpoint
 
-Data: 2026-08-16
-Status: **IMPLEMENTING — CI PENDING — REAL VPS NOT_EXECUTED**
+Data: 2026-08-17
+Status: **REPO DESIRED STATE LOCAL-STATIC PASS — CI PENDING — REAL VPS NOT_EXECUTED**
 Ambiente autorizado: **DEV/lab somente**
 
 ## Objetivo
@@ -18,6 +18,11 @@ serviço de plataforma, não cria workload e não satisfaz Q20/Q34.
   reconciliação e invariância no NODE-01 permanecem `NOT_EXECUTED`;
 - por isso F1.2b pode avançar em código/CI, mas check/apply real está bloqueado;
 - F1.2c network enforcement bloqueia o primeiro container no NODE-01.
+
+O branch foi recuperado limpo em `d849caa0eafdc231d2782be602be1a2263758b7b`.
+Apply/rollback, role, preflight, pin APT, helper de árvore, harness e CI foram
+concluídos no commit local
+`7015c80759a797bcb141773b79cd9b95f6fbecf1`.
 
 Nenhuma inspeção nova ou mutação foi executada na VPS para produzir este
 checkpoint.
@@ -55,15 +60,21 @@ Os cinco projetos upstream registram Apache-2.0; Docker Desktop não é instalad
   futuros workloads em `cloud-workloads.slice`;
 - zero containers, imagens, volumes, redes customizadas, build cache e swarm;
 - marker `/etc/cloud-platform-docker-runtime.managed` `root:root 0600`, lock
-  exclusivo e prestate/sentinel persistente fora das raízes Docker.
+  exclusivo e prestate/sentinel persistente fora das raízes Docker;
+- pin APT dedicado com prioridade `1001`; índice autenticado deve fornecer
+  versão/path/SHA-256 exatos antes da instalação;
+- `policy_rc_d=101`, com recusa de policy host-wide preexistente, impede start
+  por package script antes de config/digest/unit validation.
 
 ## Rollback definido antes do apply
 
 Rollback exige marker/prestate exatos, versões/provenance exatas e runtime
-comprovadamente vazio. Dentro do lock, um manifesto é construído e validado com
-`find -xdev` separadamente apenas nos literais `/var/lib/docker` e
-`/var/lib/containerd`. Symlinks, hardlinks, mounts, device/inode drift, path fora
-da raiz ou conteúdo não allowlisted recusam antes da mutação.
+comprovadamente vazio. O apply congela um baseline exato depois de provar roots
+inicialmente ausentes. Dentro do lock, `find -xdev` é executado separadamente
+apenas nos literais `/var/lib/docker` e `/var/lib/containerd`; a árvore corrente
+precisa coincidir com o baseline antes de congelar device/inode no manifesto de
+remoção. Symlinks, hardlinks, mounts, processo com path aberto, drift ou escape
+recusam antes da mutação.
 
 A remoção consome somente paths exatos do manifesto, revalida cada entrada,
 remove bottom-up e termina com `rmdir` das raízes. `rm -rf`, glob, busca em pai
@@ -75,8 +86,8 @@ saem antes do daemon-reload; o marker é o último objeto removido.
 | Gate | Estado |
 |---|---|
 | Decisão, pins e boundary | `RECORDED` |
-| Desired state integrado | `IMPLEMENTING` |
-| Local static/fail-closed suite final | `PENDING` |
+| Desired state integrado | `PASS_LOCAL_COMMIT_7015C80` |
+| Local static/fail-closed suite final | `PASS_55_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX` |
 | CI GitHub commit-bound | `PENDING` |
 | Disposable check/apply/changed=0/restart/rollback | `PENDING` |
 | NODE-01 check/apply/changed=0/invariância | `NOT_EXECUTED` |
@@ -87,13 +98,11 @@ host real, e instalação vazia não prova isolamento de workload.
 
 ## Próximo passo exato
 
-1. finalizar desired state e harness sem tocar na VPS;
-2. executar validação local integrada e corrigir todo fail;
-3. publicar commit e obter CI verde em VM descartável;
-4. manter NODE-01 bloqueado até F1.1 ser aplicado/reconciliado/checkpointed;
-5. depois de F1.2b real vazio, selecionar/provar F1.2c antes do primeiro
+1. publicar explicitamente o commit e obter CI verde em VM descartável;
+2. manter NODE-01 bloqueado até F1.1 ser aplicado/reconciliado/checkpointed;
+3. executar somente o preview real F1.2b após novo checkpoint/human sudo;
+4. depois de F1.2b real vazio, selecionar/provar F1.2c antes do primeiro
    container.
 
 Nenhum item deste checkpoint autoriza produção, rotação de credenciais ou acesso
 Docker irrestrito a agentes.
-
