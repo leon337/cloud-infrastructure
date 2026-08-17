@@ -202,6 +202,8 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
         install = reconcile.index("Install only the five exact Docker packages")
         self.assertLess(digest_check, install)
         self.assertIn("policy_rc_d: 101", reconcile)
+        self.assertIn("map('trim')", reconcile)
+        self.assertIn("'Candidate: ' ~ item.item.version", reconcile)
         self.assertIn("Prove package scripts did not start the runtime", reconcile)
         self.assertIn("Prove package scripts did not initialize runtime state", reconcile)
 

@@ -158,7 +158,9 @@
     that:
       - item.rc == 0
       - >-
-        ('Candidate: ' ~ item.item.version) in item.stdout_lines
+        (item.stdout_lines | map('trim') |
+          select('equalto', 'Candidate: ' ~ item.item.version) |
+          list | length) == 1
       - (' ' ~ item.item.version ~ ' 1001') in item.stdout
     fail_msg: "APT pin is ineffective for {{ item.item.name }}."
   loop: "{{ platform_docker_apt_policy.results }}"
