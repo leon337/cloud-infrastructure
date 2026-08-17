@@ -356,6 +356,18 @@ for path in \
 done
 sudo systemctl daemon-reload
 
+# GitHub's disposable image can retain docker0 after the preinstalled Docker
+# packages and state are removed. Establish a pristine boundary baseline: only
+# delete that exact, canonical Docker bridge and refuse an unexpected link type.
+if ip link show dev docker0 >/dev/null 2>&1; then
+  ip -d link show dev docker0 | grep -Eq '(^|[[:space:]])bridge([[:space:]]|$)' ||
+    fail preinstalled_docker0_is_not_a_bridge
+  sudo ip link delete dev docker0 type bridge
+  ! ip link show dev docker0 >/dev/null 2>&1 ||
+    fail preinstalled_docker0_survived_cleanup
+  printf '%s\n' 'DOCKER_BOUNDARY_RUNNER_CLEANUP interface=docker0 type=bridge result=removed'
+fi
+
 if docker_group=$(getent group docker); then
   docker_gid=$(cut -d: -f3 <<<"$docker_group")
   docker_members=${docker_group##*:}

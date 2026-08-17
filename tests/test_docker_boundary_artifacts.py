@@ -257,6 +257,8 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
         self.assertIn("residual-config (rc) records", harness)
         self.assertIn("stable, exact interface set", harness)
         self.assertIn("DOCKER_BOUNDARY_NETWORK_DIFF", harness)
+        self.assertIn("preinstalled_docker0_is_not_a_bridge", harness)
+        self.assertIn("ip link delete dev docker0 type bridge", harness)
         self.assertNotIn("rm -rf", harness)
         self.assertNotIn("apt-get autoremove", harness)
 
