@@ -85,18 +85,29 @@ expected_fwd6_rules() {
 }
 
 check_rules() {
-  marker_valid || return 1
-  exact_rules iptables "$CHAIN_IN" "$(expected_in_rules "$CHAIN_IN")" || return 1
-  exact_rules iptables "$CHAIN_FWD" "$(expected_fwd_rules "$CHAIN_FWD")" || return 1
-  exact_rules ip6tables "$CHAIN_IN" "$(expected_in_rules "$CHAIN_IN")" || return 1
-  exact_rules ip6tables "$CHAIN_FWD" "$(expected_fwd6_rules "$CHAIN_FWD")" || return 1
-  [[ $(jump_count iptables INPUT -i 'cp+' -j "$CHAIN_IN") == 1 ]] || return 1
-  [[ $(jump_count ip6tables INPUT -i 'cp+' -j "$CHAIN_IN") == 1 ]] || return 1
-  [[ $(jump_count iptables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD") == 1 ]] || return 1
-  [[ $(jump_count iptables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD") == 1 ]] || return 1
-  [[ $(jump_count ip6tables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD") == 1 ]] || return 1
-  [[ $(jump_count ip6tables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD") == 1 ]] || return 1
-  [[ $(sysctl -n net.ipv6.conf.all.forwarding) == 0 ]] || return 1
+  marker_valid || { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL marker' >&2; return 1; }
+  exact_rules iptables "$CHAIN_IN" "$(expected_in_rules "$CHAIN_IN")" ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv4_input_rules' >&2; return 1; }
+  exact_rules iptables "$CHAIN_FWD" "$(expected_fwd_rules "$CHAIN_FWD")" ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv4_forward_rules' >&2; return 1; }
+  exact_rules ip6tables "$CHAIN_IN" "$(expected_in_rules "$CHAIN_IN")" ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv6_input_rules' >&2; return 1; }
+  exact_rules ip6tables "$CHAIN_FWD" "$(expected_fwd6_rules "$CHAIN_FWD")" ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv6_forward_rules' >&2; return 1; }
+  [[ $(jump_count iptables INPUT -i 'cp+' -j "$CHAIN_IN") == 1 ]] ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv4_input_jump' >&2; return 1; }
+  [[ $(jump_count ip6tables INPUT -i 'cp+' -j "$CHAIN_IN") == 1 ]] ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv6_input_jump' >&2; return 1; }
+  [[ $(jump_count iptables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD") == 1 ]] ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv4_forward_input_jump' >&2; return 1; }
+  [[ $(jump_count iptables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD") == 1 ]] ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv4_forward_output_jump' >&2; return 1; }
+  [[ $(jump_count ip6tables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD") == 1 ]] ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv6_forward_input_jump' >&2; return 1; }
+  [[ $(jump_count ip6tables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD") == 1 ]] ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv6_forward_output_jump' >&2; return 1; }
+  [[ $(sysctl -n net.ipv6.conf.all.forwarding) == 0 ]] ||
+    { printf '%s\n' 'NETWORK_ENFORCEMENT_CHECK_FAIL ipv6_forwarding_enabled' >&2; return 1; }
   printf 'NETWORK_ENFORCEMENT_CHECK=PASS version=%s\n' "$VERSION"
 }
 
