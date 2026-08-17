@@ -1,0 +1,22 @@
+[Unit]
+Description=Cloud Platform DEV workload network enforcement
+Documentation=https://github.com/leon337/cloud-infrastructure
+After=docker.service
+PartOf=docker.service
+ConditionPathExists=/etc/cloud-platform-network-enforcement.managed
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/libexec/cloud-platform-network-enforcement apply
+ExecReload=/usr/local/libexec/cloud-platform-network-enforcement apply
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=-/etc/cloud-platform-network-enforcement.managed /run/lock
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_DAC_OVERRIDE CAP_CHOWN CAP_FOWNER
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_DAC_OVERRIDE CAP_CHOWN CAP_FOWNER
+
+[Install]
+WantedBy=multi-user.target

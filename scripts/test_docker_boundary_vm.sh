@@ -486,6 +486,9 @@ fi
 capture_network_state "$NETWORK_AFTER"
 compare_network_invariants "$NETWORK_BEFORE" "$NETWORK_AFTER"
 
+CURRENT_STAGE=network_enforcement_base
+"$BUNDLE_ROOT/scripts/test_network_enforcement_vm.sh"
+
 CURRENT_STAGE=restart_and_reconcile
 sudo systemctl restart containerd.service docker.service
 run_playbook "$RUNNER_TEMP/docker-boundary-post-restart.log" \

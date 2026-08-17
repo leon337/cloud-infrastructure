@@ -1,0 +1,210 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly MARKER=/etc/cloud-platform-network-enforcement.managed
+readonly LOCK=/run/lock/cloud-platform-network-enforcement.lock
+readonly CHAIN_IN=CLOUD-PLATFORM-IN
+readonly CHAIN_FWD=CLOUD-PLATFORM-FWD
+readonly VERSION=SLICE-002C-BASE-V1
+
+refuse() {
+  printf 'NETWORK_ENFORCEMENT_REFUSED reason=%s\n' "$1" >&2
+  exit 2
+}
+
+[[ $EUID -eq 0 ]] || refuse root_required
+[[ $# -eq 1 ]] || refuse exactly_one_operation_required
+case $1 in
+  apply | check | rollback) operation=$1 ;;
+  *) refuse operation_not_allowlisted ;;
+esac
+
+for command in flock ip iptables ip6tables iptables-restore ip6tables-restore stat sysctl; do
+  command -v "$command" >/dev/null 2>&1 || refuse "missing_command_$command"
+done
+
+exec 9>"$LOCK"
+flock -n 9 || refuse concurrent_operation
+
+marker_valid() {
+  [[ -f $MARKER && ! -L $MARKER ]] || return 1
+  [[ $(stat -c '%U:%G:%a:%h' "$MARKER") == root:root:600:1 ]] || return 1
+  [[ $(<"$MARKER") == "$VERSION" ]]
+}
+
+chain_exists() {
+  "$1" -w 5 -nL "$2" >/dev/null 2>&1
+}
+
+jump_count() {
+  local tool=$1 parent=$2
+  shift 2
+  "$tool" -w 5 -S "$parent" | grep -Fxc -- "-A $parent $*" || true
+}
+
+exact_rules() {
+  local tool=$1 chain=$2 expected=$3 actual
+  actual=$("$tool" -w 5 -S "$chain") || return 1
+  [[ $actual == "$expected" ]]
+}
+
+expected_in_rules() {
+  local chain=$1
+  printf '%s\n' \
+    "-N $chain" \
+    "-A $chain -m conntrack --ctstate INVALID -j DROP" \
+    "-A $chain -i cp+ -j DROP" \
+    "-A $chain -j RETURN"
+}
+
+expected_fwd_rules() {
+  local chain=$1
+  printf '%s\n' \
+    "-N $chain" \
+    "-A $chain -m conntrack --ctstate INVALID -j DROP" \
+    "-A $chain -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT" \
+    "-A $chain -i cp+ -d 10.0.0.0/8 -j DROP" \
+    "-A $chain -i cp+ -d 100.64.0.0/10 -j DROP" \
+    "-A $chain -i cp+ -d 169.254.0.0/16 -j DROP" \
+    "-A $chain -i cp+ -d 172.16.0.0/12 -j DROP" \
+    "-A $chain -i cp+ -d 192.168.0.0/16 -j DROP" \
+    "-A $chain -i cp+ -j DROP" \
+    "-A $chain -o cp+ -j DROP" \
+    "-A $chain -j RETURN"
+}
+
+expected_fwd6_rules() {
+  local chain=$1
+  printf '%s\n' \
+    "-N $chain" \
+    "-A $chain -m conntrack --ctstate INVALID -j DROP" \
+    "-A $chain -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT" \
+    "-A $chain -i cp+ -j DROP" \
+    "-A $chain -o cp+ -j DROP" \
+    "-A $chain -j RETURN"
+}
+
+check_rules() {
+  marker_valid || return 1
+  exact_rules iptables "$CHAIN_IN" "$(expected_in_rules "$CHAIN_IN")" || return 1
+  exact_rules iptables "$CHAIN_FWD" "$(expected_fwd_rules "$CHAIN_FWD")" || return 1
+  exact_rules ip6tables "$CHAIN_IN" "$(expected_in_rules "$CHAIN_IN")" || return 1
+  exact_rules ip6tables "$CHAIN_FWD" "$(expected_fwd6_rules "$CHAIN_FWD")" || return 1
+  [[ $(jump_count iptables INPUT -i 'cp+' -j "$CHAIN_IN") == 1 ]] || return 1
+  [[ $(jump_count ip6tables INPUT -i 'cp+' -j "$CHAIN_IN") == 1 ]] || return 1
+  [[ $(jump_count iptables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD") == 1 ]] || return 1
+  [[ $(jump_count iptables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD") == 1 ]] || return 1
+  [[ $(jump_count ip6tables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD") == 1 ]] || return 1
+  [[ $(jump_count ip6tables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD") == 1 ]] || return 1
+  [[ $(sysctl -n net.ipv6.conf.all.forwarding) == 0 ]] || return 1
+  printf 'NETWORK_ENFORCEMENT_CHECK=PASS version=%s\n' "$VERSION"
+}
+
+remove_all_jumps() {
+  local tool=$1 parent=$2
+  shift 2
+  while "$tool" -w 5 -C "$parent" "$@" >/dev/null 2>&1; do
+    "$tool" -w 5 -D "$parent" "$@"
+  done
+}
+
+install_one_jump() {
+  local tool=$1 parent=$2
+  shift 2
+  remove_all_jumps "$tool" "$parent" "$@"
+  "$tool" -w 5 -I "$parent" 1 "$@"
+}
+
+apply_rules() {
+  local previously_managed=false
+  if marker_valid && check_rules >/dev/null 2>&1; then
+    printf 'NETWORK_ENFORCEMENT_APPLY=PASS changed=0 version=%s\n' "$VERSION"
+    return
+  fi
+  if marker_valid; then
+    previously_managed=true
+  elif [[ -e $MARKER || -L $MARKER ]]; then
+    refuse marker_drift
+  fi
+  if [[ $previously_managed == false ]]; then
+    for tool in iptables ip6tables; do
+      chain_exists "$tool" "$CHAIN_IN" && refuse preexisting_owned_input_chain
+      chain_exists "$tool" "$CHAIN_FWD" && refuse preexisting_owned_forward_chain
+    done
+  fi
+  for tool in iptables ip6tables; do
+    chain_exists "$tool" DOCKER-USER || refuse docker_user_chain_missing
+  done
+
+  iptables-restore -w 5 --noflush <<'RULES4'
+*filter
+:CLOUD-PLATFORM-IN - [0:0]
+:CLOUD-PLATFORM-FWD - [0:0]
+-A CLOUD-PLATFORM-IN -m conntrack --ctstate INVALID -j DROP
+-A CLOUD-PLATFORM-IN -i cp+ -j DROP
+-A CLOUD-PLATFORM-IN -j RETURN
+-A CLOUD-PLATFORM-FWD -m conntrack --ctstate INVALID -j DROP
+-A CLOUD-PLATFORM-FWD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A CLOUD-PLATFORM-FWD -i cp+ -d 10.0.0.0/8 -j DROP
+-A CLOUD-PLATFORM-FWD -i cp+ -d 100.64.0.0/10 -j DROP
+-A CLOUD-PLATFORM-FWD -i cp+ -d 169.254.0.0/16 -j DROP
+-A CLOUD-PLATFORM-FWD -i cp+ -d 172.16.0.0/12 -j DROP
+-A CLOUD-PLATFORM-FWD -i cp+ -d 192.168.0.0/16 -j DROP
+-A CLOUD-PLATFORM-FWD -i cp+ -j DROP
+-A CLOUD-PLATFORM-FWD -o cp+ -j DROP
+-A CLOUD-PLATFORM-FWD -j RETURN
+COMMIT
+RULES4
+  ip6tables-restore -w 5 --noflush <<'RULES6'
+*filter
+:CLOUD-PLATFORM-IN - [0:0]
+:CLOUD-PLATFORM-FWD - [0:0]
+-A CLOUD-PLATFORM-IN -m conntrack --ctstate INVALID -j DROP
+-A CLOUD-PLATFORM-IN -i cp+ -j DROP
+-A CLOUD-PLATFORM-IN -j RETURN
+-A CLOUD-PLATFORM-FWD -m conntrack --ctstate INVALID -j DROP
+-A CLOUD-PLATFORM-FWD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A CLOUD-PLATFORM-FWD -i cp+ -j DROP
+-A CLOUD-PLATFORM-FWD -o cp+ -j DROP
+-A CLOUD-PLATFORM-FWD -j RETURN
+COMMIT
+RULES6
+  install_one_jump iptables INPUT -i 'cp+' -j "$CHAIN_IN"
+  install_one_jump ip6tables INPUT -i 'cp+' -j "$CHAIN_IN"
+  install_one_jump iptables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD"
+  install_one_jump iptables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD"
+  install_one_jump ip6tables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD"
+  install_one_jump ip6tables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD"
+  printf '%s\n' "$VERSION" >"$MARKER"
+  chown root:root "$MARKER"
+  chmod 0600 "$MARKER"
+  check_rules >/dev/null || refuse post_apply_verification_failed
+  printf 'NETWORK_ENFORCEMENT_APPLY=PASS changed=1 version=%s\n' "$VERSION"
+}
+
+rollback_rules() {
+  marker_valid || refuse marker_missing_or_drifted
+  if ip -o link show | awk -F': ' '{print $2}' | grep -Eq '^cp[0-9a-f]{8}(@|$)'; then
+    refuse managed_interface_still_present
+  fi
+  remove_all_jumps iptables INPUT -i 'cp+' -j "$CHAIN_IN"
+  remove_all_jumps ip6tables INPUT -i 'cp+' -j "$CHAIN_IN"
+  remove_all_jumps iptables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD"
+  remove_all_jumps iptables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD"
+  remove_all_jumps ip6tables DOCKER-USER -i 'cp+' -j "$CHAIN_FWD"
+  remove_all_jumps ip6tables DOCKER-USER -o 'cp+' -j "$CHAIN_FWD"
+  for tool in iptables ip6tables; do
+    "$tool" -w 5 -F "$CHAIN_IN"
+    "$tool" -w 5 -X "$CHAIN_IN"
+    "$tool" -w 5 -F "$CHAIN_FWD"
+    "$tool" -w 5 -X "$CHAIN_FWD"
+  done
+  unlink -- "$MARKER"
+  printf 'NETWORK_ENFORCEMENT_ROLLBACK=PASS version=%s\n' "$VERSION"
+}
+
+case $operation in
+  apply) apply_rules ;;
+  check) check_rules ;;
+  rollback) rollback_rules ;;
+esac
