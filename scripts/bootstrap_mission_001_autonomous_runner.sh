@@ -72,7 +72,9 @@ chmod 0600 "$workdir/allowed_signers"
 ssh-keygen -Y verify -f "$workdir/allowed_signers" -I "$SIGNING_IDENTITY" \
   -n "$SIGNING_NAMESPACE" -s "$SOURCE_SIGNATURE" <"$SOURCE_BUNDLE" >/dev/null 2>&1 ||
   refuse invalid_bundle_signature
-git bundle verify "$SOURCE_BUNDLE" >/dev/null 2>&1 || refuse invalid_git_bundle
+git init --bare --quiet "$workdir/verify.git" || refuse bundle_verifier_init_failed
+git -C "$workdir/verify.git" bundle verify "$SOURCE_BUNDLE" >/dev/null 2>&1 ||
+  refuse invalid_git_bundle
 git clone --quiet --branch "$EXPECTED_BRANCH" --single-branch \
   "$SOURCE_BUNDLE" "$workdir/repository" || refuse branch_missing_from_bundle
 git -C "$workdir/repository" diff --quiet || refuse bundle_worktree_dirty
@@ -247,7 +249,8 @@ reconcile_operation() (
   ssh-keygen -Y verify -f "$ALLOWED_SIGNERS" -I "$SIGNING_IDENTITY" \
     -n "$SIGNING_NAMESPACE" -s "$INBOX_SIGNATURE" <"$INBOX_BUNDLE" >/dev/null 2>&1 ||
     return 1
-  git bundle verify "$INBOX_BUNDLE" >/dev/null 2>&1 || return 1
+  git init --bare --quiet "$staging/verify.git" || return 1
+  git -C "$staging/verify.git" bundle verify "$INBOX_BUNDLE" >/dev/null 2>&1 || return 1
   git clone --quiet --branch "$EXPECTED_BRANCH" --single-branch \
     "$INBOX_BUNDLE" "$staging/repository" || return 1
   candidate_sha=$(git -C "$staging/repository" rev-parse HEAD)

@@ -118,6 +118,18 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn("repository.bundle.sig", self.runner)
         self.assertIn("root:root:600:1", self.runner)
 
+    def test_bundle_verification_uses_an_explicit_bare_repository(self):
+        self.assertIn('git init --bare --quiet "$workdir/verify.git"', self.bootstrap)
+        self.assertIn(
+            'git -C "$workdir/verify.git" bundle verify "$SOURCE_BUNDLE"',
+            self.bootstrap,
+        )
+        self.assertIn('git init --bare --quiet "$staging/verify.git"', self.runner)
+        self.assertIn(
+            'git -C "$staging/verify.git" bundle verify "$INBOX_BUNDLE"',
+            self.runner,
+        )
+
     def test_bootstrap_does_not_mutate_access_or_recovery_services(self):
         forbidden = re.compile(
             r"systemctl\s+(?:stop|disable|mask|restart)\s+[^\n]*(?:ssh|ufw|xrdp|fail2ban|lxd)",
