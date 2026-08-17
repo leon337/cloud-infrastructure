@@ -589,10 +589,10 @@
           selectattr('stat.exists') | list | length) == 0
       - >-
         (platform_docker_selected_package_states.results |
-          selectattr('rc', 'equalto', 0) | list | length) == 0
+          selectattr('stdout', 'match', '^ii ') | list | length) == 0
       - >-
         (platform_docker_conflicting_package_states.results |
-          selectattr('rc', 'equalto', 0) | list | length) == 0
+          selectattr('stdout', 'match', '^ii ') | list | length) == 0
       - platform_docker_group_state.rc == 2
     fail_msg: >-
       A Docker package, group, runtime root, config, source, state, or drop-in
@@ -645,7 +645,7 @@
           selectattr('rc', 'equalto', 0) | list | length) == 5
       - >-
         (platform_docker_conflicting_package_states.results |
-          selectattr('rc', 'equalto', 0) | list | length) == 0
+          selectattr('stdout', 'match', '^ii ') | list | length) == 0
       - platform_docker_group_state.rc == 0
       - platform_docker_group_state.stdout.split(':') | length == 4
       - >-

@@ -205,6 +205,18 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
         self.assertIn("Prove package scripts did not start the runtime", reconcile)
         self.assertIn("Prove package scripts did not initialize runtime state", reconcile)
 
+    def test_package_preflight_distinguishes_installed_from_known_records(self):
+        role = (
+            ROOT
+            / "automation"
+            / "ansible"
+            / "roles"
+            / "docker_runtime"
+            / "tasks"
+            / "main.yml"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(role.count("selectattr('stdout', 'match', '^ii ')"), 3)
+
     def test_rollback_is_manifest_bounded_and_relinquishes_marker_last(self):
         playbook_root = ROOT / "automation" / "ansible" / "playbooks"
         rollback = (playbook_root / "rollback-docker-runtime.yml").read_text(
