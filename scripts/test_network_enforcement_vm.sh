@@ -34,7 +34,7 @@ sudo systemctl is-active --quiet docker.service || fail docker_inactive
 cleanup() {
   sudo ip link delete cpdeadbeef >/dev/null 2>&1 || true
   if sudo test -x "$SCRIPT_DESTINATION"; then
-    sudo systemctl disable --now cloud-platform-network-enforcement.service \
+    sudo timeout 20s systemctl disable --now cloud-platform-network-enforcement.service \
       >/dev/null 2>&1 || true
     if sudo test -f "$MARKER"; then
       sudo "$SCRIPT_DESTINATION" rollback >/dev/null 2>&1 || true
@@ -56,7 +56,7 @@ first_output=$(sudo "$SCRIPT_DESTINATION" apply)
 grep -q 'NETWORK_ENFORCEMENT_APPLY=PASS changed=1' <<<"$first_output" ||
   fail first_apply_not_changed
 sudo systemctl daemon-reload
-sudo systemctl enable --now cloud-platform-network-enforcement.service
+sudo timeout 30s systemctl enable --now cloud-platform-network-enforcement.service
 second_output=$(sudo "$SCRIPT_DESTINATION" apply)
 grep -q 'NETWORK_ENFORCEMENT_APPLY=PASS changed=0' <<<"$second_output" ||
   fail second_apply_not_idempotent
@@ -80,12 +80,12 @@ grep -q 'managed_interface_still_present' <<<"$refusal_output" ||
 sudo ip link delete cpdeadbeef
 sudo "$SCRIPT_DESTINATION" check >/dev/null || fail refusal_mutated_rules
 
-sudo systemctl restart docker.service
+sudo timeout 60s systemctl restart docker.service || fail docker_restart_timed_out
 sudo systemctl is-active --quiet cloud-platform-network-enforcement.service ||
   fail service_not_restarted_with_docker
 sudo "$SCRIPT_DESTINATION" check >/dev/null || fail post_restart_check_failed
 
-sudo systemctl disable --now cloud-platform-network-enforcement.service
+sudo timeout 30s systemctl disable --now cloud-platform-network-enforcement.service
 sudo "$SCRIPT_DESTINATION" rollback |
   grep -q 'NETWORK_ENFORCEMENT_ROLLBACK=PASS' || fail rollback_failed
 sudo test ! -e "$MARKER" || fail marker_survived_rollback

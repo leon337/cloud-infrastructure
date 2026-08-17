@@ -197,22 +197,33 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn("PYTHON=/usr/bin/python3", self.runner)
         self.assertNotIn("safe.directory '*'", self.runner)
 
-    def test_reviewed_apply_updates_only_the_exact_known_runner(self):
-        operation = (
-            ROOT / "automation" / "mission-001" / "operations" / "apply"
-        ).read_text(encoding="utf-8")
-        self.assertIn(
-            "OLD_RUNNER_SHA256=59d3cd7d14a64727d06bf23a142f26299754710a18dc76509729decc62492958",
-            operation,
+    def test_reviewed_apply_installs_only_the_exact_network_base(self):
+        operation = (ROOT / "automation/mission-001/operations/apply").read_text(
+            encoding="utf-8"
         )
         self.assertIn(
-            "DESIRED_RUNNER_SHA256=4da7430f033aa8f0580205ee117a3d9d32b44f1d38bc2b386589f3ecce710d06",
+            "EXPECTED_RUNNER_SHA256=4da7430f033aa8f0580205ee117a3d9d32b44f1d38bc2b386589f3ecce710d06",
             operation,
         )
+        self.assertIn("SOURCE_SCRIPT_SHA256=11468ad", operation)
+        self.assertIn("SOURCE_UNIT_SHA256=32a200e", operation)
+        self.assertIn("SOURCE_DROPIN_SHA256=a83bff9", operation)
+        self.assertIn("cloud-infrastructure-config-backup", operation)
         self.assertIn("install -o root -g root -m 0755", operation)
-        self.assertNotIn("systemctl", operation)
         self.assertNotIn("/etc/sudoers", operation)
-        self.assertNotIn("docker", operation.lower())
+        self.assertNotIn("sshd_config", operation)
+        self.assertNotRegex(operation, r"(?m)^\s*ufw\s")
+
+    def test_reviewed_rollback_is_bounded_to_the_network_base(self):
+        operation = (ROOT / "automation/mission-001/operations/rollback").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("managed_interface_present", operation)
+        self.assertIn('unlink -- "$DROPIN"', operation)
+        self.assertIn('unlink -- "$UNIT"', operation)
+        self.assertIn('unlink -- "$HELPER"', operation)
+        self.assertNotIn("rm -rf", operation)
+        self.assertNotIn("/etc/sudoers", operation)
 
     def test_reconcile_normalizes_signed_snapshot_readability(self):
         self.assertEqual(self.bootstrap.count('chmod -R a+rX,go-w "$REPO_ROOT"'), 1)

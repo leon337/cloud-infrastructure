@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly EXPECTED_MISSION=CODEX-EXECUTION-MISSION-001
+readonly EXPECTED_HOST=vmi3506102
+readonly EXPECTED_MACHINE_ID_SHA256=27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
+readonly HELPER=/usr/local/libexec/cloud-platform-network-enforcement
+readonly UNIT=/etc/systemd/system/cloud-platform-network-enforcement.service
+readonly DROPIN=/etc/systemd/system/docker.service.d/20-cloud-platform-network-enforcement.conf
+readonly MARKER=/etc/cloud-platform-network-enforcement.managed
+
+refuse() {
+  printf 'MISSION_ROLLBACK_REFUSED reason=%s\n' "$1" >&2
+  exit 2
+}
+
+[[ $EUID -eq 0 ]] || refuse root_required
+[[ $# -eq 0 ]] || refuse arguments_forbidden
+[[ ${MISSION_ID:-} == "$EXPECTED_MISSION" ]] || refuse wrong_mission
+[[ ${MISSION_REPOSITORY:-} == /opt/codex-mission-001/repository ]] || refuse wrong_repository
+[[ $(hostname) == "$EXPECTED_HOST" ]] || refuse wrong_host
+machine_id_sha256=$(tr -d '\n' </etc/machine-id | sha256sum | awk '{print $1}')
+[[ $machine_id_sha256 == "$EXPECTED_MACHINE_ID_SHA256" ]] || refuse wrong_machine_id
+[[ -x $HELPER && -f $UNIT && -f $DROPIN && -f $MARKER ]] || refuse managed_surface_incomplete
+if ip -o link show | awk -F': ' '{print $2}' | grep -Eq '^cp[0-9a-f]{8}(@|$)'; then
+  refuse managed_interface_present
+fi
+[[ -z $(docker container ls --all --quiet) ]] || refuse containers_present
+[[ -z $(docker network ls --filter type=custom --quiet) ]] || refuse custom_networks_present
+"$HELPER" check >/dev/null || refuse enforcement_drift
+systemctl disable --now cloud-platform-network-enforcement.service
+"$HELPER" rollback
+unlink -- "$DROPIN"
+unlink -- "$UNIT"
+unlink -- "$HELPER"
+systemctl daemon-reload
+for service in ssh ufw fail2ban xrdp xrdp-sesman docker containerd; do
+  systemctl is-active --quiet "$service" || refuse "post_rollback_inactive_service_$service"
+done
+printf '%s\n' 'MISSION_ROLLBACK=PASS slice=F1.2c_base'
