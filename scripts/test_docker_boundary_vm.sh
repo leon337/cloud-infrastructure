@@ -67,10 +67,20 @@ esac
 [[ $(id -u) -ne 0 ]] || refuse runner_must_not_start_as_root
 [[ $(id -un) == runner ]] || refuse unexpected_runner_user
 [[ ${HOME:-} == /home/runner ]] || refuse unexpected_runner_home
-[[ -f /etc/os-release && ! -L /etc/os-release ]] || refuse invalid_os_release
+OS_RELEASE=/etc/os-release
+[[ -f $OS_RELEASE ]] || refuse invalid_os_release
+if [[ -L $OS_RELEASE ]]; then
+  [[ $(realpath -- "$OS_RELEASE") == /usr/lib/os-release ]] ||
+    refuse unexpected_os_release_link
+  [[ -f /usr/lib/os-release && ! -L /usr/lib/os-release ]] ||
+    refuse invalid_canonical_os_release
+  OS_RELEASE=/usr/lib/os-release
+fi
+[[ $(stat -c '%u:%a' -- "$OS_RELEASE") == 0:644 ]] ||
+  refuse unsafe_os_release_metadata
 
-# shellcheck disable=SC1091
-source /etc/os-release
+# shellcheck disable=SC1090
+source "$OS_RELEASE"
 [[ ${ID:-} == ubuntu && ${VERSION_ID:-} == 24.04 ]] ||
   refuse unexpected_distribution
 [[ -d /run/systemd/system ]] || refuse systemd_not_running

@@ -51,6 +51,8 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
             "ImageOS",
             "GITHUB_REPOSITORY",
             "GITHUB_WORKSPACE",
+            "unexpected_os_release_link",
+            "unsafe_os_release_metadata",
             "systemd-detect-virt --quiet --vm",
             "node-01 | vmi3506102",
         ):
