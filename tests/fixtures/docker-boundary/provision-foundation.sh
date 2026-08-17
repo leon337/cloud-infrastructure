@@ -5,6 +5,7 @@ set -euo pipefail
 # exact minimal SLICE-001 prerequisite and never represents a DEV-node apply.
 EXPECTED_ROOT=/workspace/cloud-infrastructure
 CONFIRMATION=DOCKER_BOUNDARY_FIXTURE_ON_GATED_VM_ONLY
+FOUNDATION_MARKER_CONTENT=$'managed_by=cloud-infrastructure\nslice=SLICE-001\nschema=1\nenvironment=test\nnode=node-01'
 
 [[ $(id -u) -eq 0 ]] || {
   printf '%s\n' 'DOCKER_BOUNDARY_FIXTURE_REFUSED reason=root_required' >&2
@@ -54,12 +55,7 @@ install -o root -g root -m 0644 \
   "$EXPECTED_ROOT/platform/systemd/cloud-workloads.slice" \
   /etc/systemd/system/cloud-workloads.slice
 install -o root -g root -m 0600 /dev/null /etc/cloud-platform-foundation.managed
-printf '%s\n' \
-  managed_by=cloud-infrastructure \
-  slice=SLICE-001 \
-  schema=1 \
-  environment=test \
-  node=node-01 \
+printf '%s' "$FOUNDATION_MARKER_CONTENT" \
   > /etc/cloud-platform-foundation.managed
 systemctl daemon-reload
 systemd-tmpfiles --create /etc/tmpfiles.d/cloud-platform.conf

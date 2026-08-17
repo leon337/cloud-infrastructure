@@ -1,0 +1,729 @@
+---
+- name: Inspect a local target for a container boundary
+  ansible.builtin.stat:
+    path: /.dockerenv
+    follow: false
+  register: platform_docker_local_container_marker
+  when: (ansible_connection | default('ssh')) == 'local'
+
+- name: Identify local virtualization without privilege
+  ansible.builtin.command:
+    argv: [systemd-detect-virt, --vm]
+  register: platform_docker_local_virtualization
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  become: false
+  when: (ansible_connection | default('ssh')) == 'local'
+
+- name: Verify the supported host and immutable DEV/test boundary
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version == '24.04'
+      - ansible_facts.service_mgr == 'systemd'
+      - ansible_facts.architecture == 'x86_64'
+      - inventory_hostname == 'node-01'
+      - platform_node_id == 'node-01'
+      - >-
+        (
+          (ansible_connection | default('ssh')) == 'local' and
+          platform_environment == 'test' and
+          platform_repository_root == '/workspace/cloud-infrastructure' and
+          platform_docker_test_boundary ==
+            'github-hosted-ubuntu24-disposable' and
+          platform_docker_test_destructive_confirm | bool and
+          lookup('env', 'GITHUB_ACTIONS') == 'true' and
+          lookup('env', 'RUNNER_ENVIRONMENT') == 'github-hosted' and
+          lookup('env', 'RUNNER_OS') == 'Linux' and
+          lookup('env', 'RUNNER_ARCH') == 'X64' and
+          lookup('env', 'ImageOS') == 'ubuntu24' and
+          lookup('env', 'GITHUB_WORKSPACE') ==
+            '/workspace/cloud-infrastructure' and
+          not (platform_docker_local_container_marker.stat.exists |
+            default(false)) and
+          platform_docker_local_virtualization.rc == 0
+        ) or (
+          (ansible_connection | default('ssh')) != 'local' and
+          platform_environment == 'dev' and
+          ansible_user == 'ubuntu' and
+          platform_expected_ansible_host == '169.58.171.192' and
+          platform_expected_hostname == 'vmi3506102' and
+          platform_expected_machine_id_sha256 ==
+            '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+          (ansible_host | string) ==
+            (platform_expected_ansible_host | string) and
+          ansible_facts.hostname == platform_expected_hostname and
+          (ansible_facts.machine_id | hash('sha256')) ==
+            platform_expected_machine_id_sha256
+        )
+    fail_msg: >-
+      Docker F1.2b supports only the recorded Ubuntu 24.04 DEV node-01 or the
+      explicitly gated GitHub-hosted disposable VM.
+
+- name: Verify the immutable Docker runtime allowlist
+  ansible.builtin.assert:
+    that:
+      - platform_docker_marker == '/etc/cloud-platform-docker-runtime.managed'
+      - >-
+        platform_docker_state_root ==
+        '/var/lib/cloud-platform/runtime-boundaries/docker'
+      - >-
+        platform_docker_prestate ==
+        '/var/lib/cloud-platform/runtime-boundaries/docker/prestate.json'
+      - >-
+        platform_docker_transaction ==
+        '/var/lib/cloud-platform/runtime-boundaries/docker/transaction.json'
+      - >-
+        platform_docker_tree_baseline ==
+        '/var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-baseline.json'
+      - >-
+        platform_docker_removal_manifest ==
+        '/var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-removal.json'
+      - >-
+        platform_docker_lock ==
+        '/run/lock/cloud-platform-docker-runtime-operation'
+      - platform_docker_daemon_config == '/etc/docker/daemon.json'
+      - platform_docker_apt_key == '/etc/apt/keyrings/docker.asc'
+      - >-
+        platform_docker_apt_source ==
+        '/etc/apt/sources.list.d/docker.sources'
+      - >-
+        platform_docker_apt_preference ==
+        '/etc/apt/preferences.d/cloud-platform-docker.pref'
+      - >-
+        platform_docker_service_override ==
+        '/etc/systemd/system/docker.service.d/10-cloud-platform-boundary.conf'
+      - >-
+        platform_docker_socket_override ==
+        '/etc/systemd/system/docker.socket.d/10-cloud-platform-root-only.conf'
+      - >-
+        platform_containerd_service_override ==
+        '/etc/systemd/system/containerd.service.d/10-cloud-platform-boundary.conf'
+      - >-
+        platform_docker_managed_directories ==
+        ['/etc/docker',
+         '/etc/systemd/system/docker.service.d',
+         '/etc/systemd/system/docker.socket.d',
+         '/etc/systemd/system/containerd.service.d']
+      - >-
+        platform_docker_shared_parent_directories ==
+        ['/etc/apt/keyrings', '/etc/apt/sources.list.d',
+         '/etc/apt/preferences.d']
+      - >-
+        platform_docker_runtime_roots ==
+        ['/var/lib/docker', '/var/lib/containerd']
+      - >-
+        platform_docker_conflicting_packages ==
+        ['docker.io', 'docker-doc', 'docker-compose', 'podman-docker',
+         'containerd', 'runc', 'docker-ce-rootless-extras']
+      - platform_docker_packages | length == 5
+      - >-
+        platform_docker_packages | map(attribute='name') | list ==
+        ['docker-ce', 'docker-ce-cli', 'containerd.io',
+         'docker-buildx-plugin', 'docker-compose-plugin']
+      - >-
+        platform_docker_packages | map(attribute='version') | list ==
+        ['5:29.7.2-1~ubuntu.24.04~noble',
+         '5:29.7.2-1~ubuntu.24.04~noble',
+         '2.3.3-1~ubuntu.24.04~noble',
+         '0.36.1-1~ubuntu.24.04~noble',
+         '5.4.0-1~ubuntu.24.04~noble']
+      - >-
+        platform_docker_packages | map(attribute='sha256') | list ==
+        ['8243f97d569a0fa33ea32417e399e9f524e7d75d3898fa9d24e0eadaa486af68',
+         '920a5fa031f33f2dd5b56b4a9bc4c725bc9549d6007004a6610a469873ec69fe',
+         '3a2c59a92b4c57d247f26ea37c6f1913aefee9e6f8d64815c47505e6de0033db',
+         '405be4bdbd70052880583da5d181c8e1c06e61f1a5b230ad2ad124e04318def2',
+         'f7890c92ea2d356bc7ea7ac351a854bde8d7c446da6102126a9d9fac9ea0583c']
+      - >-
+        platform_docker_package_specs ==
+        ['docker-ce=5:29.7.2-1~ubuntu.24.04~noble',
+         'docker-ce-cli=5:29.7.2-1~ubuntu.24.04~noble',
+         'containerd.io=2.3.3-1~ubuntu.24.04~noble',
+         'docker-buildx-plugin=0.36.1-1~ubuntu.24.04~noble',
+         'docker-compose-plugin=5.4.0-1~ubuntu.24.04~noble']
+      - platform_docker_managed_payloads | length == 7
+      - >-
+        platform_docker_managed_payloads | map(attribute='source') | list ==
+        ['platform/docker/docker.asc', 'platform/docker/daemon.json',
+         'platform/docker/docker.sources',
+         'platform/docker/cloud-platform-docker.pref',
+         'platform/docker/systemd/docker.service.conf',
+         'platform/docker/systemd/docker.socket.conf',
+         'platform/docker/systemd/containerd.service.conf']
+      - >-
+        platform_docker_managed_payloads | map(attribute='destination') | list ==
+        ['/etc/apt/keyrings/docker.asc', '/etc/docker/daemon.json',
+         '/etc/apt/sources.list.d/docker.sources',
+         '/etc/apt/preferences.d/cloud-platform-docker.pref',
+         '/etc/systemd/system/docker.service.d/10-cloud-platform-boundary.conf',
+         '/etc/systemd/system/docker.socket.d/10-cloud-platform-root-only.conf',
+         '/etc/systemd/system/containerd.service.d/10-cloud-platform-boundary.conf']
+      - >-
+        platform_docker_managed_payloads | map(attribute='mode') | list ==
+        ['0644', '0600', '0644', '0644', '0644', '0644', '0644']
+      - platform_docker_key_sha256 == '1500c1f56fa9e26b9b8f42452a553675796ade0807cdce11975eb98170b3a570'
+      - >-
+        platform_docker_key_primary_fingerprint ==
+        '9DC858229FC7DD38854AE2D88D81803C0EBFCD88'
+      - >-
+        platform_docker_key_signing_fingerprint ==
+        'D3306A018370199E527AE7997EA0A9C3F273FCD8'
+      - >-
+        (
+          platform_environment == 'dev' and
+          (platform_docker_marker_content | hash('sha256')) ==
+            'c66d8a8033aa095bb9f655666146f7577f2450cec61727b4f19e466128874a60' and
+          (platform_docker_prestate_content | hash('sha256')) ==
+            'c6cfc8597972ac237eae08a04b31a51eed4c5e95d7acc28b3494506a0218f7ad' and
+          (platform_docker_transaction_content | hash('sha256')) ==
+            '4d058a4beb440c11a669fbf477228fb8fc7fe6a045e83733281ac9b56626ee13'
+        ) or (
+          platform_environment == 'test' and
+          (platform_docker_marker_content | hash('sha256')) ==
+            'd1f9a6f3f7e10ba8e82506b84a61ea04427eed8b5cb511c740a6e48158c04cbd' and
+          (platform_docker_prestate_content | hash('sha256')) ==
+            '2a8dfcb58d7febbd1bc02480d417223a51aa79d488b656337dddc56ab91f125f' and
+          (platform_docker_transaction_content | hash('sha256')) ==
+            '7bd5ee414ac62b1ac16943b5a5ffbffa58f1262ffb7ea42889e1c6f7d4f052f3'
+        )
+    fail_msg: >-
+      A variable attempted to redirect or expand the reviewed SLICE-002B
+      package, path, payload, identity, or provenance contract.
+
+- name: Hash reviewed Docker payloads on the controller
+  ansible.builtin.stat:
+    path: "{{ role_path }}/../../../../{{ item.source }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop: "{{ platform_docker_managed_payloads }}"
+  register: platform_docker_source_payloads
+  become: false
+  delegate_to: localhost
+
+- name: Require exact regular reviewed Docker payloads
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isreg | default(false)
+      - not (item.stat.islnk | default(false))
+      - item.stat.checksum == item.item.sha256
+    fail_msg: "Reviewed Docker payload is missing or changed: {{ item.item.source }}."
+  loop: "{{ platform_docker_source_payloads.results }}"
+
+- name: Inspect the vendored public key fingerprints on the controller
+  ansible.builtin.command:
+    argv:
+      - gpg
+      - --batch
+      - --no-options
+      - --no-default-keyring
+      - --keyring
+      - /dev/null
+      - --trust-model
+      - always
+      - --no-auto-check-trustdb
+      - --homedir
+      - /tmp
+      - --show-keys
+      - --with-colons
+      - "{{ role_path }}/../../../../platform/docker/docker.asc"
+  register: platform_docker_source_key_fingerprints
+  changed_when: false
+  check_mode: false
+  become: false
+  delegate_to: localhost
+
+- name: Require the reviewed primary and signing fingerprints
+  ansible.builtin.assert:
+    that:
+      - >-
+        (':' ~ platform_docker_key_primary_fingerprint ~ ':') in
+        platform_docker_source_key_fingerprints.stdout
+      - >-
+        (':' ~ platform_docker_key_signing_fingerprint ~ ':') in
+        platform_docker_source_key_fingerprints.stdout
+    fail_msg: Vendored Docker public-key fingerprints differ from DEC-007.
+
+- name: Validate the reviewed daemon JSON on the controller
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -m
+      - json.tool
+      - "{{ role_path }}/../../../../platform/docker/daemon.json"
+  changed_when: false
+  check_mode: false
+  become: false
+  delegate_to: localhost
+
+- name: Inspect the exact Foundations F1.1 marker
+  ansible.builtin.stat:
+    path: /etc/cloud-platform-foundation.managed
+    follow: false
+  register: platform_docker_foundation_marker
+
+- name: Require the applied root-only Foundations marker
+  ansible.builtin.assert:
+    that:
+      - platform_docker_foundation_marker.stat.exists
+      - platform_docker_foundation_marker.stat.isreg
+      - not (platform_docker_foundation_marker.stat.islnk | default(false))
+      - platform_docker_foundation_marker.stat.uid == 0
+      - platform_docker_foundation_marker.stat.gid == 0
+      - platform_docker_foundation_marker.stat.mode == '0600'
+    fail_msg: >-
+      Docker F1.2b is blocked until Foundations F1.1 is applied and carries its
+      exact root-only provenance marker.
+
+- name: Read the Foundations marker
+  ansible.builtin.slurp:
+    src: /etc/cloud-platform-foundation.managed
+  register: platform_docker_foundation_marker_data
+
+- name: Require the exact Foundations environment and node provenance
+  ansible.builtin.assert:
+    that:
+      - >-
+        (platform_docker_foundation_marker_data.content | b64decode) ==
+        ('managed_by=cloud-infrastructure\n' ~
+         'slice=SLICE-001\n' ~
+         'schema=1\n' ~
+         'environment=' ~ platform_environment ~ '\n' ~
+         'node=node-01')
+    fail_msg: Foundations marker content does not match this exact target.
+
+- name: Inspect required Foundations directories
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    follow: false
+  loop:
+    - {path: /etc/cloud-platform, group: cloud-platform, mode: '0750'}
+    - {path: /var/lib/cloud-platform, group: cloud-platform, mode: '0750'}
+    - {path: /var/log/cloud-platform, group: cloud-platform, mode: '0750'}
+    - {path: /var/cache/cloud-platform, group: cloud-platform, mode: '0750'}
+    - {path: /run/cloud-platform, group: cloud-platform, mode: '0750'}
+    - {path: /run/cloud-platform/credentials, group: root, mode: '0700'}
+  register: platform_docker_foundation_directories
+
+- name: Require exact Foundations directory provenance
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isdir
+      - not (item.stat.islnk | default(false))
+      - item.stat.pw_name == 'root'
+      - item.stat.gr_name == item.item.group
+      - item.stat.mode == item.item.mode
+    fail_msg: "Foundation prerequisite drifted: {{ item.item.path }}."
+  loop: "{{ platform_docker_foundation_directories.results }}"
+
+- name: Inspect the platform technical account and group
+  ansible.builtin.command:
+    argv: [getent, "{{ item.database }}", "{{ item.key }}"]
+  loop:
+    - {database: passwd, key: platform-core}
+    - {database: group, key: cloud-platform}
+  register: platform_docker_foundation_identity
+  changed_when: false
+  check_mode: false
+
+- name: Inspect the platform technical-account groups
+  ansible.builtin.command:
+    argv: [id, -nG, platform-core]
+  register: platform_docker_foundation_account_groups
+  changed_when: false
+  check_mode: false
+
+- name: Inspect the platform technical-account password lock
+  ansible.builtin.command:
+    argv: [passwd, -S, platform-core]
+  register: platform_docker_foundation_account_password
+  changed_when: false
+  check_mode: false
+  no_log: true
+
+- name: Require the exact unprivileged Foundations identity
+  ansible.builtin.assert:
+    that:
+      - platform_docker_foundation_identity.results[0].rc == 0
+      - platform_docker_foundation_identity.results[1].rc == 0
+      - >-
+        platform_docker_foundation_identity.results[0].stdout.split(':')[3] ==
+        platform_docker_foundation_identity.results[1].stdout.split(':')[2]
+      - >-
+        platform_docker_foundation_identity.results[0].stdout.split(':')[4] ==
+        'Cloud Platform unprivileged control-plane identity'
+      - >-
+        platform_docker_foundation_identity.results[0].stdout.split(':')[5] ==
+        '/nonexistent'
+      - >-
+        platform_docker_foundation_identity.results[0].stdout.split(':')[6] ==
+        '/usr/sbin/nologin'
+      - platform_docker_foundation_account_groups.stdout.split() == ['cloud-platform']
+      - platform_docker_foundation_account_password.stdout.split()[1] == 'L'
+    fail_msg: Foundations technical identity no longer matches SLICE-001.
+
+- name: Inspect required Foundations unit payloads
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/{{ item }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop:
+    - cloud-platform.slice
+    - cloud-workloads.slice
+  register: platform_docker_foundation_units
+
+- name: Hash required Foundations unit sources
+  ansible.builtin.stat:
+    path: "{{ role_path }}/../../../../platform/systemd/{{ item }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop:
+    - cloud-platform.slice
+    - cloud-workloads.slice
+  register: platform_docker_foundation_unit_sources
+  become: false
+  delegate_to: localhost
+
+- name: Require exact Foundations slice payloads
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isreg
+      - not (item.stat.islnk | default(false))
+      - item.stat.uid == 0
+      - item.stat.gid == 0
+      - item.stat.mode == '0644'
+      - >-
+        item.stat.checksum ==
+        platform_docker_foundation_unit_sources.results[
+          ansible_loop.index0].stat.checksum
+    fail_msg: "Foundation systemd prerequisite drifted: {{ item.item }}."
+  loop: "{{ platform_docker_foundation_units.results }}"
+  loop_control:
+    extended: true
+
+- name: Inspect shared APT parent directories without following links
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    follow: false
+  loop: "{{ platform_docker_shared_parent_directories }}"
+  register: platform_docker_shared_parents
+
+- name: Require safe shared APT parent directories
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isdir
+      - not (item.stat.islnk | default(false))
+      - item.stat.uid == 0
+      - item.stat.gid == 0
+      - not item.stat.woth
+      - not item.stat.wgrp
+    fail_msg: "Shared APT parent is missing or unsafe: {{ item.item }}."
+  loop: "{{ platform_docker_shared_parents.results }}"
+
+- name: Inspect host-wide package service-start policy
+  ansible.builtin.stat:
+    path: /usr/sbin/policy-rc.d
+    follow: false
+  register: platform_docker_policy_rc_d_state
+
+- name: Refuse to replace a host-wide package service-start policy
+  ansible.builtin.assert:
+    that:
+      - not platform_docker_policy_rc_d_state.stat.exists
+    fail_msg: >-
+      /usr/sbin/policy-rc.d already exists. Refusing to let the APT transaction
+      replace or temporarily override an unrelated host policy.
+
+- name: Inspect the Docker provenance marker
+  ansible.builtin.stat:
+    path: "{{ platform_docker_marker }}"
+    follow: false
+  register: platform_docker_marker_state
+
+- name: Inspect the exclusive operation lock
+  ansible.builtin.stat:
+    path: "{{ platform_docker_lock }}"
+    follow: false
+  register: platform_docker_lock_state
+
+- name: Refuse a concurrent or stale Docker operation lock
+  ansible.builtin.assert:
+    that:
+      - not platform_docker_lock_state.stat.exists
+    fail_msg: >-
+      Docker runtime operation lock exists. Classify concurrency or a stale
+      transaction before any retry; never remove it recursively.
+
+- name: Inspect package-manager concurrency
+  ansible.builtin.command:
+    argv: [pgrep, -x, 'apt|apt-get|dpkg|unattended-upgr|unattended-upgrade']
+  register: platform_docker_package_processes
+  changed_when: false
+  failed_when: platform_docker_package_processes.rc not in [0, 1]
+  check_mode: false
+
+- name: Refuse a concurrent package operation
+  ansible.builtin.assert:
+    that:
+      - platform_docker_package_processes.rc == 1
+    fail_msg: APT/dpkg/unattended-upgrade is active; refusing Docker reconcile.
+
+- name: Inspect managed Docker payload destinations
+  ansible.builtin.stat:
+    path: "{{ item.destination }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop: "{{ platform_docker_managed_payloads }}"
+  register: platform_docker_destination_payloads
+
+- name: Inspect managed Docker directories
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    follow: false
+  loop: "{{ platform_docker_managed_directories }}"
+  register: platform_docker_directory_states
+
+- name: Inspect Docker runtime provenance paths
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    follow: false
+  loop:
+    - /var/lib/cloud-platform/runtime-boundaries
+    - /var/lib/cloud-platform/runtime-boundaries/docker
+    - /var/lib/cloud-platform/runtime-boundaries/docker/prestate.json
+    - /var/lib/cloud-platform/runtime-boundaries/docker/transaction.json
+    - /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-baseline.json
+    - /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-removal.json
+  register: platform_docker_provenance_states
+
+- name: Inspect Docker runtime roots
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    follow: false
+  loop: "{{ platform_docker_runtime_roots }}"
+  register: platform_docker_runtime_root_states
+
+- name: Inspect selected Docker package versions
+  ansible.builtin.command:
+    argv:
+      - dpkg-query
+      - -W
+      - '-f=${db:Status-Abbrev}\t${Version}\n'
+      - "{{ item.name }}"
+  loop: "{{ platform_docker_packages }}"
+  register: platform_docker_selected_package_states
+  changed_when: false
+  failed_when: platform_docker_selected_package_states.rc not in [0, 1]
+  check_mode: false
+
+- name: Inspect conflicting package states
+  ansible.builtin.command:
+    argv:
+      - dpkg-query
+      - -W
+      - '-f=${db:Status-Abbrev}\t${Version}\n'
+      - "{{ item }}"
+  loop: "{{ platform_docker_conflicting_packages }}"
+  register: platform_docker_conflicting_package_states
+  changed_when: false
+  failed_when: platform_docker_conflicting_package_states.rc not in [0, 1]
+  check_mode: false
+
+- name: Inspect the Docker group
+  ansible.builtin.command:
+    argv: [getent, group, docker]
+  register: platform_docker_group_state
+  changed_when: false
+  failed_when: platform_docker_group_state.rc not in [0, 2]
+  check_mode: false
+
+- name: Enumerate accounts whose primary GID is Docker
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - >-
+        import pwd,sys;
+        gid=int(sys.argv[1]);
+        print('\n'.join(entry.pw_name for entry in pwd.getpwall()
+        if entry.pw_gid == gid))
+      - "{{ platform_docker_group_state.stdout.split(':')[2] }}"
+  register: platform_docker_primary_group_accounts
+  changed_when: false
+  check_mode: false
+  when: platform_docker_group_state.rc == 0
+
+- name: Read an existing Docker provenance marker
+  ansible.builtin.slurp:
+    src: "{{ platform_docker_marker }}"
+  register: platform_docker_marker_data
+  when: platform_docker_marker_state.stat.exists
+
+- name: Read an existing Docker prestate
+  ansible.builtin.slurp:
+    src: "{{ platform_docker_prestate }}"
+  register: platform_docker_prestate_data
+  when:
+    - platform_docker_marker_state.stat.exists
+    - platform_docker_provenance_states.results[2].stat.exists
+
+- name: Require an entirely absent first-apply surface
+  ansible.builtin.assert:
+    that:
+      - >-
+        (platform_docker_destination_payloads.results |
+          selectattr('stat.exists') | list | length) == 0
+      - >-
+        (platform_docker_directory_states.results |
+          selectattr('stat.exists') | list | length) == 0
+      - >-
+        (platform_docker_provenance_states.results |
+          selectattr('stat.exists') | list | length) == 0
+      - >-
+        (platform_docker_runtime_root_states.results |
+          selectattr('stat.exists') | list | length) == 0
+      - >-
+        (platform_docker_selected_package_states.results |
+          selectattr('rc', 'equalto', 0) | list | length) == 0
+      - >-
+        (platform_docker_conflicting_package_states.results |
+          selectattr('rc', 'equalto', 0) | list | length) == 0
+      - platform_docker_group_state.rc == 2
+    fail_msg: >-
+      A Docker package, group, runtime root, config, source, state, or drop-in
+      already exists without the exact SLICE-002B marker. Refusing adoption.
+  when: not platform_docker_marker_state.stat.exists
+
+- name: Require exact marked provenance and package state
+  ansible.builtin.assert:
+    that:
+      - platform_docker_marker_state.stat.isreg
+      - not (platform_docker_marker_state.stat.islnk | default(false))
+      - platform_docker_marker_state.stat.uid == 0
+      - platform_docker_marker_state.stat.gid == 0
+      - platform_docker_marker_state.stat.mode == '0600'
+      - >-
+        (platform_docker_marker_data.content | b64decode) ==
+        platform_docker_marker_content
+      - platform_docker_provenance_states.results[0].stat.isdir
+      - platform_docker_provenance_states.results[0].stat.uid == 0
+      - platform_docker_provenance_states.results[0].stat.gid == 0
+      - platform_docker_provenance_states.results[0].stat.mode == '0700'
+      - platform_docker_provenance_states.results[1].stat.isdir
+      - platform_docker_provenance_states.results[1].stat.uid == 0
+      - platform_docker_provenance_states.results[1].stat.gid == 0
+      - platform_docker_provenance_states.results[1].stat.mode == '0700'
+      - platform_docker_provenance_states.results[2].stat.isreg
+      - platform_docker_provenance_states.results[2].stat.uid == 0
+      - platform_docker_provenance_states.results[2].stat.gid == 0
+      - platform_docker_provenance_states.results[2].stat.mode == '0600'
+      - >-
+        (platform_docker_prestate_data.content | b64decode) ==
+        platform_docker_prestate_content
+      - not platform_docker_provenance_states.results[3].stat.exists
+      - platform_docker_provenance_states.results[4].stat.isreg
+      - platform_docker_provenance_states.results[4].stat.uid == 0
+      - platform_docker_provenance_states.results[4].stat.gid == 0
+      - platform_docker_provenance_states.results[4].stat.mode == '0600'
+      - not platform_docker_provenance_states.results[5].stat.exists
+      - >-
+        (platform_docker_destination_payloads.results |
+          selectattr('stat.exists') | list | length) == 7
+      - >-
+        (platform_docker_directory_states.results |
+          selectattr('stat.isdir') | list | length) == 4
+      - >-
+        (platform_docker_runtime_root_states.results |
+          selectattr('stat.isdir') | list | length) == 2
+      - >-
+        (platform_docker_selected_package_states.results |
+          selectattr('rc', 'equalto', 0) | list | length) == 5
+      - >-
+        (platform_docker_conflicting_package_states.results |
+          selectattr('rc', 'equalto', 0) | list | length) == 0
+      - platform_docker_group_state.rc == 0
+      - platform_docker_group_state.stdout.split(':') | length == 4
+      - >-
+        platform_docker_group_state.stdout.split(':')[3] | length == 0
+      - platform_docker_primary_group_accounts.stdout | length == 0
+    fail_msg: >-
+      Marked Docker state is partial, drifted, or privileged. Refusing implicit
+      repair; classify it and use the bounded rollback path.
+  when: platform_docker_marker_state.stat.exists
+
+- name: Require exact payload provenance on a marked reconcile
+  ansible.builtin.assert:
+    that:
+      - item.stat.isreg
+      - not (item.stat.islnk | default(false))
+      - item.stat.uid == 0
+      - item.stat.gid == 0
+      - item.stat.mode == item.item.mode
+      - item.stat.checksum == item.item.sha256
+    fail_msg: "Marked Docker payload drifted: {{ item.item.destination }}."
+  loop: "{{ platform_docker_destination_payloads.results }}"
+  when: platform_docker_marker_state.stat.exists
+
+- name: Require exact managed-directory provenance on a marked reconcile
+  ansible.builtin.assert:
+    that:
+      - item.stat.isdir
+      - not (item.stat.islnk | default(false))
+      - item.stat.uid == 0
+      - item.stat.gid == 0
+      - >-
+        item.stat.mode == ['0700', '0755', '0755', '0755'][
+          ansible_loop.index0]
+    fail_msg: "Marked Docker directory drifted: {{ item.item }}."
+  loop: "{{ platform_docker_directory_states.results }}"
+  loop_control:
+    extended: true
+  when: platform_docker_marker_state.stat.exists
+
+- name: Require exact selected package versions on a marked reconcile
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+      - item.stdout.split()[0] == 'ii'
+      - item.stdout.split()[1] == item.item.version
+    fail_msg: "Marked Docker package drifted: {{ item.item.name }}."
+  loop: "{{ platform_docker_selected_package_states.results }}"
+  when: platform_docker_marker_state.stat.exists
+
+- name: Record whether this is the first reviewed apply
+  ansible.builtin.set_fact:
+    platform_docker_initial_apply: >-
+      {{ not platform_docker_marker_state.stat.exists }}
+
+- name: Report the validated initial check-mode plan without mutation
+  ansible.builtin.debug:
+    msg: >-
+      SLICE-002B first apply would install only the reviewed pinned empty
+      root-only runtime. Download, package scripts, daemon start, and runtime
+      tree creation are intentionally not simulated in check mode.
+  changed_when: true
+  when:
+    - ansible_check_mode
+    - platform_docker_initial_apply
+
+- name: Acquire the exclusive Docker mutation lock
+  ansible.builtin.command:
+    argv: [mkdir, /run/lock/cloud-platform-docker-runtime-operation]
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Reconcile and verify the Docker boundary while holding the lock
+  block:
+    - name: Execute the reviewed Docker runtime mutation set
+      ansible.builtin.include_tasks: reconcile.yml
+  always:
+    - name: Release the exclusive Docker mutation lock
+      ansible.builtin.command:
+        argv: [rmdir, /run/lock/cloud-platform-docker-runtime-operation]
+      changed_when: false
+  when: not ansible_check_mode

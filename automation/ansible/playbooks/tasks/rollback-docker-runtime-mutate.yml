@@ -1,0 +1,124 @@
+---
+- name: Stop and disable exact Docker runtime units
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop:
+    - docker.service
+    - docker.socket
+    - containerd.service
+
+- name: Prove Docker runtime processes stopped
+  ansible.builtin.command:
+    argv: [pgrep, -x, 'dockerd|containerd|containerd-shim']
+  register: platform_docker_rollback_stopped_processes
+  changed_when: false
+  failed_when: platform_docker_rollback_stopped_processes.rc not in [0, 1]
+  check_mode: false
+
+- name: Require no runtime process before tree freeze
+  ansible.builtin.assert:
+    that:
+      - platform_docker_rollback_stopped_processes.rc == 1
+    fail_msg: A Docker/containerd process survived stop; refusing deletion.
+
+- name: Reverify the stopped runtime tree against the empty baseline
+  ansible.builtin.script:
+    cmd: "{{ playbook_dir }}/../roles/docker_runtime/files/runtime_tree_guard.py verify"
+    executable: /usr/bin/python3
+  changed_when: false
+  check_mode: false
+
+- name: Freeze device and inode metadata for exact bottom-up removal
+  ansible.builtin.script:
+    cmd: "{{ playbook_dir }}/../roles/docker_runtime/files/runtime_tree_guard.py prepare-removal"
+    executable: /usr/bin/python3
+  changed_when: true
+  check_mode: false
+
+- name: Consume only the preverified runtime-tree removal manifest
+  ansible.builtin.script:
+    cmd: "{{ playbook_dir }}/../roles/docker_runtime/files/runtime_tree_guard.py remove"
+    executable: /usr/bin/python3
+  changed_when: true
+  check_mode: false
+
+- name: Purge only the five exact Docker packages without autoremove
+  ansible.builtin.apt:
+    name: "{{ platform_docker_package_specs }}"
+    state: absent
+    purge: true
+    autoremove: false
+    policy_rc_d: 101
+    allow_change_held_packages: false
+  environment:
+    LC_ALL: C
+
+- name: Confirm selected packages are absent after exact purge
+  ansible.builtin.command:
+    argv:
+      - dpkg-query
+      - -W
+      - '-f=${db:Status-Abbrev}\t${Version}\n'
+      - "{{ item.name }}"
+  loop: "{{ platform_docker_packages }}"
+  register: platform_docker_rollback_removed_packages
+  changed_when: false
+  failed_when: platform_docker_rollback_removed_packages.rc not in [0, 1]
+  check_mode: false
+
+- name: Require all selected packages to be absent
+  ansible.builtin.assert:
+    that:
+      - item.rc == 1 or not item.stdout.startswith('ii')
+    fail_msg: "Exact package purge did not remove {{ item.item.name }}."
+  loop: "{{ platform_docker_rollback_removed_packages.results }}"
+
+- name: Remove exact reviewed config, pin, source, key, and drop-ins
+  ansible.builtin.command:
+    argv: [unlink, --, "{{ item.item.destination }}"]
+  loop: "{{ platform_docker_rollback_payloads.results }}"
+  changed_when: true
+
+- name: Remove exact empty managed configuration directories
+  ansible.builtin.command:
+    argv: [rmdir, "{{ item }}"]
+  loop:
+    - /etc/systemd/system/containerd.service.d
+    - /etc/systemd/system/docker.socket.d
+    - /etc/systemd/system/docker.service.d
+    - /etc/docker
+  changed_when: true
+
+- name: Remove the empty Docker group created by the package
+  ansible.builtin.group:
+    name: docker
+    state: absent
+
+- name: Remove exact runtime-tree manifests and prestate
+  ansible.builtin.command:
+    argv: [unlink, --, "{{ item }}"]
+  loop:
+    - /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-removal.json
+    - /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-baseline.json
+    - /var/lib/cloud-platform/runtime-boundaries/docker/prestate.json
+  changed_when: true
+
+- name: Remove exact empty provenance directories
+  ansible.builtin.command:
+    argv: [rmdir, "{{ item }}"]
+  loop:
+    - /var/lib/cloud-platform/runtime-boundaries/docker
+    - /var/lib/cloud-platform/runtime-boundaries
+  changed_when: true
+
+- name: Reload systemd after exact unit and package removal
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  changed_when: false
+
+- name: Remove the exact Docker management marker last
+  ansible.builtin.command:
+    argv: [unlink, --, /etc/cloud-platform-docker-runtime.managed]
+  changed_when: true

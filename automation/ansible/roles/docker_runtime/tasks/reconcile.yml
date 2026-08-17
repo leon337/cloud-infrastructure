@@ -1,0 +1,531 @@
+---
+- name: Create root-only Docker provenance directories for a first apply
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - /var/lib/cloud-platform/runtime-boundaries
+    - /var/lib/cloud-platform/runtime-boundaries/docker
+  when: platform_docker_initial_apply
+
+- name: Persist the exact absent prestate before Docker mutation
+  ansible.builtin.copy:
+    dest: /var/lib/cloud-platform/runtime-boundaries/docker/prestate.json
+    owner: root
+    group: root
+    mode: "0600"
+    content: "{{ platform_docker_prestate_content }}"
+  when: platform_docker_initial_apply
+
+- name: Create the first-apply transaction sentinel
+  ansible.builtin.copy:
+    dest: /var/lib/cloud-platform/runtime-boundaries/docker/transaction.json
+    owner: root
+    group: root
+    mode: "0600"
+    content: "{{ platform_docker_transaction_content }}"
+  when: platform_docker_initial_apply
+
+- name: Claim the exact Docker boundary with an external marker
+  ansible.builtin.copy:
+    dest: /etc/cloud-platform-docker-runtime.managed
+    owner: root
+    group: root
+    mode: "0600"
+    content: "{{ platform_docker_marker_content }}"
+  when: platform_docker_initial_apply
+
+- name: Create reviewed Docker configuration directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - {path: /etc/docker, mode: '0700'}
+    - {path: /etc/systemd/system/docker.service.d, mode: '0755'}
+    - {path: /etc/systemd/system/docker.socket.d, mode: '0755'}
+    - {path: /etc/systemd/system/containerd.service.d, mode: '0755'}
+  when: platform_docker_initial_apply
+
+- name: Install exact reviewed Docker config, source, key, pin, and drop-ins
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../../../../{{ item.source }}"
+    dest: "{{ item.destination }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop: "{{ platform_docker_managed_payloads }}"
+  when: platform_docker_initial_apply
+
+- name: Validate the installed daemon JSON before package installation
+  ansible.builtin.command:
+    argv: [python3, -m, json.tool, /etc/docker/daemon.json]
+  changed_when: false
+  check_mode: false
+
+- name: Inspect the installed public key fingerprints
+  ansible.builtin.command:
+    argv:
+      - gpg
+      - --batch
+      - --no-options
+      - --no-default-keyring
+      - --keyring
+      - /dev/null
+      - --trust-model
+      - always
+      - --no-auto-check-trustdb
+      - --homedir
+      - /tmp
+      - --show-keys
+      - --with-colons
+      - /etc/apt/keyrings/docker.asc
+  register: platform_docker_installed_key_fingerprints
+  changed_when: false
+  check_mode: false
+
+- name: Require exact installed public-key fingerprints
+  ansible.builtin.assert:
+    that:
+      - >-
+        ':9DC858229FC7DD38854AE2D88D81803C0EBFCD88:' in
+        platform_docker_installed_key_fingerprints.stdout
+      - >-
+        ':D3306A018370199E527AE7997EA0A9C3F273FCD8:' in
+        platform_docker_installed_key_fingerprints.stdout
+    fail_msg: Installed Docker APT key differs from the reviewed public key.
+
+- name: Refresh APT metadata only for the first reviewed installation
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 0
+  environment:
+    LC_ALL: C
+  when: platform_docker_initial_apply
+
+- name: Read exact package records from the authenticated APT index
+  ansible.builtin.command:
+    argv:
+      - apt-cache
+      - --no-all-versions
+      - show
+      - "{{ item.name }}={{ item.version }}"
+  loop: "{{ platform_docker_packages }}"
+  register: platform_docker_apt_index_records
+  changed_when: false
+  check_mode: false
+  environment:
+    LC_ALL: C
+  when: platform_docker_initial_apply
+
+- name: Require exact versions, SHA-256 digests, and Noble stable paths
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+      - >-
+        ('Package: ' ~ item.item.name) in item.stdout_lines
+      - >-
+        ('Version: ' ~ item.item.version) in item.stdout_lines
+      - >-
+        ('SHA256: ' ~ item.item.sha256) in item.stdout_lines
+      - >-
+        item.stdout_lines | select('match',
+          '^Filename: dists/noble/pool/stable/amd64/') | list | length == 1
+    fail_msg: >-
+      Authenticated Docker APT metadata does not contain the exact reviewed
+      package digest for {{ item.item.name }}.
+  loop: "{{ platform_docker_apt_index_records.results }}"
+  when: platform_docker_initial_apply
+
+- name: Read pinned APT policy before installation
+  ansible.builtin.command:
+    argv: [apt-cache, policy, "{{ item.name }}"]
+  loop: "{{ platform_docker_packages }}"
+  register: platform_docker_apt_policy
+  changed_when: false
+  check_mode: false
+  environment:
+    LC_ALL: C
+  when: platform_docker_initial_apply
+
+- name: Require every exact pin to be the selected candidate
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+      - >-
+        ('Candidate: ' ~ item.item.version) in item.stdout_lines
+      - (' ' ~ item.item.version ~ ' 1001') in item.stdout
+    fail_msg: "APT pin is ineffective for {{ item.item.name }}."
+  loop: "{{ platform_docker_apt_policy.results }}"
+  when: platform_docker_initial_apply
+
+- name: Install only the five exact Docker packages with service start suppressed
+  ansible.builtin.apt:
+    name: "{{ platform_docker_package_specs }}"
+    state: present
+    install_recommends: false
+    policy_rc_d: 101
+    allow_downgrade: false
+    allow_change_held_packages: false
+  environment:
+    LC_ALL: C
+  when: platform_docker_initial_apply
+
+- name: Inspect runtime units before the first explicit start
+  ansible.builtin.command:
+    argv: [systemctl, is-active, "{{ item }}"]
+  loop:
+    - docker.service
+    - docker.socket
+    - containerd.service
+  register: platform_docker_prestart_units
+  changed_when: false
+  failed_when: platform_docker_prestart_units.rc not in [0, 3, 4]
+  check_mode: false
+  when: platform_docker_initial_apply
+
+- name: Prove package scripts did not start the runtime
+  ansible.builtin.assert:
+    that:
+      - item.rc != 0
+    fail_msg: >-
+      {{ item.item }} became active during package installation before the
+      reviewed daemon config was validated.
+  loop: "{{ platform_docker_prestart_units.results }}"
+  when: platform_docker_initial_apply
+
+- name: Inspect runtime roots before the first explicit daemon start
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    follow: false
+  loop:
+    - /var/lib/docker
+    - /var/lib/containerd
+  register: platform_docker_prestart_runtime_roots
+  when: platform_docker_initial_apply
+
+- name: Prove package scripts did not initialize runtime state
+  ansible.builtin.assert:
+    that:
+      - not item.stat.exists
+    fail_msg: >-
+      Package installation initialized {{ item.item }} before the explicit
+      daemon start; refusing the slice.
+  loop: "{{ platform_docker_prestart_runtime_roots.results }}"
+  when: platform_docker_initial_apply
+
+- name: Validate daemon configuration with the installed Docker binary
+  ansible.builtin.command:
+    argv: [dockerd, --validate, --config-file, /etc/docker/daemon.json]
+  register: platform_docker_daemon_validation
+  changed_when: false
+  check_mode: false
+
+- name: Require successful daemon configuration validation
+  ansible.builtin.assert:
+    that:
+      - platform_docker_daemon_validation.rc == 0
+    fail_msg: dockerd rejected the reviewed daemon configuration.
+
+- name: Reload systemd after installing reviewed runtime drop-ins
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  changed_when: false
+
+- name: Verify Docker and containerd unit syntax
+  ansible.builtin.command:
+    argv:
+      - systemd-analyze
+      - verify
+      - docker.service
+      - docker.socket
+      - containerd.service
+  changed_when: false
+  check_mode: false
+
+- name: Start and enable the empty runtime explicitly
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - containerd.service
+    - docker.socket
+    - docker.service
+
+- name: Read exact installed package versions
+  ansible.builtin.command:
+    argv:
+      - dpkg-query
+      - -W
+      - '-f=${db:Status-Abbrev}\t${Version}\n'
+      - "{{ item.name }}"
+  loop: "{{ platform_docker_packages }}"
+  register: platform_docker_installed_packages
+  changed_when: false
+  check_mode: false
+
+- name: Require all and only reviewed package versions
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+      - item.stdout.split()[0] == 'ii'
+      - item.stdout.split()[1] == item.item.version
+    fail_msg: "Installed package does not match its exact pin: {{ item.item.name }}."
+  loop: "{{ platform_docker_installed_packages.results }}"
+
+- name: Re-hash installed managed payloads
+  ansible.builtin.stat:
+    path: "{{ item.destination }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop: "{{ platform_docker_managed_payloads }}"
+  register: platform_docker_installed_payloads
+
+- name: Require exact installed payload provenance
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isreg
+      - not (item.stat.islnk | default(false))
+      - item.stat.uid == 0
+      - item.stat.gid == 0
+      - item.stat.mode == item.item.mode
+      - item.stat.checksum == item.item.sha256
+    fail_msg: "Installed payload differs from Git: {{ item.item.destination }}."
+  loop: "{{ platform_docker_installed_payloads.results }}"
+
+- name: Inspect Docker group membership
+  ansible.builtin.command:
+    argv: [getent, group, docker]
+  register: platform_docker_post_group
+  changed_when: false
+  check_mode: false
+
+- name: Enumerate accounts whose primary group is Docker after installation
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - >-
+        import pwd,sys;
+        gid=int(sys.argv[1]);
+        print('\n'.join(entry.pw_name for entry in pwd.getpwall()
+        if entry.pw_gid == gid))
+      - "{{ platform_docker_post_group.stdout.split(':')[2] }}"
+  register: platform_docker_post_primary_group_accounts
+  changed_when: false
+  check_mode: false
+
+- name: Require an empty Docker group with no primary users
+  ansible.builtin.assert:
+    that:
+      - platform_docker_post_group.stdout.split(':') | length == 4
+      - platform_docker_post_group.stdout.split(':')[3] | length == 0
+      - platform_docker_post_primary_group_accounts.stdout | length == 0
+    fail_msg: Docker group grants daemon-equivalent privilege; it must be empty.
+
+- name: Inspect the Docker Unix socket
+  ansible.builtin.stat:
+    path: /run/docker.sock
+    follow: false
+  register: platform_docker_socket_state
+
+- name: Require the exact root-only Docker socket
+  ansible.builtin.assert:
+    that:
+      - platform_docker_socket_state.stat.exists
+      - platform_docker_socket_state.stat.issock
+      - not (platform_docker_socket_state.stat.islnk | default(false))
+      - platform_docker_socket_state.stat.uid == 0
+      - platform_docker_socket_state.stat.gid == 0
+      - platform_docker_socket_state.stat.mode == '0600'
+    fail_msg: Docker socket is not the reviewed root:root 0600 Unix boundary.
+
+- name: Read Docker server version and cgroup boundary
+  ansible.builtin.command:
+    argv: "{{ item.argv }}"
+  loop:
+    - name: server_version
+      argv: [docker, version, --format, "{{ '{{.Server.Version}}' }}"]
+    - name: cgroup_driver
+      argv: [docker, info, --format, "{{ '{{.CgroupDriver}}' }}"]
+    - name: swarm_state
+      argv: [docker, info, --format, "{{ '{{.Swarm.LocalNodeState}}' }}"]
+    - name: docker_root
+      argv: [docker, info, --format, "{{ '{{.DockerRootDir}}' }}"]
+    - name: compose_version
+      argv: [docker, compose, version, --short]
+  register: platform_docker_runtime_info
+  changed_when: false
+  check_mode: false
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Require exact runtime versions and execution boundaries
+  ansible.builtin.assert:
+    that:
+      - platform_docker_runtime_info.results[0].stdout == '29.7.2'
+      - platform_docker_runtime_info.results[1].stdout == 'systemd'
+      - platform_docker_runtime_info.results[2].stdout == 'inactive'
+      - platform_docker_runtime_info.results[3].stdout == '/var/lib/docker'
+      - platform_docker_runtime_info.results[4].stdout == '5.4.0'
+    fail_msg: Docker runtime version, cgroup, swarm, root, or Compose drifted.
+
+- name: Enumerate every prohibited Docker object class
+  ansible.builtin.command:
+    argv: "{{ item.argv }}"
+  loop:
+    - name: containers
+      argv: [docker, container, ls, --all, --quiet]
+    - name: images
+      argv: [docker, image, ls, --all, --quiet]
+    - name: volumes
+      argv: [docker, volume, ls, --quiet]
+    - name: custom_networks
+      argv: [docker, network, ls, --filter, type=custom, --quiet]
+    - name: build_cache
+      argv: [docker, buildx, du, --format, "{{ '{{.ID}}' }}"]
+  register: platform_docker_object_counts
+  changed_when: false
+  check_mode: false
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Require a completely empty Docker runtime
+  ansible.builtin.assert:
+    that:
+      - item.stdout_lines | reject('equalto', '') | list | length == 0
+    fail_msg: "Docker {{ item.item.name }} objects exist; F1.2b must stay empty."
+  loop: "{{ platform_docker_object_counts.results }}"
+
+- name: Inspect network interfaces after empty runtime start
+  ansible.builtin.command:
+    argv: [ip, -o, link, show]
+  register: platform_docker_interfaces
+  changed_when: false
+  check_mode: false
+
+- name: Inspect TCP listeners after empty runtime start
+  ansible.builtin.command:
+    argv: [ss, -H, -lnt]
+  register: platform_docker_tcp_listeners
+  changed_when: false
+  check_mode: false
+
+- name: Require no bridge, remote API, or metrics listener
+  ansible.builtin.assert:
+    that:
+      - "': docker0:' not in platform_docker_interfaces.stdout"
+      - "': br-' not in platform_docker_interfaces.stdout"
+      - "':2375 ' not in (platform_docker_tcp_listeners.stdout ~ ' ')"
+      - "':2376 ' not in (platform_docker_tcp_listeners.stdout ~ ' ')"
+      - "'metrics-addr' not in (lookup('file', role_path ~ '/../../../../platform/docker/daemon.json'))"
+      - "'hosts' not in (lookup('file', role_path ~ '/../../../../platform/docker/daemon.json') | from_json)"
+    fail_msg: Empty Docker runtime created a forbidden interface or listener.
+
+- name: Read runtime service slices
+  ansible.builtin.command:
+    argv: [systemctl, show, --property=Slice, --value, "{{ item }}"]
+  loop:
+    - docker.service
+    - containerd.service
+  register: platform_docker_service_slices
+  changed_when: false
+  check_mode: false
+
+- name: Require Docker and containerd in the platform slice
+  ansible.builtin.assert:
+    that:
+      - item.stdout == 'cloud-platform.slice'
+    fail_msg: "{{ item.item }} is outside cloud-platform.slice."
+  loop: "{{ platform_docker_service_slices.results }}"
+
+- name: Stop the newly installed empty runtime before baseline freeze
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - docker.service
+    - docker.socket
+    - containerd.service
+  when: platform_docker_initial_apply
+
+- name: Prove runtime processes stopped before baseline freeze
+  ansible.builtin.command:
+    argv: [pgrep, -x, 'dockerd|containerd|containerd-shim']
+  register: platform_docker_stopped_processes
+  changed_when: false
+  failed_when: platform_docker_stopped_processes.rc not in [0, 1]
+  check_mode: false
+  when: platform_docker_initial_apply
+
+- name: Require no runtime process before baseline freeze
+  ansible.builtin.assert:
+    that:
+      - platform_docker_stopped_processes.rc == 1
+    fail_msg: Runtime process remained after stop; refusing tree-baseline creation.
+  when: platform_docker_initial_apply
+
+- name: Freeze the exact proven-empty runtime tree baseline
+  ansible.builtin.script:
+    cmd: "{{ role_path }}/files/runtime_tree_guard.py snapshot"
+    executable: /usr/bin/python3
+  register: platform_docker_tree_snapshot
+  changed_when: true
+  when: platform_docker_initial_apply
+
+- name: Restart the empty runtime after baseline freeze
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - containerd.service
+    - docker.socket
+    - docker.service
+  when: platform_docker_initial_apply
+
+- name: Verify the runtime tree still matches its proven-empty baseline
+  ansible.builtin.script:
+    cmd: "{{ role_path }}/files/runtime_tree_guard.py verify"
+    executable: /usr/bin/python3
+  register: platform_docker_tree_verification
+  changed_when: false
+  check_mode: false
+
+- name: Repeat empty-object checks after initial restart
+  ansible.builtin.command:
+    argv: "{{ item.argv }}"
+  loop:
+    - {name: containers, argv: [docker, container, ls, --all, --quiet]}
+    - {name: images, argv: [docker, image, ls, --all, --quiet]}
+    - {name: volumes, argv: [docker, volume, ls, --quiet]}
+    - {name: custom_networks, argv: [docker, network, ls, --filter, 'type=custom', --quiet]}
+    - {name: build_cache, argv: [docker, buildx, du, --format, "{{ '{{.ID}}' }}"]}
+  register: platform_docker_restart_object_counts
+  changed_when: false
+  check_mode: false
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Require the restarted runtime to remain empty
+  ansible.builtin.assert:
+    that:
+      - item.stdout_lines | reject('equalto', '') | list | length == 0
+    fail_msg: "Docker {{ item.item.name }} appeared across restart."
+  loop: "{{ platform_docker_restart_object_counts.results }}"
+
+- name: Remove the first-apply transaction sentinel after all checks
+  ansible.builtin.command:
+    argv:
+      - unlink
+      - --
+      - /var/lib/cloud-platform/runtime-boundaries/docker/transaction.json
+  changed_when: true
+  when: platform_docker_initial_apply

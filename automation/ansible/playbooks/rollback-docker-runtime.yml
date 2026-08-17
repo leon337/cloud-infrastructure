@@ -1,0 +1,534 @@
+---
+- import_playbook: docker-runtime-controller-preflight.yml
+
+- name: Roll back only the exact proven-empty Docker F1.2b boundary
+  hosts: platform_nodes
+  gather_facts: true
+  become: true
+  serial: 1
+  force_handlers: true
+
+  vars:
+    platform_docker_runtime_rollback_confirm: false
+
+  vars_files:
+    - ../roles/docker_runtime/vars/main.yml
+
+  tasks:
+    - name: Require explicit Docker rollback confirmation
+      ansible.builtin.assert:
+        that:
+          - platform_docker_runtime_rollback_confirm | bool
+        fail_msg: >-
+          Re-run with -e platform_docker_runtime_rollback_confirm=true only
+          after validating current SLICE-002B empty-runtime evidence.
+
+    - name: Inspect a local rollback target for a container boundary
+      ansible.builtin.stat:
+        path: /.dockerenv
+        follow: false
+      register: platform_docker_rollback_container_marker
+      when: (ansible_connection | default('ssh')) == 'local'
+
+    - name: Identify local rollback virtualization
+      ansible.builtin.command:
+        argv: [systemd-detect-virt, --vm]
+      register: platform_docker_rollback_virtualization
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      become: false
+      when: (ansible_connection | default('ssh')) == 'local'
+
+    - name: Verify the exact non-production rollback target
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == 'Ubuntu'
+          - ansible_facts.distribution_version == '24.04'
+          - ansible_facts.service_mgr == 'systemd'
+          - ansible_facts.architecture == 'x86_64'
+          - inventory_hostname == 'node-01'
+          - platform_node_id == 'node-01'
+          - >-
+            (
+              (ansible_connection | default('ssh')) == 'local' and
+              platform_environment == 'test' and
+              platform_repository_root == '/workspace/cloud-infrastructure' and
+              platform_docker_test_boundary ==
+                'github-hosted-ubuntu24-disposable' and
+              platform_docker_test_destructive_confirm | bool and
+              lookup('env', 'GITHUB_ACTIONS') == 'true' and
+              lookup('env', 'RUNNER_ENVIRONMENT') == 'github-hosted' and
+              lookup('env', 'RUNNER_OS') == 'Linux' and
+              lookup('env', 'RUNNER_ARCH') == 'X64' and
+              lookup('env', 'ImageOS') == 'ubuntu24' and
+              lookup('env', 'GITHUB_WORKSPACE') ==
+                '/workspace/cloud-infrastructure' and
+              not (platform_docker_rollback_container_marker.stat.exists |
+                default(false)) and
+              platform_docker_rollback_virtualization.rc == 0
+            ) or (
+              (ansible_connection | default('ssh')) != 'local' and
+              platform_environment == 'dev' and
+              ansible_user == 'ubuntu' and
+              platform_expected_ansible_host == '169.58.171.192' and
+              platform_expected_hostname == 'vmi3506102' and
+              platform_expected_machine_id_sha256 ==
+                '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+              (ansible_host | string) ==
+                (platform_expected_ansible_host | string) and
+              ansible_facts.hostname == platform_expected_hostname and
+              (ansible_facts.machine_id | hash('sha256')) ==
+                platform_expected_machine_id_sha256
+            )
+        fail_msg: Rollback refuses an unrecorded node, environment, or VM.
+
+    - name: Verify the immutable Docker rollback allowlist
+      ansible.builtin.assert:
+        that:
+          - platform_docker_marker == '/etc/cloud-platform-docker-runtime.managed'
+          - >-
+            platform_docker_state_root ==
+            '/var/lib/cloud-platform/runtime-boundaries/docker'
+          - >-
+            platform_docker_prestate ==
+            '/var/lib/cloud-platform/runtime-boundaries/docker/prestate.json'
+          - >-
+            platform_docker_transaction ==
+            '/var/lib/cloud-platform/runtime-boundaries/docker/transaction.json'
+          - >-
+            platform_docker_tree_baseline ==
+            '/var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-baseline.json'
+          - >-
+            platform_docker_removal_manifest ==
+            '/var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-removal.json'
+          - >-
+            platform_docker_lock ==
+            '/run/lock/cloud-platform-docker-runtime-operation'
+          - >-
+            platform_docker_runtime_roots ==
+            ['/var/lib/docker', '/var/lib/containerd']
+          - >-
+            platform_docker_managed_directories ==
+            ['/etc/docker',
+             '/etc/systemd/system/docker.service.d',
+             '/etc/systemd/system/docker.socket.d',
+             '/etc/systemd/system/containerd.service.d']
+          - >-
+            platform_docker_packages | map(attribute='name') | list ==
+            ['docker-ce', 'docker-ce-cli', 'containerd.io',
+             'docker-buildx-plugin', 'docker-compose-plugin']
+          - >-
+            platform_docker_packages | map(attribute='version') | list ==
+            ['5:29.7.2-1~ubuntu.24.04~noble',
+             '5:29.7.2-1~ubuntu.24.04~noble',
+             '2.3.3-1~ubuntu.24.04~noble',
+             '0.36.1-1~ubuntu.24.04~noble',
+             '5.4.0-1~ubuntu.24.04~noble']
+          - >-
+            platform_docker_managed_payloads | map(attribute='destination') | list ==
+            ['/etc/apt/keyrings/docker.asc', '/etc/docker/daemon.json',
+             '/etc/apt/sources.list.d/docker.sources',
+             '/etc/apt/preferences.d/cloud-platform-docker.pref',
+             '/etc/systemd/system/docker.service.d/10-cloud-platform-boundary.conf',
+             '/etc/systemd/system/docker.socket.d/10-cloud-platform-root-only.conf',
+             '/etc/systemd/system/containerd.service.d/10-cloud-platform-boundary.conf']
+          - >-
+            platform_docker_managed_payloads | map(attribute='mode') | list ==
+            ['0644', '0600', '0644', '0644', '0644', '0644', '0644']
+          - >-
+            platform_docker_managed_payloads | map(attribute='sha256') | list ==
+            ['1500c1f56fa9e26b9b8f42452a553675796ade0807cdce11975eb98170b3a570',
+             'cd1257f75c740c5e635949e948a13e26807baa653e2d9265c096d26b8ec0e03b',
+             '8f33259a79a8149bed86c66e103fb4c3fa70f9219cd7ff315b6cc30988afef0c',
+             '8146e3a6ed0abe23d435aa33efabbcfcd591cb2b0d9da9317d061822bc6b3ed2',
+             'cb7a51bfb0c2962e47753d16f1cab0ffef141f68f4ca97bc5e05c817227c6826',
+             '86290046a524cff63452237c94a9e7d869730f9774a0fc923a21f800f5cccf25',
+             'cb7a51bfb0c2962e47753d16f1cab0ffef141f68f4ca97bc5e05c817227c6826']
+          - >-
+            (
+              platform_environment == 'dev' and
+              (platform_docker_marker_content | hash('sha256')) ==
+                'c66d8a8033aa095bb9f655666146f7577f2450cec61727b4f19e466128874a60' and
+              (platform_docker_prestate_content | hash('sha256')) ==
+                'c6cfc8597972ac237eae08a04b31a51eed4c5e95d7acc28b3494506a0218f7ad'
+            ) or (
+              platform_environment == 'test' and
+              (platform_docker_marker_content | hash('sha256')) ==
+                'd1f9a6f3f7e10ba8e82506b84a61ea04427eed8b5cb511c740a6e48158c04cbd' and
+              (platform_docker_prestate_content | hash('sha256')) ==
+                '2a8dfcb58d7febbd1bc02480d417223a51aa79d488b656337dddc56ab91f125f'
+            )
+        fail_msg: >-
+          Rollback variables differ from the reviewed SLICE-002B paths,
+          packages, payloads, or provenance.
+
+    - name: Inspect Foundations and Docker provenance files
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        follow: false
+        checksum_algorithm: sha256
+      loop:
+        - {name: foundation_marker, path: /etc/cloud-platform-foundation.managed, mode: '0600'}
+        - {name: docker_marker, path: /etc/cloud-platform-docker-runtime.managed, mode: '0600'}
+        - {name: prestate, path: /var/lib/cloud-platform/runtime-boundaries/docker/prestate.json, mode: '0600'}
+        - {name: baseline, path: /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-baseline.json, mode: '0600'}
+        - {name: transaction, path: /var/lib/cloud-platform/runtime-boundaries/docker/transaction.json, mode: '0600'}
+        - {name: removal, path: /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-removal.json, mode: '0600'}
+      register: platform_docker_rollback_provenance
+
+    - name: Require exact persistent rollback provenance
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg
+          - not (item.stat.islnk | default(false))
+          - item.stat.uid == 0
+          - item.stat.gid == 0
+          - item.stat.mode == item.item.mode
+        fail_msg: "Rollback provenance missing or unsafe: {{ item.item.name }}."
+      loop: "{{ platform_docker_rollback_provenance.results[0:4] }}"
+
+    - name: Refuse an incomplete apply or an existing removal transaction
+      ansible.builtin.assert:
+        that:
+          - not platform_docker_rollback_provenance.results[4].stat.exists
+          - not platform_docker_rollback_provenance.results[5].stat.exists
+        fail_msg: >-
+          Apply/removal transaction state exists. This rollback accepts only a
+          completed, proven-empty F1.2b deployment.
+
+    - name: Read exact Foundations, marker, and prestate content
+      ansible.builtin.slurp:
+        src: "{{ item }}"
+      loop:
+        - /etc/cloud-platform-foundation.managed
+        - /etc/cloud-platform-docker-runtime.managed
+        - /var/lib/cloud-platform/runtime-boundaries/docker/prestate.json
+      register: platform_docker_rollback_provenance_data
+
+    - name: Require exact marker and absent-prestate content
+      ansible.builtin.assert:
+        that:
+          - >-
+            (platform_docker_rollback_provenance_data.results[0].content |
+              b64decode) ==
+            ('managed_by=cloud-infrastructure\n' ~
+             'slice=SLICE-001\n' ~
+             'schema=1\n' ~
+             'environment=' ~ platform_environment ~ '\n' ~
+             'node=node-01')
+          - >-
+            (platform_docker_rollback_provenance_data.results[1].content |
+              b64decode) == platform_docker_marker_content
+          - >-
+            (platform_docker_rollback_provenance_data.results[2].content |
+              b64decode) == platform_docker_prestate_content
+        fail_msg: Marker or prestate content does not identify this exact slice.
+
+    - name: Inspect managed Docker files before deletion
+      ansible.builtin.stat:
+        path: "{{ item.destination }}"
+        follow: false
+        checksum_algorithm: sha256
+      loop: "{{ platform_docker_managed_payloads }}"
+      register: platform_docker_rollback_payloads
+
+    - name: Require exact payload provenance before deletion
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg
+          - not (item.stat.islnk | default(false))
+          - item.stat.uid == 0
+          - item.stat.gid == 0
+          - item.stat.mode == item.item.mode
+          - item.stat.checksum == item.item.sha256
+        fail_msg: >-
+          {{ item.item.destination }} differs from the reviewed payload;
+          refusing deletion.
+      loop: "{{ platform_docker_rollback_payloads.results }}"
+
+    - name: Inspect managed Docker directories before deletion
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        follow: false
+      loop:
+        - {path: /etc/docker, mode: '0700'}
+        - {path: /etc/systemd/system/docker.service.d, mode: '0755'}
+        - {path: /etc/systemd/system/docker.socket.d, mode: '0755'}
+        - {path: /etc/systemd/system/containerd.service.d, mode: '0755'}
+        - {path: /var/lib/cloud-platform/runtime-boundaries, mode: '0700'}
+        - {path: /var/lib/cloud-platform/runtime-boundaries/docker, mode: '0700'}
+        - {path: /var/lib/docker, mode: null}
+        - {path: /var/lib/containerd, mode: null}
+      register: platform_docker_rollback_directories
+
+    - name: Require ordinary root-owned rollback directories
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir
+          - not (item.stat.islnk | default(false))
+          - item.stat.uid == 0
+          - item.stat.gid == 0
+          - item.item.mode is none or item.stat.mode == item.item.mode
+        fail_msg: "Rollback directory is missing or unsafe: {{ item.item.path }}."
+      loop: "{{ platform_docker_rollback_directories.results }}"
+
+    - name: Inspect exact installed Docker package versions
+      ansible.builtin.command:
+        argv:
+          - dpkg-query
+          - -W
+          - '-f=${db:Status-Abbrev}\t${Version}\n'
+          - "{{ item.name }}"
+      loop: "{{ platform_docker_packages }}"
+      register: platform_docker_rollback_packages
+      changed_when: false
+      check_mode: false
+
+    - name: Inspect host-wide package service-start policy before rollback
+      ansible.builtin.stat:
+        path: /usr/sbin/policy-rc.d
+        follow: false
+      register: platform_docker_rollback_policy_rc_d
+
+    - name: Refuse to replace a host-wide package service-start policy
+      ansible.builtin.assert:
+        that:
+          - not platform_docker_rollback_policy_rc_d.stat.exists
+        fail_msg: >-
+          /usr/sbin/policy-rc.d is unrelated pre-existing state; refusing to
+          overwrite it during exact package purge.
+
+    - name: Require exact package provenance before purge
+      ansible.builtin.assert:
+        that:
+          - item.rc == 0
+          - item.stdout.split()[0] == 'ii'
+          - item.stdout.split()[1] == item.item.version
+        fail_msg: "Package drift blocks rollback: {{ item.item.name }}."
+      loop: "{{ platform_docker_rollback_packages.results }}"
+
+    - name: Inspect the Docker group before rollback
+      ansible.builtin.command:
+        argv: [getent, group, docker]
+      register: platform_docker_rollback_group
+      changed_when: false
+      check_mode: false
+
+    - name: Enumerate primary users of the Docker group
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - >-
+            import pwd,sys;
+            gid=int(sys.argv[1]);
+            print('\n'.join(entry.pw_name for entry in pwd.getpwall()
+            if entry.pw_gid == gid))
+          - "{{ platform_docker_rollback_group.stdout.split(':')[2] }}"
+      register: platform_docker_rollback_primary_group_accounts
+      changed_when: false
+      check_mode: false
+
+    - name: Require no Docker group privilege holder
+      ansible.builtin.assert:
+        that:
+          - platform_docker_rollback_group.stdout.split(':') | length == 4
+          - platform_docker_rollback_group.stdout.split(':')[3] | length == 0
+          - platform_docker_rollback_primary_group_accounts.stdout | length == 0
+        fail_msg: Docker group is not empty; refusing rollback.
+
+    - name: Inspect runtime unit state before rollback
+      ansible.builtin.command:
+        argv: [systemctl, is-active, "{{ item }}"]
+      loop:
+        - docker.service
+        - docker.socket
+        - containerd.service
+      register: platform_docker_rollback_units
+      changed_when: false
+      check_mode: false
+
+    - name: Require the operational empty runtime for object inspection
+      ansible.builtin.assert:
+        that:
+          - item.rc == 0
+          - item.stdout == 'active'
+        fail_msg: >-
+          {{ item.item }} is not active; rollback cannot prove Docker object
+          absence through the reviewed API.
+      loop: "{{ platform_docker_rollback_units.results }}"
+
+    - name: Inspect the root-only Docker socket before rollback
+      ansible.builtin.stat:
+        path: /run/docker.sock
+        follow: false
+      register: platform_docker_rollback_socket
+
+    - name: Require the exact root-only Docker socket before rollback
+      ansible.builtin.assert:
+        that:
+          - platform_docker_rollback_socket.stat.exists
+          - platform_docker_rollback_socket.stat.issock
+          - not (platform_docker_rollback_socket.stat.islnk | default(false))
+          - platform_docker_rollback_socket.stat.uid == 0
+          - platform_docker_rollback_socket.stat.gid == 0
+          - platform_docker_rollback_socket.stat.mode == '0600'
+        fail_msg: Docker socket boundary drift blocks rollback.
+
+    - name: Enumerate every prohibited object class before rollback
+      ansible.builtin.command:
+        argv: "{{ item.argv }}"
+      loop:
+        - {name: containers, argv: [docker, container, ls, --all, --quiet]}
+        - {name: images, argv: [docker, image, ls, --all, --quiet]}
+        - {name: volumes, argv: [docker, volume, ls, --quiet]}
+        - {name: custom_networks, argv: [docker, network, ls, --filter, 'type=custom', --quiet]}
+        - {name: build_cache, argv: [docker, buildx, du, --format, "{{ '{{.ID}}' }}"]}
+        - {name: swarm, argv: [docker, info, --format, "{{ '{{.Swarm.LocalNodeState}}' }}"]}
+      register: platform_docker_rollback_objects
+      changed_when: false
+      check_mode: false
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Require zero objects, cache, and swarm state
+      ansible.builtin.assert:
+        that:
+          - >-
+            item.item.name == 'swarm' and item.stdout == 'inactive' or
+            item.item.name != 'swarm' and
+            (item.stdout_lines | reject('equalto', '') | list | length) == 0
+        fail_msg: "Docker {{ item.item.name }} state blocks rollback."
+      loop: "{{ platform_docker_rollback_objects.results }}"
+
+    - name: Verify current runtime paths against the immutable empty baseline
+      ansible.builtin.script:
+        cmd: "{{ playbook_dir }}/../roles/docker_runtime/files/runtime_tree_guard.py verify"
+        executable: /usr/bin/python3
+      register: platform_docker_rollback_tree_verification
+      changed_when: false
+      check_mode: false
+
+    - name: Inspect exclusive lock and package-manager concurrency
+      ansible.builtin.stat:
+        path: /run/lock/cloud-platform-docker-runtime-operation
+        follow: false
+      register: platform_docker_rollback_lock
+
+    - name: Inspect package-manager concurrency before rollback mutation
+      ansible.builtin.command:
+        argv: [pgrep, -x, 'apt|apt-get|dpkg|unattended-upgr|unattended-upgrade']
+      register: platform_docker_rollback_package_processes
+      changed_when: false
+      failed_when: platform_docker_rollback_package_processes.rc not in [0, 1]
+      check_mode: false
+
+    - name: Refuse lock or package-manager concurrency
+      ansible.builtin.assert:
+        that:
+          - not platform_docker_rollback_lock.stat.exists
+          - platform_docker_rollback_package_processes.rc == 1
+        fail_msg: Concurrent or stale operation blocks Docker rollback.
+
+    - name: Preview the bounded rollback after all read-only gates
+      ansible.builtin.debug:
+        msg: >-
+          Rollback would stop the empty runtime, freeze and consume only the
+          exact runtime-tree manifest, purge five packages without autoremove,
+          remove exact payloads, and relinquish the marker last.
+      changed_when: true
+      when: ansible_check_mode
+
+    - name: Acquire the exclusive Docker rollback lock
+      ansible.builtin.command:
+        argv: [mkdir, /run/lock/cloud-platform-docker-runtime-operation]
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Mutate the proven-empty rollback state under the exclusive lock
+      block:
+        - name: Execute the reviewed Docker rollback mutation set
+          ansible.builtin.include_tasks: tasks/rollback-docker-runtime-mutate.yml
+      always:
+        - name: Release the exclusive Docker rollback lock
+          ansible.builtin.command:
+            argv: [rmdir, /run/lock/cloud-platform-docker-runtime-operation]
+          changed_when: false
+      when: not ansible_check_mode
+
+    - name: Inspect the complete Docker boundary after rollback
+      ansible.builtin.stat:
+        path: "{{ item }}"
+        follow: false
+      loop:
+        - /etc/cloud-platform-docker-runtime.managed
+        - /etc/apt/keyrings/docker.asc
+        - /etc/apt/sources.list.d/docker.sources
+        - /etc/apt/preferences.d/cloud-platform-docker.pref
+        - /etc/docker
+        - /etc/systemd/system/docker.service.d
+        - /etc/systemd/system/docker.socket.d
+        - /etc/systemd/system/containerd.service.d
+        - /var/lib/cloud-platform/runtime-boundaries
+        - /var/lib/docker
+        - /var/lib/containerd
+        - /run/docker.sock
+      register: platform_docker_rollback_absent_surface
+      when: not ansible_check_mode
+
+    - name: Require complete Docker boundary absence after rollback
+      ansible.builtin.assert:
+        that:
+          - >-
+            (platform_docker_rollback_absent_surface.results |
+              selectattr('stat.exists') | list | length) == 0
+        fail_msg: Docker path survived the exact rollback.
+      when: not ansible_check_mode
+
+    - name: Inspect package and group absence after rollback
+      ansible.builtin.command:
+        argv: "{{ item.argv }}"
+      loop:
+        - {name: docker_ce, argv: [dpkg-query, -W, docker-ce]}
+        - {name: docker_ce_cli, argv: [dpkg-query, -W, docker-ce-cli]}
+        - {name: containerd_io, argv: [dpkg-query, -W, containerd.io]}
+        - {name: buildx, argv: [dpkg-query, -W, docker-buildx-plugin]}
+        - {name: compose, argv: [dpkg-query, -W, docker-compose-plugin]}
+        - {name: docker_group, argv: [getent, group, docker]}
+      register: platform_docker_rollback_absent_objects
+      changed_when: false
+      failed_when: platform_docker_rollback_absent_objects.rc not in [1, 2]
+      check_mode: false
+      when: not ansible_check_mode
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Require all Docker packages and group absent after rollback
+      ansible.builtin.assert:
+        that:
+          - item.rc in [1, 2]
+        fail_msg: "Docker object survived rollback: {{ item.item.name }}."
+      loop: "{{ platform_docker_rollback_absent_objects.results }}"
+      when: not ansible_check_mode
+
+    - name: Prove Foundations provenance survived Docker rollback
+      ansible.builtin.stat:
+        path: /etc/cloud-platform-foundation.managed
+        follow: false
+      register: platform_docker_rollback_foundation_survived
+      when: not ansible_check_mode
+
+    - name: Require Foundations marker after Docker rollback
+      ansible.builtin.assert:
+        that:
+          - platform_docker_rollback_foundation_survived.stat.exists
+          - platform_docker_rollback_foundation_survived.stat.isreg
+          - platform_docker_rollback_foundation_survived.stat.uid == 0
+          - platform_docker_rollback_foundation_survived.stat.gid == 0
+          - platform_docker_rollback_foundation_survived.stat.mode == '0600'
+        fail_msg: Docker rollback damaged its F1.1 prerequisite.
+      when: not ansible_check_mode

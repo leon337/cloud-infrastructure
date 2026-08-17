@@ -3,14 +3,41 @@ platform_docker_marker: /etc/cloud-platform-docker-runtime.managed
 platform_docker_state_root: /var/lib/cloud-platform/runtime-boundaries/docker
 platform_docker_prestate: /var/lib/cloud-platform/runtime-boundaries/docker/prestate.json
 platform_docker_transaction: /var/lib/cloud-platform/runtime-boundaries/docker/transaction.json
+platform_docker_tree_baseline: /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-baseline.json
+platform_docker_removal_manifest: /var/lib/cloud-platform/runtime-boundaries/docker/runtime-tree-removal.json
 platform_docker_lock: /run/lock/cloud-platform-docker-runtime-operation
 
 platform_docker_daemon_config: /etc/docker/daemon.json
 platform_docker_apt_key: /etc/apt/keyrings/docker.asc
 platform_docker_apt_source: /etc/apt/sources.list.d/docker.sources
+platform_docker_apt_preference: /etc/apt/preferences.d/cloud-platform-docker.pref
 platform_docker_service_override: /etc/systemd/system/docker.service.d/10-cloud-platform-boundary.conf
 platform_docker_socket_override: /etc/systemd/system/docker.socket.d/10-cloud-platform-root-only.conf
 platform_containerd_service_override: /etc/systemd/system/containerd.service.d/10-cloud-platform-boundary.conf
+
+platform_docker_managed_directories:
+  - /etc/docker
+  - /etc/systemd/system/docker.service.d
+  - /etc/systemd/system/docker.socket.d
+  - /etc/systemd/system/containerd.service.d
+
+platform_docker_shared_parent_directories:
+  - /etc/apt/keyrings
+  - /etc/apt/sources.list.d
+  - /etc/apt/preferences.d
+
+platform_docker_runtime_roots:
+  - /var/lib/docker
+  - /var/lib/containerd
+
+platform_docker_conflicting_packages:
+  - docker.io
+  - docker-doc
+  - docker-compose
+  - podman-docker
+  - containerd
+  - runc
+  - docker-ce-rootless-extras
 
 platform_docker_key_sha256: 1500c1f56fa9e26b9b8f42452a553675796ade0807cdce11975eb98170b3a570
 platform_docker_key_primary_fingerprint: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
@@ -33,6 +60,13 @@ platform_docker_packages:
     version: 5.4.0-1~ubuntu.24.04~noble
     sha256: f7890c92ea2d356bc7ea7ac351a854bde8d7c446da6102126a9d9fac9ea0583c
 
+platform_docker_package_specs:
+  - docker-ce=5:29.7.2-1~ubuntu.24.04~noble
+  - docker-ce-cli=5:29.7.2-1~ubuntu.24.04~noble
+  - containerd.io=2.3.3-1~ubuntu.24.04~noble
+  - docker-buildx-plugin=0.36.1-1~ubuntu.24.04~noble
+  - docker-compose-plugin=5.4.0-1~ubuntu.24.04~noble
+
 platform_docker_managed_payloads:
   - source: platform/docker/docker.asc
     destination: /etc/apt/keyrings/docker.asc
@@ -46,6 +80,10 @@ platform_docker_managed_payloads:
     destination: /etc/apt/sources.list.d/docker.sources
     mode: "0644"
     sha256: 8f33259a79a8149bed86c66e103fb4c3fa70f9219cd7ff315b6cc30988afef0c
+  - source: platform/docker/cloud-platform-docker.pref
+    destination: /etc/apt/preferences.d/cloud-platform-docker.pref
+    mode: "0644"
+    sha256: 8146e3a6ed0abe23d435aa33efabbcfcd591cb2b0d9da9317d061822bc6b3ed2
   - source: platform/docker/systemd/docker.service.conf
     destination: /etc/systemd/system/docker.service.d/10-cloud-platform-boundary.conf
     mode: "0644"
@@ -68,3 +106,9 @@ platform_docker_marker_content: |-
   runtime=docker-ce
   docker_ce=5:29.7.2-1~ubuntu.24.04~noble
   containerd_io=2.3.3-1~ubuntu.24.04~noble
+
+platform_docker_prestate_content: |-
+  {"docker_group_preexisting":false,"environment":"{{ platform_environment }}","node":"node-01","runtime_roots_preexisting":false,"schema":1,"slice":"SLICE-002B"}
+
+platform_docker_transaction_content: |-
+  {"environment":"{{ platform_environment }}","node":"node-01","schema":1,"slice":"SLICE-002B","state":"APPLY_IN_PROGRESS"}
