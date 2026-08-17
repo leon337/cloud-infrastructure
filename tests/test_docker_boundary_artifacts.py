@@ -240,6 +240,7 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
             "DOCKER_BOUNDARY_VM_TEST_PASS",
         ):
             self.assertIn(required, harness)
+        self.assertIn("residual-config (rc) records", harness)
         self.assertNotIn("rm -rf", harness)
         self.assertNotIn("apt-get autoremove", harness)
 

@@ -311,8 +311,9 @@ for package in \
   docker-compose-plugin containerd.io docker.io docker-doc docker-compose \
   podman-docker containerd runc moby-engine moby-cli moby-buildx \
   moby-compose moby-containerd moby-runc; do
-  if dpkg-query -W -f="$DPKG_STATUS_FORMAT" "$package" 2>/dev/null |
-    grep -qx 'ii '; then
+  # Purge both installed packages and dpkg's residual-config (rc) records.
+  # The role deliberately requires a truly absent first-apply surface.
+  if dpkg-query -W -f="$DPKG_STATUS_FORMAT" "$package" >/dev/null 2>&1; then
     installed_runner_packages+=("$package")
   fi
 done
