@@ -238,7 +238,14 @@ normalize_non_docker_iptables() {
   local source=$1
   local destination=$2
 
-  sed -E '/docker/I d' "$source" >"$destination"
+  # iptables-save embeds capture timestamps and live packet/byte counters.
+  # Normalize only those volatile fields; chain names, policies and rules stay
+  # byte-for-byte comparable after Docker-owned lines are excluded.
+  sed -E \
+    -e '/^#/d' \
+    -e '/docker/I d' \
+    -e 's/^(:[^ ]+[[:space:]]+[^ ]+)[[:space:]]+\[[0-9]+:[0-9]+\]$/\1 [0:0]/' \
+    "$source" >"$destination"
 }
 
 compare_network_invariants() {
