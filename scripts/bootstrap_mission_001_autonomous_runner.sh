@@ -241,7 +241,7 @@ check_operation() {
 test_operation() (
   require_repository_guards || return 1
   local test_root test_path
-  test_root=$(mktemp -d /run/codex-mission-001-test.XXXXXX)
+  test_root=$(mktemp -d /var/tmp/codex-mission-001-test.XXXXXX)
   trap 'rm -rf --one-file-system "$test_root"' EXIT
   cp -a -- "$REPO_ROOT/." "$test_root/"
   chown -R ubuntu:ubuntu "$test_root"

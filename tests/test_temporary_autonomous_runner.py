@@ -186,7 +186,7 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn("if ss -Hlnptu", self.runner)
 
     def test_unprivileged_tests_use_only_a_private_ephemeral_snapshot(self):
-        self.assertIn("mktemp -d /run/codex-mission-001-test.XXXXXX", self.runner)
+        self.assertIn("mktemp -d /var/tmp/codex-mission-001-test.XXXXXX", self.runner)
         self.assertIn('cp -a -- "$REPO_ROOT/." "$test_root/"', self.runner)
         self.assertIn('chown -R ubuntu:ubuntu "$test_root"', self.runner)
         self.assertIn('chmod -R u+rwX,go-rwx "$test_root"', self.runner)
@@ -201,11 +201,11 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
             ROOT / "automation" / "mission-001" / "operations" / "apply"
         ).read_text(encoding="utf-8")
         self.assertIn(
-            "OLD_RUNNER_SHA256=36945487cd448a76f75a5bc8761a7d46547ae148acdcc9aed0ab3af768571d7d",
+            "OLD_RUNNER_SHA256=c388e8cb3b37e08d5cffe86f3330fe1f207af6c150e9e1f80b5f185ebadd3645",
             operation,
         )
         self.assertIn(
-            "DESIRED_RUNNER_SHA256=c388e8cb3b37e08d5cffe86f3330fe1f207af6c150e9e1f80b5f185ebadd3645",
+            "DESIRED_RUNNER_SHA256=59d3cd7d14a64727d06bf23a142f26299754710a18dc76509729decc62492958",
             operation,
         )
         self.assertIn("install -o root -g root -m 0755", operation)
