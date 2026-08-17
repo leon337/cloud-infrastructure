@@ -257,6 +257,7 @@ class DockerBoundaryArtifactTests(unittest.TestCase):
         self.assertIn("residual-config (rc) records", harness)
         self.assertIn("stable, exact interface set", harness)
         self.assertIn("DOCKER_BOUNDARY_NETWORK_DIFF", harness)
+        self.assertIn("FAILED|failed:|fatal:", harness)
         self.assertIn("iptables-save embeds capture timestamps", harness)
         self.assertIn("'/^#/d'", harness)
         self.assertIn("preinstalled_docker0_is_not_a_bridge", harness)

@@ -206,7 +206,8 @@ expect_refusal() {
   fi
   after=$(managed_surface_digest)
   [[ $before == "$after" ]] || fail "refusal_mutated_surface=$label"
-  grep -Eq 'FAILED|fatal:' "$log_path" || fail "refusal_not_observed=$label"
+  grep -Eq 'FAILED|failed:|fatal:|\[ERROR\]' "$log_path" ||
+    fail "refusal_not_observed=$label"
   printf 'DOCKER_BOUNDARY_REFUSAL_PASS scenario=%s no_mutation=true\n' "$label"
 }
 
