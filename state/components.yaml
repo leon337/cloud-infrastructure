@@ -5,6 +5,8 @@ node: node-01
 source:
   technology_mapping: docs/46-technology-mapping-v1.md
   blueprint: docs/44-infrastructure-blueprint-v1.md
+  docker_runtime_decision: decisions/DEC-007-docker-runtime-boundary.md
+  docker_runtime_checkpoint: docs/47-docker-runtime-boundary-checkpoint.md
 observed_at_utc: "2026-08-16T19:46:14Z"
 observed:
   host:
@@ -70,9 +72,57 @@ platform_components:
     lifecycle: CONDITIONAL_WAITING_HUMAN_GATE
   container_runtime:
     technology: Docker_Engine_and_Compose_plugin
-    selected_version: RESOLVE_AT_SLICE
+    selected_version: Docker_Engine_29.7.2
     observed_version: ABSENT
-    lifecycle: SELECTED_PLANNED_F1_2
+    lifecycle: SELECTED_IMPLEMENTING_F1_2B_CI_PENDING_REAL_VPS_NOT_EXECUTED_BLOCKED_BY_F1_1
+    decision: DEC-007
+    source:
+      repository: https://download.docker.com/linux/ubuntu
+      distribution: noble
+      architecture: amd64
+      channel: stable
+    packages:
+      docker_ce:
+        version: "5:29.7.2-1~ubuntu.24.04~noble"
+        deb_sha256: 8243f97d569a0fa33ea32417e399e9f524e7d75d3898fa9d24e0eadaa486af68
+      docker_ce_cli:
+        version: "5:29.7.2-1~ubuntu.24.04~noble"
+        deb_sha256: 920a5fa031f33f2dd5b56b4a9bc4c725bc9549d6007004a6610a469873ec69fe
+      containerd_io:
+        version: "2.3.3-1~ubuntu.24.04~noble"
+        deb_sha256: 3a2c59a92b4c57d247f26ea37c6f1913aefee9e6f8d64815c47505e6de0033db
+      docker_buildx_plugin:
+        version: "0.36.1-1~ubuntu.24.04~noble"
+        deb_sha256: 405be4bdbd70052880583da5d181c8e1c06e61f1a5b230ad2ad124e04318def2
+      docker_compose_plugin:
+        version: "5.4.0-1~ubuntu.24.04~noble"
+        deb_sha256: f7890c92ea2d356bc7ea7ac351a854bde8d7c446da6102126a9d9fac9ea0583c
+    public_key:
+      classification: PUBLIC_NOT_SECRET
+      sha256: 1500c1f56fa9e26b9b8f42452a553675796ade0807cdce11975eb98170b3a570
+      primary_fingerprint: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+      signing_subkey_fingerprint: D3306A018370199E527AE7997EA0A9C3F273FCD8
+    license: Apache-2.0_upstream_components_Docker_Desktop_not_installed
+    boundary:
+      socket: UNIX_ROOT_ROOT_0600
+      docker_group: EMPTY
+      tcp_api: DISABLED
+      default_bridge: DISABLED
+      firewall_backend: IPTABLES_FRONTEND_IPTABLES_NFT
+      native_nftables_backend: NOT_SELECTED
+      ip_forward: DISABLED
+      ip_masquerade: DISABLED
+      daemon_ipv6: DISABLED
+      workloads: ZERO_BLOCKED_BY_F1_2C
+      daemon_slice: cloud-platform.slice
+      future_workload_slice: cloud-workloads.slice
+    validation:
+      local_static: PENDING
+      ci: PENDING
+      disposable_vm: PENDING
+      real_vps_check_mode: NOT_EXECUTED
+      real_vps_apply: NOT_EXECUTED
+      first_workload: BLOCKED_BY_F1_2C
   capability_core:
     technology: Go_OpenAPI_3_1_2_OPA_Rego_v1
     selected_version: Go_1.26.x

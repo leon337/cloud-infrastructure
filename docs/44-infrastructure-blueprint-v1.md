@@ -62,7 +62,7 @@ Depois de baseline medido:
 |---|---|---|---|
 | Desired state | Ansible Core 2.21.3 + JSON Schema | controller → SSH/sudo humano | `F1_1_PARTIAL_CI_PASS_REAL_VPS_NOT_APPLIED; NEXT_PRIVILEGED_CHECK_MODE` |
 | Management Network | Tailscale com grants explícitos | serviço host | `WAITING_HUMAN_GATE` |
-| Container runtime | Docker Engine + Compose plugin | serviço host, grupo vazio, sem workload/porta | `PLANNED_F1_2B` |
+| Container runtime | Docker CE 29.7.2 + containerd.io 2.3.3 + Buildx 0.36.1 + Compose 5.4.0 | serviço host, root-only, bridge default ausente, sem workload/porta | `IMPLEMENTING_F1_2B; CI_PENDING; REAL_VPS_NOT_EXECUTED; BLOCKED_BY_F1_1` |
 | Network/egress | nftables/`DOCKER-USER` + DNS/egress mechanism a selecionar | host + bridges segregadas | `DECISION_PENDING_BEFORE_FIRST_WORKLOAD` |
 | Disk isolation | project quota/XFS, volume/bloco limitado ou execution node a testar | por sandbox/workload | `DECISION_PENDING; Q8_NOT_YET_PROVEN` |
 | Capability Core | Go + OpenAPI 3.1.2 + OPA/Rego v1 | container/unix socket | `PLANNED_F2` |
@@ -97,12 +97,21 @@ slice; `docs/46-technology-mapping-v1.md` é a fonte de trade-offs.
 | `sandbox-<mission>` | ambiente descartável | sem lateral; egress profile |
 | `preview` | Caddy → workload alvo | somente rota publicada |
 
+F1.2b seleciona os cinco pacotes exatos e a chave pública oficial em DEC-007. O
+source é Docker `stable/noble/amd64`, o daemon usa backend `iptables` pelo
+frontend iptables-nft do Noble e o socket é `root:root 0600`; não existe API TCP
+nem membro no grupo `docker`. O estado real continua ausente: CI está pendente e
+o apply no NODE-01 é bloqueado até F1.1 ser aplicado, reconciliado e
+checkpointed.
+
 F1.2b instala Docker sem publicar porta ou workload. Antes de qualquer container:
 
 - capturar UFW, iptables/nftables, sysctls, routes e listeners;
 - não configurar `iptables=false`;
 - grupo `docker` deve continuar vazio;
 - daemon usa socket local root-owned; TCP daemon é proibido;
+- bridge default deve permanecer desabilitada, sem `docker0`/`br-*`, forwarding,
+  masquerade ou listener novo;
 - validar que uma porta de fixture não fica pública por acidente em IPv4/IPv6;
 - aceitar um ADR que selecione e atribua ownership ao enforcement da cadeia
   suportada pelo Docker, DNS/egress, IPv6 e service discovery;
@@ -110,7 +119,9 @@ F1.2b instala Docker sem publicar porta ou workload. Antes de qualquer container
   conforme perfil, com rollback do ruleset.
 
 Instalar o daemon sem workload não satisfaz Q20/Q34. O primeiro container de
-plataforma ou projeto depende de F1.2c Network Enforcement validado.
+plataforma ou projeto — inclusive uma fixture na VPS — depende de F1.2c Network
+Enforcement validado. A fixture privilegiada F1.2b roda somente em VM
+descartável, nunca na Workstation ou no NODE-01.
 
 ## Manifests e reconciliation
 
@@ -167,3 +178,7 @@ checkpoint do anterior.
 Para F1.1, o run `31972460567` validou o commit `edd2497d` na VM descartável. O
 checkpoint corrente autoriza somente check mode privilegiado no NODE-01 com sudo
 humano; não autoriza inferir apply, idempotência ou invariância na VPS.
+
+F1.2b está somente em preparação de desired state. Sua CI ainda é `PENDING` e
+nenhuma execução ocorreu na VPS. Mesmo após CI verde, o gate F1.1 acima continua
+bloqueando check/apply F1.2b real; nenhum atalho de prazo altera essa dependência.

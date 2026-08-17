@@ -1,6 +1,6 @@
 # 46 — TECHNOLOGY MAPPING V1
 
-Status: **PARTIAL SELECTION BASELINE — ACCEPTED FOR F1.1; LATER GAPS CONDITIONAL**
+Status: **PARTIAL SELECTION BASELINE — F1.1 ACCEPTED; F1.2B IMPLEMENTING**
 Research cut: 2026-08-16
 Authority: Q40-D
 
@@ -34,7 +34,7 @@ data de consulta e texto de licença no decision record sem copiar secrets.
 | Desired state | **Ansible Core 2.21.3 — SELECTED** | shell, Nix, OpenTofu | Agentless, idempotente e adequado ao host existente. Shell é frágil para drift; Nix exigiria redesenho do OS; OpenTofu fica para recursos de provedor. Rollback explícito por objeto/backup. |
 | Manifest | **YAML + JSON Schema 2020-12 — SELECTED** | schema ad hoc, CUE | Compatível com OpenAPI 3.1, tooling amplo e rejeição de campos desconhecidos. Evolução por `apiVersion`. |
 | Management Network | **Tailscale — CONDITIONAL/HUMAN_GATE** | Headscale, WireGuard puro | Cliente Linux é open source, mas coordination server é proprietário/gerenciado e o plano limita recursos/audit features. A vantagem deliberada Q2 é identidade/dispositivo/policy com menor operação; plano, termos, IdP, logs e migração devem ser aprovados. Headscale no único nó cria dependência circular; WireGuard não entrega sozinho IdP/policy/audit. SSH público é rollback transitório no onboarding. |
-| Runtime | **Docker Engine + Compose plugin — SELECTED por Q17** | Podman, Kubernetes, Docker rootless | Q17 fixa Docker/Compose inicial. Grupo vazio e Node Agent evitam daemon para agentes. Kubernetes é excessivo; rootless builder exigiria enfraquecimento AppArmor documentado. Uninstall só em slice vazio. |
+| Runtime | **Docker CE 29.7.2 + containerd.io 2.3.3 + Buildx 0.36.1 + Compose 5.4.0 — SELECTED/IMPLEMENTING por Q17** | `docker.io`, convenience script, Podman, Kubernetes, Docker rootless | DEC-007 fixa pacotes oficiais Noble `amd64`, socket root-only, grupo vazio e runtime sem bridge/workload. Kubernetes é excessivo; rootless introduz trade-offs AppArmor/operação; defaults de grupo/bridge violam a fronteira. Uninstall só em slice vazio com provenance/manifesto fail-closed. CI e VPS ainda não provados. |
 | Resource isolation | **cgroup v2 + systemd + AppArmor/seccomp — SELECTED** | apenas limites Compose, VM/nested virt, gVisor | Nativo e econômico. gVisor permanece candidato para código hostil; containers não são declarados equivalentes a VM. |
 | Network/egress/service discovery | **CONDITIONAL — ADR antes do primeiro workload** | nftables/`DOCKER-USER` + DNS proxy, egress proxy, firewall dedicado/execution node | Docker DNS resolve nomes, não identidade. O ADR deve provar v4/v6, host/metadata/Management/lateral deny, shared grants, Internet por perfil, auditoria e rollback sem `iptables=false`. Instalar daemon sem workload não satisfaz Q20/Q34. |
 | Disk isolation | **DECISION PENDING** | project quota/XFS, volume/bloco limitado, execution node dedicado | cgroup e ext4/overlay2 não impõem quota rígida do writable layer. Monitoramento/admission sozinho não satisfaz Q8/Q25; sandbox permanece `PARTIAL` até teste de uma alternativa. |
@@ -82,6 +82,28 @@ em implementação. A prova na fixture descartável não substitui a prova na VP
 | Lock-in | YAML/JSON Schema e arquivos systemd são abertos; dependência de módulos builtin torna migração possível, porém não gratuita | `ACCEPTED_MODERATE` |
 | Migração/rollback | remoção por proveniência/diretório vazio, quatro recusas fail-closed e rollback limpo passaram no CI; rollback real permanece inaplicável antes do apply | `SATISFIED_DISPOSABLE_CI_REMOTE_NOT_APPLIED` |
 
+## Component record do slice em preparação — F1.2b
+
+DEC-007 fixa o pacote e a fronteira, mas este record ainda não possui CI
+commit-bound nem prova na VPS. F1.1 bloqueia o apply real; F1.2c bloqueia qualquer
+workload.
+
+| Critério | Registro F1.2b | Estado |
+|---|---|---|
+| Aderência Q1–Q39 | Docker/Compose atende Q17; socket root-only preserva mediação futura, mas instalar daemon vazio não satisfaz isolamento/egress/discovery Q20/Q34 | `SATISFIED_BY_DESIGN_FOR_Q17_Q20_Q34_BLOCKED_BY_F1_2C` |
+| RAM/CPU/disk | runtime vazio e logs limitados foram desenhados; footprint de instalação, idle e restart ainda não foi medido na VM final nem no NODE-01 | `PENDING_MEASUREMENT` |
+| Segurança/privilégio | socket `root:root 0600`, grupo vazio, sem TCP/metrics/bridge/workload, config antes do start e package post-install suprimido são requisitos testáveis | `DESIGNED_CI_PENDING_REMOTE_NOT_EXECUTED` |
+| Maturidade/manutenção | Docker CE 29.7.2, containerd.io 2.3.3, Buildx 0.36.1 e Compose 5.4.0 estão pinados por versão/digest do índice oficial consultado em 2026-08-16 | `SELECTED_UPDATE_POLICY_NOT_YET_OPERATIONAL` |
+| Licença/custo | Docker Engine/Moby, CLI, containerd, Buildx e Compose upstream são Apache-2.0; Docker Desktop não é instalado; nenhum plano pago selecionado | `RECORDED` |
+| Simplicidade operacional | repositório oficial, cinco pacotes, systemd e daemon config único; custo aceito de pin/upgrade explícito e policy de autostart | `SELECTED_BY_DESIGN` |
+| Backup/restore/rebuild | `/var/lib/docker` e `/var/lib/containerd` não recebem estado útil; runtime deve continuar vazio/rebuildable e rollback exige zero objetos | `DESIGNED_ROLLBACK_CI_PENDING` |
+| Portabilidade | OCI, Compose e containerd são portáveis; pacote/source atual exige Ubuntu Noble `amd64` e role separa esse constraint | `SELECTED_WITH_OS_ARCH_CONSTRAINT` |
+| Evolução multi-node | configuração cgroup/slices preserva node abstraction, mas F1.2b autoriza exatamente `node-01` e não testa cluster/swarm | `DESIGNED_NOT_TESTED_MULTI_NODE` |
+| API/CLI/MCP | CLI é somente root operacional; API TCP ausente e socket negado a agentes; Node Agent/Capability Core fará mediação futura | `CLI_ROOT_ONLY_FUTURE_MEDIATION_REQUIRED` |
+| Observabilidade/auditoria | logging `local` limitado e snapshots de units/listeners/network/ruleset são definidos; métricas/listener e stack central não fazem parte do slice | `DESIGNED_CI_PENDING_REMOTE_NOT_EXECUTED` |
+| Lock-in | imagens/Compose usam contratos OCI/abertos; daemon-specific config e networking criam lock-in moderado documentado | `ACCEPTED_MODERATE` |
+| Migração/rollback | marker/prestate/lock externos, pacotes exatos e manifesto `find -xdev` limitado às duas raízes substituem remoção recursiva; testes negativos/rollback ainda pendem | `DESIGNED_FAIL_CLOSED_CI_PENDING_REMOTE_NOT_APPLICABLE` |
+
 ## Evidência oficial por domínio
 
 ### Foundations e runtime
@@ -97,7 +119,21 @@ em implementação. A prova na fixture descartável não substitui a prova na VP
   [python-jsonschema license](https://github.com/python-jsonschema/jsonschema/blob/main/COPYING).
 - Docker suporta Ubuntu Noble; `docker compose` é o plugin corrente:
   [Ubuntu install](https://docs.docker.com/engine/install/ubuntu/),
-  [Compose plugin](https://docs.docker.com/compose/install/linux/).
+  [Compose plugin](https://docs.docker.com/compose/install/linux/),
+  [Engine 29 release notes](https://docs.docker.com/engine/release-notes/29/),
+  [pacotes Noble amd64](https://download.docker.com/linux/ubuntu/dists/noble/pool/stable/amd64/)
+  e [chave pública](https://download.docker.com/linux/ubuntu/gpg).
+- Os pins F1.2b e SHA-256 de cada `.deb` foram lidos do índice oficial Noble
+  `amd64`; chave vendorizada é aceita somente com SHA-256
+  `1500c1f56fa9e26b9b8f42452a553675796ade0807cdce11975eb98170b3a570`,
+  fingerprint primária `9DC858229FC7DD38854AE2D88D81803C0EBFCD88` e subchave
+  `D3306A018370199E527AE7997EA0A9C3F273FCD8`.
+- Licenças upstream:
+  [Moby](https://github.com/moby/moby/blob/master/LICENSE),
+  [Docker CLI](https://github.com/docker/cli/blob/master/LICENSE),
+  [containerd](https://github.com/containerd/containerd/blob/main/LICENSE),
+  [Buildx](https://github.com/docker/buildx/blob/master/LICENSE) e
+  [Compose](https://github.com/docker/compose/blob/main/LICENSE).
 - Docker documenta que portas publicadas desviam antes das chains do UFW e que
   desativar iptables tende a quebrar networking:
   [packet filtering/firewalls](https://docs.docker.com/engine/network/packet-filtering-firewalls/).
