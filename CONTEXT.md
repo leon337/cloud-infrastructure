@@ -97,14 +97,18 @@ Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUD
 
 ## Ponto exato
 
-**SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO**.
+**SLICE_001_REAL_VPS_PREAPPLY_BACKUP_REVALIDATION_AND_APPLY_HUMAN_INTERACTIVE_SUDO**.
 
 F1.1 possui artefatos canônicos, desired state Ansible, schema/manifests, policy de
 secrets, CI e testes. O run commit-bound `31972460567` passou com 37 testes,
 ShellCheck, três syntax-checks Ansible, check mode sem mutação, apply descartável
 `changed=7`, segunda reconciliação `changed=0`, quatro recusas fail-closed,
 rollback e cleanup. Os resultados anteriores da fixture são somente históricos.
-Nada foi aplicado à VPS real; F1.1 permanece `PARTIAL/NOT_APPLIED`.
+O check mode privilegiado real passou em `2026-08-17T05:48:16Z` com quatro
+grupos de mudanças simulados, `failed=0`, `unreachable=0` e nenhuma mutação. A
+leitura pós-preview confirmou todos os objetos F1.1 ausentes e serviços
+essenciais invariantes. Nada foi aplicado à VPS real; F1.1 permanece
+`PARTIAL/NOT_APPLIED`.
 
 Em paralelo ao gate real F1.1, F1.2b Docker boundary concluiu desired state,
 apply/rollback, pin APT, helper de árvore e harness no desired-state commit
@@ -125,10 +129,9 @@ IPv4/IPv6, zonas protegidas, grants, perfis e evidência requerida, mas mantém
 tecnologia `UNRESOLVED`, ADR/integração `PENDING`, NODE-01 `NOT_EXECUTED` e o
 primeiro workload `BLOCKED`. Nenhum ruleset ou mecanismo de rede foi aplicado.
 
-O próximo passo de host continua sendo repetir prechecks read-only frescos e
-executar somente o check mode privilegiado F1.1 no NODE-01. LEANDRO digita a
-senha sudo diretamente no prompt `--ask-become-pass`; ela nunca é enviada ao
-agente ou registrada. O diff deve ser persistido de forma sanitizada e
-reconciliado antes de qualquer apply. Docker real, Management Network, produção
-e rotação não fazem parte desse passo; trabalho repo-only independente pode
-continuar sem converter `PENDING`/`NOT_EXECUTED` em `PASS`.
+O próximo passo de host é revalidar backup/concorrência em modo read-only e então
+executar o apply F1.1 no NODE-01. LEANDRO digita a senha sudo diretamente no
+prompt `--ask-become-pass`; ela nunca é enviada ao agente ou registrada. Depois
+do apply são obrigatórios segunda reconciliação `changed=0` e checks de
+invariância. Docker real, Management Network, produção e rotação não fazem parte
+desse passo.

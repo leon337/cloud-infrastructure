@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-17
-documentation_state: SLICE_001_REAL_GATE_F1_2B_REPO_READY_F1_2C_CONTRACT_LOCAL_PASS
+documentation_state: SLICE_001_REAL_CHECK_MODE_PASS_APPLY_GATE_F1_2B_REPO_READY_F1_2C_CONTRACT_LOCAL_PASS
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
@@ -30,7 +30,7 @@ project:
     future_platform_implementation: SLICE_001_PARTIAL_F1_2B_REPO_READY_F1_2C_CONTRACT_STARTED
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
+  next_exact_step: SLICE_001_REAL_VPS_PREAPPLY_BACKUP_REVALIDATION_AND_APPLY_HUMAN_INTERACTIVE_SUDO
 platform_discovery:
   status: CODEX_IMPLEMENTATION_IN_PROGRESS
   decision_source: state/platform-discovery.yaml
@@ -185,7 +185,7 @@ authorization:
   authority: LEANDRO
   phase_1_and_2_full_access: EXECUTED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
+  next_step: SLICE_001_REAL_VPS_PREAPPLY_BACKUP_REVALIDATION_AND_APPLY_HUMAN_INTERACTIVE_SUDO
   platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
   codex_technology_selection: AUTHORIZED_BY_Q40_D
   codex_implementation_mission: AUTHORIZED_BY_Q40_D
@@ -196,12 +196,12 @@ authorization:
 codex_execution:
   mission: docs/CODEX-EXECUTION-MISSION-001.md
   mission_acceptance: DONE
-  working_branch: codex/mission-001-foundations-f1-1
+  working_branch: codex/mission-001-foundations-f1-2b-preparation
   base_sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
   current_slice:
     id: SLICE-001
     name: FOUNDATIONS_F1_1
-    status: PARTIAL_DISPOSABLE_CI_PASS_REAL_VPS_NOT_APPLIED
+    status: PARTIAL_REAL_VPS_CHECK_MODE_PASS_APPLY_NOT_EXECUTED
     scope:
       - CANONICAL_ARCHITECTURE_ARTIFACTS
       - TECHNOLOGY_MAPPING
@@ -250,13 +250,15 @@ codex_execution:
       disposable_ubuntu_rollback: PASS_CI_RUN_31972460567_CLEAN
       disposable_ubuntu_cleanup: PASS_CI_RUN_31972460567_CONTAINER_NAMED_TEST_IMAGE_BUNDLE_REMOVED
       previous_disposable_fixture_results: HISTORICAL_ONLY_CHANGED_7_THEN_0_AND_CLEANUP_NOT_CURRENT_PROOF
-      real_vps_privileged_check_mode: NOT_EXECUTED
+      real_vps_privileged_check_mode: PASS_AT_2026_08_17T05_48_16Z_CHANGED_SIMULATED_4_FAILED_0_UNREACHABLE_0_NO_MUTATION
+      real_vps_privileged_check_mode_log_sha256: 370d53f6dd1c9138cc0bab7ce852edb32f05d4f8c0b7359d7fb372f8edd479d6
+      real_vps_post_check_mode_readonly_invariance: PASS_AT_2026_08_17T05_52_15Z
       real_vps_apply: NOT_EXECUTED
       real_vps_idempotence: NOT_EXECUTED
       real_vps_post_apply_invariance: NOT_EXECUTED
     human_interaction:
-      status: READY_FOR_PRIVILEGED_CHECK_MODE_WAITING_LEANDRO_INTERACTIVE_SUDO
-      reason: DISPOSABLE_CI_PASSED_PRIVILEGED_REAL_VPS_CHECK_MODE_REQUIRES_HUMAN_SUDO
+      status: PRIVILEGED_CHECK_MODE_PASS_READY_FOR_PREAPPLY_REVALIDATION_AND_APPLY_WAITING_LEANDRO_INTERACTIVE_SUDO
+      reason: REAL_VPS_CHECK_MODE_AND_POST_PREVIEW_INVARIANCE_PASSED_APPLY_REQUIRES_FRESH_BACKUP_GATE_AND_HUMAN_SUDO
       secret_must_not_be_sent_to_agent_or_logged: true
   repo_only_preparations:
     docker_runtime_f1_2b:

@@ -65,7 +65,7 @@ cd automation/ansible
 ../../.venv/bin/ansible-playbook playbooks/foundation.yml --syntax-check
 ```
 
-## Preview autorizado e apply posterior
+## Preview aprovado e apply posterior
 
 O check mode inicial simula o máximo possível, mas não substitui backup/rollback:
 
@@ -75,14 +75,16 @@ cd automation/ansible
   --ask-become-pass --check --diff
 ```
 
-O checkpoint corrente termina depois desse preview. Revisar e persistir o diff de
-forma sanitizada, confirmar `failed=0`, `unreachable=0` e ausência de mutação, e
-reconciliar evidence/state/checkpoint antes de qualquer apply. No primeiro check
-mode, account/directories dependentes do grupo simulado são deliberadamente
-pulados; portanto `changed=0` não é o resultado esperado do preview.
+O preview real foi executado em `2026-08-17T05:48:16Z`: `failed=0`,
+`unreachable=0`, quatro grupos de mudanças simulados e managed surface
+invariante. Evidence/state/checkpoint registram o hash sanitizado e a leitura
+pós-preview. No primeiro check mode, account/directories dependentes do grupo
+simulado foram deliberadamente pulados; portanto `changed=0` não era o resultado
+esperado do preview.
 
-O comando de apply abaixo é apenas referência para um checkpoint posterior; não
-deve ser executado como continuação automática do check mode:
+Antes do comando de apply abaixo, revalidar backup/checksum/cópia off-host,
+segunda sessão SSH, lock e ausência de concorrência. Não encadear automaticamente
+ao preview:
 
 ```bash
 ../../.venv/bin/ansible-playbook playbooks/foundation.yml \

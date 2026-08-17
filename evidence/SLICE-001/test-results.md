@@ -69,6 +69,37 @@ non-mutating preview.
 This evidence/state update follows run `31973125852`, changes no executable
 artifact and does not claim that the update commit itself was already tested.
 
+## Real NODE-01 privileged check mode
+
+Executed at `2026-08-17T05:48:16Z` from controller commit
+`c268d951657a42bd5d292b6dfd5810db7e657ceb` with `--check --diff` and human
+interactive sudo. The password was entered only in the terminal and was not
+persisted. Sanitized recap:
+
+```text
+localhost: ok=6 changed=0 unreachable=0 failed=0 skipped=0
+node-01:   ok=28 changed=4 unreachable=0 failed=0 skipped=22
+```
+
+The four Ansible changed task groups were simulated only: the external marker,
+foundation group, tmpfiles declaration, and the task installing both accounting
+slices. Dependency tasks intentionally skipped because check mode does not
+actually create the group, matching the runbook's expected first-preview
+behavior. The local log SHA-256 is
+`370d53f6dd1c9138cc0bab7ce852edb32f05d4f8c0b7359d7fb372f8edd479d6`.
+
+At `2026-08-17T05:52:15Z`, a post-preview read-only probe found the marker,
+account, group, persistent/runtime paths, tmpfiles declaration, both slice files
+and mutation lock all absent. Failed units remained zero; SSH, UFW, fail2ban,
+XRDP and LightDM remained active; LXD service/socket remained inactive; Docker
+and containerd remained absent. No `lxc` client command was used. This proves
+check-mode managed-surface invariance, not apply or idempotence.
+
+The evidence reconciliation passed the local strict suite with secret/history
+policy, local links, 34 YAML documents, two manifests, exact state cross-check,
+64 unit/negative tests, six shell syntax checks and six Ansible syntax checks.
+ShellCheck was unavailable on this controller and remains required in CI.
+
 ## Commit-bound disposable Ubuntu 24.04/systemd integration
 
 GitHub Actions run
@@ -133,7 +164,7 @@ repository during fixture build.
 Run `31972460567` proves implementation commit `edd2497d`; the later run
 `31973125852` proves checkpoint HEAD `da7df70`, both in the disposable CI
 fixture. This subsequent read-only evidence/state update changes no executable
-artifact and is not represented as having already passed another CI run. Neither
-run proves privileged check mode, apply, idempotence, restart behavior or
-rollback on the real VPS. Those real-VPS rows remain `NOT_EXECUTED` in
-`baseline.yaml` until LEANDRO performs interactive sudo authentication.
+artifact and is not represented as having already passed another CI run. Those
+CI runs do not prove real-node behavior; the separately recorded interactive
+preview proves only privileged check mode without mutation. Apply, idempotence,
+post-apply invariance and rollback on the real VPS remain `NOT_EXECUTED`.

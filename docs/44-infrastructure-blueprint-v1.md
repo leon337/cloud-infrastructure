@@ -60,7 +60,7 @@ Depois de baseline medido:
 
 | Capability | Componente V1 | Deployment inicial | Estado |
 |---|---|---|---|
-| Desired state | Ansible Core 2.21.3 + JSON Schema | controller → SSH/sudo humano | `F1_1_PARTIAL_CI_PASS_REAL_VPS_NOT_APPLIED; NEXT_PRIVILEGED_CHECK_MODE` |
+| Desired state | Ansible Core 2.21.3 + JSON Schema | controller → SSH/sudo humano | `F1_1_PARTIAL_REAL_CHECK_MODE_PASS_APPLY_NOT_EXECUTED` |
 | Management Network | Tailscale com grants explícitos | serviço host | `WAITING_HUMAN_GATE` |
 | Container runtime | Docker CE 29.7.2 + containerd.io 2.3.3 + Buildx 0.36.1 + Compose 5.4.0 | serviço host, root-only, bridge default ausente, sem workload/porta | `F1_2B_REPO_DESIRED_STATE_LOCAL_STATIC_PASS; CI_PENDING; REAL_VPS_NOT_EXECUTED; BLOCKED_BY_F1_1` |
 | Network/egress | nftables/`DOCKER-USER` + DNS/egress mechanism a selecionar | host + bridges segregadas | `F1_2C_REPO_CONTRACT_LOCAL_PASS; TECHNOLOGY_ADR_AND_DYNAMIC_PROOF_PENDING; FIRST_WORKLOAD_BLOCKED` |
@@ -184,10 +184,11 @@ Cada seta é dependency, não autorização para executar o próximo slice sem o
 checkpoint do anterior.
 
 Para F1.1, o run `31972460567` validou o commit `edd2497d` na VM descartável. O
-checkpoint corrente autoriza somente check mode privilegiado no NODE-01 com sudo
-humano; não autoriza inferir apply, idempotência ou invariância na VPS.
+check mode privilegiado no NODE-01 passou sem mutação em
+`2026-08-17T05:48:16Z`. O checkpoint corrente exige precheck de backup e
+concorrência antes do apply humano; idempotência e invariância continuam abertas.
 
 F1.2b concluiu o desired state repo-only no commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`
-e passou a suíte estática local; CI/integração descartável ainda são `PENDING` e
-nenhuma execução ocorreu na VPS. Mesmo após CI verde, o gate F1.1 acima continua
+e passou CI/integração descartável no run `31996516019`; nenhuma execução ocorreu
+na VPS. Mesmo com CI verde, o gate F1.1 acima continua
 bloqueando check/apply F1.2b real; nenhum atalho de prazo altera essa dependência.

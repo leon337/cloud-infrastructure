@@ -18,7 +18,7 @@ Substitui como roadmap corrente as antigas fases provisórias F3–F10.
 | Slice | Resultado | Estado | Gate/dependência de saída |
 |---|---|---|---|
 | S0 Recovery | GitHub/VPS/Q1–Q40 reconciliados | `DONE` | report canônico e drift registrado |
-| F1.1 Foundations declarativas | Ansible/schema/namespaces/contas/slices accounting | `PARTIAL` | commit `edd2497d`/run `31972460567` passou estática e integração descartável; executar somente check mode privilegiado humano no NODE-01 e reconciliar o diff antes de qualquer apply |
+| F1.1 Foundations declarativas | Ansible/schema/namespaces/contas/slices accounting | `PARTIAL` | commit `edd2497d`/run `31972460567` passou estática e integração descartável; check mode real passou sem mutação em `2026-08-17T05:48:16Z`; revalidar backup/concorrência antes do apply humano, depois provar `changed=0` e invariância |
 | F1.2a Management Network | administração privada por identidade/dispositivo | `WAITING_HUMAN_GATE` | conta/plano/policy/onboarding e recovery testados |
 | F1.2b Docker boundary | Docker CE/Compose pinados, root-only, bridge default ausente, sem porta/workload | `PARTIAL` | desired state `7015c80`; commit `fa66f10`/run `31996516019` passou CI descartável completa; NODE-01 `NOT_EXECUTED` e bloqueado até F1.1 reconciliado; não satisfaz Q20/Q34 |
 | F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `CONTRACT_STARTED` | contrato Q20/Q34 local-static `PASS` no commit `b4cbeb0`; tecnologia/ADR, implementation, F1.2b, matriz dinâmica allow/deny e rollback continuam `PENDING`; bloqueia primeiro container |

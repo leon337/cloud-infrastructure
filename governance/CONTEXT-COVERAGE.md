@@ -22,12 +22,12 @@ Esta matriz impede lacunas silenciosas de memória.
 | Findings | `findings/` | SSH/LXD/sudo resolvidos; backup mitigado/aberto; histórico preservado |
 | Recovery | `recovery/RECOVERY-PLAYBOOK.md` | VNC, SSH, XRDP e backup proporcional cobertos; reconstrução ampla pendente |
 | Runbooks | `runbooks/` | acesso/recovery e Foundations F1.1 cobertos |
-| Evidência de implementação | `evidence/` | Desired state, suíte estática e integração descartável registrados; preview/apply reais explicitamente pendentes |
+| Evidência de implementação | `evidence/` | Desired state e integração descartável registrados; preview real F1.1 passou sem mutação; apply/idempotência/invariância pendentes |
 | Histórico de sessões | `history/` | auditorias, F1/F2 e Mission Acceptance/F1.1 preservadas |
 | Estado imediato | `CHECKPOINT.md` | coberto |
 | Estado legível por máquina | `state/current.yaml` | coberto |
 | Evidências visuais | `assets/README.md` | SSH e Cloud Workstation sanitizados, separados de conceitos |
-| Continuidade universal | `CONTEXT.md` + `governance/PUC-v1.md` + `governance/CONTINUITY-VALIDATION-2026-08-16-MISSION-001.md` | PUC ativo; estado corrente auditado independentemente, recuperável e aguardando HUMAN_GATE do preview real |
+| Continuidade universal | `CONTEXT.md` + `governance/PUC-v1.md` + `governance/CONTINUITY-VALIDATION-2026-08-16-MISSION-001.md` | PUC ativo; estado recuperável, preview real registrado e apply humano ainda aberto |
 
 ## Regra de auditoria
 

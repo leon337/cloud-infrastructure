@@ -17,7 +17,8 @@ Atualizado em 2026-08-17 após validação repo-only do desired state
 - F1.1: commit de implementação
   `edd2497d657cc9bc35952f5dfc71090a18dade53` aprovado no GitHub Actions run
   `31972460567`, inclusive VM descartável privilegiada; VPS real **NOT_APPLIED**
-  e slice `PARTIAL`, pronto para check mode privilegiado com interação humana.
+  e slice `PARTIAL`; check mode real passou sem mutação em
+  `2026-08-17T05:48:16Z`, mas apply/idempotência/invariância seguem pendentes.
 - F1.2b: apply/rollback, pin APT, preflight, helper de árvore e harness
   concluídos a partir do desired-state commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`;
   commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` e GitHub run
@@ -139,9 +140,9 @@ foi executado no host nesta atualização.
 
 ## Guardrails do próximo passo
 
-- a VM GitHub descartável já provou a remediação F1.1 para `edd2497d`; o próximo
-  passo permitido no host real é somente check mode privilegiado F1.1;
-- LEANDRO digita sudo diretamente no check mode; senha nunca é
+- a VM GitHub descartável provou a remediação F1.1 para `edd2497d` e o check
+  mode real passou com `failed=0`, `unreachable=0` e nenhuma mutação;
+- LEANDRO digita sudo diretamente nas operações humanas; senha nunca é
   enviada/registrada;
 - manter segunda sessão SSH e revalidar concorrência antes do apply;
 - usar `runbooks/platform-foundation.md`;
@@ -158,14 +159,14 @@ foi executado no host nesta atualização.
 
 ## Próximo passo exato
 
-**SLICE_001_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO**
+**SLICE_001_REAL_VPS_PREAPPLY_BACKUP_REVALIDATION_AND_APPLY_HUMAN_INTERACTIVE_SUDO**
 
-Executar apenas o check mode F1.1 na VPS com `--ask-become-pass`, com LEANDRO
-digitando a senha sudo diretamente e sem registro. Inspecionar o diff e reconciliar
-evidência antes de qualquer apply. Até que apply, segunda reconciliação e
-invariance checks passem na VPS, F1.1 permanece `PARTIAL/NOT_APPLIED`, nunca
-`DONE`. Docker/network F1.2 reais, Management Network, produção e rotação não
-fazem parte desse passo.
+Revalidar backup e ausência de concorrência, então executar o apply F1.1 na VPS
+com `--ask-become-pass`, com LEANDRO digitando a senha sudo diretamente e sem
+registro. Em seguida exigir segunda reconciliação `changed=0` e invariance checks.
+Até essas provas passarem, F1.1 permanece `PARTIAL/NOT_APPLIED`, nunca `DONE`.
+Docker/network F1.2 reais, Management Network, produção e rotação não fazem parte
+desse passo.
 
 ## Architecture/Technology Mapping — gaps condicionais
 

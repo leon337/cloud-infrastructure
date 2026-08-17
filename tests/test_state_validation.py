@@ -94,6 +94,27 @@ class StateCrosscheckTests(unittest.TestCase):
     def test_current_documents_pass_crosscheck(self):
         self.assertEqual(self.errors_for(), [])
 
+    def test_real_check_mode_overclaim_or_drift_is_rejected(self):
+        baseline = copy.deepcopy(self.baseline)
+        baseline["apply"]["privileged_check_mode_evidence"]["remote_mutation"] = True
+        self.assertTrue(
+            any(
+                "claims a remote mutation" in error
+                for error in self.errors_for(baseline=baseline)
+            )
+        )
+
+        components = copy.deepcopy(self.components)
+        components["platform_components"]["foundation"]["ci_validation"][
+            "real_vps_privileged_check_mode"
+        ] = "PASS_WITHOUT_TIMESTAMP"
+        self.assertTrue(
+            any(
+                "check-mode evidence differs" in error
+                for error in self.errors_for(components=components)
+            )
+        )
+
     def test_replacing_q1_with_q41_is_rejected(self):
         discovery = copy.deepcopy(self.discovery)
         discovery["decisions"].pop("q1")

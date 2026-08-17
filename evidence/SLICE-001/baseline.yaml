@@ -11,7 +11,7 @@ git:
   ahead: 0
   behind: 0
   worktree_clean: true
-  working_branch: codex/mission-001-foundations-f1-1
+  working_branch: codex/mission-001-foundations-f1-2b-preparation
   reviewed_delta_commit: edd2497d657cc9bc35952f5dfc71090a18dade53
 ci:
   provider: GitHub_Actions
@@ -131,7 +131,37 @@ vps:
     archive_integrity_and_off_host_copy: NOT_REVALIDATED_WITHOUT_PRIVILEGE_REQUIRED_BEFORE_APPLY_NOT_READ_ONLY_PREVIEW
     remote_mutation: false
 apply:
-  privileged_check_mode: NOT_EXECUTED
+  privileged_check_mode: PASS_REAL_VPS_CHECK_MODE_FAILED_0_UNREACHABLE_0_MANAGED_SURFACE_INVARIANT
+  privileged_check_mode_evidence:
+    executed_at_utc: "2026-08-17T05:48:16Z"
+    controller_commit: c268d951657a42bd5d292b6dfd5810db7e657ceb
+    command_mode: ANSIBLE_CHECK_DIFF_HUMAN_INTERACTIVE_SUDO
+    sanitized_local_log_sha256: 370d53f6dd1c9138cc0bab7ce852edb32f05d4f8c0b7359d7fb372f8edd479d6
+    localhost_recap:
+      ok: 6
+      changed: 0
+      unreachable: 0
+      failed: 0
+      skipped: 0
+    node_01_recap:
+      ok: 28
+      changed_simulated_task_groups: 4
+      unreachable: 0
+      failed: 0
+      skipped_dependency_tasks: 22
+    simulated_changes:
+      - EXTERNAL_MANAGEMENT_MARKER
+      - FOUNDATION_GROUP
+      - TMPFILES_DECLARATION
+      - TWO_SYSTEMD_ACCOUNTING_SLICES
+    password_or_private_key_persisted: false
+    remote_mutation: false
+    post_preview_readonly_observed_at_utc: "2026-08-17T05:52:15Z"
+    post_preview_foundation_objects_account_group_and_lock: ALL_ABSENT
+    post_preview_failed_units: 0
+    post_preview_core_services: PASS_EXPECTED
+    post_preview_lxd_daemon_and_socket: INACTIVE
+    post_preview_docker_and_containerd: ABSENT
   privileged_apply: NOT_EXECUTED
   idempotence_reconcile: NOT_EXECUTED
   post_apply_invariance: NOT_EXECUTED

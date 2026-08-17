@@ -24,6 +24,15 @@ F1_2B_TESTED_COMMIT = "fa66f1049bac5540a5b12219186a421cc39dcbc0"
 F1_2B_CI_RUN_ID = 31996516019
 F1_2C_CONTRACT_COMMIT = "b4cbeb066605754d538ff5abe2d294f0759d6f59"
 F1_2C_CONTRACT_PATH = "platform/network/f1-2c-contract.yaml"
+F1_1_REAL_CHECK_MODE_CURRENT = (
+    "PASS_AT_2026_08_17T05_48_16Z_CHANGED_SIMULATED_4_"
+    "FAILED_0_UNREACHABLE_0_NO_MUTATION"
+)
+F1_1_REAL_CHECK_MODE_SHORT = "PASS_AT_2026_08_17T05_48_16Z_NO_MUTATION"
+F1_1_REAL_CHECK_MODE_EVIDENCE = (
+    "PASS_REAL_VPS_CHECK_MODE_FAILED_0_UNREACHABLE_0_"
+    "MANAGED_SURFACE_INVARIANT"
+)
 EXPECTED_DECISIONS = {
     f"q{number}": "D" if number in {5, 11, 28, 40} else "C"
     for number in range(1, 41)
@@ -444,8 +453,38 @@ def crosscheck_errors(
             network_contract,
         )
     )
+    real_check_mode_values = {
+        "current": current_validation["real_vps_privileged_check_mode"],
+        "discovery": discovery["implementation"]["real_vps_privileged_check_mode"],
+        "components": components["platform_components"]["foundation"][
+            "ci_validation"
+        ]["real_vps_privileged_check_mode"],
+        "evidence": baseline["apply"]["privileged_check_mode"],
+    }
+    expected_real_check_mode_values = {
+        "current": F1_1_REAL_CHECK_MODE_CURRENT,
+        "discovery": F1_1_REAL_CHECK_MODE_SHORT,
+        "components": F1_1_REAL_CHECK_MODE_SHORT,
+        "evidence": F1_1_REAL_CHECK_MODE_EVIDENCE,
+    }
+    for location, expected in expected_real_check_mode_values.items():
+        if real_check_mode_values[location] != expected:
+            errors.append(f"F1.1 real check-mode evidence differs at {location}")
+
+    check_evidence = baseline["apply"]["privileged_check_mode_evidence"]
+    if check_evidence["remote_mutation"] is not False:
+        errors.append("F1.1 real check mode claims a remote mutation")
+    if check_evidence["password_or_private_key_persisted"] is not False:
+        errors.append("F1.1 real check mode persisted secret material")
+    node_recap = check_evidence["node_01_recap"]
+    if node_recap["failed"] != 0 or node_recap["unreachable"] != 0:
+        errors.append("F1.1 real check mode recap is not clean")
+    if check_evidence["post_preview_foundation_objects_account_group_and_lock"] != (
+        "ALL_ABSENT"
+    ):
+        errors.append("F1.1 post-preview managed surface is not invariant")
+
     for key in (
-        "real_vps_privileged_check_mode",
         "real_vps_apply",
         "real_vps_idempotence",
         "real_vps_post_apply_invariance",
@@ -454,7 +493,6 @@ def crosscheck_errors(
             errors.append(f"{key} changed without pre-apply evidence reconciliation")
 
     for key in (
-        "privileged_check_mode",
         "privileged_apply",
         "idempotence_reconcile",
         "post_apply_invariance",
