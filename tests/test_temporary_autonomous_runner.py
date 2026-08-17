@@ -175,6 +175,29 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn("if ip -o link show", self.runner)
         self.assertIn("if ss -Hlnptu", self.runner)
 
+    def test_unprivileged_tests_trust_only_the_exact_root_owned_snapshot(self):
+        self.assertIn("GIT_CONFIG_COUNT=1", self.runner)
+        self.assertIn("GIT_CONFIG_KEY_0=safe.directory", self.runner)
+        self.assertIn('GIT_CONFIG_VALUE_0="$REPO_ROOT"', self.runner)
+        self.assertNotIn("safe.directory '*'", self.runner)
+
+    def test_reviewed_apply_updates_only_the_exact_known_runner(self):
+        operation = (
+            ROOT / "automation" / "mission-001" / "operations" / "apply"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "OLD_RUNNER_SHA256=34cdd4b132b70f6b242413ba769cd8028aad6b083f8a5e2d15f1617a332e3be2",
+            operation,
+        )
+        self.assertIn(
+            "DESIRED_RUNNER_SHA256=bb25ea6a952872881f09ed4fe150b7549059ca5d0b0ea0feda1fc08563cd0eef",
+            operation,
+        )
+        self.assertIn("install -o root -g root -m 0755", operation)
+        self.assertNotIn("systemctl", operation)
+        self.assertNotIn("/etc/sudoers", operation)
+        self.assertNotIn("docker", operation.lower())
+
     def test_no_password_capture_or_persistence_mechanism_exists(self):
         lowered = self.bootstrap.lower()
         for forbidden in (

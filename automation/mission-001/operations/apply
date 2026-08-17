@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly EXPECTED_MISSION=CODEX-EXECUTION-MISSION-001
+readonly EXPECTED_HOST=vmi3506102
+readonly EXPECTED_MACHINE_ID_SHA256=27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
+readonly RUNNER_PATH=/usr/local/sbin/codex-mission-001-runner
+readonly OLD_RUNNER_SHA256=34cdd4b132b70f6b242413ba769cd8028aad6b083f8a5e2d15f1617a332e3be2
+readonly DESIRED_RUNNER_SHA256=bb25ea6a952872881f09ed4fe150b7549059ca5d0b0ea0feda1fc08563cd0eef
+
+refuse() {
+  printf 'MISSION_APPLY_REFUSED reason=%s\n' "$1" >&2
+  exit 2
+}
+
+[[ $EUID -eq 0 ]] || refuse root_required
+[[ ${MISSION_ID:-} == "$EXPECTED_MISSION" ]] || refuse wrong_mission
+[[ ${MISSION_REPOSITORY:-} == /opt/codex-mission-001/repository ]] ||
+  refuse wrong_repository
+[[ $(hostname) == "$EXPECTED_HOST" ]] || refuse wrong_host
+machine_id_sha256=$(tr -d '\n' </etc/machine-id | sha256sum | awk '{print $1}')
+[[ $machine_id_sha256 == "$EXPECTED_MACHINE_ID_SHA256" ]] || refuse wrong_machine_id
+[[ -f $RUNNER_PATH && ! -L $RUNNER_PATH ]] || refuse runner_missing_or_unsafe
+[[ $(stat -c '%U:%G:%a:%h' "$RUNNER_PATH") == root:root:755:1 ]] ||
+  refuse runner_metadata_drift
+
+current_sha256=$(sha256sum "$RUNNER_PATH" | awk '{print $1}')
+if [[ $current_sha256 == "$DESIRED_RUNNER_SHA256" ]]; then
+  printf 'MISSION_APPLY=PASS action=runner_already_current\n'
+  exit 0
+fi
+[[ $current_sha256 == "$OLD_RUNNER_SHA256" ]] || refuse runner_content_drift
+
+bootstrap="$MISSION_REPOSITORY/scripts/bootstrap_mission_001_autonomous_runner.sh"
+[[ -f $bootstrap && ! -L $bootstrap ]] || refuse bootstrap_source_missing
+[[ $(stat -c '%U:%G:%h' "$bootstrap") == root:root:1 ]] ||
+  refuse bootstrap_source_metadata_drift
+
+payload=$(mktemp /run/codex-mission-001-runner-update.XXXXXX)
+cleanup() {
+  rm -f -- "$payload"
+}
+trap cleanup EXIT
+
+awk '
+  $0 == "cat >\"$workdir/runner\" <<\047RUNNER\047" { found=1; next }
+  found && $0 == "RUNNER" { ended=1; exit }
+  found { print }
+  END { if (!found || !ended) exit 2 }
+' "$bootstrap" >"$payload" || refuse runner_payload_extraction_failed
+bash -n "$payload" || refuse runner_payload_syntax_invalid
+payload_sha256=$(sha256sum "$payload" | awk '{print $1}')
+[[ $payload_sha256 == "$DESIRED_RUNNER_SHA256" ]] || refuse runner_payload_hash_mismatch
+
+install -o root -g root -m 0755 "$payload" "$RUNNER_PATH"
+installed_sha256=$(sha256sum "$RUNNER_PATH" | awk '{print $1}')
+[[ $installed_sha256 == "$DESIRED_RUNNER_SHA256" ]] || refuse runner_install_verify_failed
+printf 'MISSION_APPLY=PASS action=runner_updated sha256=%s\n' "$installed_sha256"
