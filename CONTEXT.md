@@ -97,7 +97,7 @@ Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUD
 
 ## Ponto exato
 
-**SLICE_002B_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO**.
+**SLICE_002B_REAL_VPS_APPLY_HUMAN_INTERACTIVE_SUDO**.
 
 F1.1 possui artefatos canônicos, desired state Ansible, schema/manifests, policy de
 secrets, CI e testes. O run commit-bound `31972460567` passou com 37 testes,
@@ -118,8 +118,10 @@ O commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` passou no GitHub
 Actions run `31996516019`: check sem mutação, apply `changed=13`, reconciliação e
 restart `changed=0`, sete recusas, rollback e cleanup. Isso ocorreu somente na VM
 descartável; Docker/containerd continuam ausentes no último baseline real e o
-o check mode real F1.2b está liberado. O apply Docker continua separado do
-preview e nenhum workload é autorizado antes de F1.2c.
+o check mode real F1.2b passou sem mutação em `2026-08-17T08:37:46Z`. A leitura
+pós-preview confirmou Docker/containerd ainda ausentes e serviços essenciais
+invariantes. O apply Docker continua separado e nenhum workload é autorizado
+antes de F1.2c.
 
 O menor avanço independente seguinte criou o contrato repo-only F1.2c em
 `platform/network/f1-2c-contract.yaml`, commit
@@ -129,7 +131,7 @@ IPv4/IPv6, zonas protegidas, grants, perfis e evidência requerida, mas mantém
 tecnologia `UNRESOLVED`, ADR/integração `PENDING`, NODE-01 `NOT_EXECUTED` e o
 primeiro workload `BLOCKED`. Nenhum ruleset ou mecanismo de rede foi aplicado.
 
-O próximo passo de host é executar somente o check mode F1.2b no NODE-01, com
-LEANDRO digitando sudo diretamente. Revisar o delta APT/systemd/Docker antes de
-qualquer apply. O primeiro workload continua bloqueado por F1.2c; Management
-Network, produção e rotação não fazem parte desse passo.
+O próximo passo de host é executar o apply vazio F1.2b no NODE-01, com LEANDRO
+digitando sudo diretamente, seguido imediatamente de idempotência e invariância.
+O primeiro workload continua bloqueado por F1.2c; Management Network, produção e
+rotação não fazem parte desse passo.

@@ -4,13 +4,14 @@ Escopo: instalar Docker CE/CLI, containerd, Buildx e Compose em DEV/lab, sem
 workload, imagem, volume, bridge, porta publicada ou acesso não-root ao socket.
 Não inclui F1.2c, Management Network nem produção.
 
-Status operacional: **REPO DESIRED STATE LOCAL-STATIC PASS; CI PENDING;
-NODE-01 NOT_EXECUTED**.
+Status operacional: **REPO/CI/DISPOSABLE E REAL CHECK MODE PASS; NODE-01 APPLY
+NOT_EXECUTED**.
 
 ## Gates e guardrails
 
-- F1.1 foi aplicado, reconciliado com `changed=0`, documentado e aprovado; isso
-  libera somente o check mode F1.2b no NODE-01 até nova reconciliação;
+- F1.1 foi aplicado, reconciliado com `changed=0`, documentado e aprovado;
+  o check mode F1.2b passou sem mutação; apply exige reconciliação canônica do
+  preview e nova autenticação sudo humana;
 - o primeiro workload, inclusive fixture no NODE-01, depende de F1.2c;
 - executar somente no alvo DEV `node-01`, com segunda sessão SSH funcional;
 - autenticação sudo é digitada diretamente por LEANDRO; nunca usar senha em
@@ -59,7 +60,8 @@ nunca conteúdo secreto de config do host.
 
 ## Preview e apply no NODE-01
 
-F1.1 está concluído e CI está verde; executar primeiro somente o preview:
+F1.1 está concluído e CI está verde. O preview abaixo passou em
+`2026-08-17T08:37:46Z` sem mutação:
 
 ```bash
 cd automation/ansible

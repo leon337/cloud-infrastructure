@@ -256,6 +256,16 @@ class StateCrosscheckTests(unittest.TestCase):
             )
         )
 
+        docker_baseline = copy.deepcopy(self.docker_baseline)
+        docker_baseline["validation"]["real_vps_check_mode"] = "NOT_EXECUTED"
+        cases.append(
+            (
+                "real-check-mode",
+                {"docker_baseline": docker_baseline},
+                "real check-mode evidence",
+            )
+        )
+
         discovery = copy.deepcopy(self.discovery)
         discovery["implementation"]["f1_2b_repo_only"][
             "first_workload"

@@ -2,7 +2,7 @@ schema_version: 1
 slice: SLICE-002B
 classification: SANITIZED_CI_EVIDENCE_NOT_OPERATIONAL
 generated_at_utc: "2026-08-17T05:09:14Z"
-status: REPO_DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_NOT_EXECUTED
+status: REPO_DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_CHECK_MODE_PASS_APPLY_NOT_EXECUTED
 git:
   repository: leon337/cloud-infrastructure
   working_branch: codex/mission-001-foundations-f1-2b-preparation
@@ -13,6 +13,9 @@ git:
   ci_run_id: 31996516019
   ci_conclusion: PASS
   ci_scope: COMMIT_BOUND_IMPLEMENTATION_DELTA_NOT_SUBSEQUENT_EVIDENCE_UPDATE
+  latest_guard_correction_commit: 9e9ae2831c18d7887b2e147870e4f700e1ff1a8c
+  latest_guard_correction_ci_run_id: 32007871491
+  latest_guard_correction_ci_conclusion: PASS
   remote_branch: PUBLISHED
 dependency:
   f1_1_real_vps_status: DONE
@@ -20,7 +23,7 @@ dependency:
   f1_1_apply: PASS_CHANGED_7
   f1_1_idempotence: PASS_CHANGED_0
   f1_1_post_apply_invariance: PASS
-  f1_2b_real_vps_gate: READY_FOR_PRIVILEGED_CHECK_MODE
+  f1_2b_real_vps_gate: CHECK_MODE_PASS_READY_FOR_REVIEWED_APPLY
   first_workload_gate: BLOCKED_UNTIL_F1_2C_NETWORK_ENFORCEMENT_VALIDATED
 selection:
   repository: https://download.docker.com/linux/ubuntu
@@ -153,8 +156,13 @@ validation:
       ignored_idle_shutdown_watchers: 1
     remediation: PROCESS_CLASSIFIER_EXCLUDES_ONLY_IDLE_SHUTDOWN_WAIT_FOR_SIGNAL
     remediation_local_tests: PASS_66
-    remediation_ci: PENDING
-  real_vps_check_mode: NOT_EXECUTED
+    remediation_ci: PASS_RUN_32007871491_COMMIT_9E9AE28
+  real_vps_check_mode: PASS_AT_2026_08_17T08_37_46Z_NO_MUTATION
+  real_vps_check_mode_recap:
+    localhost: OK_9_CHANGED_0_FAILED_0_UNREACHABLE_0
+    node_01: OK_43_CHANGED_SIMULATED_1_FAILED_0_UNREACHABLE_0
+  real_vps_check_mode_log_sha256: 425ad91cc3d81b84fe7218bea9064a21efd2b5372c6ebed6e82280b1ffa0ef4b
+  real_vps_post_check_mode_invariance: PASS_AT_2026_08_17T08_38_33Z
   real_vps_apply: NOT_EXECUTED
   real_vps_idempotence: NOT_EXECUTED
   real_vps_post_apply_invariance: NOT_EXECUTED

@@ -1,7 +1,7 @@
 # 47 — Docker runtime boundary F1.2b checkpoint
 
 Data: 2026-08-17
-Status: **REPO DESIRED STATE + DISPOSABLE CI PASS — REAL VPS NOT_EXECUTED**
+Status: **REPO/DISPOSABLE CI + REAL CHECK MODE PASS — APPLY NOT_EXECUTED**
 Ambiente autorizado: **DEV/lab somente**
 
 ## Objetivo
@@ -13,10 +13,11 @@ serviço de plataforma, não cria workload e não satisfaz Q20/Q34.
 ## Estado recuperado e dependências
 
 - base da branch: `e4503af12bf81806e8c2508eb108c4dc4c264784`;
-- o último baseline real registrou Docker/containerd ausentes;
-- F1.1 passou em VM descartável, mas check mode privilegiado, apply, segunda
-  reconciliação e invariância no NODE-01 permanecem `NOT_EXECUTED`;
-- por isso F1.2b pode avançar em código/CI, mas check/apply real está bloqueado;
+- F1.1 está `DONE` no NODE-01 com apply, idempotência e invariância;
+- o preview real F1.2b passou sem mutação em `2026-08-17T08:37:46Z`;
+- a leitura posterior confirmou Docker/containerd ainda ausentes e serviços
+  essenciais invariantes; apply, idempotência e invariância permanecem
+  `NOT_EXECUTED`;
 - F1.2c network enforcement bloqueia o primeiro container no NODE-01.
 
 O desired state nasceu no commit
@@ -24,8 +25,7 @@ O desired state nasceu no commit
 pin APT, helper de árvore, harness e CI foram exercitados no commit publicado
 `fa66f1049bac5540a5b12219186a421cc39dcbc0`, run `31996516019`.
 
-Nenhuma inspeção nova ou mutação foi executada na VPS para produzir este
-checkpoint.
+O preview foi somente `--check --diff`; nenhuma mutação Docker foi executada.
 
 ## Seleção congelada
 
@@ -87,10 +87,11 @@ saem antes do daemon-reload; o marker é o último objeto removido.
 |---|---|
 | Decisão, pins e boundary | `RECORDED` |
 | Desired state integrado | `PASS_LOCAL_COMMIT_7015C80` |
-| Local static/fail-closed suite final | `PASS_63_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX` |
+| Local static/fail-closed suite final | `PASS_66_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX` |
 | CI GitHub commit-bound | `PASS_RUN_31996516019_COMMIT_FA66F10` |
 | Disposable check/apply/changed=0/restart/rollback | `PASS` |
-| NODE-01 check/apply/changed=0/invariância | `NOT_EXECUTED` |
+| NODE-01 check mode | `PASS_NO_MUTATION` |
+| NODE-01 apply/changed=0/invariância | `NOT_EXECUTED` |
 | Q20/Q34 network enforcement | `BLOCKED_BY_F1_2C` |
 
 `PENDING`/`NOT_EXECUTED` não são `PASS`. VM descartável não prova firewall do
@@ -99,8 +100,9 @@ host real, e instalação vazia não prova isolamento de workload.
 ## Próximo passo exato
 
 1. preservar a evidência commit-bound `fa66f10`/run `31996516019`;
-2. manter NODE-01 bloqueado até F1.1 ser aplicado/reconciliado/checkpointed;
-3. executar somente o preview real F1.2b após novo checkpoint/human sudo;
+2. executar o apply vazio F1.2b somente após reconciliar este preview e obter
+   sudo humano interativo;
+3. validar idempotência e invariância antes de promover o slice;
 4. usar o contrato F1.2c `b4cbeb0` para selecionar o mecanismo em ADR e provar a
    matriz dinâmica antes do primeiro container.
 

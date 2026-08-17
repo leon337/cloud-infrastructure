@@ -77,7 +77,7 @@ platform_components:
     technology: Docker_Engine_and_Compose_plugin
     selected_version: Docker_Engine_29.7.2
     observed_version: ABSENT
-    lifecycle: SELECTED_REPO_DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_VPS_CHECK_MODE_READY
+    lifecycle: SELECTED_REPO_DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_VPS_CHECK_MODE_PASS_APPLY_READY
     decision: DEC-007
     source:
       repository: https://download.docker.com/linux/ubuntu
@@ -121,11 +121,11 @@ platform_components:
       future_workload_slice: cloud-workloads.slice
     validation:
       desired_state_commit: 7015c80759a797bcb141773b79cd9b95f6fbecf1
-      local_static: PASS_63_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX
+      local_static: PASS_66_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX
       local_scope: UNPRIVILEGED_REPO_ONLY_NO_PLAYBOOK_TARGET_EXECUTION
       ci: PASS_RUN_31996516019_COMMIT_FA66F10
       disposable_vm: PASS_CHECK_APPLY_IDEMPOTENCE_SECURITY_RESTART_REFUSALS_ROLLBACK_CLEANUP
-      real_vps_check_mode: NOT_EXECUTED
+      real_vps_check_mode: PASS_AT_2026_08_17T08_37_46Z_NO_MUTATION
       real_vps_apply: NOT_EXECUTED
       first_workload: BLOCKED_BY_F1_2C
   capability_core:

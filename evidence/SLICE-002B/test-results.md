@@ -1,6 +1,6 @@
 # SLICE-002B test results
 
-Status: **CI/DISPOSABLE PASS — VPS NOT_EXECUTED**
+Status: **CI/DISPOSABLE + REAL CHECK MODE PASS — APPLY NOT_EXECUTED**
 
 ## Resultado corrente
 
@@ -18,7 +18,7 @@ Status: **CI/DISPOSABLE PASS — VPS NOT_EXECUTED**
 | Ansible syntax | `PASS_6_CORE_2_21_3` | wheel oficial verificado, extraído só em `/tmp` e removido |
 | GitHub Actions | `PASS_32004951916` | commit `83166c37a7fa66abd442a04073c5f6d5a3df00c4` |
 | VM descartável | `PASS` | check limpo, apply `changed=13`, reconcilições `changed=0`, sete recusas e rollback limpo |
-| NODE-01 | `NOT_EXECUTED` | F1.1 DONE; check mode liberado, apply ainda bloqueado pelo review do preview |
+| NODE-01 | `CHECK_MODE_PASS_NO_MUTATION` | apply ainda `NOT_EXECUTED`; primeiro workload bloqueado por F1.2c |
 
 O desired state nasceu no commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`.
 A correção de canonicalização foi exercitada no commit
@@ -81,7 +81,21 @@ exclusivamente esse vigia ocioso e continua recusando `apt`, `apt-get`, `dpkg`,
 `apt.systemd.daily` e `unattended-upgrade` reais. O mesmo guard é usado no apply
 e rollback. Teste direto read-only no NODE-01 retornou `active=[]` e
 `ignored_idle_shutdown_watchers=1`; a suíte local passou com 66 testes. Novo
-preview continua pendente até CI verde dessa correção.
+preview continuava pendente até CI verde dessa correção.
+
+## Preview real aprovado
+
+O guard corrigido passou na CI Docker `32007871491` e Foundation `32007871496`,
+commit `9e9ae2831c18d7887b2e147870e4f700e1ff1a8c`. Em
+`2026-08-17T08:37:46Z`, o preview real terminou com `localhost ok=9 changed=0
+failed=0` e `node-01 ok=43 changed=1 failed=0 unreachable=0`; o único changed é
+a mensagem declarativa de plano do check mode. O log sanitizado tem SHA-256
+`425ad91cc3d81b84fe7218bea9064a21efd2b5372c6ebed6e82280b1ffa0ef4b`.
+
+A leitura pós-preview em `2026-08-17T08:38:33Z` confirmou Docker/containerd,
+marker e lock ausentes; nenhum listener 2375/2376; serviços SSH/UFW/fail2ban,
+XRDP/sesman/LightDM ativos; LXD service/socket inativos. O apply continua
+`NOT_EXECUTED` e separado do preview.
 
 ## Contrato do NODE-01
 

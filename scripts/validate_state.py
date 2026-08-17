@@ -22,6 +22,7 @@ F1_2B_DESIRED_STATE_COMMIT = (
 )
 F1_2B_TESTED_COMMIT = "fa66f1049bac5540a5b12219186a421cc39dcbc0"
 F1_2B_CI_RUN_ID = 31996516019
+F1_2B_REAL_CHECK_MODE = "PASS_AT_2026_08_17T08_37_46Z_NO_MUTATION"
 F1_2C_CONTRACT_COMMIT = "b4cbeb066605754d538ff5abe2d294f0759d6f59"
 F1_2C_CONTRACT_PATH = "platform/network/f1-2c-contract.yaml"
 F1_1_REAL_CHECK_MODE_CURRENT = (
@@ -215,14 +216,17 @@ def f1_2b_gate_errors(
     if docker_baseline["git"].get("ci_conclusion") != "PASS":
         errors.append("F1.2b CI conclusion is no longer PASS")
 
+    check_mode_values = {
+        "current.real_vps_check_mode": current_state["real_vps_check_mode"],
+        "components.real_vps_check_mode": component_state["real_vps_check_mode"],
+        "evidence.real_vps_check_mode": evidence_validation["real_vps_check_mode"],
+    }
+    for location, value in check_mode_values.items():
+        if value != F1_2B_REAL_CHECK_MODE:
+            errors.append(f"F1.2b real check-mode evidence differs at {location}")
+
     not_executed_values = {
-        "components.real_vps_check_mode": component_state[
-            "real_vps_check_mode"
-        ],
         "components.real_vps_apply": component_state["real_vps_apply"],
-        "evidence.real_vps_check_mode": evidence_validation[
-            "real_vps_check_mode"
-        ],
         "evidence.real_vps_apply": evidence_validation["real_vps_apply"],
         "evidence.real_vps_idempotence": evidence_validation[
             "real_vps_idempotence"
@@ -235,21 +239,21 @@ def f1_2b_gate_errors(
         if value != "NOT_EXECUTED":
             errors.append(f"F1.2b real-node execution was overclaimed at {location}")
     expected_current_real_state = {
-        "real_vps_check_mode": "NOT_EXECUTED_READY_AFTER_F1_1",
-        "real_vps_apply": "NOT_EXECUTED_BLOCKED_PENDING_CHECK_MODE_RECONCILIATION",
+        "real_vps_check_mode": F1_2B_REAL_CHECK_MODE,
+        "real_vps_apply": "NOT_EXECUTED_READY_AFTER_CHECK_MODE_RECONCILIATION",
     }
     for key, expected in expected_current_real_state.items():
         if current_state[key] != expected:
             errors.append(f"F1.2b real-node gate changed at current.{key}")
-    if discovery_state["real_gate"] != "READY_FOR_PRIVILEGED_CHECK_MODE_AFTER_F1_1_DONE":
-        errors.append("F1.2b discovery gate does not reflect completed F1.1")
+    if discovery_state["real_gate"] != "CHECK_MODE_PASS_READY_FOR_REVIEWED_APPLY_HUMAN_SUDO":
+        errors.append("F1.2b discovery gate does not reflect passed real check mode")
     expected_foundation_dependency = {
         "f1_1_real_vps_status": "DONE",
         "f1_1_privileged_check_mode": "PASS_NO_MUTATION",
         "f1_1_apply": "PASS_CHANGED_7",
         "f1_1_idempotence": "PASS_CHANGED_0",
         "f1_1_post_apply_invariance": "PASS",
-        "f1_2b_real_vps_gate": "READY_FOR_PRIVILEGED_CHECK_MODE",
+        "f1_2b_real_vps_gate": "CHECK_MODE_PASS_READY_FOR_REVIEWED_APPLY",
     }
     for key, expected in expected_foundation_dependency.items():
         if docker_baseline["dependency"][key] != expected:

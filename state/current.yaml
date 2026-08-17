@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-17
-documentation_state: SLICE_001_DONE_F1_2B_REAL_CHECK_MODE_READY_F1_2C_CONTRACT_LOCAL_PASS
+documentation_state: SLICE_001_DONE_F1_2B_REAL_CHECK_MODE_PASS_APPLY_READY_F1_2C_CONTRACT_LOCAL_PASS
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
@@ -27,10 +27,10 @@ project:
     phase_0: DONE
     phase_1: DONE
     phase_2_cloud_workstation: DONE
-    future_platform_implementation: SLICE_001_DONE_F1_2B_READY_F1_2C_CONTRACT_STARTED
+    future_platform_implementation: SLICE_001_DONE_F1_2B_CHECK_PASS_APPLY_READY_F1_2C_CONTRACT_STARTED
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: SLICE_002B_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO
+  next_exact_step: SLICE_002B_REAL_VPS_APPLY_HUMAN_INTERACTIVE_SUDO
 platform_discovery:
   status: CODEX_IMPLEMENTATION_IN_PROGRESS
   decision_source: state/platform-discovery.yaml
@@ -261,20 +261,22 @@ codex_execution:
       real_vps_idempotence_log_sha256: 2c6e2bf1924e7a1ee735035b9b6da35e7cf18cdc982a9c8212288db47ffa0d4b
       real_vps_post_apply_invariance: PASS_AT_2026_08_17T06_58_43Z
     human_interaction:
-      status: COMPLETED_FOR_F1_1_NEXT_HUMAN_INTERACTION_IS_F1_2B_CHECK_MODE
-      reason: F1_1_REAL_APPLY_IDEMPOTENCE_AND_INVARIANCE_PASSED
+      status: COMPLETED_FOR_F1_1_AND_F1_2B_CHECK_MODE_NEXT_INTERACTION_IS_F1_2B_APPLY
+      reason: F1_2B_REAL_CHECK_MODE_AND_POST_CHECK_INVARIANCE_PASSED
       secret_must_not_be_sent_to_agent_or_logged: true
   repo_only_preparations:
     docker_runtime_f1_2b:
-      status: DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_NOT_EXECUTED
+      status: DESIRED_STATE_CI_DISPOSABLE_PASS_REAL_CHECK_MODE_PASS_APPLY_NOT_EXECUTED
       recovered_head: d849caa0eafdc231d2782be602be1a2263758b7b
       desired_state_commit: 7015c80759a797bcb141773b79cd9b95f6fbecf1
-      local_validation: PASS_63_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX
+      local_validation: PASS_66_TESTS_6_SHELLCHECK_6_ANSIBLE_SYNTAX
       local_scope: UNPRIVILEGED_REPO_ONLY_NO_TARGET_PLAYBOOK_EXECUTION
       github_actions: PASS_RUN_31996516019_COMMIT_FA66F10
       disposable_vm_lifecycle: PASS_CHECK_APPLY_IDEMPOTENCE_SECURITY_RESTART_REFUSALS_ROLLBACK_CLEANUP
-      real_vps_check_mode: NOT_EXECUTED_READY_AFTER_F1_1
-      real_vps_apply: NOT_EXECUTED_BLOCKED_PENDING_CHECK_MODE_RECONCILIATION
+      real_vps_check_mode: PASS_AT_2026_08_17T08_37_46Z_NO_MUTATION
+      real_vps_check_mode_log_sha256: 425ad91cc3d81b84fe7218bea9064a21efd2b5372c6ebed6e82280b1ffa0ef4b
+      real_vps_post_check_mode_invariance: PASS_AT_2026_08_17T08_38_33Z
+      real_vps_apply: NOT_EXECUTED_READY_AFTER_CHECK_MODE_RECONCILIATION
       first_workload: BLOCKED_BY_F1_2C
     network_enforcement_f1_2c:
       status: CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_AND_DYNAMIC_PROOF_PENDING

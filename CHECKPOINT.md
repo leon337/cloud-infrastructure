@@ -1,13 +1,13 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-17 após validação repo-only do desired state
-`SLICE-002B — Docker runtime boundary`; o gate real F1.1 permanece inalterado.
+Atualizado em 2026-08-17 após o preview real sem mutação do
+`SLICE-002B — Docker runtime boundary`.
 
 ## Estado durável
 
 - Repositório canônico: `leon337/cloud-infrastructure`, branch `main`.
 - Base recuperada: `987c5359ea948d1903355e98177ae1eb2f1849d5`.
-- Branch do slice: `codex/mission-001-foundations-f1-1`.
+- Branch do slice: `codex/mission-001-foundations-f1-2b-preparation`.
 - F0, F1 e F2 Cloud Workstation: `DONE`.
 - Mission Acceptance + Recovery: `DONE`.
 - Q1–Q39: requisitos arquitetônicos vinculantes.
@@ -16,13 +16,14 @@ Atualizado em 2026-08-17 após validação repo-only do desired state
 - Rotação: `DEFERRED_BY_HUMAN_DECISION`.
 - F1.1: commit de implementação
   `edd2497d657cc9bc35952f5dfc71090a18dade53` aprovado no GitHub Actions run
-  `31972460567`, inclusive VM descartável privilegiada; VPS real **NOT_APPLIED**
-  e slice `DONE`; check mode, backup off-host, apply `changed=7`, idempotência
+  `31972460567`, inclusive VM descartável privilegiada; slice `DONE`; check
+  mode, backup off-host, apply `changed=7`, idempotência
   `changed=0` e invariância real passaram em `2026-08-17`.
 - F1.2b: apply/rollback, pin APT, preflight, helper de árvore e harness
   concluídos a partir do desired-state commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`;
   commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` e GitHub run
-  `31996516019` `PASS`; NODE-01 `NOT_EXECUTED/READY_FOR_CHECK_MODE`.
+  `31996516019` `PASS`; correções passaram nos runs `32004951916` e
+  `32007871491`; preview NODE-01 `PASS_NO_MUTATION`, apply `NOT_EXECUTED`.
 
 ## Artefatos canônicos criados
 
@@ -88,13 +89,12 @@ Snapshot read-only: `2026-08-16T19:46:14Z`.
 - SSH/UFW/fail2ban/XRDP/LightDM ativos;
 - `ubuntu` fora de `lxd`; LXD daemon/socket inativos;
 - Docker/containerd ausentes;
-- conta/grupo/paths/units F1.1 ausentes, sem conflito;
+- conta/grupo/paths/units F1.1 aplicados e validados;
 - múltiplas sessões Firefox/VS Code/Codex ativas;
 - `sudo -n` negado conforme política.
 
-Nenhuma dessas observações foi reaberta durante F1.2b/F1.2c repo-only. Nenhum
-playbook, `sudo`, package manager, Docker, systemd, firewall ou network mutation
-foi executado no host nesta atualização.
+O preview F1.2b revalidou o host sem mutação. Docker/containerd, marker, lock e
+listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 
 ## SLICE-002B — estado repo-only
 
@@ -107,10 +107,10 @@ foi executado no host nesta atualização.
 - harness GitHub-hosted executou check sem mutação, apply `changed=13`,
   reconciliação/restart `changed=0`, invariância, sete recusas, rollback e cleanup
   no run `31996516019` para o commit `fa66f10`;
-- suíte local/CI: 63 unitários/negativos, 34 YAML, dois manifests, seis scripts com
+- suíte local/CI: 66 unitários/negativos, 34 YAML, dois manifests, seis scripts com
   sintaxe/ShellCheck e seis syntax-checks Ansible, todos `PASS`;
-- CI GitHub e lifecycle privilegiado descartável estão `PASS`; VPS permanece
-  `NOT_EXECUTED` e o primeiro workload permanece `BLOCKED`.
+- CI GitHub, lifecycle descartável e check mode real estão `PASS`; apply VPS
+  permanece `NOT_EXECUTED` e o primeiro workload permanece `BLOCKED`.
 
 ## SLICE-002C — contrato repo-only
 
@@ -151,20 +151,20 @@ foi executado no host nesta atualização.
 - depois do apply exigir segunda execução `changed=0`, negações, modes e
   invariância de listeners/SSH/UFW/fail2ban/XRDP/LXD/units;
 - rollback só quando os namespaces persistentes estiverem vazios.
-- F1.2b real permanece bloqueado mesmo com desired state e CI descartável
-  aprovados; F1.1 real precisa ser concluído antes de qualquer preview F1.2b.
+- F1.2b apply está liberado somente após este checkpoint, com sudo humano,
+  seguido de idempotência e invariância; nenhum workload é permitido.
 - F1.2c repo-only não autoriza workload: ADR, implementation e matriz dinâmica
   completa em IPv4/IPv6 continuam bloqueantes.
 
 ## Próximo passo exato
 
-**SLICE_002B_REAL_VPS_PRIVILEGED_CHECK_MODE_HUMAN_INTERACTIVE_SUDO**
+**SLICE_002B_REAL_VPS_APPLY_HUMAN_INTERACTIVE_SUDO**
 
-Executar somente o check mode F1.2b na VPS com `--ask-become-pass`, com LEANDRO
-digitando a senha sudo diretamente e sem registro. Inspecionar o delta de pacote,
-systemd e firewall antes de qualquer apply. Nenhum container/workload é
-autorizado; F1.2c, Management Network, produção e rotação permanecem fora desse
-passo.
+O check mode F1.2b passou sem mutação, com pós-check invariável. Executar o apply
+vazio com `--ask-become-pass`, LEANDRO digitando a senha diretamente e sem
+registro; depois exigir segunda reconciliação `changed=0` e invariância completa.
+Nenhum container/workload é autorizado; F1.2c, Management Network, produção e
+rotação permanecem fora desse passo.
 
 ## Architecture/Technology Mapping — gaps condicionais
 
