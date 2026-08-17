@@ -96,7 +96,7 @@ chown -R root:root "$REPO_ROOT"
 find "$REPO_ROOT" -type d -exec chmod go-w {} +
 find "$REPO_ROOT" -type f -exec chmod go-w {} +
 
-expires_epoch=$(( $(date -u +%s) + 5400 ))
+expires_epoch=$(( $(date -u +%s) + 43200 ))
 expires_calendar=$(date -u -d "@$expires_epoch" '+%Y-%m-%d %H:%M:%S UTC')
 printf '%s\n' "$expires_epoch" >"$STATE_ROOT/expires_epoch"
 printf '%s\n' "$EXPECTED_BRANCH" >"$STATE_ROOT/expected_branch"
@@ -345,7 +345,7 @@ EOF
 
 cat >"$workdir/timer" <<EOF
 [Unit]
-Description=Expire temporary Codex Mission 001 sudo capability after 90 minutes
+Description=Expire temporary Codex Mission 001 sudo capability after 12 hours
 
 [Timer]
 OnCalendar=$expires_calendar

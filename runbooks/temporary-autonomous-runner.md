@@ -21,7 +21,7 @@ worktree limpa, produção bloqueada e rotação deferred. O snapshot instalado 
 
 Cada execução registra timestamp, operação, Git SHA e resultado em
 `/var/log/codex-mission-001/runner.log` e no journal. Um timer absoluto remove o
-sudoers após 90 minutos; o próprio runner também recusa e remove a regra ao
+sudoers após 12 horas; o próprio runner também recusa e remove a regra ao
 detectar prazo vencido.
 
 ## Ativação — HUMAN_GATE

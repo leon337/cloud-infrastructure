@@ -79,8 +79,11 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn("operation=bootstrap git_sha=%s result=PASS", self.bootstrap)
         self.assertIn("operation=automatic-revoke", self.revoke)
 
-    def test_expiry_is_exactly_ninety_minutes_and_self_revokes(self):
-        self.assertIn("+ 5400", self.bootstrap)
+    def test_expiry_is_exactly_twelve_hours_and_self_revokes(self):
+        self.assertIn("+ 43200", self.bootstrap)
+        self.assertNotIn("+ 5400", self.bootstrap)
+        self.assertIn("after 12 hours", self.bootstrap)
+        self.assertNotIn("after 90 minutes", self.bootstrap)
         self.assertIn("OnCalendar=$expires_calendar", self.bootstrap)
         self.assertIn('rm -f -- "$SUDOERS_PATH"', self.runner)
         self.assertIn('rm -f -- "$SUDOERS_PATH"', self.revoke)
