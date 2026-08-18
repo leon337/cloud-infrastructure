@@ -1,0 +1,16 @@
+{
+  "transport": {
+    "issue_number": 1
+  },
+  "request": {
+    "protocol": "MCF_WORKSPACE_CONTROL_V1",
+    "request_id": "G2A-EXAMPLE-001",
+    "project": {
+      "tenant": "tenant-a",
+      "name": "project-a",
+      "environment": "dev"
+    },
+    "operation": "project.get",
+    "arguments": {}
+  }
+}
