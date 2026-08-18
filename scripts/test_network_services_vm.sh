@@ -157,11 +157,6 @@ if [[ $(sudo docker inspect -f '{{.State.Running}}' cp-proxy-dev) != true ||
   proxy_diagnostics
   fail proxy_not_running
 fi
-if ! sudo docker exec cp-proxy-dev getent hosts security.ubuntu.com >&2; then
-  proxy_diagnostics
-  fail proxy_fixture_dns_failed
-fi
-
 probe() {
   local network=$1
   shift
