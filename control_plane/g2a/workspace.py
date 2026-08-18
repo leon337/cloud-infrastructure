@@ -32,6 +32,8 @@ def resolve_confined(workspace: pathlib.Path, relative_path: str) -> pathlib.Pat
         raise RefusedError("absolute_path_refused")
     if relative_path.startswith("~"):
         raise RefusedError("tilde_path_refused")
+    if ".." in candidate.parts:
+        raise RefusedError("path_escape_refused")
 
     workspace_real = _workspace_root(workspace)
     try:
