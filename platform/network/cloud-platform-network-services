@@ -5,10 +5,8 @@ readonly VERSION=SLICE-002C-NODE-01-SERVICES-V1
 readonly ROOT=/etc/cloud-platform/network-services
 readonly COMPOSE=$ROOT/compose.yaml
 readonly MARKER=/etc/cloud-platform-network-services.managed
-readonly SYSCTL_FILE=/etc/sysctl.d/90-cloud-platform-network-forwarding.conf
 readonly LOCK=/run/lock/cloud-platform-network-services.lock
 readonly SCOPE_LABEL=cloud.platform.managed=mission-001-f1-2c
-readonly SERVICE_LABEL=cloud.platform.managed=mission-001-f1-2c-services
 readonly EGRESS_NETWORK=cloud-platform-egress
 readonly EGRESS_INTERFACE=cpeg0001
 readonly CHAIN_SERVICE=CLOUD-PLATFORM-SVC
@@ -266,8 +264,8 @@ apply_services() {
   docker compose --project-name cloud-platform-network-services --file "$COMPOSE" pull --quiet
   docker compose --project-name cloud-platform-network-services --file "$COMPOSE" up --detach \
     --remove-orphans
-  local attempt
-  for attempt in $(seq 1 30); do
+  local _
+  for _ in $(seq 1 30); do
     verify_services && break
     sleep 1
   done

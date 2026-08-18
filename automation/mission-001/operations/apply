@@ -101,7 +101,7 @@ else
 fi
 
 declare -A source_digests=(
-  [platform/network/cloud-platform-network-services]=001cd7a3ea33908775ee5b5e6b89a504fd91aa5fda7fd8adb547c74de55c72f6
+  [platform/network/cloud-platform-network-services]=2efbc0fd25a96a3818f7fec77e5c9701f251c401a4c0d4f2838e490a905ed83f
   [platform/network/node-01/compose.yaml]=704154f06c2e72d0a0243d0c4618a3d46320f6321cf9f17955a402e8985ab7d0
   [platform/network/node-01/cp00000002/Corefile]=52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa
   [platform/network/node-01/cp00000002/records.hosts]=a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703

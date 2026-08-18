@@ -10,7 +10,6 @@ readonly SERVICE_SOURCE=$ROOT/platform/network/cloud-platform-network-services
 readonly SERVICE=/usr/local/libexec/cloud-platform-network-services
 readonly SOURCE_CONFIG=$ROOT/platform/network/node-01
 readonly CONFIG=/etc/cloud-platform/network-services
-readonly BASE_MARKER=/etc/cloud-platform-network-enforcement.managed
 readonly SERVICE_MARKER=/etc/cloud-platform-network-services.managed
 readonly SYSCTL=/etc/sysctl.d/90-cloud-platform-network-forwarding.conf
 readonly BUSYBOX=busybox@sha256:7a3ebe5bfd1a4a19797d20b0c0bb39d44393e9a03fd852c0865b0f540d868df0
