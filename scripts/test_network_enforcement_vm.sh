@@ -11,7 +11,6 @@ readonly DROPIN_DESTINATION=/etc/systemd/system/docker.service.d/20-cloud-platfo
 readonly MARKER=/etc/cloud-platform-network-enforcement.managed
 readonly SCOPES_RECONCILER=/workspace/cloud-infrastructure/scripts/reconcile_network_scopes.py
 readonly SCOPES_POLICY=/workspace/cloud-infrastructure/platform/network/f1-2c-policy.disposable.yaml
-readonly SERVICES_HARNESS=/workspace/cloud-infrastructure/scripts/test_network_services_vm.sh
 
 fail() {
   printf 'NETWORK_ENFORCEMENT_VM_TEST_FAIL reason=%s\n' "$1" >&2
@@ -29,7 +28,6 @@ systemd-detect-virt --quiet --vm || fail not_disposable_vm
 sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
 [[ -x $SCRIPT_SOURCE && -f $UNIT_SOURCE && -f $DROPIN_SOURCE ]] || fail payload_missing
 [[ -x $SCOPES_RECONCILER && -f $SCOPES_POLICY ]] || fail network_scope_payload_missing
-[[ -x $SERVICES_HARNESS ]] || fail network_services_harness_missing
 [[ ! -e $SCRIPT_DESTINATION && ! -L $SCRIPT_DESTINATION ]] || fail script_collision
 [[ ! -e $UNIT_DESTINATION && ! -L $UNIT_DESTINATION ]] || fail unit_collision
 [[ ! -e $DROPIN_DESTINATION && ! -L $DROPIN_DESTINATION ]] || fail dropin_collision
@@ -105,7 +103,6 @@ fi
 grep -q 'unexpected_custom_networks=cloud-platform-unmanaged-refusal' \
   <<<"$scope_refusal_output" || fail network_scope_refusal_reason_missing
 sudo docker network rm cloud-platform-unmanaged-refusal >/dev/null
-"$SERVICES_HARNESS"
 scope_rollback=$(sudo --preserve-env=F1_2C_NETWORK_SCOPE_CONFIRM,GITHUB_ACTIONS,RUNNER_ENVIRONMENT,ImageOS \
   "$SCOPES_RECONCILER" rollback "$SCOPES_POLICY")
 grep -q 'NETWORK_SCOPES_ROLLBACK=PASS changed=3' <<<"$scope_rollback" ||

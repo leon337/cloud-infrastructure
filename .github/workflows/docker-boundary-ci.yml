@@ -80,3 +80,19 @@ jobs:
         env:
           DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM: GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
         run: scripts/test_docker_boundary_vm.sh
+
+  network-services-integration:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the exact network-services desired state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove scoped DNS, proxy egress and explicit shared-service grants
+        env:
+          DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM: GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
+        run: scripts/test_network_services_standalone_vm.sh

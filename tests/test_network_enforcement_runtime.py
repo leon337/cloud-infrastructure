@@ -14,6 +14,9 @@ DROPIN = (
 ).read_text(encoding="utf-8")
 HARNESS = (ROOT / "scripts/test_network_enforcement_vm.sh").read_text(encoding="utf-8")
 SERVICES_HARNESS = (ROOT / "scripts/test_network_services_vm.sh").read_text(encoding="utf-8")
+STANDALONE_HARNESS = (
+    ROOT / "scripts/test_network_services_standalone_vm.sh"
+).read_text(encoding="utf-8")
 
 
 class NetworkEnforcementRuntimeTests(unittest.TestCase):
@@ -103,6 +106,12 @@ class NetworkEnforcementRuntimeTests(unittest.TestCase):
             SERVICES_HARNESS,
         )
         self.assertNotIn("ip route add default", SERVICES_HARNESS)
+
+    def test_network_services_run_in_a_separate_disposable_vm(self):
+        self.assertNotIn("test_network_services_vm.sh", HARNESS)
+        self.assertIn("test_network_services_vm.sh", STANDALONE_HARNESS)
+        self.assertIn("NETWORK_SERVICES_STANDALONE_VM_TEST_PASS", STANDALONE_HARNESS)
+        self.assertIn("GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY", STANDALONE_HARNESS)
 
 
 if __name__ == "__main__":
