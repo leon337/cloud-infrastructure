@@ -10,6 +10,8 @@ readonly ENFORCEMENT=/usr/local/libexec/cloud-platform-network-enforcement
 readonly IMAGE_SET=$ROOT/platform/network/f1-2c-service-images.yaml
 readonly TMP_ROOT=${RUNNER_TEMP:?}/f1-2c-network-services
 readonly EGRESS_NETWORK=cloud-platform-egress-fixture
+readonly EGRESS_FIXTURE_CIDR=192.0.2.0/24
+readonly EGRESS_FIXTURE_IP=192.0.2.10
 readonly COREDNS_IMAGE=coredns/coredns@sha256:1ba6f47265602e2e50a9c4669e3a955e4298a0d30dc82f39293d4bf1a851e0ff
 readonly SQUID_IMAGE=ubuntu/squid@sha256:1b8d2c7c46e435e022047e97cb7ac0b851c739f083427341cae7e4df1d99f5a3
 readonly FIXTURE_IMAGE=busybox@sha256:7a3ebe5bfd1a4a19797d20b0c0bb39d44393e9a03fd852c0865b0f540d868df0
@@ -80,10 +82,10 @@ grep -q '^http_access deny all$' "$TMP_ROOT/dev/squid.conf" || fail proxy_defaul
 for image in "$COREDNS_IMAGE" "$SQUID_IMAGE" "$FIXTURE_IMAGE"; do
   sudo docker pull "$image" >/dev/null
 done
-sudo docker network create --internal --subnet 172.31.250.0/24 "$EGRESS_NETWORK" >/dev/null
+sudo docker network create --internal --subnet "$EGRESS_FIXTURE_CIDR" "$EGRESS_NETWORK" >/dev/null
 
 sudo docker run --detach --name cp-origin-fixture \
-  --network "$EGRESS_NETWORK" --ip 172.31.250.10 \
+  --network "$EGRESS_NETWORK" --ip "$EGRESS_FIXTURE_IP" \
   --network-alias security.ubuntu.com --network-alias api.github.com \
   --network-alias ghcr.io --read-only --cap-drop ALL \
   --security-opt no-new-privileges --pids-limit 32 --memory 32m --cpus 0.25 \
@@ -185,7 +187,7 @@ if proxy_probe cloud-scope-cp00000003 10.240.3.3 \
   http://security.ubuntu.com/index.html >/dev/null 2>&1; then
   fail restricted_proxy_allowed_unlisted_destination
 fi
-if probe cloud-scope-cp00000002 wget -qO- http://172.31.250.10/index.html \
+if probe cloud-scope-cp00000002 wget -qO- "http://$EGRESS_FIXTURE_IP/index.html" \
   >/dev/null 2>&1; then
   fail workload_reached_direct_egress
 fi
