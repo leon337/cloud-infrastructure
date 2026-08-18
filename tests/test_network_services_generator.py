@@ -45,7 +45,7 @@ class NetworkServicesGeneratorTests(unittest.TestCase):
 
     def test_squid_is_exact_destination_proxy_and_ends_in_deny_all(self):
         config = generate_squid(self.plan, "cp00000002")
-        self.assertIn("http_port 3128", config)
+        self.assertIn("http_port 0.0.0.0:3128", config)
         self.assertIn("acl scope_source src 10.240.2.0/24", config)
         self.assertIn("acl protected_dst dst 10.0.0.0/8", config)
         self.assertIn("acl destination_github_api dstdomain api.github.com", config)

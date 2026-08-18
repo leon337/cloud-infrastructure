@@ -81,7 +81,7 @@ def generate_squid(plan: dict[str, Any], interface: str) -> str:
         "acl protected_dst dst 10.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16",
         "acl protected_dst6 dst ::1/128 fc00::/7 fe80::/10",
     ]
-    lines.append("http_port 3128")
+    lines.append("http_port 0.0.0.0:3128")
     lines.append(f"acl scope_source src {sandbox['subnet_ipv4']}")
     for destination in destinations:
         name = _token(destination["destination_id"])
