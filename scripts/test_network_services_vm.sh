@@ -175,7 +175,10 @@ proxy_probe() {
   local network=$1 proxy=$2 url=$3
   local authority=${url#http://}
   local host=${authority%%/*}
-  printf 'GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n' "$url" "$host" |
+  {
+    printf 'GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n' "$url" "$host"
+    sleep 2
+  } |
   timeout --kill-after=2s 10s sudo docker run --rm --interactive --name cp-proxy-probe \
     --network "$network" --read-only --cap-drop ALL \
     --security-opt no-new-privileges --pids-limit 32 --memory 32m --cpus 0.25 \
