@@ -154,6 +154,10 @@ if [[ $(sudo docker inspect -f '{{.State.Running}}' cp-proxy-dev) != true ||
   proxy_diagnostics
   fail proxy_not_running
 fi
+if ! sudo docker exec cp-proxy-dev getent hosts security.ubuntu.com >&2; then
+  proxy_diagnostics
+  fail proxy_fixture_dns_failed
+fi
 
 probe() {
   local network=$1
@@ -180,9 +184,12 @@ fi
 probe cloud-scope-cp00000003 nslookup admin.registry.shared.dev.internal 10.240.3.2 |
   grep -q '10.240.3.11' || fail restricted_dns_admin_record_failed
 
-proxy_probe cloud-scope-cp00000002 10.240.2.3 \
+if ! proxy_probe cloud-scope-cp00000002 10.240.2.3 \
   http://security.ubuntu.com/index.html |
-  grep -q NETWORK_SERVICES_FIXTURE_OK || fail development_proxy_allow_failed
+  grep -q NETWORK_SERVICES_FIXTURE_OK; then
+  proxy_diagnostics
+  fail development_proxy_allow_failed
+fi
 if proxy_probe cloud-scope-cp00000003 10.240.3.3 \
   http://security.ubuntu.com/index.html >/dev/null 2>&1; then
   fail restricted_proxy_allowed_unlisted_destination
