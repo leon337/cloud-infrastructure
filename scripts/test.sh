@@ -24,7 +24,7 @@ if not result.wasSuccessful():
     raise SystemExit(1)
 print(f"UNIT_TESTS_PASS count={result.testsRun}")
 PY
-"$PYTHON" -m compileall -q scripts tests
+"$PYTHON" -m compileall -q scripts tests control_plane
 
 shell_scripts=()
 shell_script_count=0
