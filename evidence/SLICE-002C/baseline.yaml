@@ -1,8 +1,8 @@
 schema_version: 1
 slice: SLICE-002C
 classification: SANITIZED_BASE_ENFORCEMENT_EVIDENCE
-generated_at_utc: "2026-08-18T04:55:24Z"
-status: NODE_01_NETWORK_SERVICES_DESIRED_STATE_LOCAL_STATIC_PASS_CI_PENDING
+generated_at_utc: "2026-08-18T11:29:25Z"
+status: NODE_01_NETWORK_SERVICES_COMMIT_BOUND_CI_PASS_REAL_APPLY_PENDING
 git:
   repository: leon337/cloud-infrastructure
   working_branch: codex/mission-001-f1-2c-network-enforcement
@@ -10,6 +10,7 @@ git:
   implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
   internal_scope_proof_commit: 1c0d698198b239d03b911a0f9de362d3d8f8b9f2
   network_services_proof_commit: 8d5963bc890b1e0847fe9e3ee40fe5d058693053
+  node_01_services_ci_commit: f771cfd09f1824562ddfdaea507fb3cb0781f6ac
   remote_branch: PUBLISHED
 authority:
   requirements:
@@ -26,7 +27,7 @@ authority:
 contract:
   path: platform/network/f1-2c-contract.yaml
   status: NODE_01_NETWORK_SERVICES_DESIRED_STATE_PREPARED
-  operational_state: BASE_APPLIED_NODE_01_SERVICES_LOCAL_STATIC_PASS_CI_AND_REAL_APPLY_PENDING
+  operational_state: BASE_APPLIED_NODE_01_SERVICES_COMMIT_BOUND_CI_PASS_REAL_APPLY_PENDING
   technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
   executable_rules_present: true
   executable_rules_scope: OWNED_FAIL_CLOSED_BASE_CHAINS_ONLY
@@ -43,15 +44,15 @@ validation:
   state_crosscheck: PASS_F1_1_F1_2B_F1_2C_GATES_PRESERVED
   shell_syntax: PASS_6_UNCHANGED
   technology_adr: ACCEPTED_DEC_008
-  github_actions_run: 32100527131
-  github_actions_commit: 8d5963bc890b1e0847fe9e3ee40fe5d058693053
-  foundation_actions_run: 32100527237
-  disposable_integration: PASS_BASE_EMPTY_RUNTIME_AND_NETWORK_SERVICES
+  github_actions_run: 32131461110
+  github_actions_commit: f771cfd09f1824562ddfdaea507fb3cb0781f6ac
+  foundation_actions_run: 32131461088
+  disposable_integration: PASS_BASE_RUNTIME_NETWORK_POLICY_AND_NODE_SERVICES
   disposable_internal_scopes: PASS_3_INTERNAL_EMPTY_SCOPES_CHANGED_3_THEN_0_ROLLBACK_3
   disposable_ipv4: PASS_BASE_OWNED_CHAINS
   disposable_ipv6: PASS_BASE_OWNED_CHAINS
   disposable_network_services: PASS_SCOPED_DNS_PROXY_PROFILES_DIRECT_EGRESS_DENY_GRANT_REVOCATION_DEPENDENCY_FAILURE_CLEANUP
-  node_01_services_desired_state: PREPARED_LOCAL_STATIC_PASS_COMMIT_BOUND_CI_PENDING
+  node_01_services_desired_state: PASS_APPLY_1_IDEMPOTENCE_0_DNS_PROXY_DIRECT_DENY_RESTART_ROLLBACK_CLEAN
   node_01_services_real_apply: NOT_EXECUTED
   real_vps_check_mode: NOT_EXECUTED
   real_vps_apply: PASS_AT_2026_08_17T21_58_36Z_CHANGED_1

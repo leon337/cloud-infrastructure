@@ -149,6 +149,6 @@ endereçamento IPv6 de workload. Nada desse incremento foi aplicado no NODE-01.
 O desired state bounded NODE-01 agora está preparado: quatro serviços privados
 por digest, sem portas publicadas, três redes internas, uma rede de egress de
 infraestrutura, forwarding fail-closed, systemd, precheck e rollback por camada.
-A suíte local passou com 123 testes. O próximo passo é CI commit-bound; depois,
+A suíte local e o CI commit-bound `32131461110` passaram com 123 testes. O próximo passo é verificar o runner temporário; depois,
 sincronização e apply controlado no NODE-01. O primeiro workload continua
 bloqueado; Management Network, produção e rotação não fazem parte desse passo.

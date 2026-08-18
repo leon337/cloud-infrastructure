@@ -221,7 +221,7 @@ platform_components:
     technology: Docker_iptables_nft_DOCKER_USER_internal_bridges_proxy_egress
     selected_version: F1_2C_CONTRACT_V1
     observed_version: SLICE_002C_BASE_V1
-    lifecycle: NODE_01_NETWORK_SERVICES_DESIRED_STATE_LOCAL_STATIC_PASS_CI_PENDING
+    lifecycle: NODE_01_NETWORK_SERVICES_COMMIT_BOUND_CI_PASS_REAL_APPLY_PENDING
     contract:
       path: platform/network/f1-2c-contract.yaml
       commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
@@ -233,10 +233,10 @@ platform_components:
         - ipv6
     validation:
       technology_adr: ACCEPTED_DEC_008
-      disposable_integration: PASS_RUN_32100527131_BASE_EMPTY_RUNTIME_AND_NETWORK_SERVICES
+      disposable_integration: PASS_RUN_32131461110_COMMIT_F771CFD_BASE_RUNTIME_NETWORK_POLICY_AND_NODE_SERVICES
       internal_scope_lifecycle: PASS_DISPOSABLE_ONLY_NODE_01_NOT_APPLIED
       network_services: PASS_DISPOSABLE_SCOPED_DNS_PROXY_GRANTS_REVOCATION_FAIL_CLOSED
-      node_01_services_desired_state: PREPARED_LOCAL_STATIC_PASS_COMMIT_BOUND_CI_PENDING
+      node_01_services_desired_state: PASS_COMMIT_F771CFD_RUN_32131461110_APPLY_1_IDEMPOTENCE_0_DNS_PROXY_DIRECT_DENY_RESTART_ROLLBACK_CLEAN
       node_01_services_real_apply: NOT_EXECUTED
       ipv6_boundary: PASS_DEFAULT_DENY_NO_WORKLOAD_IPV6_ADDRESSING
       real_vps_check_mode: NOT_EXECUTED

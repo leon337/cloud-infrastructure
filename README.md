@@ -9,10 +9,10 @@
 - **Concluídos:** S0, F1.1, F1.2b
 - **Próximos:** F1.3, F1.4, F1.5
 - **HUMAN_GATEs no roadmap:** 4 (F1.2a, F1.5, F1.6, F5.4)
-- **Próximo passo exato:** `SLICE_002C_NODE_01_NETWORK_SERVICES_COMMIT_BOUND_CI`
-- **Último checkpoint:** `F1_2C_NODE_01_SERVICES_DESIRED_STATE_LOCAL_STATIC_PASS`
-- **Último commit relevante:** [`8d5963b`](https://github.com/leon337/cloud-infrastructure/commit/8d5963bc890b1e0847fe9e3ee40fe5d058693053)
-- **Última CI material:** [run `32100527131`](https://github.com/leon337/cloud-infrastructure/actions/runs/32100527131) — `PASS`
+- **Próximo passo exato:** `SLICE_002C_VERIFY_RUNNER_AND_APPLY_NODE_01_NETWORK_SERVICES`
+- **Último checkpoint:** `F1_2C_NODE_01_SERVICES_COMMIT_BOUND_CI_PASS`
+- **Último commit relevante:** [`f771cfd`](https://github.com/leon337/cloud-infrastructure/commit/f771cfd09f1824562ddfdaea507fb3cb0781f6ac)
+- **Última CI material:** [run `32131461110`](https://github.com/leon337/cloud-infrastructure/actions/runs/32131461110) — `PASS`
 - **GitHub Project:** `BLOCKED_EXTERNAL_MISSING_READ_PROJECT_AND_PROJECT_SCOPES`
 - **Produção:** `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`
 - **Rotação de credenciais:** `DEFERRED_BY_HUMAN_DECISION`

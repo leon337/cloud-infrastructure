@@ -1,6 +1,6 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-18 após preparar o desired state NODE-01 dos serviços F1.2c.
+Atualizado em 2026-08-18 após provar em CI o desired state NODE-01 dos serviços F1.2c.
 
 ## Estado durável
 
@@ -135,7 +135,13 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - o desired state NODE-01 foi preparado com CoreDNS 1.14.6 e Squid 7.2 por
   digest, quatro containers sem portas publicadas, três redes internas/escopadas,
   egress de infraestrutura separado, chains próprias, systemd e rollback por
-  camada; 123 testes locais passaram, mas CI commit-bound e apply real ainda não;
+  camada;
+- o commit `f771cfd09f1824562ddfdaea507fb3cb0781f6ac` passou nos runs
+  [`32131461110`](https://github.com/leon337/cloud-infrastructure/actions/runs/32131461110)
+  e [`32131461088`](https://github.com/leon337/cloud-infrastructure/actions/runs/32131461088):
+  123 testes, ShellCheck dos 15 scripts, base/runtime/policy, serviços com apply
+  `1`, idempotência `0`, DNS, proxy, egress direto negado, restart e rollback
+  limpo; o apply real dos serviços continua pendente;
 - evidência sanitizada: `evidence/SLICE-002C/`.
 
 ## Backup/recovery
@@ -164,19 +170,19 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - rollback só quando os namespaces persistentes estiverem vazios.
 - F1.2b está concluído; não repetir o apply fora de reconciliação controlada e
   nenhum workload é permitido antes de F1.2c.
-- a base F1.2c não autoriza workload: o desired state dos serviços existe, mas
-  ainda exige CI commit-bound e apply controlado no NODE-01.
+- a base F1.2c não autoriza workload: o desired state dos serviços passou CI
+  commit-bound, mas ainda exige apply controlado no NODE-01.
 - o lifecycle declarativo de três bridges internas vazias passou somente na VM
   descartável (`1c0d698`, run `32075348131`): apply 3, idempotência 0, recusa de
   rede estranha e rollback 3; nenhuma bridge foi criada no NODE-01.
 
 ## Próximo passo exato
 
-**SLICE_002C_NODE_01_NETWORK_SERVICES_COMMIT_BOUND_CI**
+**SLICE_002C_VERIFY_RUNNER_AND_APPLY_NODE_01_NETWORK_SERVICES**
 
-Publicar e provar em VM descartável o desired state bounded para bridges
-internas, DNS por escopo e egress proxy-only. Somente depois sincronizar o runner,
-revalidar o NODE-01 e executar apply/reconcile/check. Nenhum workload de usuário
+Verificar por leitura o runner temporário e o NODE-01. Se o runner estiver
+expirado ou incompatível, reativá-lo pelo bootstrap assinado em HUMAN_GATE;
+depois executar apply/reconcile/check dos serviços. Nenhum workload de usuário
 está autorizado. Management Network, produção e rotação permanecem fora.
 
 ## Architecture/Technology Mapping — gaps condicionais
