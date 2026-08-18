@@ -1,0 +1,61 @@
+name: control-bridge-g1
+
+on:
+  push:
+    branches:
+      - mcf/mission-001-control-bridge-g1
+    paths:
+      - control/dispatch/probe.json
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: control-bridge-g1-${{ github.event.issue.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'issues' && startsWith(github.event.issue.title, '[VPS-CMD] PROBE'))
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out exact bridge state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run bounded NODE-01 probe
+        env:
+          CONTROL_BRIDGE_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 scripts/control_bridge_probe.py \
+            --event-name "${CONTROL_BRIDGE_EVENT_NAME}" \
+            --event-path "${GITHUB_EVENT_PATH}" \
+            --request-file control/dispatch/probe.json \
+            --result-file "${RUNNER_TEMP}/control-bridge-result.json"
+
+      - name: Publish probe result to request issue
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/control_bridge_publish.py \
+            --result-file "${RUNNER_TEMP}/control-bridge-result.json"
+
+      - name: Add result to Actions summary
+        if: always()
+        run: |
+          {
+            printf '%s\n\n' '## MCF VPS Control Bridge G1'
+            printf '%s\n' '```json'
+            cat "${RUNNER_TEMP}/control-bridge-result.json"
+            printf '%s\n' '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
