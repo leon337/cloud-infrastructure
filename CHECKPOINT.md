@@ -1,6 +1,6 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-16 após a decisão Q40-D. Este arquivo responde: **onde estamos agora?**
+Atualizado em 2026-08-18 após retomada manual da missão. Este arquivo responde: **onde estamos agora?**
 
 ## Estado durável
 
@@ -18,6 +18,14 @@ Atualizado em 2026-08-16 após a decisão Q40-D. Este arquivo responde: **onde e
 - `implementation_authorized: true` para a plataforma privada DEV/lab dentro dos guardrails.
 - `codex_implementation_mission_authorized: true`.
 - `production_promotion_authorized: false`; produção continua sujeita a HUMAN_GATE de LEANDRO.
+
+## Contingência de executor — 18/08/2026
+
+- LEANDRO informou que o Codex está indisponível.
+- LEANDRO assumiu temporariamente a execução manual das ações na VPS.
+- MESTRE assume a orquestração técnica, análise dos resultados, definição de microtarefas, prechecks, rollback, validação e checkpoint.
+- A contingência altera apenas o executor atual; não reabre decisões Q1–Q40, não amplia a autorização e não altera os guardrails.
+- O contrato incremental de `docs/CODEX-EXECUTION-MISSION-001.md` continua sendo usado como contrato de execução, independentemente do executor.
 
 ## Guardrails vigentes
 
@@ -67,6 +75,6 @@ Atualizado em 2026-08-16 após a decisão Q40-D. Este arquivo responde: **onde e
 
 Toda retomada começa em `CONTEXT.md`, verifica a `main` real, lê `CHECKPOINT.md`, `state/current.yaml`, `state/platform-discovery.yaml`, `docs/39-platform-discovery-checkpoint-028.md` e `docs/CODEX-EXECUTION-MISSION-001.md`.
 
-Próximo passo exato: **CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT**.
+Próximo passo exato: **MISSION ACCEPTANCE + RECOVERY REPORT**, preservando o mesmo conteúdo exigido pela missão Codex, mas executado temporariamente por LEANDRO sob orquestração do MESTRE.
 
-O Codex deve primeiro recuperar GitHub + estado real da VPS, registrar divergências, confirmar riscos, Technology Mapping inicial e primeiro incremento com rollback; depois prosseguir incrementalmente dentro da autorização Q40-D.
+Antes de qualquer implementação ampla: recuperar GitHub + estado real da VPS, registrar divergências, confirmar riscos, Technology Mapping inicial e primeiro incremento com rollback; depois prosseguir incrementalmente dentro da autorização Q40-D.
