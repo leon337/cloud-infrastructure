@@ -120,12 +120,8 @@ probe nslookup api.github.com 10.240.2.2 >/dev/null || fail scoped_dns_failed
 if probe wget -T 4 -qO- https://api.github.com >/dev/null 2>&1; then
   fail direct_egress_allowed
 fi
-proxy_output=$({
-  printf 'CONNECT api.github.com:443 HTTP/1.1\r\nHost: api.github.com:443\r\n\r\n'
-  sleep 2
-} | probe nc -w 5 10.240.2.3 3128 2>/dev/null || true)
-if ! grep -Fq '200 Connection established' <<<"$proxy_output"; then
-  printf 'DIAGNOSTIC proxy_response=%q\n' "$proxy_output" >&2
+if ! probe sh -c \
+  'http_proxy=http://10.240.2.3:3128 wget -T 8 -qO- http://security.ubuntu.com/ >/dev/null'; then
   sudo docker logs --tail 80 cp-proxy-dev >&2 || true
   fail development_proxy_failed
 fi
