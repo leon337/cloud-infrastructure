@@ -21,6 +21,10 @@ fail() {
   exit 1
 }
 
+stage() {
+  printf 'NETWORK_SERVICES_VM_STAGE=%s\n' "$1"
+}
+
 [[ $# -eq 0 ]] || fail unexpected_arguments
 [[ ${DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM:-} == "$CONFIRMATION" ]] ||
   fail missing_exact_confirmation
@@ -38,7 +42,7 @@ done
 
 containers=(
   cp-dns-dev cp-dns-restricted cp-proxy-dev cp-proxy-restricted
-  cp-origin-fixture cp-registry-fixture
+  cp-origin-fixture cp-registry-fixture cp-probe cp-proxy-probe
 )
 
 cleanup() {
@@ -160,7 +164,8 @@ fi
 probe() {
   local network=$1
   shift
-  sudo docker run --rm --network "$network" --read-only --cap-drop ALL \
+  timeout --kill-after=2s 10s sudo docker run --rm --name cp-probe \
+    --network "$network" --read-only --cap-drop ALL \
     --security-opt no-new-privileges --pids-limit 32 --memory 32m --cpus 0.25 \
     "$FIXTURE_IMAGE" "$@"
 }
@@ -170,11 +175,13 @@ proxy_probe() {
   local authority=${url#http://}
   local host=${authority%%/*}
   printf 'GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n' "$url" "$host" |
-  sudo docker run --rm --interactive --network "$network" --read-only --cap-drop ALL \
+  timeout --kill-after=2s 10s sudo docker run --rm --interactive --name cp-proxy-probe \
+    --network "$network" --read-only --cap-drop ALL \
     --security-opt no-new-privileges --pids-limit 32 --memory 32m --cpus 0.25 \
     "$FIXTURE_IMAGE" nc -w 3 "$proxy" 3128
 }
 
+stage scoped_dns
 probe cloud-scope-cp00000002 nslookup registry.shared.dev.internal 10.240.2.2 |
   grep -q '10.240.3.10' || fail dev_dns_shared_record_failed
 if probe cloud-scope-cp00000002 nslookup admin.registry.shared.dev.internal 10.240.2.2 \
@@ -184,6 +191,7 @@ fi
 probe cloud-scope-cp00000003 nslookup admin.registry.shared.dev.internal 10.240.3.2 |
   grep -q '10.240.3.11' || fail restricted_dns_admin_record_failed
 
+stage proxy_policy
 if ! proxy_probe cloud-scope-cp00000002 10.240.2.3 \
   http://security.ubuntu.com/index.html |
   grep -q NETWORK_SERVICES_FIXTURE_OK; then
@@ -195,11 +203,13 @@ proxy_probe cloud-scope-cp00000003 10.240.3.3 \
   fail restricted_proxy_did_not_respond
 grep -q '403 Forbidden' "$TMP_ROOT/restricted-proxy.out" ||
   fail restricted_proxy_allowed_unlisted_destination
+stage direct_egress_denial
 if probe cloud-scope-cp00000002 wget -T 3 -qO- "http://$EGRESS_FIXTURE_IP/index.html" \
   >/dev/null 2>&1; then
   fail workload_reached_direct_egress
 fi
 
+stage shared_service_grant
 probe cloud-scope-cp00000002 wget -T 3 -qO- http://10.240.3.10:5000/index.html |
   grep -q NETWORK_SERVICES_FIXTURE_OK || fail explicit_shared_service_grant_failed
 python3 - "$POLICY" "$TMP_ROOT/no-grant.yaml" <<'PY'
@@ -211,11 +221,13 @@ destination.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
 PY
 python3 "$COMPILER" "$TMP_ROOT/no-grant.yaml" --family ipv4 >"$TMP_ROOT/no-grant.v4"
 sudo iptables-restore -w 5 --noflush "$TMP_ROOT/no-grant.v4"
+stage revoked_grant
 if probe cloud-scope-cp00000002 wget -T 3 -qO- \
   http://10.240.3.10:5000/index.html >/dev/null 2>&1; then
   fail revoked_grant_remained_reachable
 fi
 
+stage dependency_failure
 sudo docker stop cp-dns-dev >/dev/null
 if probe cloud-scope-cp00000002 nslookup registry.shared.dev.internal 10.240.2.2 \
   >/dev/null 2>&1; then
@@ -227,6 +239,7 @@ if proxy_probe cloud-scope-cp00000002 10.240.2.3 \
   fail proxy_dependency_failure_did_not_close
 fi
 
+stage cleanup
 for container in "${containers[@]}"; do
   sudo docker rm --force "$container" >/dev/null 2>&1 || true
 done
