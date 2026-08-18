@@ -121,7 +121,7 @@ if probe wget -T 4 -qO- https://api.github.com >/dev/null 2>&1; then
   fail direct_egress_allowed
 fi
 if ! probe sh -c \
-  'http_proxy=http://10.240.2.3:3128 wget -T 8 -qO- http://security.ubuntu.com/ >/dev/null'; then
+  'http_proxy=http://10.240.2.3:3128 wget -T 8 -qO- http://security.ubuntu.com/ubuntu/ >/dev/null'; then
   sudo docker logs --tail 80 cp-proxy-dev >&2 || true
   fail development_proxy_failed
 fi
