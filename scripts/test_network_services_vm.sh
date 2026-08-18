@@ -117,6 +117,9 @@ start_proxy() {
     --tmpfs /run:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792 \
     --tmpfs /var/log/squid:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792 \
     --tmpfs /var/spool/squid:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792 \
+    --add-host "security.ubuntu.com:$EGRESS_FIXTURE_IP" \
+    --add-host "api.github.com:$EGRESS_FIXTURE_IP" \
+    --add-host "ghcr.io:$EGRESS_FIXTURE_IP" \
     --mount "type=bind,src=$TMP_ROOT/$scope/squid.conf,dst=/etc/squid/squid.conf,readonly" \
     --entrypoint /usr/local/bin/entrypoint.sh \
     "$SQUID_IMAGE" -f /etc/squid/squid.conf -NYC >/dev/null
