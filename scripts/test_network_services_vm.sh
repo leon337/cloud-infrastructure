@@ -199,9 +199,15 @@ probe cloud-scope-cp00000003 nslookup admin.registry.shared.dev.internal 10.240.
   grep -q '10.240.3.11' || fail restricted_dns_admin_record_failed
 
 stage proxy_policy
-if ! proxy_probe cloud-scope-cp00000002 10.240.2.3 \
-  http://security.ubuntu.com/index.html |
-  grep -q NETWORK_SERVICES_FIXTURE_OK; then
+proxy_probe cloud-scope-cp00000002 10.240.2.3 \
+  http://security.ubuntu.com/index.html >"$TMP_ROOT/development-proxy.out" || true
+if ! grep -q NETWORK_SERVICES_FIXTURE_OK "$TMP_ROOT/development-proxy.out"; then
+  printf '%s\n' 'PROXY_RESPONSE_DIAGNOSTIC_BEGIN' >&2
+  sed -n '1,40p' "$TMP_ROOT/development-proxy.out" >&2
+  printf '%s\n' 'PROXY_RESPONSE_DIAGNOSTIC_END' >&2
+  sudo docker inspect -f '{{json .NetworkSettings.Networks}}' cp-proxy-dev >&2 || true
+  sudo docker inspect -f '{{json .NetworkSettings.Networks}}' cp-origin-fixture >&2 || true
+  sudo docker logs cp-origin-fixture >&2 || true
   proxy_diagnostics
   fail development_proxy_allow_failed
 fi
