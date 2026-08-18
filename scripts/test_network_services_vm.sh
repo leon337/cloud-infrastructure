@@ -192,12 +192,12 @@ if proxy_probe cloud-scope-cp00000003 10.240.3.3 \
   http://security.ubuntu.com/index.html >/dev/null 2>&1; then
   fail restricted_proxy_allowed_unlisted_destination
 fi
-if probe cloud-scope-cp00000002 wget -qO- "http://$EGRESS_FIXTURE_IP/index.html" \
+if probe cloud-scope-cp00000002 wget -T 3 -qO- "http://$EGRESS_FIXTURE_IP/index.html" \
   >/dev/null 2>&1; then
   fail workload_reached_direct_egress
 fi
 
-probe cloud-scope-cp00000002 wget -qO- http://10.240.3.10:5000/index.html |
+probe cloud-scope-cp00000002 wget -T 3 -qO- http://10.240.3.10:5000/index.html |
   grep -q NETWORK_SERVICES_FIXTURE_OK || fail explicit_shared_service_grant_failed
 python3 - "$POLICY" "$TMP_ROOT/no-grant.yaml" <<'PY'
 import pathlib, sys, yaml
