@@ -122,8 +122,8 @@ start_dns cp-dns-restricted cloud-scope-cp00000003 10.240.3.2 restricted
 start_proxy cp-proxy-dev cloud-scope-cp00000002 10.240.2.3 dev
 start_proxy cp-proxy-restricted cloud-scope-cp00000003 10.240.3.3 restricted
 
-sudo iptables-restore -w 5 --noflush --file "$TMP_ROOT/policy.v4"
-sudo ip6tables-restore -w 5 --noflush --file "$TMP_ROOT/policy.v6"
+sudo iptables-restore -w 5 --noflush "$TMP_ROOT/policy.v4"
+sudo ip6tables-restore -w 5 --noflush "$TMP_ROOT/policy.v6"
 sudo sysctl -q -w net.ipv4.ip_forward=1 >/dev/null
 
 for _ in {1..30}; do
@@ -183,7 +183,7 @@ raw["shared_service_grants"] = []
 destination.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
 PY
 python3 "$COMPILER" "$TMP_ROOT/no-grant.yaml" --family ipv4 >"$TMP_ROOT/no-grant.v4"
-sudo iptables-restore -w 5 --noflush --file "$TMP_ROOT/no-grant.v4"
+sudo iptables-restore -w 5 --noflush "$TMP_ROOT/no-grant.v4"
 if probe cloud-scope-cp00000002 wget -T 3 -qO- \
   http://10.240.3.10:5000/index.html >/dev/null 2>&1; then
   fail revoked_grant_remained_reachable
