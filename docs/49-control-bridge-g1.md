@@ -1,10 +1,11 @@
 # 49 — CONTROL BRIDGE G1
 
-Status: **REPO_ONLY_IMPLEMENTING — VPS_NOT_MUTATED**
+Status: **HANDSHAKE_PASS — RUNNER_ACTIVE — PR_DRAFT**
 Data: 2026-08-18
 Missão: `CODEX-EXECUTION-MISSION-001` / continuidade MCF
 Branch: `mcf/mission-001-control-bridge-g1`
 Base: `codex/mission-001-f1-2c-network-enforcement`
+PR: `#3` — OPEN / DRAFT / NOT MERGED
 
 ## Objetivo
 
@@ -16,9 +17,9 @@ G1 não substitui o Capability Core, Node Agent, F5.0 runner isolation ou MCP fi
 
 A branch F1.2c já contém Foundations, Docker boundary, Network Enforcement, manifests, Ansible, testes e um runner privilegiado temporário da Mission 001. Esse runner permanece a fronteira temporária para as seis operações fixas `check`, `apply`, `test`, `reconcile`, `rollback` e `status`; ele não aceita shell arbitrário.
 
-O novo GitHub self-hosted runner terá papel diferente: será o transporte de jobs GitHub para o usuário Linux `ubuntu`. Ele não deve receber acesso direto ao Docker socket nem substituir o futuro Node Agent.
+O GitHub self-hosted runner tem papel diferente: é o transporte de jobs GitHub para o usuário Linux `ubuntu`. Ele não recebeu acesso direto ao Docker socket, root direto ou sudo sem senha.
 
-## Arquitetura G1
+## Arquitetura G1 comprovada
 
 ```text
 ChatGPT / GitHub connector
@@ -26,25 +27,23 @@ ChatGPT / GitHub connector
           v
 cloud-infrastructure
           |
-          +-- bootstrap: push controlado
-          |
-          +-- estado estável: Issue command bus
+          +-- push controlado em control/dispatch/probe.json
           |
           v
 GitHub Actions
           |
           v
 self-hosted runner NODE-01
-ubuntu / no Docker socket
+ubuntu / no Docker socket / no passwordless sudo
           |
           v
-probe bounded / adapters futuros
+probe bounded
           |
           v
 resultado estruturado
           |
           v
-GitHub Issue + workflow logs
+GitHub Issue #4
           |
           v
 ChatGPT
@@ -52,13 +51,17 @@ ChatGPT
 
 ## Bootstrap em duas fases
 
-### G1-A — push bootstrap
+### G1-A — push bootstrap — COMPROVADO
 
-Antes do workflow existir na branch padrão, um push controlado em `control/dispatch/probe.json` pode disparar o workflow presente na própria branch G1. O request referencia uma Issue de retorno. Isso permite provar o ciclo sem merge prematuro.
+Antes do workflow existir na branch padrão, um push controlado em `control/dispatch/probe.json` dispara o workflow presente na própria branch G1. O request referencia uma Issue de retorno.
 
-### G1-B — Issue command bus
+O mecanismo foi comprovado em ambiente real em 2026-08-18.
+
+### G1-B — Issue command bus — AINDA NÃO ATIVADO COMO TRIGGER
 
 Depois que a ponte estiver validada e o workflow chegar à branch padrão, Issues com título `[VPS-CMD] PROBE ...` poderão disparar diretamente a mesma prova. O corpo da Issue conterá o request JSON validado.
+
+No G1 atual, a Issue #4 é o sink de resultado; o trigger ativo continua sendo `push` controlado.
 
 ## Protocolo de probe V1
 
@@ -91,39 +94,95 @@ Todo resultado contém:
 
 Cada probe preserva `argv`, `exit_code`, `stdout`, `stderr`, `started_at` e `finished_at`. Erro ou timeout não pode ser convertido em sucesso.
 
-## Labels do runner
+## Runner real
 
-O job G1 exige cumulativamente:
+Runner registrado no repositório em 2026-08-18 como serviço systemd associado ao usuário `ubuntu`.
+
+Nome observado no GitHub:
+
+```text
+node--1-mcf-control
+```
+
+O nome contém uma divergência de nomenclatura em relação ao nome planejado `node-01-mcf-control`, mas não participa do roteamento do job e não bloqueou o handshake.
+
+Labels efetivas após correção:
 
 ```text
 self-hosted
-linux
-x64
+Linux
+X64
 node-01
 mcf-control
 ```
 
-## Invariantes G1
+O job G1 exige cumulativamente `self-hosted`, `linux`, `x64`, `node-01` e `mcf-control`.
 
-- nenhuma mudança de produção;
+## Evidência real do handshake
+
+Issue de retorno:
+
+- `#4` — `[VPS-CMD] PROBE — G1 first handshake`
+
+Resultados automáticos publicados por `github-actions[bot]`:
+
+1. `VPS-PROBE-20260818-001` — `PASS` — `2026-08-18T21:09:34Z`;
+2. `VPS-PROBE-20260818-002` — `PASS` — `2026-08-18T21:09:49Z`.
+
+Ambos retornaram sem relay manual de stdout por LEANDRO.
+
+Observações retornadas pelo probe:
+
+```text
+hostname=vmi3506102
+identity=ubuntu uid=1000
+kernel=6.8.0-137-generic x86_64
+python=3.12.3
+root_fs=290G total / 15G used / 275G available
+memory=23Gi total / ~15Gi available
+ssh=active
+ufw=active
+docker=active
+containerd=active
+```
+
+A tentativa read-only de consultar `codex-mission-001-runner status` retornou `exit 1` com `sudo: a password is required`. Isso confirma que o GitHub runner não recebeu sudo sem senha. Esse resultado não invalida o handshake porque o critério core de PASS considera os seis probes base, todos com `exit_code=0`.
+
+## Invariantes G1 preservados
+
+- nenhuma promoção para produção;
 - nenhuma rotação de credencial;
 - nenhuma senha/chave/token persistida no Git ou resultado;
 - nenhuma concessão de Docker socket ao runner;
-- nenhuma alteração do SSH/UFW/XRDP pelo bootstrap G1;
+- nenhuma alteração do SSH/UFW/XRDP pelo probe;
 - probe usa argv fixos e `shell=False`;
 - o runner privilegiado existente continua separado do GitHub runner;
-- G1 não declara escrita arbitrária, F5.0, Capability Core, Node Agent ou MCP como DONE.
+- G1 não declara escrita arbitrária, F5.0, Capability Core, Node Agent ou MCP como DONE;
+- PR #3 continua draft e não foi mergeado.
 
-## Validação antes do bootstrap na VPS
+## Critério de PASS observado
 
-1. testes unitários do protocolo/probe;
-2. sintaxe Python e YAML;
-3. regressão da suíte `scripts/test.sh`;
-4. revisão do workflow para confirmar labels, permissions e timeout;
-5. PR draft/checks sem merge;
-6. somente depois: interação humana de registro do self-hosted runner;
-7. primeiro handshake deve ser somente leitura;
-8. depois do handshake PASS, desenhar o próximo slice de capacidades de leitura/escrita sem duplicar o futuro Capability Core/Node Agent.
+```text
+RUNNER_REGISTERED=YES
+RUNNER_SERVICE_ACTIVE=YES
+RUNNER_GITHUB_CONNECTED=YES
+FIRST_JOB_ROUTE=node-01+mcf-control=PASS
+PROBE_CORE_EXIT_CODES=0
+RESULT_RETURNED_TO_GITHUB=YES
+RESULT_READ_BY_MESTRE=YES
+LEANDRO_MANUAL_STDOUT_RELAY=NO
+PASSWORDLESS_SUDO=NO
+ROOT_ACCESS=NO
+ARBITRARY_WRITE=NO
+```
+
+`VPS_UNRELATED_SERVICES_CHANGED=NO` não é declarado como prova completa de invariância pelo handshake; o probe apenas observou os serviços consultados e não executou comandos mutantes.
+
+## Validação e CI
+
+O gate anterior ao bootstrap estava verde no HEAD `b40deaabc1b7068fb923ae42e408505d67b5a51a`.
+
+Os commits de dispatch posteriores moveram o HEAD do PR. Portanto, cada HEAD posterior continua sujeito à CI commit-bound antes de qualquer avanço estrutural ou merge.
 
 ## Relação com o roadmap existente
 
@@ -132,13 +191,19 @@ G1 é uma capability bootstrap de execução, não a conclusão de `F5.0 Runner/
 ## Estado atual
 
 ```text
-G1_BRANCH=CREATED
-G1_REPO_CONTRACT=IMPLEMENTING
-G1_BOUNDED_PROBE=IMPLEMENTED_REPO_ONLY
-G1_WORKFLOW=IMPLEMENTED_REPO_ONLY
-G1_UNIT_TESTS=NOT_YET_VERIFIED_BY_CI
-G1_PR_CHECKS=NOT_YET_RUN
-G1_SELF_HOSTED_RUNNER=NOT_INSTALLED
-G1_VPS_MUTATION=NO
-NEXT=OPEN_DRAFT_PR_AND_RUN_REPOSITORY_VALIDATION
+G1_BRANCH=ACTIVE
+G1_REPO_CONTRACT=IMPLEMENTED
+G1_BOUNDED_PROBE=IMPLEMENTED
+G1_WORKFLOW=IMPLEMENTED
+G1_SELF_HOSTED_RUNNER=REGISTERED_AND_SERVICE_ACTIVE
+G1_ROUTING_LABELS=CORRECTED
+G1_FIRST_HANDSHAKE=PASS
+G1_SECOND_HANDSHAKE=PASS
+G1_RESULT_SINK=ISSUE_4
+G1_MANUAL_STDOUT_RELAY=NO
+G1_PRIVILEGED_EXECUTION=NOT_GRANTED
+G1_ARBITRARY_WRITE=NOT_IMPLEMENTED
+G1_MCP=NOT_IMPLEMENTED
+G1_PR3=OPEN_DRAFT_NOT_MERGED
+NEXT=FREEZE_HANDSHAKE_EVIDENCE_AND_DESIGN_NEXT_BOUNDED_SLICE
 ```
