@@ -135,7 +135,7 @@ if [[ -e $SERVICE_MARKER || -L $SERVICE_MARKER ]]; then
   [[ $(stat -c '%U:%G:%a:%h' "$SERVICE_MARKER") == root:root:600:1 ]] || refuse service_marker_metadata_drift
   [[ $(<"$SERVICE_MARKER") == "$SERVICE_VERSION" ]] || refuse service_marker_content_drift
   for installed in "${!installed_digests[@]}"; do
-    mode=640
+    mode=644
     [[ $installed == "$SERVICE_HELPER" ]] && mode=755
     [[ $installed == "$SERVICE_UNIT" || $installed == "$SYSCTL_FILE" ]] && mode=644
     file_matches "$installed" "$mode" "${installed_digests[$installed]}" ||
@@ -150,14 +150,14 @@ else
   [[ -z $(docker network ls --filter type=custom --quiet) ]] || refuse unmanaged_networks_present
   [[ -x /usr/local/sbin/cloud-infrastructure-config-backup ]] || refuse backup_command_missing
   /usr/local/sbin/cloud-infrastructure-config-backup >/dev/null || refuse preservices_backup_failed
-  install -d -o root -g root -m 0750 "$SERVICE_ROOT/cp00000002" "$SERVICE_ROOT/cp00000003"
+  install -d -o root -g root -m 0755 "$SERVICE_ROOT/cp00000002" "$SERVICE_ROOT/cp00000003"
   install -o root -g root -m 0755 \
     "$MISSION_REPOSITORY/platform/network/cloud-platform-network-services" "$SERVICE_HELPER"
-  install -o root -g root -m 0640 \
+  install -o root -g root -m 0644 \
     "$MISSION_REPOSITORY/platform/network/node-01/compose.yaml" "$SERVICE_ROOT/compose.yaml"
   for scope in cp00000002 cp00000003; do
     for file in Corefile records.hosts squid.conf; do
-      install -o root -g root -m 0640 \
+      install -o root -g root -m 0644 \
         "$MISSION_REPOSITORY/platform/network/node-01/$scope/$file" "$SERVICE_ROOT/$scope/$file"
     done
   done

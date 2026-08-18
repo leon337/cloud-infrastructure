@@ -7,6 +7,10 @@ CoreDNS e Squid para os escopos `development-default` e `restricted`. Não há
 `ports:`, listener público, workload de usuário, Management Network, produção,
 secret ou rotação de credencial.
 
+As configurações são `root:root 0644` porque CoreDNS e Squid executam sem root e
+precisam ler os bind mounts. Elas não contêm segredos; o marker de proveniência
+e a autorização temporária permanecem privados em `0600`.
+
 ## Gates antes do apply
 
 1. commit exato publicado e os quatro jobs da workflow Docker verdes;

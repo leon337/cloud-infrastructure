@@ -57,12 +57,12 @@ trap cleanup EXIT
 sudo install -d -o root -g root -m 0755 /usr/local/libexec
 sudo install -o root -g root -m 0755 "$BASE_SOURCE" "$BASE"
 sudo "$BASE" apply | grep -q 'changed=1' || fail base_apply_failed
-sudo install -d -o root -g root -m 0750 "$CONFIG/cp00000002" "$CONFIG/cp00000003"
+sudo install -d -o root -g root -m 0755 "$CONFIG/cp00000002" "$CONFIG/cp00000003"
 sudo install -o root -g root -m 0755 "$SERVICE_SOURCE" "$SERVICE"
-sudo install -o root -g root -m 0640 "$SOURCE_CONFIG/compose.yaml" "$CONFIG/compose.yaml"
+sudo install -o root -g root -m 0644 "$SOURCE_CONFIG/compose.yaml" "$CONFIG/compose.yaml"
 for scope in cp00000002 cp00000003; do
   for file in Corefile records.hosts squid.conf; do
-    sudo install -o root -g root -m 0640 "$SOURCE_CONFIG/$scope/$file" "$CONFIG/$scope/$file"
+    sudo install -o root -g root -m 0644 "$SOURCE_CONFIG/$scope/$file" "$CONFIG/$scope/$file"
   done
 done
 sudo install -o root -g root -m 0644 \
