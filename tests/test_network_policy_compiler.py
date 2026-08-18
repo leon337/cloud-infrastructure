@@ -30,7 +30,8 @@ class NetworkPolicyCompilerTests(unittest.TestCase):
         self.assertIn(":CLOUD-PLATFORM-FWD - [0:0]", ipv4)
         self.assertIn("-i cp00000001 -j DROP", ipv4)
         self.assertNotIn("-i cp00000001 -p udp --dport 53 -j ACCEPT", ipv4)
-        self.assertIn("-i cp00000002 -d 10.240.2.1/32 -p udp --dport 53 -j ACCEPT", ipv4)
+        self.assertIn("-i cp00000002 -o cp00000002 -d 10.240.2.2/32 -p udp --dport 53 -j ACCEPT", ipv4)
+        self.assertIn("-i cp00000002 -o cp00000002 -d 10.240.2.3/32 -p tcp --dport 3128 -j ACCEPT", ipv4)
         self.assertIn("-d 10.240.3.10/32 -p tcp --dport 5000", ipv4)
         self.assertLess(
             ipv4.index("-d 10.240.3.10/32 -p tcp --dport 5000"),

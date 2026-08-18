@@ -21,16 +21,22 @@ sandboxes:
     interface: cp00000001
     subnet_ipv4: 10.240.1.0/24
     gateway_ipv4: 10.240.1.1
+    dns_ipv4: null
+    proxy_ipv4: null
     egress_profile: none
   - identity: tenant-a.project-a.mission-a.sandbox-dev
     interface: cp00000002
     subnet_ipv4: 10.240.2.0/24
     gateway_ipv4: 10.240.2.1
+    dns_ipv4: 10.240.2.2
+    proxy_ipv4: 10.240.2.3
     egress_profile: development-default
   - identity: platform.shared.registry
     interface: cp00000003
     subnet_ipv4: 10.240.3.0/24
     gateway_ipv4: 10.240.3.1
+    dns_ipv4: 10.240.3.2
+    proxy_ipv4: 10.240.3.3
     egress_profile: restricted
 shared_service_grants:
   - grant_id: grant-registry-read
@@ -46,6 +52,11 @@ service_records:
     ipv4: 10.240.3.10
     visible_to_interfaces:
       - cp00000002
+      - cp00000003
+  - record_id: registry-admin
+    name: admin.registry.shared.dev.internal
+    ipv4: 10.240.3.11
+    visible_to_interfaces:
       - cp00000003
 egress_destinations:
   - destination_id: github-api

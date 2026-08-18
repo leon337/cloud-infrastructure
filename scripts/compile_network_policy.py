@@ -34,6 +34,8 @@ SANDBOX_KEYS = {
     "interface",
     "subnet_ipv4",
     "gateway_ipv4",
+    "dns_ipv4",
+    "proxy_ipv4",
     "egress_profile",
 }
 GRANT_KEYS = {
@@ -163,6 +165,17 @@ def load_and_validate(
         subnets.append(subnet)
         if sandbox["egress_profile"] not in PROFILES:
             raise PolicyError(f"sandboxes[{index}].egress_profile is invalid")
+        if sandbox["egress_profile"] == "none":
+            if sandbox["dns_ipv4"] is not None or sandbox["proxy_ipv4"] is not None:
+                raise PolicyError(f"sandboxes[{index}] none profile cannot declare DNS/proxy IPs")
+        else:
+            try:
+                dns_ip = ipaddress.ip_address(sandbox["dns_ipv4"])
+                proxy_ip = ipaddress.ip_address(sandbox["proxy_ipv4"])
+            except ValueError as exc:
+                raise PolicyError(f"sandboxes[{index}] has invalid DNS/proxy IPv4") from exc
+            if dns_ip != subnet.network_address + 2 or proxy_ip != subnet.network_address + 3:
+                raise PolicyError(f"sandboxes[{index}] DNS/proxy IPs must be reserved hosts .2/.3")
         sandboxes.append(sandbox)
 
     grants_raw = plan["shared_service_grants"]
@@ -325,16 +338,6 @@ def compile_ipv4(plan: dict[str, Any]) -> str:
     ]
     for sandbox in validated["sandboxes"]:
         interface = sandbox["interface"]
-        gateway = sandbox["gateway_ipv4"]
-        profile = sandbox["egress_profile"]
-        if profile != "none":
-            lines.extend(
-                [
-                    f"-A CLOUD-PLATFORM-IN -i {interface} -d {gateway}/32 -p udp --dport 53 -j ACCEPT",
-                    f"-A CLOUD-PLATFORM-IN -i {interface} -d {gateway}/32 -p tcp --dport 53 -j ACCEPT",
-                    f"-A CLOUD-PLATFORM-IN -i {interface} -d {gateway}/32 -p tcp --dport 3128 -j ACCEPT",
-                ]
-            )
         lines.append(f"-A CLOUD-PLATFORM-IN -i {interface} -j DROP")
     lines.extend(
         [
@@ -343,6 +346,17 @@ def compile_ipv4(plan: dict[str, Any]) -> str:
             "-A CLOUD-PLATFORM-FWD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
         ]
     )
+    for sandbox in validated["sandboxes"]:
+        if sandbox["egress_profile"] == "none":
+            continue
+        interface = sandbox["interface"]
+        lines.extend(
+            [
+                f"-A CLOUD-PLATFORM-FWD -i {interface} -o {interface} -d {sandbox['dns_ipv4']}/32 -p udp --dport 53 -j ACCEPT",
+                f"-A CLOUD-PLATFORM-FWD -i {interface} -o {interface} -d {sandbox['dns_ipv4']}/32 -p tcp --dport 53 -j ACCEPT",
+                f"-A CLOUD-PLATFORM-FWD -i {interface} -o {interface} -d {sandbox['proxy_ipv4']}/32 -p tcp --dport 3128 -j ACCEPT",
+            ]
+        )
     for grant in validated["grants"]:
         lines.append(
             "-A CLOUD-PLATFORM-FWD "

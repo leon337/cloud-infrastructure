@@ -13,6 +13,7 @@ DROPIN = (
     ROOT / "platform/systemd/docker.service.network-enforcement.conf"
 ).read_text(encoding="utf-8")
 HARNESS = (ROOT / "scripts/test_network_enforcement_vm.sh").read_text(encoding="utf-8")
+SERVICES_HARNESS = (ROOT / "scripts/test_network_services_vm.sh").read_text(encoding="utf-8")
 
 
 class NetworkEnforcementRuntimeTests(unittest.TestCase):
@@ -79,6 +80,15 @@ class NetworkEnforcementRuntimeTests(unittest.TestCase):
         self.assertIn("managed_interface_still_present", HARNESS)
         self.assertIn("systemctl restart docker.service", HARNESS)
         self.assertIn("NETWORK_ENFORCEMENT_VM_TEST_PASS", HARNESS)
+
+    def test_network_services_are_github_only_pinned_and_fully_cleaned(self):
+        self.assertIn("GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY", SERVICES_HARNESS)
+        self.assertIn("case \"$(hostname --short)\" in node-01 | vmi3506102", SERVICES_HARNESS)
+        self.assertEqual(SERVICES_HARNESS.count("@sha256:"), 3)
+        self.assertIn("revoked_grant_remained_reachable", SERVICES_HARNESS)
+        self.assertIn("hidden_dns_record_resolved", SERVICES_HARNESS)
+        self.assertIn("workload_reached_direct_egress", SERVICES_HARNESS)
+        self.assertIn("NETWORK_SERVICES_VM_TEST_PASS", SERVICES_HARNESS)
 
 
 if __name__ == "__main__":

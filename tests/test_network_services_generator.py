@@ -12,6 +12,7 @@ from scripts.generate_network_services import generate_coredns, generate_hosts, 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EXAMPLE = ROOT / "platform/network/f1-2c-policy.example.yaml"
+IMAGES = ROOT / "platform/network/f1-2c-service-images.yaml"
 
 
 class NetworkServicesGeneratorTests(unittest.TestCase):
@@ -28,35 +29,57 @@ class NetworkServicesGeneratorTests(unittest.TestCase):
         finally:
             path.unlink(missing_ok=True)
 
-    def test_coredns_binds_only_profiles_with_dns_and_separates_hosts_views(self):
-        config = generate_coredns(self.plan)
-        self.assertNotIn("bind 10.240.1.1", config)
-        self.assertIn("bind 10.240.2.1", config)
-        self.assertIn("bind 10.240.3.1", config)
-        self.assertEqual(config.count("forward . /etc/resolv.conf"), 2)
+    def test_coredns_is_generated_per_scope_and_separates_hosts_views(self):
+        config = generate_coredns(self.plan, "cp00000002")
+        self.assertIn("bind 0.0.0.0", config)
+        self.assertEqual(config.count("forward . /etc/resolv.conf"), 1)
         self.assertEqual(
             generate_hosts(self.plan, "cp00000002"),
             "10.240.3.10 registry.shared.dev.internal\n",
         )
-        self.assertEqual(generate_hosts(self.plan, "cp00000001"), "")
+        self.assertIn(
+            "10.240.3.11 admin.registry.shared.dev.internal",
+            generate_hosts(self.plan, "cp00000003"),
+        )
+        self.assertNotIn("fallthrough", config.split(".:53", maxsplit=1)[0])
 
     def test_squid_is_exact_destination_proxy_and_ends_in_deny_all(self):
-        config = generate_squid(self.plan)
-        self.assertNotIn("http_port 10.240.1.1:3128", config)
-        self.assertIn("http_port 10.240.2.1:3128", config)
-        self.assertIn("http_port 10.240.3.1:3128", config)
+        config = generate_squid(self.plan, "cp00000002")
+        self.assertIn("http_port 3128", config)
+        self.assertIn("acl scope_source src 10.240.2.0/24", config)
         self.assertIn("acl protected_dst dst 10.0.0.0/8", config)
         self.assertIn("acl destination_github_api dstdomain api.github.com", config)
         self.assertNotIn(
-            "source_cp00000003 destination_github_api",
+            "scope_source destination_not_declared",
             config,
         )
         self.assertIn(
-            "source_cp00000002 destination_github_api destination_ports_github_api",
+            "scope_source destination_github_api destination_ports_github_api",
             config,
         )
         self.assertLess(config.index("http_access deny protected_dst"), config.index("http_access allow"))
         self.assertEqual(config.splitlines()[-2], "http_access deny all")
+
+        restricted = generate_squid(self.plan, "cp00000003")
+        self.assertNotIn("scope_source destination_github_api", restricted)
+        self.assertIn("scope_source destination_github_container_registry", restricted)
+
+    def test_none_profile_has_no_service_configuration(self):
+        with self.assertRaisesRegex(PolicyError, "none profile"):
+            generate_coredns(self.plan, "cp00000001")
+        with self.assertRaisesRegex(PolicyError, "none profile"):
+            generate_squid(self.plan, "cp00000001")
+
+    def test_disposable_images_are_versioned_digest_pinned_and_never_authorized_on_node(self):
+        images = yaml.safe_load(IMAGES.read_text(encoding="utf-8"))
+        self.assertFalse(images["metadata"]["production"])
+        self.assertEqual(images["metadata"]["status"], "DISPOSABLE_INTEGRATION_ONLY")
+        for name, image in images["images"].items():
+            with self.subTest(image=name):
+                self.assertRegex(image["reference"], r"@sha256:[0-9a-f]{64}$")
+                self.assertEqual(image["platform"], "linux/amd64")
+        self.assertEqual(images["gates"]["node_01_pull"], "NOT_AUTHORIZED")
+        self.assertEqual(images["gates"]["workload_start"], "NOT_AUTHORIZED")
 
     def test_wildcard_private_and_none_profile_destinations_are_refused(self):
         cases = []

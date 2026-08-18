@@ -1,0 +1,33 @@
+api_version: cloud-platform/v1alpha1
+kind: NetworkServiceImageSet
+metadata:
+  environment: DEV_LAB
+  status: DISPOSABLE_INTEGRATION_ONLY
+  production: false
+images:
+  coredns:
+    version: 1.14.6
+    reference: coredns/coredns@sha256:1ba6f47265602e2e50a9c4669e3a955e4298a0d30dc82f39293d4bf1a851e0ff
+    platform: linux/amd64
+    publisher: CoreDNS
+    license: Apache-2.0
+    purpose: scoped_dns
+  squid:
+    version: 7.2
+    reference: ubuntu/squid@sha256:1b8d2c7c46e435e022047e97cb7ac0b851c739f083427341cae7e4df1d99f5a3
+    platform: linux/amd64
+    publisher: Canonical
+    license: GPL-2.0-or-later
+    purpose: explicit_http_connect_proxy
+  busybox_fixture:
+    version: 1.37.0
+    reference: busybox@sha256:7a3ebe5bfd1a4a19797d20b0c0bb39d44393e9a03fd852c0865b0f540d868df0
+    platform: linux/amd64
+    publisher: Docker_Official_Image
+    license: GPL-2.0-only
+    purpose: disposable_probe_only
+gates:
+  node_01_pull: NOT_AUTHORIZED
+  workload_start: NOT_AUTHORIZED
+  production: NOT_AUTHORIZED
+  credential_rotation: DEFERRED
