@@ -111,10 +111,23 @@ start_proxy() {
   local name=$1 network=$2 ip=$3 scope=$4
   sudo docker run --detach --name "$name" --network "$network" --ip "$ip" \
     --read-only --security-opt no-new-privileges --pids-limit 128 \
-    --memory 256m --cpus 0.5 --tmpfs /run --tmpfs /var/log/squid --tmpfs /var/spool/squid \
+    --memory 256m --cpus 0.5 \
+    --tmpfs /run:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792 \
+    --tmpfs /var/log/squid:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792 \
+    --tmpfs /var/spool/squid:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792 \
     --mount "type=bind,src=$TMP_ROOT/$scope/squid.conf,dst=/etc/squid/squid.conf,readonly" \
-    "$SQUID_IMAGE" >/dev/null
+    --entrypoint /usr/local/bin/entrypoint.sh \
+    "$SQUID_IMAGE" -f /etc/squid/squid.conf -NYC >/dev/null
   sudo docker network connect "$EGRESS_NETWORK" "$name"
+}
+
+proxy_diagnostics() {
+  local name
+  for name in cp-proxy-dev cp-proxy-restricted; do
+    printf 'PROXY_DIAGNOSTIC name=%s state=' "$name" >&2
+    sudo docker inspect -f '{{json .State}}' "$name" >&2 || true
+    sudo docker logs "$name" >&2 || true
+  done
 }
 
 start_dns cp-dns-dev cloud-scope-cp00000002 10.240.2.2 dev
@@ -128,13 +141,17 @@ sudo sysctl -q -w net.ipv4.ip_forward=1 >/dev/null
 
 for _ in {1..30}; do
   if sudo docker exec cp-dns-dev /coredns -version >/dev/null 2>&1 &&
-     sudo docker exec cp-proxy-dev pebble health >/dev/null 2>&1; then
+     [[ $(sudo docker inspect -f '{{.State.Running}}' cp-proxy-dev) == true ]]; then
     break
   fi
   sleep 1
 done
 [[ $(sudo docker inspect -f '{{.State.Running}}' cp-dns-dev) == true ]] || fail dns_not_running
-[[ $(sudo docker inspect -f '{{.State.Running}}' cp-proxy-dev) == true ]] || fail proxy_not_running
+if [[ $(sudo docker inspect -f '{{.State.Running}}' cp-proxy-dev) != true ||
+      $(sudo docker inspect -f '{{.State.Running}}' cp-proxy-restricted) != true ]]; then
+  proxy_diagnostics
+  fail proxy_not_running
+fi
 
 probe() {
   local network=$1
