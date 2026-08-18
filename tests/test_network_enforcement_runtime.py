@@ -112,6 +112,9 @@ class NetworkEnforcementRuntimeTests(unittest.TestCase):
         self.assertIn("test_network_services_vm.sh", STANDALONE_HARNESS)
         self.assertIn("NETWORK_SERVICES_STANDALONE_VM_TEST_PASS", STANDALONE_HARNESS)
         self.assertIn("GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY", STANDALONE_HARNESS)
+        self.assertIn("NETWORK_SERVICES_ROOT=$ROOT", STANDALONE_HARNESS)
+        self.assertIn('$ROOT == "$GITHUB_WORKSPACE"', SERVICES_HARNESS)
+        self.assertIn("noncanonical_repository_root", SERVICES_HARNESS)
 
 
 if __name__ == "__main__":

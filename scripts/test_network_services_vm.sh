@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 
 readonly CONFIRMATION=GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
-readonly ROOT=/workspace/cloud-infrastructure
+ROOT=${NETWORK_SERVICES_ROOT:-/workspace/cloud-infrastructure}
+readonly ROOT
 readonly POLICY=$ROOT/platform/network/f1-2c-policy.example.yaml
 readonly GENERATOR=$ROOT/scripts/generate_network_services.py
 readonly COMPILER=$ROOT/scripts/compile_network_policy.py
@@ -34,6 +35,12 @@ stage() {
 case "$(hostname --short)" in node-01 | vmi3506102) fail real_dev_node ;; esac
 systemd-detect-virt --quiet --vm || fail not_disposable_vm
 sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
+if [[ -n ${NETWORK_SERVICES_ROOT:-} ]]; then
+  [[ -n ${GITHUB_WORKSPACE:-} && $ROOT == "$GITHUB_WORKSPACE" ]] ||
+    fail untrusted_repository_root
+  [[ $(realpath -e -- "$ROOT") == "$GITHUB_WORKSPACE" ]] ||
+    fail noncanonical_repository_root
+fi
 [[ -x $GENERATOR && -f $COMPILER && -x $ENFORCEMENT && -f $IMAGE_SET ]] ||
   fail payload_missing
 for network in cloud-scope-cp00000001 cloud-scope-cp00000002 cloud-scope-cp00000003; do
