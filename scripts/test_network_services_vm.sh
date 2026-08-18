@@ -86,7 +86,10 @@ grep -q '^http_access deny all$' "$TMP_ROOT/dev/squid.conf" || fail proxy_defaul
 for image in "$COREDNS_IMAGE" "$SQUID_IMAGE" "$FIXTURE_IMAGE"; do
   sudo docker pull "$image" >/dev/null
 done
-sudo docker network create --internal --subnet "$EGRESS_FIXTURE_CIDR" "$EGRESS_NETWORK" >/dev/null
+sudo docker network create --internal --subnet "$EGRESS_FIXTURE_CIDR" \
+  --opt com.docker.network.bridge.name=cpf1egress \
+  --opt com.docker.network.bridge.enable_icc=true \
+  "$EGRESS_NETWORK" >/dev/null
 
 sudo docker run --detach --name cp-origin-fixture \
   --network "$EGRESS_NETWORK" --ip "$EGRESS_FIXTURE_IP" \
