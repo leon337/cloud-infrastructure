@@ -10,6 +10,8 @@
 
 **Spec:** `docs/51-control-bridge-g2a-design.md`
 
+**Plan status:** `REVIEWED — IMPLEMENTATION_NOT_AUTHORIZED`
+
 ## Global Constraints
 
 - G2-A is read-only. No `workspace.write`, `mkdir`, `delete`, Git mutation, clone, provisioning, shell, sudo, Docker, systemd mutation, network mutation, APT/system package management, secrets administration, deploy, backup/rollback, or production action.
