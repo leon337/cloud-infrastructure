@@ -8,7 +8,7 @@ PUC v1.0. As validações independentes existentes continuam históricas e vincu
 
 ## Regra zero
 
-Antes de agir: verificar a `main` real, ler `CONTEXT.md`, `CHECKPOINT.md`, `state/current.yaml`, `state/platform-discovery.yaml`, o checkpoint Q40 e a missão Codex; distinguir fatos atuais de baselines históricas; não repetir coleta já suficiente; nunca pedir ou versionar secrets; respeitar HUMAN_GATEs aplicáveis.
+Antes de agir: verificar a `main` real, ler `CONTEXT.md`, `CHECKPOINT.md`, `state/current.yaml`, `state/platform-discovery.yaml`, o checkpoint Q40 e a missão de execução; distinguir fatos atuais de baselines históricas; não repetir coleta já suficiente; nunca pedir ou versionar secrets; respeitar HUMAN_GATEs aplicáveis.
 
 Precedência: instrução atual de LEANDRO → infraestrutura verificável → GitHub `main` → CHECKPOINT/state → decisões → docs → findings/runbooks → history → chats.
 
@@ -19,8 +19,8 @@ Precedência: instrução atual de LEANDRO → infraestrutura verificável → G
 | Estado exato de continuidade | `CHECKPOINT.md` |
 | Estado operacional estruturado | `state/current.yaml` |
 | Decisões Platform Discovery Q1–Q40 | `state/platform-discovery.yaml` |
-| Q40 / delegação ao Codex | `docs/39-platform-discovery-checkpoint-028.md` |
-| Missão autorizada ao Codex | `docs/CODEX-EXECUTION-MISSION-001.md` |
+| Q40 / delegação original ao Codex | `docs/39-platform-discovery-checkpoint-028.md` |
+| Contrato de execução autorizado | `docs/CODEX-EXECUTION-MISSION-001.md` |
 | Missão e arquitetura histórica | `docs/02-missao-e-escopo.md`, `docs/03-arquitetura-e-principios.md` |
 | Plano e estado anterior | `docs/04-plano-mestre.md`, `docs/05-roadmap.md` |
 | Infraestrutura observada | `docs/06-inventario.md` |
@@ -49,14 +49,26 @@ A Platform Discovery definiu Q1–Q39 como arquitetura vinculante da plataforma 
 
 Q40 = `D` por decisão explícita de LEANDRO:
 
-- o Codex recebe a seleção tecnológica;
-- o Codex recebe autorização para implementação incremental da plataforma DEV/lab;
+- o Codex recebeu originalmente a seleção tecnológica;
+- o Codex recebeu originalmente autorização para implementação incremental da plataforma DEV/lab;
 - Q1–Q39 permanecem obrigatórias;
 - produção externa continua sujeita a HUMAN_GATE;
 - secrets continuam proibidos no Git;
 - rotação de credenciais continua `DEFERRED_BY_HUMAN_DECISION`.
 
-A missão vinculante é `docs/CODEX-EXECUTION-MISSION-001.md`.
+O contrato vinculante de execução continua sendo `docs/CODEX-EXECUTION-MISSION-001.md`.
+
+## Executor atual — contingência 18/08/2026
+
+LEANDRO informou indisponibilidade do Codex e assumiu temporariamente a execução manual das ações na VPS. MESTRE assume a orquestração técnica, análise dos resultados, definição de microtarefas, prechecks, rollback, validação e checkpoints.
+
+Essa contingência:
+
+- muda apenas o executor atual;
+- não reabre Q1–Q40;
+- não amplia o escopo autorizado;
+- não altera os HUMAN_GATEs vigentes;
+- preserva `docs/CODEX-EXECUTION-MISSION-001.md` como contrato incremental de execução.
 
 ## Guardrails centrais
 
@@ -77,6 +89,6 @@ Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUD
 
 ## Ponto exato
 
-**CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT**.
+**MISSION ACCEPTANCE + RECOVERY REPORT**.
 
-O próximo executor deve recuperar o estado real do GitHub e da VPS, confirmar branch/HEAD, divergências, riscos, Technology Mapping inicial e o primeiro incremento com rollback. A partir daí, a implementação autorizada por Q40-D deve avançar em slices pequenos, reversíveis, testados e checkpointados.
+O próximo executor é temporariamente LEANDRO, sob orquestração do MESTRE. Antes de qualquer implementação ampla, deve recuperar o estado real do GitHub e da VPS, confirmar branch/HEAD, divergências, riscos, Technology Mapping inicial e o primeiro incremento com rollback. A partir daí, a implementação autorizada por Q40-D deve avançar em slices pequenos, reversíveis, testados e checkpointados.
