@@ -42,7 +42,7 @@ done
 
 containers=(
   cp-dns-dev cp-dns-restricted cp-proxy-dev cp-proxy-restricted
-  cp-origin-fixture cp-registry-fixture cp-probe cp-proxy-probe
+  cp-origin-fixture cp-registry-fixture cp-probe cp-proxy-probe cp-grant-probe
 )
 
 cleanup() {
@@ -190,6 +190,14 @@ proxy_probe() {
     "$FIXTURE_IMAGE" nc -w 3 "$proxy" 3128
 }
 
+grant_probe() {
+  timeout --kill-after=2s 10s sudo docker run --rm --name cp-grant-probe \
+    --network cloud-scope-cp00000002 --read-only --cap-drop ALL --cap-add NET_ADMIN \
+    --security-opt no-new-privileges --pids-limit 32 --memory 32m --cpus 0.25 \
+    "$FIXTURE_IMAGE" sh -ec \
+    'ip route add 10.240.3.10/32 via 10.240.2.1 dev eth0; exec wget -T 3 -qO- http://10.240.3.10:5000/index.html'
+}
+
 stage scoped_dns
 probe cloud-scope-cp00000002 nslookup registry.shared.dev.internal 10.240.2.2 |
   grep -q '10.240.3.10' || fail dev_dns_shared_record_failed
@@ -225,7 +233,7 @@ if probe cloud-scope-cp00000002 wget -T 3 -qO- "http://$EGRESS_FIXTURE_IP/index.
 fi
 
 stage shared_service_grant
-probe cloud-scope-cp00000002 wget -T 3 -qO- http://10.240.3.10:5000/index.html |
+grant_probe |
   grep -q NETWORK_SERVICES_FIXTURE_OK || fail explicit_shared_service_grant_failed
 python3 - "$POLICY" "$TMP_ROOT/no-grant.yaml" <<'PY'
 import pathlib, sys, yaml
@@ -237,8 +245,7 @@ PY
 python3 "$COMPILER" "$TMP_ROOT/no-grant.yaml" --family ipv4 >"$TMP_ROOT/no-grant.v4"
 sudo iptables-restore -w 5 --noflush "$TMP_ROOT/no-grant.v4"
 stage revoked_grant
-if probe cloud-scope-cp00000002 wget -T 3 -qO- \
-  http://10.240.3.10:5000/index.html >/dev/null 2>&1; then
+if grant_probe >/dev/null 2>&1; then
   fail revoked_grant_remained_reachable
 fi
 

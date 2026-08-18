@@ -90,6 +90,15 @@ class NetworkEnforcementRuntimeTests(unittest.TestCase):
         self.assertIn("workload_reached_direct_egress", SERVICES_HARNESS)
         self.assertIn("NETWORK_SERVICES_VM_TEST_PASS", SERVICES_HARNESS)
 
+    def test_shared_service_probe_gets_only_one_exact_mediated_route(self):
+        self.assertEqual(SERVICES_HARNESS.count("--cap-add NET_ADMIN"), 1)
+        self.assertIn("--name cp-grant-probe", SERVICES_HARNESS)
+        self.assertIn(
+            "ip route add 10.240.3.10/32 via 10.240.2.1 dev eth0",
+            SERVICES_HARNESS,
+        )
+        self.assertNotIn("ip route add default", SERVICES_HARNESS)
+
 
 if __name__ == "__main__":
     unittest.main()
