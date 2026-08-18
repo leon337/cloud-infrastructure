@@ -150,7 +150,8 @@ sudo sysctl -q -w net.ipv4.ip_forward=1 >/dev/null
 
 for _ in {1..30}; do
   if sudo docker exec cp-dns-dev /coredns -version >/dev/null 2>&1 &&
-     [[ $(sudo docker inspect -f '{{.State.Running}}' cp-proxy-dev) == true ]]; then
+     sudo docker logs cp-proxy-dev 2>&1 | grep -q 'Accepting HTTP Socket connections' &&
+     sudo docker logs cp-proxy-restricted 2>&1 | grep -q 'Accepting HTTP Socket connections'; then
     break
   fi
   sleep 1
