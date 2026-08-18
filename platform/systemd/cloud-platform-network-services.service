@@ -1,0 +1,20 @@
+[Unit]
+Description=Cloud Platform scoped DNS and proxy network services
+Documentation=https://github.com/leon337/cloud-infrastructure
+Requires=docker.service cloud-platform-network-enforcement.service
+After=docker.service cloud-platform-network-enforcement.service
+PartOf=docker.service
+ConditionPathExists=/etc/cloud-platform-network-services.managed
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/cloud-platform-network-services apply
+ExecReload=/usr/local/libexec/cloud-platform-network-services check
+RemainAfterExit=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

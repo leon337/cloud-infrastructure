@@ -21,7 +21,7 @@ Substitui como roadmap corrente as antigas fases provisórias F3–F10.
 | F1.1 Foundations declarativas | Ansible/schema/namespaces/contas/slices accounting | `DONE` | check mode sem mutação, backup off-host, apply real `changed=7`, idempotência `changed=0` e invariância passaram em `2026-08-17` |
 | F1.2a Management Network | administração privada por identidade/dispositivo | `WAITING_HUMAN_GATE` | conta/plano/policy/onboarding e recovery testados |
 | F1.2b Docker boundary | Docker CE/Compose pinados, root-only, bridge default ausente, sem porta/workload | `DONE` | CI descartável; preview; backup off-host; apply `changed=13`; idempotência e pós-restart `changed=0`; invariância passaram; não satisfaz Q20/Q34 e não libera workload |
-| F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `PARTIAL` | base `DOCKER-USER` v4/v6 está no NODE-01; redes, DNS, proxy, grants/revogação e failure-close passaram no run descartável `32100527131`; desired state/apply desses serviços no NODE-01 e gates restantes ainda bloqueiam workload |
+| F1.2c Network enforcement | isolamento/egress/service discovery v4/v6 | `PARTIAL` | base `DOCKER-USER` v4/v6 está no NODE-01; redes, DNS, proxy, grants/revogação e failure-close passaram no run descartável `32100527131`; desired state NODE-01 passou 123 testes locais, mas CI commit-bound e apply real ainda bloqueiam workload |
 | F1.3 Observability baseline | host/runtime logs, métricas, audit envelope | `CONDITIONAL` | compliance review de Loki/Grafana AGPL ou alternativa; HUMAN_GATE somente se termos/custo/aceite externo exigirem; limites/retention e interfaces privadas |
 | F1.4 Secret bootstrap foundation | OpenBao instalado, não inicializado/selado | `PLANNED` | nenhum dado real; init/unseal/custódia e revogação do root token inicial permanecem gate humano |
 | F1.5 Off-host recovery foundation | destino Restic, policy, keys e restore fixture | `WAITING_HUMAN_GATE` | destino/custo/custódia, targets provisórios e restore cronometrado; bloqueia dado Critical/Important real |
@@ -95,6 +95,8 @@ O primeiro container permanece bloqueado por F1.2c, mesmo que não publique
 portas.
 
 F1.2c possui contrato machine-readable, tecnologia selecionada pela DEC-008,
-base fail-closed ativa e matriz de serviços aprovada em VM descartável. Isso
-ainda não equivale ao network enforcement completo no NODE-01: desired state,
-apply/rollback real e gates de workload permanecem necessários.
+base fail-closed ativa e matriz de serviços aprovada em VM descartável. O
+desired state NODE-01 agora está preparado com quatro serviços privados por
+digest, quatro redes exatas, forwarding fail-closed, lifecycle systemd e
+rollback por camada. CI commit-bound, apply/rollback real e gates de workload
+permanecem necessários.

@@ -1,0 +1,325 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly VERSION=SLICE-002C-NODE-01-SERVICES-V1
+readonly ROOT=/etc/cloud-platform/network-services
+readonly COMPOSE=$ROOT/compose.yaml
+readonly MARKER=/etc/cloud-platform-network-services.managed
+readonly SYSCTL_FILE=/etc/sysctl.d/90-cloud-platform-network-forwarding.conf
+readonly LOCK=/run/lock/cloud-platform-network-services.lock
+readonly SCOPE_LABEL=cloud.platform.managed=mission-001-f1-2c
+readonly SERVICE_LABEL=cloud.platform.managed=mission-001-f1-2c-services
+readonly EGRESS_NETWORK=cloud-platform-egress
+readonly EGRESS_INTERFACE=cpeg0001
+readonly CHAIN_SERVICE=CLOUD-PLATFORM-SVC
+readonly CHAIN_EGRESS=CLOUD-PLATFORM-EGRESS
+readonly CHAIN_EGRESS_IN=CLOUD-PLATFORM-EGRESS-IN
+readonly COREDNS_IMAGE=coredns/coredns@sha256:1ba6f47265602e2e50a9c4669e3a955e4298a0d30dc82f39293d4bf1a851e0ff
+readonly SQUID_IMAGE=ubuntu/squid@sha256:1b8d2c7c46e435e022047e97cb7ac0b851c739f083427341cae7e4df1d99f5a3
+
+refuse() {
+  printf 'NETWORK_SERVICES_REFUSED reason=%s\n' "$1" >&2
+  exit 2
+}
+
+[[ $EUID -eq 0 ]] || refuse root_required
+[[ $# -eq 1 ]] || refuse exactly_one_operation_required
+case $1 in apply | check | rollback) operation=$1 ;; *) refuse operation_not_allowlisted ;; esac
+for command in diff docker flock ip iptables ip6tables iptables-restore ip6tables-restore \
+  sha256sum ss stat sysctl systemctl; do
+  command -v "$command" >/dev/null 2>&1 || refuse "missing_command_$command"
+done
+exec 9>"$LOCK"
+flock -n 9 || refuse concurrent_operation
+
+expected_containers=(cp-dns-dev cp-dns-restricted cp-proxy-dev cp-proxy-restricted)
+expected_networks=(
+  cloud-platform-egress cloud-scope-cp00000001
+  cloud-scope-cp00000002 cloud-scope-cp00000003
+)
+
+marker_valid() {
+  [[ -f $MARKER && ! -L $MARKER ]] || return 1
+  [[ $(stat -c '%U:%G:%a:%h' "$MARKER") == root:root:600:1 ]] || return 1
+  [[ $(<"$MARKER") == "$VERSION" ]]
+}
+
+exact_set() {
+  diff -u <(printf '%s\n' "${@:2}" | sort) <(printf '%s\n' "$1" | sed '/^$/d' | sort) >/dev/null
+}
+
+subset_set() {
+  local actual=$1 allowed item
+  shift
+  allowed=$(printf '%s\n' "$@")
+  while IFS= read -r item; do
+    [[ -z $item ]] && continue
+    grep -Fxq -- "$item" <<<"$allowed" || return 1
+  done <<<"$actual"
+}
+
+custom_networks() {
+  docker network ls --filter type=custom --format '{{.Name}}'
+}
+
+all_containers() {
+  docker container ls --all --format '{{.Names}}'
+}
+
+verify_network() {
+  local name=$1 interface=$2 subnet=$3 gateway=$4 internal=$5 identity=$6 profile=$7
+  local actual
+  actual=$(docker network inspect --format \
+    '{{.Driver}}|{{.Internal}}|{{index .Options "com.docker.network.bridge.name"}}|{{index .Options "com.docker.network.bridge.enable_icc"}}|{{index .Options "com.docker.network.bridge.host_binding_ipv4"}}|{{(index .IPAM.Config 0).Subnet}}|{{(index .IPAM.Config 0).Gateway}}|{{index .Labels "cloud.platform.managed"}}|{{index .Labels "cloud.platform.identity"}}|{{index .Labels "cloud.platform.egress-profile"}}' \
+    "$name") || return 1
+  [[ $actual == "bridge|$internal|$interface|false|127.0.0.1|$subnet|$gateway|mission-001-f1-2c|$identity|$profile" ]]
+}
+
+verify_egress_network() {
+  local actual
+  actual=$(docker network inspect --format \
+    '{{.Driver}}|{{.Internal}}|{{index .Options "com.docker.network.bridge.name"}}|{{index .Options "com.docker.network.bridge.enable_icc"}}|{{index .Options "com.docker.network.bridge.enable_ip_masquerade"}}|{{index .Options "com.docker.network.bridge.host_binding_ipv4"}}|{{(index .IPAM.Config 0).Subnet}}|{{(index .IPAM.Config 0).Gateway}}|{{index .Labels "cloud.platform.managed"}}|{{index .Labels "cloud.platform.identity"}}|{{index .Labels "cloud.platform.egress-profile"}}' \
+    "$EGRESS_NETWORK") || return 1
+  [[ $actual == 'bridge|false|cpeg0001|false|true|127.0.0.1|10.240.254.0/24|10.240.254.1|mission-001-f1-2c|platform.egress.gateway|infrastructure-only' ]]
+}
+
+create_scope_network() {
+  local name=$1 interface=$2 subnet=$3 gateway=$4 identity=$5 profile=$6
+  if docker network inspect "$name" >/dev/null 2>&1; then
+    verify_network "$name" "$interface" "$subnet" "$gateway" true "$identity" "$profile" ||
+      refuse "network_drift_$name"
+    return
+  fi
+  docker network create --driver bridge --internal --subnet "$subnet" --gateway "$gateway" \
+    --opt "com.docker.network.bridge.name=$interface" \
+    --opt com.docker.network.bridge.enable_icc=false \
+    --opt com.docker.network.bridge.host_binding_ipv4=127.0.0.1 \
+    --label "$SCOPE_LABEL" --label "cloud.platform.identity=$identity" \
+    --label "cloud.platform.egress-profile=$profile" "$name" >/dev/null
+  verify_network "$name" "$interface" "$subnet" "$gateway" true "$identity" "$profile" ||
+    refuse "network_postcreate_drift_$name"
+}
+
+create_egress_network() {
+  if docker network inspect "$EGRESS_NETWORK" >/dev/null 2>&1; then
+    verify_egress_network || refuse egress_network_drift
+    return
+  fi
+  docker network create --driver bridge --subnet 10.240.254.0/24 --gateway 10.240.254.1 \
+    --opt com.docker.network.bridge.name=cpeg0001 \
+    --opt com.docker.network.bridge.enable_icc=false \
+    --opt com.docker.network.bridge.enable_ip_masquerade=true \
+    --opt com.docker.network.bridge.host_binding_ipv4=127.0.0.1 \
+    --label "$SCOPE_LABEL" --label cloud.platform.identity=platform.egress.gateway \
+    --label cloud.platform.egress-profile=infrastructure-only "$EGRESS_NETWORK" >/dev/null
+  verify_egress_network || refuse egress_network_postcreate_drift
+}
+
+remove_jump() {
+  local tool=$1 parent=$2
+  shift 2
+  while "$tool" -w 5 -C "$parent" "$@" >/dev/null 2>&1; do
+    "$tool" -w 5 -D "$parent" "$@"
+  done
+}
+
+install_jump() {
+  local tool=$1 parent=$2
+  shift 2
+  remove_jump "$tool" "$parent" "$@"
+  "$tool" -w 5 -I "$parent" 1 "$@"
+}
+
+apply_firewall() {
+  iptables-restore -w 5 --noflush <<'RULES4'
+*filter
+:CLOUD-PLATFORM-SVC - [0:0]
+:CLOUD-PLATFORM-EGRESS - [0:0]
+:CLOUD-PLATFORM-EGRESS-IN - [0:0]
+-F CLOUD-PLATFORM-SVC
+-F CLOUD-PLATFORM-EGRESS
+-F CLOUD-PLATFORM-EGRESS-IN
+-A CLOUD-PLATFORM-SVC -m conntrack --ctstate INVALID -j DROP
+-A CLOUD-PLATFORM-SVC -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A CLOUD-PLATFORM-SVC -i cp00000002 -o cp00000002 -d 10.240.2.2/32 -p udp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-SVC -i cp00000002 -o cp00000002 -d 10.240.2.2/32 -p tcp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-SVC -i cp00000002 -o cp00000002 -d 10.240.2.3/32 -p tcp --dport 3128 -j ACCEPT
+-A CLOUD-PLATFORM-SVC -i cp00000003 -o cp00000003 -d 10.240.3.2/32 -p udp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-SVC -i cp00000003 -o cp00000003 -d 10.240.3.2/32 -p tcp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-SVC -i cp00000003 -o cp00000003 -d 10.240.3.3/32 -p tcp --dport 3128 -j ACCEPT
+-A CLOUD-PLATFORM-SVC -j RETURN
+-A CLOUD-PLATFORM-EGRESS -m conntrack --ctstate INVALID -j DROP
+-A CLOUD-PLATFORM-EGRESS -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -d 10.0.0.0/8 -j DROP
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -d 100.64.0.0/10 -j DROP
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -d 169.254.0.0/16 -j DROP
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -d 172.16.0.0/12 -j DROP
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -d 192.168.0.0/16 -j DROP
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.2/31 -d 1.1.1.1/32 -p udp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.2/31 -d 1.0.0.1/32 -p udp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.2/31 -d 1.1.1.1/32 -p tcp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.2/31 -d 1.0.0.1/32 -p tcp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.4/31 -d 1.1.1.1/32 -p udp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.4/31 -d 1.0.0.1/32 -p udp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.4/31 -d 1.1.1.1/32 -p tcp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.4/31 -d 1.0.0.1/32 -p tcp --dport 53 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.3/32 -p tcp -m multiport --dports 80,443 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -s 10.240.254.5/32 -p tcp -m multiport --dports 80,443 -j ACCEPT
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -j DROP
+-A CLOUD-PLATFORM-EGRESS -o cpeg0001 -j DROP
+-A CLOUD-PLATFORM-EGRESS -j RETURN
+-A CLOUD-PLATFORM-EGRESS-IN -i cpeg0001 -j DROP
+-A CLOUD-PLATFORM-EGRESS-IN -j RETURN
+COMMIT
+RULES4
+  ip6tables-restore -w 5 --noflush <<'RULES6'
+*filter
+:CLOUD-PLATFORM-EGRESS - [0:0]
+:CLOUD-PLATFORM-EGRESS-IN - [0:0]
+-F CLOUD-PLATFORM-EGRESS
+-F CLOUD-PLATFORM-EGRESS-IN
+-A CLOUD-PLATFORM-EGRESS -i cpeg0001 -j DROP
+-A CLOUD-PLATFORM-EGRESS -o cpeg0001 -j DROP
+-A CLOUD-PLATFORM-EGRESS -j RETURN
+-A CLOUD-PLATFORM-EGRESS-IN -i cpeg0001 -j DROP
+-A CLOUD-PLATFORM-EGRESS-IN -j RETURN
+COMMIT
+RULES6
+  install_jump iptables DOCKER-USER -i 'cp+' -j "$CHAIN_SERVICE"
+  install_jump iptables DOCKER-USER -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS"
+  install_jump iptables DOCKER-USER -o "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS"
+  install_jump iptables INPUT -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS_IN"
+  install_jump ip6tables DOCKER-USER -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS"
+  install_jump ip6tables DOCKER-USER -o "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS"
+  install_jump ip6tables INPUT -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS_IN"
+}
+
+firewall_present() {
+  iptables -w 5 -C DOCKER-USER -i 'cp+' -j "$CHAIN_SERVICE" >/dev/null 2>&1 &&
+    iptables -w 5 -C DOCKER-USER -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS" >/dev/null 2>&1 &&
+    iptables -w 5 -C DOCKER-USER -o "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS" >/dev/null 2>&1 &&
+    iptables -w 5 -C INPUT -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS_IN" >/dev/null 2>&1 &&
+    ip6tables -w 5 -C DOCKER-USER -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS" >/dev/null 2>&1 &&
+    ip6tables -w 5 -C DOCKER-USER -o "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS" >/dev/null 2>&1 &&
+    ip6tables -w 5 -C INPUT -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS_IN" >/dev/null 2>&1
+}
+
+verify_services() {
+  marker_valid || return 1
+  [[ -f $COMPOSE && ! -L $COMPOSE ]] || return 1
+  exact_set "$(custom_networks)" "${expected_networks[@]}" || return 1
+  exact_set "$(all_containers)" "${expected_containers[@]}" || return 1
+  verify_network cloud-scope-cp00000001 cp00000001 10.240.1.0/24 10.240.1.1 true \
+    tenant-a.project-a.mission-a.sandbox-none none || return 1
+  verify_network cloud-scope-cp00000002 cp00000002 10.240.2.0/24 10.240.2.1 true \
+    tenant-a.project-a.mission-a.sandbox-dev development-default || return 1
+  verify_network cloud-scope-cp00000003 cp00000003 10.240.3.0/24 10.240.3.1 true \
+    platform.shared.services restricted || return 1
+  verify_egress_network || return 1
+  firewall_present || return 1
+  [[ $(sysctl -n net.ipv4.ip_forward) == 1 ]] || return 1
+  [[ $(sysctl -n net.ipv6.conf.all.forwarding) == 0 ]] || return 1
+  local name running labels ports
+  for name in "${expected_containers[@]}"; do
+    running=$(docker inspect --format '{{.State.Running}}' "$name") || return 1
+    labels=$(docker inspect --format '{{index .Config.Labels "cloud.platform.managed"}}' "$name") || return 1
+    ports=$(docker port "$name") || return 1
+    [[ $running == true && $labels == mission-001-f1-2c-services && -z $ports ]] || return 1
+  done
+  if ss -Hlnptu | grep -Eq '[[:space:]](0\.0\.0\.0|\[::\]|\*):(53|3128)[[:space:]]'; then
+    return 1
+  fi
+  docker exec cp-dns-dev /coredns -version >/dev/null 2>&1 || return 1
+  docker exec cp-dns-restricted /coredns -version >/dev/null 2>&1 || return 1
+  docker exec cp-proxy-dev squid -k check >/dev/null 2>&1 || return 1
+  docker exec cp-proxy-restricted squid -k check >/dev/null 2>&1 || return 1
+  return 0
+}
+
+apply_services() {
+  marker_valid || refuse marker_missing_or_drift
+  systemctl is-active --quiet docker.service || refuse docker_inactive
+  /usr/local/libexec/cloud-platform-network-enforcement check >/dev/null ||
+    refuse base_enforcement_invalid
+  if verify_services; then
+    printf 'NETWORK_SERVICES_APPLY=PASS changed=0 version=%s\n' "$VERSION"
+    return
+  fi
+  local existing
+  existing=$(all_containers)
+  if [[ -n $existing ]] && ! subset_set "$existing" "${expected_containers[@]}"; then
+    refuse unexpected_container_set
+  fi
+  existing=$(custom_networks)
+  if [[ -n $existing ]] && ! subset_set "$existing" "${expected_networks[@]}"; then
+    refuse unexpected_network_set
+  fi
+  apply_firewall
+  create_scope_network cloud-scope-cp00000001 cp00000001 10.240.1.0/24 10.240.1.1 \
+    tenant-a.project-a.mission-a.sandbox-none none
+  create_scope_network cloud-scope-cp00000002 cp00000002 10.240.2.0/24 10.240.2.1 \
+    tenant-a.project-a.mission-a.sandbox-dev development-default
+  create_scope_network cloud-scope-cp00000003 cp00000003 10.240.3.0/24 10.240.3.1 \
+    platform.shared.services restricted
+  create_egress_network
+  sysctl -q -w net.ipv4.ip_forward=1
+  docker compose --project-name cloud-platform-network-services --file "$COMPOSE" pull --quiet
+  docker compose --project-name cloud-platform-network-services --file "$COMPOSE" up --detach \
+    --remove-orphans
+  local attempt
+  for attempt in $(seq 1 30); do
+    verify_services && break
+    sleep 1
+  done
+  verify_services || refuse post_apply_verification_failed
+  printf 'NETWORK_SERVICES_APPLY=PASS changed=1 version=%s\n' "$VERSION"
+}
+
+remove_firewall() {
+  remove_jump iptables DOCKER-USER -i 'cp+' -j "$CHAIN_SERVICE"
+  remove_jump iptables DOCKER-USER -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS"
+  remove_jump iptables DOCKER-USER -o "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS"
+  remove_jump iptables INPUT -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS_IN"
+  remove_jump ip6tables DOCKER-USER -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS"
+  remove_jump ip6tables DOCKER-USER -o "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS"
+  remove_jump ip6tables INPUT -i "$EGRESS_INTERFACE" -j "$CHAIN_EGRESS_IN"
+  for spec in "iptables $CHAIN_SERVICE" "iptables $CHAIN_EGRESS" \
+    "iptables $CHAIN_EGRESS_IN" "ip6tables $CHAIN_EGRESS" "ip6tables $CHAIN_EGRESS_IN"; do
+    read -r tool chain <<<"$spec"
+    if "$tool" -w 5 -nL "$chain" >/dev/null 2>&1; then
+      "$tool" -w 5 -F "$chain"
+      "$tool" -w 5 -X "$chain"
+    fi
+  done
+}
+
+rollback_services() {
+  marker_valid || refuse marker_missing_or_drift
+  exact_set "$(all_containers)" "${expected_containers[@]}" || refuse unexpected_container_set
+  exact_set "$(custom_networks)" "${expected_networks[@]}" || refuse unexpected_network_set
+  verify_services || refuse pre_rollback_verification_failed
+  docker compose --project-name cloud-platform-network-services --file "$COMPOSE" down \
+    --remove-orphans --timeout 20
+  local network
+  for network in cloud-platform-egress cloud-scope-cp00000003 \
+    cloud-scope-cp00000002 cloud-scope-cp00000001; do
+    docker network rm "$network" >/dev/null
+  done
+  docker image rm "$COREDNS_IMAGE" "$SQUID_IMAGE" >/dev/null
+  remove_firewall
+  sysctl -q -w net.ipv4.ip_forward=0
+  [[ -z $(docker container ls --all --quiet) ]] || refuse containers_remained_after_rollback
+  [[ -z $(docker image ls --all --quiet) ]] || refuse images_remained_after_rollback
+  [[ -z $(docker volume ls --quiet) ]] || refuse volumes_remained_after_rollback
+  [[ -z $(docker network ls --filter type=custom --quiet) ]] || refuse networks_remained_after_rollback
+  printf 'NETWORK_SERVICES_ROLLBACK=PASS version=%s\n' "$VERSION"
+}
+
+case $operation in
+  apply) apply_services ;;
+  check)
+    verify_services || refuse check_failed
+    printf 'NETWORK_SERVICES_CHECK=PASS version=%s\n' "$VERSION"
+    ;;
+  rollback) rollback_services ;;
+esac

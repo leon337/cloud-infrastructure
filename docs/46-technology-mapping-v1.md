@@ -1,6 +1,6 @@
 # 46 — TECHNOLOGY MAPPING V1
 
-Status: **PARTIAL SELECTION — F1.2B REPO-READY/CI PENDING; F1.2C CONTRACT STARTED**
+Status: **PARTIAL SELECTION — F1.1/F1.2B DONE; F1.2C BASE NODE-01 PASS E SERVIÇOS EM CI**
 Research cut: 2026-08-16
 Contract checkpoint: 2026-08-17
 Authority: Q40-D
@@ -83,12 +83,12 @@ em implementação. A prova na fixture descartável não substitui a prova na VP
 | Lock-in | YAML/JSON Schema e arquivos systemd são abertos; dependência de módulos builtin torna migração possível, porém não gratuita | `ACCEPTED_MODERATE` |
 | Migração/rollback | remoção por proveniência/diretório vazio, quatro recusas fail-closed e rollback limpo passaram no CI; rollback real permanece inaplicável antes do apply | `SATISFIED_DISPOSABLE_CI_REMOTE_NOT_APPLIED` |
 
-## Component record do slice repo-only concluído localmente — F1.2b
+## Component record do slice concluído — F1.2b
 
 DEC-007 fixa o pacote e a fronteira. O commit
-`7015c80759a797bcb141773b79cd9b95f6fbecf1` passou a validação local estática,
-mas este record ainda não possui CI commit-bound nem prova dinâmica/na VPS. F1.1
-bloqueia o apply real; F1.2c bloqueia qualquer workload.
+`7015c80759a797bcb141773b79cd9b95f6fbecf1` passou validação, CI commit-bound e
+provas de apply, idempotência, restart e invariância no NODE-01. F1.2c ainda
+bloqueia qualquer workload.
 
 | Critério | Registro F1.2b | Estado |
 |---|---|---|
@@ -116,15 +116,19 @@ DEC-008 seleciona `DOCKER-USER`, bridges internas por sandbox, DNS por escopo e
 egress proxy-only. A base fail-closed foi aplicada no NODE-01. O lifecycle de
 três bridges e a matriz com DNS, proxy, deny direto, grant, revogação e falha de
 dependência passaram em VMs descartáveis separadas no run `32100527131`.
+O desired state operacional seguinte fixa CoreDNS 1.14.6 e Squid 7.2 por digest,
+quatro containers privados sem `ports:`, duas bridges internas de serviços, uma
+bridge `none`, egress de infraestrutura separado, DNS upstream explícito e
+chains próprias. Ele passou validação estática local; CI e NODE-01 ainda não.
 
 | Nível | Estado F1.2c |
 |---|---|
-| Contrato/local | `PASS_109_INTEGRATED_TESTS` |
+| Contrato/local | `PASS_123_INTEGRATED_TESTS_NODE_01_DESIRED_STATE_PREPARED` |
 | ADR/mecanismo | `ACCEPTED_DEC_008` |
 | Integração descartável base | `PASS_RUN_32073151044` |
 | Lifecycle de redes internas vazias | `PASS_RUN_32075348131` |
 | Serviços de rede descartáveis | `PASS_RUN_32100527131` |
-| NODE-01 | `BASE_PASS_NETWORK_SCOPES_NOT_APPLIED` |
+| NODE-01 | `BASE_PASS_SERVICES_DESIRED_STATE_NOT_APPLIED` |
 | Primeiro workload | `BLOCKED` |
 
 ## Evidência oficial por domínio

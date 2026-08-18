@@ -1,0 +1,63 @@
+api_version: cloud-platform/v1alpha1
+kind: NetworkPolicyPlan
+metadata:
+  environment: DEV_LAB
+  evaluation_time_utc: "2026-08-18T00:00:00Z"
+  status: NODE_01_DESIRED_STATE
+addressing:
+  ipv4_pool: 10.240.0.0/16
+  protected_ipv4:
+    - 10.0.0.0/8
+    - 100.64.0.0/10
+    - 169.254.0.0/16
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+  protected_ipv6:
+    - "::1/128"
+    - "fc00::/7"
+    - "fe80::/10"
+sandboxes:
+  - identity: tenant-a.project-a.mission-a.sandbox-none
+    interface: cp00000001
+    subnet_ipv4: 10.240.1.0/24
+    gateway_ipv4: 10.240.1.1
+    dns_ipv4: null
+    proxy_ipv4: null
+    egress_profile: none
+  - identity: tenant-a.project-a.mission-a.sandbox-dev
+    interface: cp00000002
+    subnet_ipv4: 10.240.2.0/24
+    gateway_ipv4: 10.240.2.1
+    dns_ipv4: 10.240.2.2
+    proxy_ipv4: 10.240.2.3
+    egress_profile: development-default
+  - identity: platform.shared.services
+    interface: cp00000003
+    subnet_ipv4: 10.240.3.0/24
+    gateway_ipv4: 10.240.3.1
+    dns_ipv4: 10.240.3.2
+    proxy_ipv4: 10.240.3.3
+    egress_profile: restricted
+shared_service_grants: []
+service_records: []
+egress_destinations:
+  - destination_id: github-api
+    hostname: api.github.com
+    ports:
+      - 443
+    profiles:
+      - development-default
+  - destination_id: github-container-registry
+    hostname: ghcr.io
+    ports:
+      - 443
+    profiles:
+      - restricted
+      - development-default
+  - destination_id: ubuntu-security
+    hostname: security.ubuntu.com
+    ports:
+      - 80
+      - 443
+    profiles:
+      - development-default

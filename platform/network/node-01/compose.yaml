@@ -1,0 +1,120 @@
+name: cloud-platform-network-services
+services:
+  dns-dev:
+    image: coredns/coredns@sha256:1ba6f47265602e2e50a9c4669e3a955e4298a0d30dc82f39293d4bf1a851e0ff
+    container_name: cp-dns-dev
+    command: ["-conf", "/Corefile"]
+    restart: "no"
+    read_only: true
+    cap_drop: ["ALL"]
+    cap_add: ["NET_BIND_SERVICE"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 64m
+    cpus: 0.25
+    cgroup_parent: cloud-platform.slice
+    volumes:
+      - ./cp00000002/Corefile:/Corefile:ro
+      - ./cp00000002/records.hosts:/etc/coredns/records.hosts:ro
+    networks:
+      scope-dev:
+        ipv4_address: 10.240.2.2
+      egress:
+        ipv4_address: 10.240.254.2
+    labels:
+      cloud.platform.managed: mission-001-f1-2c-services
+      cloud.platform.component: scoped-dns
+      cloud.platform.scope: cp00000002
+
+  proxy-dev:
+    image: ubuntu/squid@sha256:1b8d2c7c46e435e022047e97cb7ac0b851c739f083427341cae7e4df1d99f5a3
+    container_name: cp-proxy-dev
+    command: ["-f", "/etc/squid/squid.conf", "-NYC"]
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
+    restart: "no"
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 0.5
+    cgroup_parent: cloud-platform.slice
+    tmpfs:
+      - /run:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792
+      - /var/log/squid:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792
+      - /var/spool/squid:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792
+    volumes:
+      - ./cp00000002/squid.conf:/etc/squid/squid.conf:ro
+    networks:
+      scope-dev:
+        ipv4_address: 10.240.2.3
+      egress:
+        ipv4_address: 10.240.254.3
+    labels:
+      cloud.platform.managed: mission-001-f1-2c-services
+      cloud.platform.component: egress-proxy
+      cloud.platform.scope: cp00000002
+
+  dns-restricted:
+    image: coredns/coredns@sha256:1ba6f47265602e2e50a9c4669e3a955e4298a0d30dc82f39293d4bf1a851e0ff
+    container_name: cp-dns-restricted
+    command: ["-conf", "/Corefile"]
+    restart: "no"
+    read_only: true
+    cap_drop: ["ALL"]
+    cap_add: ["NET_BIND_SERVICE"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 64m
+    cpus: 0.25
+    cgroup_parent: cloud-platform.slice
+    volumes:
+      - ./cp00000003/Corefile:/Corefile:ro
+      - ./cp00000003/records.hosts:/etc/coredns/records.hosts:ro
+    networks:
+      scope-restricted:
+        ipv4_address: 10.240.3.2
+      egress:
+        ipv4_address: 10.240.254.4
+    labels:
+      cloud.platform.managed: mission-001-f1-2c-services
+      cloud.platform.component: scoped-dns
+      cloud.platform.scope: cp00000003
+
+  proxy-restricted:
+    image: ubuntu/squid@sha256:1b8d2c7c46e435e022047e97cb7ac0b851c739f083427341cae7e4df1d99f5a3
+    container_name: cp-proxy-restricted
+    command: ["-f", "/etc/squid/squid.conf", "-NYC"]
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
+    restart: "no"
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 0.5
+    cgroup_parent: cloud-platform.slice
+    tmpfs:
+      - /run:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792
+      - /var/log/squid:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792
+      - /var/spool/squid:rw,noexec,nosuid,nodev,mode=0750,uid=584792,gid=584792
+    volumes:
+      - ./cp00000003/squid.conf:/etc/squid/squid.conf:ro
+    networks:
+      scope-restricted:
+        ipv4_address: 10.240.3.3
+      egress:
+        ipv4_address: 10.240.254.5
+    labels:
+      cloud.platform.managed: mission-001-f1-2c-services
+      cloud.platform.component: egress-proxy
+      cloud.platform.scope: cp00000003
+
+networks:
+  scope-dev:
+    name: cloud-scope-cp00000002
+    external: true
+  scope-restricted:
+    name: cloud-scope-cp00000003
+    external: true
+  egress:
+    name: cloud-platform-egress
+    external: true

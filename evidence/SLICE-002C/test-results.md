@@ -1,6 +1,6 @@
 # SLICE-002C test results
 
-Status: **DISPOSABLE NETWORK SERVICES PASS — NODE-01 BASE ONLY — FIRST WORKLOAD BLOCKED**
+Status: **NODE-01 DESIRED STATE LOCAL PASS — CI/APPLY PENDING — FIRST WORKLOAD BLOCKED**
 
 ## Resultado corrente
 
@@ -20,6 +20,7 @@ Status: **DISPOSABLE NETWORK SERVICES PASS — NODE-01 BASE ONLY — FIRST WORKL
 | Fixture descartável | `PASS` | run `32073151044`, commit `d1da488` |
 | Redes internas vazias | `PASS` | 3 scopes; apply 3, idempotência 0, recusa e rollback 3; run `32075348131` |
 | DNS/proxy/grants/fail-closed | `PASS` | run `32100527131`, commit `8d5963b` |
+| NODE-01 services desired state | `PASS_LOCAL_123_TESTS` | CI commit-bound e apply real pendentes |
 | NODE-01 apply | `PASS_CHANGED_1` | `2026-08-17T21:58:36Z` |
 | NODE-01 idempotência | `PASS_CHANGED_0` | `2026-08-17T21:58:57Z` |
 | NODE-01 check/test | `PASS` | check + 98 testes; runtime vazio |

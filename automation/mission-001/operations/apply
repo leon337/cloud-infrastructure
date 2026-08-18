@@ -4,20 +4,23 @@ set -Eeuo pipefail
 readonly EXPECTED_MISSION=CODEX-EXECUTION-MISSION-001
 readonly EXPECTED_HOST=vmi3506102
 readonly EXPECTED_MACHINE_ID_SHA256=27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
-readonly EXPECTED_RUNNER_SHA256=4da7430f033aa8f0580205ee117a3d9d32b44f1d38bc2b386589f3ecce710d06
-readonly SOURCE_SCRIPT_SHA256=11468ad2031e65d9824c77ed15222ed520251aff07d32d6b85a6484af21d24b4
-readonly SOURCE_UNIT_SHA256=32a200e1512c64af055278ba37d760c73979cf1fd4fff438d10148f33e67fb62
-readonly SOURCE_DROPIN_SHA256=a83bff96d635e0d13227d50e2f34512824e0389d6dd925ba681d334256bb0cc0
-readonly HELPER=/usr/local/libexec/cloud-platform-network-enforcement
-readonly UNIT=/etc/systemd/system/cloud-platform-network-enforcement.service
-readonly DROPIN=/etc/systemd/system/docker.service.d/20-cloud-platform-network-enforcement.conf
-readonly MARKER=/etc/cloud-platform-network-enforcement.managed
+readonly EXPECTED_RUNNER_SHA256=83772473ae19f7ddc7e06864ee408bc48b19cff4025cc1e7ec6b609f58fedc96
+readonly BASE_SCRIPT_SHA256=11468ad2031e65d9824c77ed15222ed520251aff07d32d6b85a6484af21d24b4
+readonly BASE_UNIT_SHA256=32a200e1512c64af055278ba37d760c73979cf1fd4fff438d10148f33e67fb62
+readonly BASE_DROPIN_SHA256=a83bff96d635e0d13227d50e2f34512824e0389d6dd925ba681d334256bb0cc0
+readonly BASE_HELPER=/usr/local/libexec/cloud-platform-network-enforcement
+readonly BASE_UNIT=/etc/systemd/system/cloud-platform-network-enforcement.service
+readonly BASE_DROPIN=/etc/systemd/system/docker.service.d/20-cloud-platform-network-enforcement.conf
+readonly BASE_MARKER=/etc/cloud-platform-network-enforcement.managed
+readonly SERVICE_HELPER=/usr/local/libexec/cloud-platform-network-services
+readonly SERVICE_UNIT=/etc/systemd/system/cloud-platform-network-services.service
+readonly SERVICE_ROOT=/etc/cloud-platform/network-services
+readonly SERVICE_MARKER=/etc/cloud-platform-network-services.managed
+readonly SYSCTL_FILE=/etc/sysctl.d/90-cloud-platform-network-forwarding.conf
+readonly SERVICE_VERSION=SLICE-002C-NODE-01-SERVICES-V1
 readonly LOCK=/run/lock/codex-mission-001-network-apply.lock
 
-refuse() {
-  printf 'MISSION_APPLY_REFUSED reason=%s\n' "$1" >&2
-  exit 2
-}
+refuse() { printf 'MISSION_APPLY_REFUSED reason=%s\n' "$1" >&2; exit 2; }
 
 file_matches() {
   local path=$1 mode=$2 digest=$3
@@ -26,15 +29,17 @@ file_matches() {
   [[ $(sha256sum "$path" | awk '{print $1}') == "$digest" ]]
 }
 
-require_empty_runtime() {
-  [[ -z $(docker container ls --all --quiet) ]] || refuse containers_present
-  [[ -z $(docker image ls --all --quiet) ]] || refuse images_present
-  [[ -z $(docker volume ls --quiet) ]] || refuse volumes_present
-  [[ -z $(docker network ls --filter type=custom --quiet) ]] || refuse custom_networks_present
-  [[ -z $(docker buildx du --format '{{.ID}}') ]] || refuse build_cache_present
-  if ip -o link show | awk -F': ' '{print $2}' | grep -Eq '^cp[0-9a-f]{8}(@|$)'; then
-    refuse managed_interface_present
-  fi
+assert_source() {
+  local path=$1 digest=$2
+  [[ -f $path && ! -L $path ]] || refuse "source_missing_$path"
+  [[ $(sha256sum "$path" | awk '{print $1}') == "$digest" ]] || refuse "source_drift_$path"
+}
+
+assert_no_unmanaged_collision() {
+  local path
+  for path in "$@"; do
+    [[ ! -e $path && ! -L $path ]] || refuse "unmanaged_collision_$path"
+  done
 }
 
 [[ $EUID -eq 0 ]] || refuse root_required
@@ -60,46 +65,119 @@ systemctl is-active --quiet snap.lxd.daemon.unix.socket && refuse lxd_socket_act
   refuse docker_marker_missing
 grep -qx 'slice=SLICE-001' /etc/cloud-platform-foundation.managed || refuse foundation_marker_drift
 grep -qx 'slice=SLICE-002B' /etc/cloud-platform-docker-runtime.managed || refuse docker_marker_drift
-require_empty_runtime
 
-source_script="$MISSION_REPOSITORY/platform/network/cloud-platform-network-enforcement"
-source_unit="$MISSION_REPOSITORY/platform/systemd/cloud-platform-network-enforcement.service"
-source_dropin="$MISSION_REPOSITORY/platform/systemd/docker.service.network-enforcement.conf"
-[[ $(sha256sum "$source_script" | awk '{print $1}') == "$SOURCE_SCRIPT_SHA256" ]] || refuse source_script_drift
-[[ $(sha256sum "$source_unit" | awk '{print $1}') == "$SOURCE_UNIT_SHA256" ]] || refuse source_unit_drift
-[[ $(sha256sum "$source_dropin" | awk '{print $1}') == "$SOURCE_DROPIN_SHA256" ]] || refuse source_dropin_drift
+base_source_script="$MISSION_REPOSITORY/platform/network/cloud-platform-network-enforcement"
+base_source_unit="$MISSION_REPOSITORY/platform/systemd/cloud-platform-network-enforcement.service"
+base_source_dropin="$MISSION_REPOSITORY/platform/systemd/docker.service.network-enforcement.conf"
+assert_source "$base_source_script" "$BASE_SCRIPT_SHA256"
+assert_source "$base_source_unit" "$BASE_UNIT_SHA256"
+assert_source "$base_source_dropin" "$BASE_DROPIN_SHA256"
 
-if [[ -e $MARKER || -L $MARKER ]]; then
-  file_matches "$HELPER" 755 "$SOURCE_SCRIPT_SHA256" || refuse installed_helper_drift
-  file_matches "$UNIT" 644 "$SOURCE_UNIT_SHA256" || refuse installed_unit_drift
-  file_matches "$DROPIN" 644 "$SOURCE_DROPIN_SHA256" || refuse installed_dropin_drift
-  systemctl is-enabled --quiet cloud-platform-network-enforcement.service || refuse enforcement_service_not_enabled
-  systemctl is-active --quiet cloud-platform-network-enforcement.service || refuse enforcement_service_not_active
-  "$HELPER" check >/dev/null || refuse enforcement_check_failed
-  printf '%s\n' 'MISSION_APPLY=PASS slice=F1.2c_base changed=0'
-  exit 0
+base_changed=0
+if [[ -e $BASE_MARKER || -L $BASE_MARKER ]]; then
+  file_matches "$BASE_HELPER" 755 "$BASE_SCRIPT_SHA256" || refuse installed_base_helper_drift
+  file_matches "$BASE_UNIT" 644 "$BASE_UNIT_SHA256" || refuse installed_base_unit_drift
+  file_matches "$BASE_DROPIN" 644 "$BASE_DROPIN_SHA256" || refuse installed_base_dropin_drift
+  systemctl is-enabled --quiet cloud-platform-network-enforcement.service || refuse base_not_enabled
+  systemctl is-active --quiet cloud-platform-network-enforcement.service || refuse base_not_active
+  "$BASE_HELPER" check >/dev/null || refuse base_check_failed
+else
+  [[ -z $(docker container ls --all --quiet) ]] || refuse containers_present_before_base
+  [[ -z $(docker image ls --all --quiet) ]] || refuse images_present_before_base
+  [[ -z $(docker volume ls --quiet) ]] || refuse volumes_present_before_base
+  [[ -z $(docker network ls --filter type=custom --quiet) ]] || refuse networks_present_before_base
+  assert_no_unmanaged_collision "$BASE_HELPER" "$BASE_UNIT" "$BASE_DROPIN"
+  [[ -x /usr/local/sbin/cloud-infrastructure-config-backup ]] || refuse backup_command_missing
+  /usr/local/sbin/cloud-infrastructure-config-backup >/dev/null || refuse preapply_backup_failed
+  install -d -o root -g root -m 0755 /usr/local/libexec
+  install -o root -g root -m 0755 "$base_source_script" "$BASE_HELPER"
+  install -o root -g root -m 0644 "$base_source_unit" "$BASE_UNIT"
+  install -o root -g root -m 0644 "$base_source_dropin" "$BASE_DROPIN"
+  "$BASE_HELPER" apply
+  systemctl daemon-reload
+  systemctl enable --now cloud-platform-network-enforcement.service
+  "$BASE_HELPER" check >/dev/null || refuse base_post_install_check_failed
+  base_changed=1
 fi
 
-for path in "$HELPER" "$UNIT" "$DROPIN"; do
-  [[ ! -e $path && ! -L $path ]] || refuse "unmanaged_collision_$path"
+declare -A source_digests=(
+  [platform/network/cloud-platform-network-services]=001cd7a3ea33908775ee5b5e6b89a504fd91aa5fda7fd8adb547c74de55c72f6
+  [platform/network/node-01/compose.yaml]=704154f06c2e72d0a0243d0c4618a3d46320f6321cf9f17955a402e8985ab7d0
+  [platform/network/node-01/cp00000002/Corefile]=52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa
+  [platform/network/node-01/cp00000002/records.hosts]=a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703
+  [platform/network/node-01/cp00000002/squid.conf]=8d54cd3ec9a53c870c0d8253af97365ed9a0a00cd64cc2e21e3039c7843d4307
+  [platform/network/node-01/cp00000003/Corefile]=52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa
+  [platform/network/node-01/cp00000003/records.hosts]=a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703
+  [platform/network/node-01/cp00000003/squid.conf]=1820d5eac816259597f8cb8c3551daa6e400a13390cafbadd9a47c99ba0056dc
+  [platform/systemd/cloud-platform-network-services.service]=dfe10b0e0046242695fe5ba03215f49aa938cf94b733bba3b1a2ba9cfad7e6d1
+  [platform/sysctl/90-cloud-platform-network-forwarding.conf]=a2a00688b6f566d94ad43cebd13da2f4abcec76815b9fce11dab36b137be0c39
+)
+for relative in "${!source_digests[@]}"; do
+  assert_source "$MISSION_REPOSITORY/$relative" "${source_digests[$relative]}"
 done
-[[ -x /usr/local/sbin/cloud-infrastructure-config-backup ]] || refuse backup_command_missing
-/usr/local/sbin/cloud-infrastructure-config-backup >/dev/null || refuse preapply_backup_failed
-install -d -o root -g root -m 0755 /usr/local/libexec
-install -o root -g root -m 0755 "$source_script" "$HELPER"
-install -o root -g root -m 0644 "$source_unit" "$UNIT"
-install -o root -g root -m 0644 "$source_dropin" "$DROPIN"
-"$HELPER" apply
-systemctl daemon-reload
-systemctl enable --now cloud-platform-network-enforcement.service
-file_matches "$HELPER" 755 "$SOURCE_SCRIPT_SHA256" || refuse post_install_helper_drift
-file_matches "$UNIT" 644 "$SOURCE_UNIT_SHA256" || refuse post_install_unit_drift
-file_matches "$DROPIN" 644 "$SOURCE_DROPIN_SHA256" || refuse post_install_dropin_drift
-systemctl is-enabled --quiet cloud-platform-network-enforcement.service || refuse post_install_service_not_enabled
-systemctl is-active --quiet cloud-platform-network-enforcement.service || refuse post_install_service_not_active
-"$HELPER" check >/dev/null || refuse post_install_enforcement_check_failed
-require_empty_runtime
+
+declare -A installed_digests=(
+  [$SERVICE_HELPER]=${source_digests[platform/network/cloud-platform-network-services]}
+  [$SERVICE_ROOT/compose.yaml]=${source_digests[platform/network/node-01/compose.yaml]}
+  [$SERVICE_ROOT/cp00000002/Corefile]=${source_digests[platform/network/node-01/cp00000002/Corefile]}
+  [$SERVICE_ROOT/cp00000002/records.hosts]=${source_digests[platform/network/node-01/cp00000002/records.hosts]}
+  [$SERVICE_ROOT/cp00000002/squid.conf]=${source_digests[platform/network/node-01/cp00000002/squid.conf]}
+  [$SERVICE_ROOT/cp00000003/Corefile]=${source_digests[platform/network/node-01/cp00000003/Corefile]}
+  [$SERVICE_ROOT/cp00000003/records.hosts]=${source_digests[platform/network/node-01/cp00000003/records.hosts]}
+  [$SERVICE_ROOT/cp00000003/squid.conf]=${source_digests[platform/network/node-01/cp00000003/squid.conf]}
+  [$SERVICE_UNIT]=${source_digests[platform/systemd/cloud-platform-network-services.service]}
+  [$SYSCTL_FILE]=${source_digests[platform/sysctl/90-cloud-platform-network-forwarding.conf]}
+)
+
+service_changed=0
+if [[ -e $SERVICE_MARKER || -L $SERVICE_MARKER ]]; then
+  [[ -f $SERVICE_MARKER && ! -L $SERVICE_MARKER ]] || refuse service_marker_drift
+  [[ $(stat -c '%U:%G:%a:%h' "$SERVICE_MARKER") == root:root:600:1 ]] || refuse service_marker_metadata_drift
+  [[ $(<"$SERVICE_MARKER") == "$SERVICE_VERSION" ]] || refuse service_marker_content_drift
+  for installed in "${!installed_digests[@]}"; do
+    mode=640
+    [[ $installed == "$SERVICE_HELPER" ]] && mode=755
+    [[ $installed == "$SERVICE_UNIT" || $installed == "$SYSCTL_FILE" ]] && mode=644
+    file_matches "$installed" "$mode" "${installed_digests[$installed]}" ||
+      refuse "installed_service_drift_$installed"
+  done
+else
+  assert_no_unmanaged_collision "$SERVICE_HELPER" "$SERVICE_UNIT" "$SERVICE_ROOT" \
+    "$SERVICE_MARKER" "$SYSCTL_FILE"
+  [[ -z $(docker container ls --all --quiet) ]] || refuse unmanaged_containers_present
+  [[ -z $(docker image ls --all --quiet) ]] || refuse unmanaged_images_present
+  [[ -z $(docker volume ls --quiet) ]] || refuse unmanaged_volumes_present
+  [[ -z $(docker network ls --filter type=custom --quiet) ]] || refuse unmanaged_networks_present
+  [[ -x /usr/local/sbin/cloud-infrastructure-config-backup ]] || refuse backup_command_missing
+  /usr/local/sbin/cloud-infrastructure-config-backup >/dev/null || refuse preservices_backup_failed
+  install -d -o root -g root -m 0750 "$SERVICE_ROOT/cp00000002" "$SERVICE_ROOT/cp00000003"
+  install -o root -g root -m 0755 \
+    "$MISSION_REPOSITORY/platform/network/cloud-platform-network-services" "$SERVICE_HELPER"
+  install -o root -g root -m 0640 \
+    "$MISSION_REPOSITORY/platform/network/node-01/compose.yaml" "$SERVICE_ROOT/compose.yaml"
+  for scope in cp00000002 cp00000003; do
+    for file in Corefile records.hosts squid.conf; do
+      install -o root -g root -m 0640 \
+        "$MISSION_REPOSITORY/platform/network/node-01/$scope/$file" "$SERVICE_ROOT/$scope/$file"
+    done
+  done
+  install -o root -g root -m 0644 \
+    "$MISSION_REPOSITORY/platform/systemd/cloud-platform-network-services.service" "$SERVICE_UNIT"
+  install -o root -g root -m 0644 \
+    "$MISSION_REPOSITORY/platform/sysctl/90-cloud-platform-network-forwarding.conf" "$SYSCTL_FILE"
+  printf '%s\n' "$SERVICE_VERSION" >"$SERVICE_MARKER"
+  chown root:root "$SERVICE_MARKER"
+  chmod 0600 "$SERVICE_MARKER"
+  systemctl daemon-reload
+  systemctl enable --now cloud-platform-network-services.service
+  service_changed=1
+fi
+
+systemctl is-enabled --quiet cloud-platform-network-services.service || refuse service_not_enabled
+systemctl is-active --quiet cloud-platform-network-services.service || refuse service_not_active
+"$SERVICE_HELPER" check >/dev/null || refuse service_check_failed
 for service in ssh ufw fail2ban xrdp xrdp-sesman docker containerd; do
-  systemctl is-active --quiet "$service" || refuse "post_install_inactive_service_$service"
+  systemctl is-active --quiet "$service" || refuse "post_apply_inactive_service_$service"
 done
-printf '%s\n' 'MISSION_APPLY=PASS slice=F1.2c_base changed=1'
+printf 'MISSION_APPLY=PASS slice=F1.2c_network_services changed=%s base_changed=%s services_changed=%s\n' \
+  "$((base_changed + service_changed))" "$base_changed" "$service_changed"

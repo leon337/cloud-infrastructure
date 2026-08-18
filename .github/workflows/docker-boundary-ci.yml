@@ -109,3 +109,19 @@ jobs:
         env:
           DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM: GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
         run: scripts/test_network_services_standalone_vm.sh
+
+  node-network-services-integration:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the exact NODE-01 network-services desired state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove the operational service lifecycle on a disposable VM
+        env:
+          DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM: GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
+        run: scripts/test_node_network_services_vm.sh

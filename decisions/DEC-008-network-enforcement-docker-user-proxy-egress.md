@@ -1,6 +1,6 @@
 # DEC-008 — Enforcement por DOCKER-USER e egress proxy-only
 
-Status: **ACCEPTED — IMPLEMENTAÇÃO E PROVA DESCARTÁVEL PENDENTES**
+Status: **ACCEPTED — BASE NODE-01 E PROVA DESCARTÁVEL PASS; SERVIÇOS NODE-01 PENDENTES**
 
 ## Contexto
 
@@ -104,8 +104,8 @@ Antes do NODE-01:
   interceptado por padrão;
 - protocolos não HTTP precisam de capability/perfil específico e nova prova;
 - DNS/proxy tornam-se componentes de disponibilidade, mas falham fechados;
-- o primeiro workload continua bloqueado até integração descartável completa e
-  checkpoint explícito;
+- o primeiro workload continua bloqueado até CI commit-bound e aplicação dos
+  serviços no NODE-01, seguidos de checkpoint explícito;
 - produção, Management Network e rotação de credenciais continuam fora do
   escopo.
 

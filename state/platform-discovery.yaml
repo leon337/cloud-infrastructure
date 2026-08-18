@@ -1,6 +1,6 @@
 status: CODEX_IMPLEMENTATION_IN_PROGRESS
-phase: FOUNDATIONS_F1_1_DONE_F1_2B_DONE_F1_2C_CONTRACT_STARTED
-updated_at: 2026-08-17
+phase: FOUNDATIONS_F1_1_DONE_F1_2B_DONE_F1_2C_NODE_SERVICES_DESIRED_STATE
+updated_at: 2026-08-18
 checkpoint: docs/39-platform-discovery-checkpoint-028.md
 authority: LEANDRO
 implementation_authorized: true
@@ -14,7 +14,7 @@ implementation:
   technology_mapping: docs/46-technology-mapping-v1.md
   technology_mapping_status: PARTIAL_BASELINE_LATER_CAPABILITIES_CONDITIONAL
   current_slice: SLICE-002C_NETWORK_ENFORCEMENT
-  current_slice_status: CONTRACT_LOCAL_STATIC_PASS_TECHNOLOGY_AND_DYNAMIC_PROOF_PENDING
+  current_slice_status: NODE_01_SERVICES_DESIRED_STATE_LOCAL_STATIC_PASS_CI_PENDING
   validated_implementation_commit: edd2497d657cc9bc35952f5dfc71090a18dade53
   ci_run_id: 31972460567
   ci_conclusion: PASS
@@ -23,7 +23,7 @@ implementation:
   real_vps_apply: PASS_AT_2026_08_17T06_48_33Z_CHANGED_7
   real_vps_idempotence: PASS_AT_2026_08_17T06_57_50Z_CHANGED_0
   real_vps_post_apply_invariance: PASS_AT_2026_08_17T06_58_43Z
-  next_step: SLICE_002C_IMPLEMENTATION_AND_DISPOSABLE_NETWORK_ENFORCEMENT
+  next_step: SLICE_002C_NODE_01_NETWORK_SERVICES_COMMIT_BOUND_CI
   f1_2b_repo_only:
     status: DONE_REAL_EMPTY_RUNTIME_APPLY_IDEMPOTENCE_RESTART_INVARIANCE_PASS
     commit: 7015c80759a797bcb141773b79cd9b95f6fbecf1
@@ -32,16 +32,17 @@ implementation:
     real_gate: DONE_EMPTY_RUNTIME_FIRST_WORKLOAD_BLOCKED_BY_F1_2C
     first_workload: BLOCKED_BY_F1_2C
   f1_2c_repo_only:
-    status: DISPOSABLE_NETWORK_SERVICES_PASS_NODE_01_BASE_ONLY
+    status: NODE_01_NETWORK_SERVICES_DESIRED_STATE_LOCAL_STATIC_PASS_CI_PENDING
     contract_path: platform/network/f1-2c-contract.yaml
     contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
     implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
-    local_validation: PASS_109_TESTS
+    local_validation: PASS_123_TESTS
     technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
     technology_adr: ACCEPTED_DEC_008
     disposable_integration: PASS_RUN_32100527131_BASE_EMPTY_RUNTIME_AND_NETWORK_SERVICES
     real_vps: BASE_APPLY_AND_IDEMPOTENCE_PASS_NETWORK_SERVICES_NOT_APPLIED
-    first_workload: BLOCKED_BY_NODE_01_NETWORK_SERVICES_DESIRED_STATE_AND_REMAINING_GATES
+    node_01_services_desired_state: PREPARED_LOCAL_STATIC_PASS_COMMIT_BOUND_CI_PENDING
+    first_workload: BLOCKED_BY_NODE_01_NETWORK_SERVICES_CI_REAL_APPLY_AND_REMAINING_GATES
   production_promotion: NOT_AUTHORIZED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
 decisions:

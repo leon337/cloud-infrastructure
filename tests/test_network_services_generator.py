@@ -32,7 +32,7 @@ class NetworkServicesGeneratorTests(unittest.TestCase):
     def test_coredns_is_generated_per_scope_and_separates_hosts_views(self):
         config = generate_coredns(self.plan, "cp00000002")
         self.assertIn("bind 0.0.0.0", config)
-        self.assertEqual(config.count("forward . /etc/resolv.conf"), 1)
+        self.assertEqual(config.count("forward . 1.1.1.1 1.0.0.1"), 1)
         self.assertEqual(
             generate_hosts(self.plan, "cp00000002"),
             "10.240.3.10 registry.shared.dev.internal\n",
@@ -48,6 +48,7 @@ class NetworkServicesGeneratorTests(unittest.TestCase):
         self.assertIn("http_port 0.0.0.0:3128", config)
         self.assertIn("acl scope_source src 10.240.2.0/24", config)
         self.assertIn("acl protected_dst dst 10.0.0.0/8", config)
+        self.assertIn("dns_nameservers 1.1.1.1 1.0.0.1", config)
         self.assertIn("acl destination_github_api dstdomain api.github.com", config)
         self.assertNotIn(
             "scope_source destination_not_declared",
@@ -70,16 +71,16 @@ class NetworkServicesGeneratorTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "none profile"):
             generate_squid(self.plan, "cp00000001")
 
-    def test_disposable_images_are_versioned_digest_pinned_and_never_authorized_on_node(self):
+    def test_service_images_are_pinned_and_node_start_remains_ci_gated(self):
         images = yaml.safe_load(IMAGES.read_text(encoding="utf-8"))
         self.assertFalse(images["metadata"]["production"])
-        self.assertEqual(images["metadata"]["status"], "DISPOSABLE_INTEGRATION_ONLY")
+        self.assertEqual(images["metadata"]["status"], "NODE_01_DESIRED_STATE_PREPARED_CI_PENDING")
         for name, image in images["images"].items():
             with self.subTest(image=name):
                 self.assertRegex(image["reference"], r"@sha256:[0-9a-f]{64}$")
                 self.assertEqual(image["platform"], "linux/amd64")
-        self.assertEqual(images["gates"]["node_01_pull"], "NOT_AUTHORIZED")
-        self.assertEqual(images["gates"]["workload_start"], "NOT_AUTHORIZED")
+        self.assertEqual(images["gates"]["node_01_pull"], "AUTHORIZED_AFTER_COMMIT_BOUND_CI_PASS")
+        self.assertEqual(images["gates"]["first_user_workload"], "NOT_AUTHORIZED")
 
     def test_wildcard_private_and_none_profile_destinations_are_refused(self):
         cases = []

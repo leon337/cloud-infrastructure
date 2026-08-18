@@ -128,9 +128,9 @@ invariância final passaram. O runtime permanece vazio e root-only.
 O menor avanço independente seguinte criou o contrato repo-only F1.2c em
 `platform/network/f1-2c-contract.yaml`, commit
 `b4cbeb066605754d538ff5abe2d294f0759d6f59`. Quatro testes específicos e a
-suíte integrada de 60 testes/34 YAML passaram. O contrato fixa deny-by-default,
-IPv4/IPv6, zonas protegidas, grants, perfis e evidência requerida, mas mantém
-DEC-008 aceita o mecanismo `DOCKER-USER`/bridges internas/egress proxy-only. A
+suíte integrada inicial passou. O contrato fixa deny-by-default, IPv4/IPv6,
+zonas protegidas, grants, perfis e evidência requerida. A DEC-008 aceita o
+mecanismo `DOCKER-USER`/bridges internas/egress proxy-only. A
 base fail-closed IPv4/IPv6 passou no run `32073151044` para `d1da488` e foi
 aplicada no NODE-01: `changed=1`, reconciliação `changed=0`, check e 98 testes
 passaram. O runtime permanece vazio.
@@ -146,6 +146,9 @@ deny de egress direto, grant explícito, revogação, falha de dependência e cl
 passaram em VM descartável; o boundary IPv6 permaneceu deny-by-default sem
 endereçamento IPv6 de workload. Nada desse incremento foi aplicado no NODE-01.
 
-O próximo passo é converter os serviços validados em desired state bounded para
-o NODE-01, com precheck/rollback/evidência. O primeiro workload continua
+O desired state bounded NODE-01 agora está preparado: quatro serviços privados
+por digest, sem portas publicadas, três redes internas, uma rede de egress de
+infraestrutura, forwarding fail-closed, systemd, precheck e rollback por camada.
+A suíte local passou com 123 testes. O próximo passo é CI commit-bound; depois,
+sincronização e apply controlado no NODE-01. O primeiro workload continua
 bloqueado; Management Network, produção e rotação não fazem parte desse passo.

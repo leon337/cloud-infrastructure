@@ -30,14 +30,14 @@ project:
     future_platform_implementation: SLICE_001_DONE_F1_2B_DONE_F1_2C_DISPOSABLE_SERVICES_PASS
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: SLICE_002C_NODE_01_NETWORK_SERVICES_DESIRED_STATE
+  next_exact_step: SLICE_002C_NODE_01_NETWORK_SERVICES_COMMIT_BOUND_CI
 status_layer:
   status: IMPLEMENTED_WITH_GITHUB_PROJECT_BLOCKED_EXTERNAL
   project_status: IMPLEMENTATION_IN_PROGRESS
   current_slice_id: F1.2c
   current_slice_name: Network Enforcement
   source_of_truth: STATE_CHECKPOINT_AND_ROADMAP
-  last_material_checkpoint: F1_2C_DISPOSABLE_NETWORK_SERVICES_PASS
+  last_material_checkpoint: F1_2C_NODE_01_SERVICES_DESIRED_STATE_LOCAL_STATIC_PASS
   last_relevant_commit: 8d5963bc890b1e0847fe9e3ee40fe5d058693053
   last_ci_run_id: 32100527131
   last_ci_conclusion: PASS
@@ -299,22 +299,24 @@ codex_execution:
       real_vps_post_apply_invariance: PASS_AT_2026_08_17T12_15_47Z
       first_workload: BLOCKED_BY_F1_2C
     network_enforcement_f1_2c:
-      status: DISPOSABLE_NETWORK_SERVICES_PASS_NODE_01_BASE_ONLY
+      status: NODE_01_NETWORK_SERVICES_DESIRED_STATE_LOCAL_STATIC_PASS_CI_PENDING
       contract_path: platform/network/f1-2c-contract.yaml
       contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
       implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
-      local_validation: PASS_109_TESTS_13_SHELL_SYNTAX_6_ANSIBLE_SYNTAX
+      local_validation: PASS_123_TESTS_15_SHELL_SYNTAX_6_ANSIBLE_SYNTAX
       technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
       technology_adr: ACCEPTED_DEC_008
       disposable_integration: PASS_RUN_32100527131_COMMIT_8D5963B_BASE_EMPTY_RUNTIME_AND_NETWORK_SERVICES
       internal_scope_lifecycle: PASS_3_EMPTY_INTERNAL_SCOPES_APPLY_IDEMPOTENCE_REFUSAL_ROLLBACK_DISPOSABLE_ONLY
       disposable_network_services: PASS_SCOPED_DNS_PROXY_PROFILES_DIRECT_EGRESS_DENY_EXPLICIT_GRANT_REVOCATION_DEPENDENCY_FAILURE_CLEANUP
       disposable_ipv6_boundary: PASS_DEFAULT_DENY_NO_WORKLOAD_IPV6_ADDRESSING
+      node_01_services_desired_state: PREPARED_LOCAL_STATIC_PASS_COMMIT_BOUND_CI_PENDING
+      node_01_services_real_apply: NOT_EXECUTED
       real_vps_check_mode: NOT_EXECUTED
       real_vps_apply: PASS_AT_2026_08_17T21_58_36Z_CHANGED_1
       real_vps_idempotence: PASS_AT_2026_08_17T21_58_57Z_CHANGED_0
       real_vps_check: PASS_AT_2026_08_17T21_59_01Z
       real_vps_tests: PASS_AT_2026_08_17T21_59_04Z_98_TESTS
-      first_workload: BLOCKED_BY_NODE_01_NETWORK_SERVICES_DESIRED_STATE_AND_REMAINING_GATES
+      first_workload: BLOCKED_BY_NODE_01_NETWORK_SERVICES_CI_REAL_APPLY_AND_REMAINING_GATES
 secrets_policy:
   never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]

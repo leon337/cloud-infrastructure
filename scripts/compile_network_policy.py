@@ -215,8 +215,8 @@ def load_and_validate(
         grants.append(grant)
 
     records_raw = plan["service_records"]
-    if not isinstance(records_raw, list) or not records_raw:
-        raise PolicyError("service_records must be a non-empty list")
+    if not isinstance(records_raw, list):
+        raise PolicyError("service_records must be a list")
     records: list[dict[str, Any]] = []
     record_ids: set[str] = set()
     record_names: set[str] = set()

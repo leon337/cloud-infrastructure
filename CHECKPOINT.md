@@ -1,6 +1,6 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-18 após a prova descartável dos serviços de rede F1.2c.
+Atualizado em 2026-08-18 após preparar o desired state NODE-01 dos serviços F1.2c.
 
 ## Estado durável
 
@@ -132,6 +132,10 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - o run `32100527131`, commit `8d5963b`, passou em jobs separados: runtime vazio
   idempotente/reversível e serviços com DNS por escopo, proxy allowlist, deny de
   egress direto, grant/revogação, falha fechada e cleanup;
+- o desired state NODE-01 foi preparado com CoreDNS 1.14.6 e Squid 7.2 por
+  digest, quatro containers sem portas publicadas, três redes internas/escopadas,
+  egress de infraestrutura separado, chains próprias, systemd e rollback por
+  camada; 123 testes locais passaram, mas CI commit-bound e apply real ainda não;
 - evidência sanitizada: `evidence/SLICE-002C/`.
 
 ## Backup/recovery
@@ -160,20 +164,20 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - rollback só quando os namespaces persistentes estiverem vazios.
 - F1.2b está concluído; não repetir o apply fora de reconciliação controlada e
   nenhum workload é permitido antes de F1.2c.
-- a base F1.2c não autoriza workload: os serviços passaram somente na VM
-  descartável e ainda exigem desired state/apply controlado no NODE-01.
+- a base F1.2c não autoriza workload: o desired state dos serviços existe, mas
+  ainda exige CI commit-bound e apply controlado no NODE-01.
 - o lifecycle declarativo de três bridges internas vazias passou somente na VM
   descartável (`1c0d698`, run `32075348131`): apply 3, idempotência 0, recusa de
   rede estranha e rollback 3; nenhuma bridge foi criada no NODE-01.
 
 ## Próximo passo exato
 
-**SLICE_002C_NODE_01_NETWORK_SERVICES_DESIRED_STATE**
+**SLICE_002C_NODE_01_NETWORK_SERVICES_COMMIT_BOUND_CI**
 
-Preparar desired state bounded, prechecks, rollback e evidência para bridges
-internas, DNS por escopo, egress proxy-only e grants no NODE-01. A matriz
-descartável já passou; nenhum workload real é autorizado antes do lifecycle
-controlado. Management Network, produção e rotação permanecem fora desse passo.
+Publicar e provar em VM descartável o desired state bounded para bridges
+internas, DNS por escopo e egress proxy-only. Somente depois sincronizar o runner,
+revalidar o NODE-01 e executar apply/reconcile/check. Nenhum workload de usuário
+está autorizado. Management Network, produção e rotação permanecem fora.
 
 ## Architecture/Technology Mapping — gaps condicionais
 

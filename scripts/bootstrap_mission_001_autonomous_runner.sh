@@ -225,15 +225,21 @@ status_operation() {
 check_operation() {
   status_operation
   ipv4_forward=$(sysctl -n net.ipv4.ip_forward)
-  if [[ $ipv4_forward != 0 ]]; then
-    marker=/etc/cloud-platform-network-enforcement.managed
-    [[ -f $marker && ! -L $marker ]]
-    [[ $(stat -c '%U:%G:%a:%h' "$marker") == root:root:600:1 ]]
-    iptables -C DOCKER-USER -j CLOUD-PLATFORM-FWD
-  fi
+  [[ $ipv4_forward == 0 || $ipv4_forward == 1 ]] || return 1
   [[ $(sysctl -n net.ipv6.conf.all.forwarding) == 0 ]]
-  if ip -o link show | awk -F': ' '{print $2}' |
-      grep -Eq '^(docker0|br-|cp[0-9a-f]{8})(@|$)'; then return 1; fi
+  if [[ -f /etc/cloud-platform-network-services.managed ]]; then
+    [[ $ipv4_forward == 1 ]] || return 1
+    [[ -x /usr/local/libexec/cloud-platform-network-services ]] || return 1
+    /usr/local/libexec/cloud-platform-network-services check
+    expected_links=$'cp00000001\ncp00000002\ncp00000003\ncpeg0001'
+    actual_links=$(ip -o link show | awk -F': ' '{print $2}' |
+      sed 's/@.*//' | grep -E '^(cp[0-9a-f]{8}|cpeg[0-9]{4})$' | sort)
+    [[ $actual_links == "$expected_links" ]] || return 1
+  else
+    [[ $ipv4_forward == 0 ]] || return 1
+    if ip -o link show | awk -F': ' '{print $2}' |
+        grep -Eq '^(docker0|br-|cp[0-9a-f]{8}|cpeg[0-9]{4})(@|$)'; then return 1; fi
+  fi
   if ss -Hlnptu | grep -Eq '(^|:)(2375|2376)([[:space:]]|$)'; then return 1; fi
   printf 'MISSION_RUNNER_CHECK=PASS\n'
 }

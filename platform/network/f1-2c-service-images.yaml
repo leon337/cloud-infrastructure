@@ -2,7 +2,7 @@ api_version: cloud-platform/v1alpha1
 kind: NetworkServiceImageSet
 metadata:
   environment: DEV_LAB
-  status: DISPOSABLE_INTEGRATION_ONLY
+  status: NODE_01_DESIRED_STATE_PREPARED_CI_PENDING
   production: false
 images:
   coredns:
@@ -27,7 +27,8 @@ images:
     license: GPL-2.0-only
     purpose: disposable_probe_only
 gates:
-  node_01_pull: NOT_AUTHORIZED
-  workload_start: NOT_AUTHORIZED
+  node_01_pull: AUTHORIZED_AFTER_COMMIT_BOUND_CI_PASS
+  platform_network_services_start: AUTHORIZED_AFTER_COMMIT_BOUND_CI_PASS
+  first_user_workload: NOT_AUTHORIZED
   production: NOT_AUTHORIZED
   credential_rotation: DEFERRED

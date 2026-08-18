@@ -323,7 +323,7 @@ def f1_2c_gate_errors(
     network_baseline: dict[str, Any],
     network_contract: dict[str, Any],
 ) -> list[str]:
-    """Require disposable F1.2c services while keeping the real-host gate closed."""
+    """Require reviewed NODE-01 desired state while keeping real apply gated."""
     errors: list[str] = []
     current_state = current["codex_execution"]["repo_only_preparations"][
         "network_enforcement_f1_2c"
@@ -354,10 +354,10 @@ def f1_2c_gate_errors(
         errors.append("F1.2c contract file is missing")
 
     metadata = network_contract["metadata"]
-    if metadata["status"] != "TECHNOLOGY_SELECTED_DISPOSABLE_SERVICES_VALIDATED":
+    if metadata["status"] != "NODE_01_NETWORK_SERVICES_DESIRED_STATE_PREPARED":
         errors.append("F1.2c contract technology checkpoint differs")
     if metadata["operational_state"] != (
-        "BASE_ENFORCEMENT_APPLIED_NETWORK_SERVICES_DISPOSABLE_PASS_NODE_01_NOT_APPLIED"
+        "BASE_APPLIED_NODE_01_SERVICES_LOCAL_STATIC_PASS_CI_AND_REAL_APPLY_PENDING"
     ):
         errors.append("F1.2c contract operational state differs")
     if metadata["technology_selection"] != (
@@ -372,8 +372,10 @@ def f1_2c_gate_errors(
         errors.append("F1.2c executable-rule scope differs")
     if network_baseline["contract"].get("policy_compiler_present") is not True:
         errors.append("F1.2c policy compiler evidence is missing")
-    if network_baseline["contract"].get("policy_compiler_operational_input_allowed") is not False:
-        errors.append("F1.2c compiler prematurely allows operational input")
+    if network_baseline["contract"].get("policy_compiler_operational_input_allowed") != (
+        "EXPLICIT_NODE_01_STATUS_ONLY"
+    ):
+        errors.append("F1.2c compiler operational-input gate differs")
 
     local_values = {
         "current": current_state["local_validation"],

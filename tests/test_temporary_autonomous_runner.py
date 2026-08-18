@@ -183,6 +183,8 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
             self.runner,
         )
         self.assertIn("if ip -o link show", self.runner)
+        self.assertIn("cloud-platform-network-services check", self.runner)
+        self.assertIn("cp00000001\\ncp00000002\\ncp00000003\\ncpeg0001", self.runner)
         self.assertIn("if ss -Hlnptu", self.runner)
 
     def test_unprivileged_tests_use_only_a_private_ephemeral_snapshot(self):
@@ -197,31 +199,34 @@ class TemporaryAutonomousRunnerTests(unittest.TestCase):
         self.assertIn("PYTHON=/usr/bin/python3", self.runner)
         self.assertNotIn("safe.directory '*'", self.runner)
 
-    def test_reviewed_apply_installs_only_the_exact_network_base(self):
+    def test_reviewed_apply_installs_exact_base_and_network_services(self):
         operation = (ROOT / "automation/mission-001/operations/apply").read_text(
             encoding="utf-8"
         )
         self.assertIn(
-            "EXPECTED_RUNNER_SHA256=4da7430f033aa8f0580205ee117a3d9d32b44f1d38bc2b386589f3ecce710d06",
+            "EXPECTED_RUNNER_SHA256=83772473ae19f7ddc7e06864ee408bc48b19cff4025cc1e7ec6b609f58fedc96",
             operation,
         )
-        self.assertIn("SOURCE_SCRIPT_SHA256=11468ad", operation)
-        self.assertIn("SOURCE_UNIT_SHA256=32a200e", operation)
-        self.assertIn("SOURCE_DROPIN_SHA256=a83bff9", operation)
+        self.assertIn("BASE_SCRIPT_SHA256=11468ad", operation)
+        self.assertIn("BASE_UNIT_SHA256=32a200e", operation)
+        self.assertIn("BASE_DROPIN_SHA256=a83bff9", operation)
+        self.assertIn("cloud-platform-network-services", operation)
+        self.assertIn("90-cloud-platform-network-forwarding.conf", operation)
         self.assertIn("cloud-infrastructure-config-backup", operation)
         self.assertIn("install -o root -g root -m 0755", operation)
         self.assertNotIn("/etc/sudoers", operation)
         self.assertNotIn("sshd_config", operation)
         self.assertNotRegex(operation, r"(?m)^\s*ufw\s")
 
-    def test_reviewed_rollback_is_bounded_to_the_network_base(self):
+    def test_reviewed_rollback_is_bounded_and_peels_one_network_layer(self):
         operation = (ROOT / "automation/mission-001/operations/rollback").read_text(
             encoding="utf-8"
         )
         self.assertIn("managed_interface_present", operation)
-        self.assertIn('unlink -- "$DROPIN"', operation)
-        self.assertIn('unlink -- "$UNIT"', operation)
-        self.assertIn('unlink -- "$HELPER"', operation)
+        self.assertIn('unlink -- "$BASE_DROPIN"', operation)
+        self.assertIn('unlink -- "$BASE_UNIT"', operation)
+        self.assertIn('unlink -- "$BASE_HELPER"', operation)
+        self.assertIn("slice=F1.2c_network_services base_preserved=true", operation)
         self.assertNotIn("rm -rf", operation)
         self.assertNotIn("/etc/sudoers", operation)
 

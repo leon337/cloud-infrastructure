@@ -3,8 +3,8 @@ kind: NetworkEnforcementContract
 metadata:
   slice: F1.2c
   environment: DEV_LAB
-  status: TECHNOLOGY_SELECTED_DISPOSABLE_SERVICES_VALIDATED
-  operational_state: BASE_ENFORCEMENT_APPLIED_NETWORK_SERVICES_DISPOSABLE_PASS_NODE_01_NOT_APPLIED
+  status: NODE_01_NETWORK_SERVICES_DESIRED_STATE_PREPARED
+  operational_state: BASE_APPLIED_NODE_01_SERVICES_LOCAL_STATIC_PASS_CI_AND_REAL_APPLY_PENDING
   technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
 authority:
   binding_requirements:
@@ -45,7 +45,7 @@ scope:
     dns: controlled_per_scope_view
     egress: explicit_http_connect_proxy
   decision: decisions/DEC-008-network-enforcement-docker-user-proxy-egress.md
-  implementation_status: DISPOSABLE_DNS_EGRESS_GRANTS_PASS_NODE_01_NETWORK_SERVICES_PENDING
+  implementation_status: NODE_01_NETWORK_SERVICES_DESIRED_STATE_LOCAL_STATIC_PASS_CI_PENDING
   address_pools:
     ipv4_candidate: 10.240.0.0/16
     ipv6_reserved_not_enabled: "fd42:434c:4f55::/48"
@@ -120,7 +120,7 @@ gates:
   f1_1_real_foundation: DONE
   f1_2b_disposable_runtime: PASS
   f1_2b_real_runtime: DONE_EMPTY_ROOT_ONLY
-  first_workload: BLOCKED_BY_NODE_01_NETWORK_SERVICES_DESIRED_STATE_AND_REMAINING_GATES
-  node_01_execution: BASE_ONLY_APPLIED_FULL_POLICY_NOT_AUTHORIZED
+  first_workload: BLOCKED_BY_NODE_01_NETWORK_SERVICES_CI_REAL_APPLY_AND_REMAINING_GATES
+  node_01_execution: BASE_ONLY_APPLIED_SERVICES_DESIRED_STATE_NOT_APPLIED
   production: NOT_AUTHORIZED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION

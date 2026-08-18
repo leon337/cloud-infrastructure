@@ -15,7 +15,7 @@ class NetworkEnforcementContractTests(unittest.TestCase):
         cls.path = ROOT / "platform" / "network" / "f1-2c-contract.yaml"
         cls.contract = yaml.safe_load(cls.path.read_text(encoding="utf-8"))
 
-    def test_contract_records_disposable_services_and_keeps_real_host_closed(self):
+    def test_contract_records_node_desired_state_and_keeps_real_apply_gated(self):
         metadata = self.contract["metadata"]
         gates = self.contract["gates"]
 
@@ -23,11 +23,11 @@ class NetworkEnforcementContractTests(unittest.TestCase):
         self.assertEqual(metadata["environment"], "DEV_LAB")
         self.assertEqual(
             metadata["status"],
-            "TECHNOLOGY_SELECTED_DISPOSABLE_SERVICES_VALIDATED",
+            "NODE_01_NETWORK_SERVICES_DESIRED_STATE_PREPARED",
         )
         self.assertEqual(
             metadata["operational_state"],
-            "BASE_ENFORCEMENT_APPLIED_NETWORK_SERVICES_DISPOSABLE_PASS_NODE_01_NOT_APPLIED",
+            "BASE_APPLIED_NODE_01_SERVICES_LOCAL_STATIC_PASS_CI_AND_REAL_APPLY_PENDING",
         )
         self.assertEqual(
             metadata["technology_selection"],
@@ -37,7 +37,7 @@ class NetworkEnforcementContractTests(unittest.TestCase):
         self.assertTrue(gates["disposable_integration"].startswith("PASS_RUN_"))
         self.assertEqual(
             gates["node_01_execution"],
-            "BASE_ONLY_APPLIED_FULL_POLICY_NOT_AUTHORIZED",
+            "BASE_ONLY_APPLIED_SERVICES_DESIRED_STATE_NOT_APPLIED",
         )
         self.assertEqual(gates["production"], "NOT_AUTHORIZED")
         self.assertEqual(
@@ -132,7 +132,7 @@ class NetworkEnforcementContractTests(unittest.TestCase):
         )
         self.assertEqual(
             self.contract["gates"]["first_workload"],
-            "BLOCKED_BY_NODE_01_NETWORK_SERVICES_DESIRED_STATE_AND_REMAINING_GATES",
+            "BLOCKED_BY_NODE_01_NETWORK_SERVICES_CI_REAL_APPLY_AND_REMAINING_GATES",
         )
 
 

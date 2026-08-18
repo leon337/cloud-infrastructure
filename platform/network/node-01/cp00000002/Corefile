@@ -1,0 +1,18 @@
+dev.internal:53 {
+    bind 0.0.0.0
+    hosts /etc/coredns/records.hosts {
+        ttl 30
+        no_reverse
+    }
+    errors
+}
+
+.:53 {
+    bind 0.0.0.0
+    forward . 1.1.1.1 1.0.0.1 {
+        policy sequential
+        max_fails 1
+    }
+    cache 30
+    errors
+}
