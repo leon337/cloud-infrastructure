@@ -133,7 +133,9 @@ sudo "$SERVICE" apply | grep -q 'changed=1' || fail post_restart_reconcile_faile
 sudo "$SERVICE" check >/dev/null || fail post_restart_check_failed
 
 sudo "$SERVICE" rollback | grep -q 'NETWORK_SERVICES_ROLLBACK=PASS' || fail rollback_failed
-sudo unlink -- "$SERVICE_MARKER" "$SYSCTL" "$SERVICE"
+for managed_file in "$SERVICE_MARKER" "$SYSCTL" "$SERVICE"; do
+  sudo unlink -- "$managed_file"
+done
 sudo rm -f -- "$CONFIG/compose.yaml" \
   "$CONFIG/cp00000002/Corefile" "$CONFIG/cp00000002/records.hosts" \
   "$CONFIG/cp00000002/squid.conf" "$CONFIG/cp00000003/Corefile" \
