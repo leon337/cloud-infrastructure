@@ -40,3 +40,31 @@ shared_service_grants:
     protocol: tcp
     destination_port: 5000
     valid_until_utc: "2026-08-18T12:00:00Z"
+service_records:
+  - record_id: registry-service
+    name: registry.shared.dev.internal
+    ipv4: 10.240.3.10
+    visible_to_interfaces:
+      - cp00000002
+      - cp00000003
+egress_destinations:
+  - destination_id: github-api
+    hostname: api.github.com
+    ports:
+      - 443
+    profiles:
+      - development-default
+  - destination_id: github-container-registry
+    hostname: ghcr.io
+    ports:
+      - 443
+    profiles:
+      - restricted
+      - development-default
+  - destination_id: ubuntu-security
+    hostname: security.ubuntu.com
+    ports:
+      - 80
+      - 443
+    profiles:
+      - development-default

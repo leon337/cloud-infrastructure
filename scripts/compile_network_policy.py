@@ -24,6 +24,8 @@ TOP_KEYS = {
     "addressing",
     "sandboxes",
     "shared_service_grants",
+    "service_records",
+    "egress_destinations",
 }
 METADATA_KEYS = {"environment", "evaluation_time_utc", "status"}
 ADDRESSING_KEYS = {"ipv4_pool", "protected_ipv4", "protected_ipv6"}
@@ -43,6 +45,12 @@ GRANT_KEYS = {
     "destination_port",
     "valid_until_utc",
 }
+SERVICE_RECORD_KEYS = {"record_id", "name", "ipv4", "visible_to_interfaces"}
+EGRESS_DESTINATION_KEYS = {"destination_id", "hostname", "ports", "profiles"}
+DNS_NAME_RE = re.compile(
+    r"^(?=.{1,253}\.?$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+"
+    r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.?$"
+)
 
 
 class PolicyError(ValueError):
@@ -193,11 +201,96 @@ def load_and_validate(
             raise PolicyError(f"shared_service_grants[{index}] is expired")
         grants.append(grant)
 
+    records_raw = plan["service_records"]
+    if not isinstance(records_raw, list) or not records_raw:
+        raise PolicyError("service_records must be a non-empty list")
+    records: list[dict[str, Any]] = []
+    record_ids: set[str] = set()
+    record_names: set[str] = set()
+    for index, raw_record in enumerate(records_raw):
+        record = exact_keys(raw_record, SERVICE_RECORD_KEYS, f"service_records[{index}]")
+        record_id = record["record_id"]
+        name = record["name"]
+        if not isinstance(record_id, str) or not IDENTITY_RE.fullmatch(record_id):
+            raise PolicyError(f"service_records[{index}].record_id is invalid")
+        if record_id in record_ids:
+            raise PolicyError("service record IDs must be unique")
+        if not isinstance(name, str) or not DNS_NAME_RE.fullmatch(name) or not name.endswith(".dev.internal"):
+            raise PolicyError(f"service_records[{index}].name must be an exact DEV internal DNS name")
+        if name in record_names:
+            raise PolicyError("service record names must be unique")
+        try:
+            record_ip = ipaddress.ip_address(record["ipv4"])
+        except ValueError as exc:
+            raise PolicyError(f"service_records[{index}].ipv4 is invalid") from exc
+        if record_ip.version != 4 or not any(record_ip in subnet for subnet in subnets):
+            raise PolicyError(f"service_records[{index}].ipv4 is outside managed scopes")
+        visibility = record["visible_to_interfaces"]
+        if (
+            not isinstance(visibility, list)
+            or not visibility
+            or any(not isinstance(value, str) or value not in interfaces for value in visibility)
+            or len(set(visibility)) != len(visibility)
+        ):
+            raise PolicyError(f"service_records[{index}].visible_to_interfaces is invalid")
+        record_ids.add(record_id)
+        record_names.add(name)
+        records.append(record)
+
+    destinations_raw = plan["egress_destinations"]
+    if not isinstance(destinations_raw, list) or not destinations_raw:
+        raise PolicyError("egress_destinations must be a non-empty list")
+    destinations: list[dict[str, Any]] = []
+    destination_ids: set[str] = set()
+    destination_hosts: set[str] = set()
+    for index, raw_destination in enumerate(destinations_raw):
+        destination = exact_keys(
+            raw_destination,
+            EGRESS_DESTINATION_KEYS,
+            f"egress_destinations[{index}]",
+        )
+        destination_id = destination["destination_id"]
+        hostname = destination["hostname"]
+        if not isinstance(destination_id, str) or not IDENTITY_RE.fullmatch(destination_id):
+            raise PolicyError(f"egress_destinations[{index}].destination_id is invalid")
+        if destination_id in destination_ids:
+            raise PolicyError("egress destination IDs must be unique")
+        if (
+            not isinstance(hostname, str)
+            or hostname != hostname.lower()
+            or not DNS_NAME_RE.fullmatch(hostname)
+            or hostname.endswith(".internal")
+        ):
+            raise PolicyError(f"egress_destinations[{index}].hostname must be an exact public DNS name")
+        if hostname in destination_hosts:
+            raise PolicyError("egress destination hostnames must be unique")
+        ports = destination["ports"]
+        if (
+            not isinstance(ports, list)
+            or not ports
+            or any(isinstance(port, bool) or port not in {80, 443} for port in ports)
+            or len(set(ports)) != len(ports)
+        ):
+            raise PolicyError(f"egress_destinations[{index}].ports must contain only unique 80/443 values")
+        profiles = destination["profiles"]
+        if (
+            not isinstance(profiles, list)
+            or not profiles
+            or any(profile not in {"restricted", "development-default"} for profile in profiles)
+            or len(set(profiles)) != len(profiles)
+        ):
+            raise PolicyError(f"egress_destinations[{index}].profiles is invalid")
+        destination_ids.add(destination_id)
+        destination_hosts.add(hostname)
+        destinations.append(destination)
+
     plan["_validated"] = {
         "protected_v4": protected_v4,
         "protected_v6": protected_v6,
         "sandboxes": sandboxes,
         "grants": grants,
+        "records": records,
+        "destinations": destinations,
     }
     return plan
 
