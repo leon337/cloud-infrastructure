@@ -76,6 +76,13 @@ if ! apply_output=$(sudo "$SERVICE" apply 2>&1); then
   printf '%s\n' "$apply_output" >&2
   sudo docker container ls --all --no-trunc >&2 || true
   sudo docker network ls >&2 || true
+  for diagnostic_network in cloud-scope-cp00000001 cloud-scope-cp00000002 \
+    cloud-scope-cp00000003 cloud-platform-egress; do
+    printf 'DIAGNOSTIC network=%s\n' "$diagnostic_network" >&2
+    sudo docker network inspect --format \
+      '{{.Driver}}|{{.Internal}}|{{json .Options}}|{{json .IPAM.Config}}|{{json .Labels}}' \
+      "$diagnostic_network" >&2 || true
+  done
   for diagnostic_container in cp-dns-dev cp-dns-restricted cp-proxy-dev cp-proxy-restricted; do
     printf 'DIAGNOSTIC container=%s\n' "$diagnostic_container" >&2
     sudo docker inspect --format '{{json .State}}' "$diagnostic_container" >&2 || true
@@ -83,6 +90,12 @@ if ! apply_output=$(sudo "$SERVICE" apply 2>&1); then
   done
   sudo iptables -w 5 -S CLOUD-PLATFORM-SVC >&2 || true
   sudo iptables -w 5 -S CLOUD-PLATFORM-EGRESS >&2 || true
+  sudo iptables -w 5 -S DOCKER-USER >&2 || true
+  sudo iptables -w 5 -S INPUT >&2 || true
+  sudo ip6tables -w 5 -S DOCKER-USER >&2 || true
+  sudo ip6tables -w 5 -S INPUT >&2 || true
+  sudo sysctl net.ipv4.ip_forward net.ipv6.conf.all.forwarding >&2 || true
+  sudo ss -Hlnptu >&2 || true
   fail first_apply_failed
 fi
 grep -q 'changed=1' <<<"$apply_output" || fail first_apply_change_missing
