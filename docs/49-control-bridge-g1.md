@@ -1,6 +1,6 @@
 # 49 — CONTROL BRIDGE G1
 
-Status: **REPO_ONLY_PREPARED — VPS_NOT_MUTATED**
+Status: **REPO_ONLY_IMPLEMENTING — VPS_NOT_MUTATED**
 Data: 2026-08-18
 Missão: `CODEX-EXECUTION-MISSION-001` / continuidade MCF
 Branch: `mcf/mission-001-control-bridge-g1`
@@ -37,9 +37,8 @@ GitHub Actions
 self-hosted runner NODE-01
 ubuntu / no Docker socket
           |
-          +-- exec.argv / exec.script não privilegiado
-          |
-          +-- mission001.runner para operações fixas permitidas
+          v
+probe bounded / adapters futuros
           |
           v
 resultado estruturado
@@ -55,50 +54,42 @@ ChatGPT
 
 ### G1-A — push bootstrap
 
-Antes do workflow existir na branch padrão, um push controlado em `control/dispatch/request.json` pode disparar o workflow presente na própria branch G1. O request referencia uma Issue de retorno. Isso permite provar o ciclo sem merge prematuro.
+Antes do workflow existir na branch padrão, um push controlado em `control/dispatch/probe.json` pode disparar o workflow presente na própria branch G1. O request referencia uma Issue de retorno. Isso permite provar o ciclo sem merge prematuro.
 
 ### G1-B — Issue command bus
 
-Depois que a ponte estiver validada e o workflow chegar à branch padrão, Issues com título `[VPS-CMD] ...` poderão disparar diretamente a execução. O corpo da Issue conterá o request JSON validado.
+Depois que a ponte estiver validada e o workflow chegar à branch padrão, Issues com título `[VPS-CMD] PROBE ...` poderão disparar diretamente a mesma prova. O corpo da Issue conterá o request JSON validado.
 
-## Protocolo de request V1
+## Protocolo de probe V1
 
 ```json
 {
-  "protocol": "MCF_CONTROL_BRIDGE_V1",
-  "request_id": "CB-000001",
-  "issue_number": 123,
-  "action": "exec.argv",
-  "argv": ["hostname"],
-  "cwd": "/home/ubuntu",
-  "timeout_seconds": 30
+  "protocol": "MCF_CONTROL_BRIDGE_PROBE_V1",
+  "request_id": "CB-PROBE-000001",
+  "issue_number": 123
 }
 ```
 
-Ações G1:
+O primeiro slice executa somente probes fixos e não fornecidos pelo chamador: hostname, identidade do runner, kernel, Python, disco, memória e estado de serviços essenciais. Se o `codex-mission-001-runner` já existir, o probe tenta somente sua operação `status`.
 
-- `exec.argv`: executa uma lista argv diretamente, sem shell intermediário, como o usuário do self-hosted runner;
-- `exec.script`: executa um script versionado no repositório com argumentos explícitos;
-- `mission001.runner`: chama somente operações da fronteira temporária já existente. No G1 inicial, somente `status`, `check` e `test` são liberadas pelo dispatcher; operações mutantes permanecem fora até gate próprio.
+O executor genérico de escrita continua sendo objetivo posterior do Control Plane; ele não será declarado implementado até existir um mecanismo aceito, testado e auditável.
 
 ## Protocolo de result V1
 
-Todo resultado deve conter pelo menos:
+Todo resultado contém:
 
 ```json
 {
-  "protocol": "MCF_CONTROL_BRIDGE_RESULT_V1",
-  "request_id": "CB-000001",
-  "status": "completed",
-  "exit_code": 0,
-  "started_at": "...",
-  "finished_at": "...",
-  "stdout": "...",
-  "stderr": "..."
+  "protocol": "MCF_CONTROL_BRIDGE_PROBE_RESULT_V1",
+  "request_id": "CB-PROBE-000001",
+  "issue_number": 123,
+  "status": "PASS",
+  "generated_at": "...",
+  "probes": []
 }
 ```
 
-Timeout, validação recusada e falha de execução devem produzir estado explícito em vez de serem convertidos em sucesso.
+Cada probe preserva `argv`, `exit_code`, `stdout`, `stderr`, `started_at` e `finished_at`. Erro ou timeout não pode ser convertido em sucesso.
 
 ## Labels do runner
 
@@ -119,32 +110,35 @@ mcf-control
 - nenhuma senha/chave/token persistida no Git ou resultado;
 - nenhuma concessão de Docker socket ao runner;
 - nenhuma alteração do SSH/UFW/XRDP pelo bootstrap G1;
-- `exec.argv` não usa `shell=True`, `eval`, `bash -c` ou `sh -c`;
+- probe usa argv fixos e `shell=False`;
 - o runner privilegiado existente continua separado do GitHub runner;
-- G1 não declara F5.0, Capability Core, Node Agent ou MCP como DONE.
+- G1 não declara escrita arbitrária, F5.0, Capability Core, Node Agent ou MCP como DONE.
 
 ## Validação antes do bootstrap na VPS
 
-1. testes unitários do protocolo/dispatcher;
+1. testes unitários do protocolo/probe;
 2. sintaxe Python e YAML;
 3. regressão da suíte `scripts/test.sh`;
 4. revisão do workflow para confirmar labels, permissions e timeout;
 5. PR draft/checks sem merge;
-6. somente depois: HUMAN interaction de registro do self-hosted runner;
-7. primeiro handshake deve ser read-only (`hostname`, `id`, `uname`, `status`);
-8. somente após handshake PASS liberar operações não privilegiadas de escrita no workspace.
+6. somente depois: interação humana de registro do self-hosted runner;
+7. primeiro handshake deve ser somente leitura;
+8. depois do handshake PASS, desenhar o próximo slice de capacidades de leitura/escrita sem duplicar o futuro Capability Core/Node Agent.
 
 ## Relação com o roadmap existente
 
 G1 é uma capability bootstrap de execução, não a conclusão de `F5.0 Runner/build isolation`. O roadmap final continua exigindo runner/builder isolado, Capability Core, Node Agent e adapters MCP/API/CLI. G1 deve ser reaproveitado ou substituído por essas camadas, nunca virar uma arquitetura paralela permanente.
 
-## Estado de saída esperado
+## Estado atual
 
 ```text
-G1_REPO_CONTRACT=PASS
-G1_UNIT_TESTS=PASS
-G1_PR_CHECKS=PASS
+G1_BRANCH=CREATED
+G1_REPO_CONTRACT=IMPLEMENTING
+G1_BOUNDED_PROBE=IMPLEMENTED_REPO_ONLY
+G1_WORKFLOW=IMPLEMENTED_REPO_ONLY
+G1_UNIT_TESTS=NOT_YET_VERIFIED_BY_CI
+G1_PR_CHECKS=NOT_YET_RUN
 G1_SELF_HOSTED_RUNNER=NOT_INSTALLED
 G1_VPS_MUTATION=NO
-NEXT=G1_BOOTSTRAP_HUMAN_INTERACTION
+NEXT=OPEN_DRAFT_PR_AND_RUN_REPOSITORY_VALIDATION
 ```
