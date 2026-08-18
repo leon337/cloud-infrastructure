@@ -28,9 +28,12 @@ sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
 [[ -x $BASE_SOURCE && -x $SERVICE_SOURCE && -f $SOURCE_CONFIG/compose.yaml ]] ||
   fail source_missing
 [[ -z $(sudo docker container ls --all --quiet) ]] || fail container_collision
-[[ -z $(sudo docker image ls --all --quiet) ]] || fail image_collision
 [[ -z $(sudo docker volume ls --quiet) ]] || fail volume_collision
 [[ -z $(sudo docker network ls --filter type=custom --quiet) ]] || fail network_collision
+# GitHub-hosted images may contain rebuildable preloaded images. This destructive
+# cleanup is permitted only after every disposable-runner gate above has passed.
+sudo docker image prune --all --force >/dev/null
+[[ -z $(sudo docker image ls --all --quiet) ]] || fail image_cleanup_failed
 
 cleanup() {
   sudo docker rm --force cp-node-probe >/dev/null 2>&1 || true
