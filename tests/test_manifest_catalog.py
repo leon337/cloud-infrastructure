@@ -17,6 +17,7 @@ MODULE_PATH = SCRIPTS / "validate_manifests.py"
 SPEC = importlib.util.spec_from_file_location("validate_manifests", MODULE_PATH)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
 
