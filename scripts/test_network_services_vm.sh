@@ -28,7 +28,7 @@ fail() {
 case "$(hostname --short)" in node-01 | vmi3506102) fail real_dev_node ;; esac
 systemd-detect-virt --quiet --vm || fail not_disposable_vm
 sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
-[[ -x $GENERATOR && -x $COMPILER && -x $ENFORCEMENT && -f $IMAGE_SET ]] ||
+[[ -x $GENERATOR && -f $COMPILER && -x $ENFORCEMENT && -f $IMAGE_SET ]] ||
   fail payload_missing
 for network in cloud-scope-cp00000001 cloud-scope-cp00000002 cloud-scope-cp00000003; do
   sudo docker network inspect "$network" >/dev/null 2>&1 || fail "scope_missing=$network"
