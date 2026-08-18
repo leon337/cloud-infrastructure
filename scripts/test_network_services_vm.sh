@@ -63,6 +63,8 @@ trap cleanup EXIT
 rm -rf -- "$TMP_ROOT"
 install -d -m 0700 "$TMP_ROOT/dev" "$TMP_ROOT/restricted" "$TMP_ROOT/origin"
 printf '%s\n' NETWORK_SERVICES_FIXTURE_OK >"$TMP_ROOT/origin/index.html"
+chmod 0755 "$TMP_ROOT/origin"
+chmod 0444 "$TMP_ROOT/origin/index.html"
 
 for interface in cp00000002 cp00000003; do
   scope=dev
