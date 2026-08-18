@@ -1,8 +1,8 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-16
-documentation_state: CODEX_TECH_SELECTION_AND_IMPLEMENTATION_AUTHORIZED
+updated_at: 2026-08-18
+documentation_state: MANUAL_EXECUTION_CONTINGENCY_ACTIVE
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: NOT_EXECUTED
@@ -21,7 +21,16 @@ project:
     future_platform_implementation: AUTHORIZED_INCREMENTAL_DEV_LAB
   cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
+  next_exact_step: MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
+execution:
+  original_q40_delegate: CODEX
+  codex_availability: UNAVAILABLE_REPORTED_BY_LEANDRO_2026_08_18
+  current_mode: LEANDRO_MANUAL_EXECUTION_GUIDED_BY_MESTRE
+  authority: LEANDRO
+  orchestrator: MESTRE
+  execution_contract: docs/CODEX-EXECUTION-MISSION-001.md
+  q1_to_q40_reopened: false
+  scope_expanded: false
 platform_discovery:
   status: HANDOFF_TO_CODEX_AUTHORIZED
   decision_source: state/platform-discovery.yaml
@@ -166,10 +175,11 @@ authorization:
   authority: LEANDRO
   phase_1_and_2_full_access: EXECUTED
   credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: CODEX_MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
+  next_step: MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
   platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
   codex_technology_selection: AUTHORIZED_BY_Q40_D
   codex_implementation_mission: AUTHORIZED_BY_Q40_D
+  manual_execution_contingency: ACTIVE_BY_CURRENT_LEANDRO_INSTRUCTION
   production_promotion: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   future_scope_expansion: HUMAN_GATE_REQUIRED
   historical_executed:
