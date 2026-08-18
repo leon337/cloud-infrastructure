@@ -103,10 +103,12 @@ sudo docker run --detach --name cp-origin-fixture \
 
 sudo docker run --detach --name cp-registry-fixture \
   --network cloud-scope-cp00000003 --ip 10.240.3.10 \
-  --read-only --cap-drop ALL --security-opt no-new-privileges \
+  --read-only --cap-drop ALL --cap-add NET_ADMIN --security-opt no-new-privileges \
   --pids-limit 32 --memory 32m --cpus 0.25 \
   --mount "type=bind,src=$TMP_ROOT/origin,dst=/www,readonly" \
   "$FIXTURE_IMAGE" httpd -f -p 5000 -h /www >/dev/null
+sudo docker exec cp-registry-fixture \
+  ip route add 10.240.2.20/32 via 10.240.3.1 dev eth0
 
 start_dns() {
   local name=$1 network=$2 ip=$3 scope=$4
@@ -192,7 +194,8 @@ proxy_probe() {
 
 grant_probe() {
   timeout --kill-after=2s 10s sudo docker run --rm --name cp-grant-probe \
-    --network cloud-scope-cp00000002 --read-only --cap-drop ALL --cap-add NET_ADMIN \
+    --network cloud-scope-cp00000002 --ip 10.240.2.20 \
+    --read-only --cap-drop ALL --cap-add NET_ADMIN \
     --security-opt no-new-privileges --pids-limit 32 --memory 32m --cpus 0.25 \
     "$FIXTURE_IMAGE" sh -ec \
     'ip route add 10.240.3.10/32 via 10.240.2.1 dev eth0; exec wget -T 3 -qO- http://10.240.3.10:5000/index.html'
