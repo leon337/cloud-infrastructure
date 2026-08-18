@@ -97,7 +97,7 @@ Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUD
 
 ## Ponto exato
 
-**SLICE_002C_IMPLEMENTATION_AND_DISPOSABLE_NETWORK_ENFORCEMENT**.
+**SLICE_002C_NODE_01_NETWORK_SERVICES_DESIRED_STATE**.
 
 F1.1 possui artefatos canônicos, desired state Ansible, schema/manifests, policy de
 secrets, CI e testes. O run commit-bound `31972460567` passou com 37 testes,
@@ -140,6 +140,12 @@ run `32075348131`: três scopes foram criados, a reconciliação retornou zero,
 uma rede não gerenciada foi recusada e o rollback removeu as três. A prova foi
 somente descartável; o NODE-01 permaneceu sem bridge, rede ou workload.
 
-O próximo passo é completar e provar bridges internas, DNS por escopo, egress
-proxy-only e grants. O primeiro workload continua bloqueado; Management
-Network, produção e rotação não fazem parte desse passo.
+O run `32100527131`, commit `8d5963b`, separou corretamente a prova do runtime
+vazio da matriz de serviços e aprovou ambas. DNS por escopo, proxy allowlist,
+deny de egress direto, grant explícito, revogação, falha de dependência e cleanup
+passaram em VM descartável; o boundary IPv6 permaneceu deny-by-default sem
+endereçamento IPv6 de workload. Nada desse incremento foi aplicado no NODE-01.
+
+O próximo passo é converter os serviços validados em desired state bounded para
+o NODE-01, com precheck/rollback/evidência. O primeiro workload continua
+bloqueado; Management Network, produção e rotação não fazem parte desse passo.

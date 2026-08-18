@@ -1,7 +1,6 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-17 após a conclusão real do
-`SLICE-002B — Docker runtime boundary`.
+Atualizado em 2026-08-18 após a prova descartável dos serviços de rede F1.2c.
 
 ## Estado durável
 
@@ -129,7 +128,10 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - no NODE-01, apply `changed=1`, reconciliação `changed=0`, check e 98 testes
   passaram entre `2026-08-17T21:58:36Z` e `21:59:04Z`;
 - runtime continua vazio; bridges internas, DNS, proxy de egress, grants e a
-  matriz completa de conectividade continuam `PENDING`;
+  matriz de conectividade ainda não foram aplicados no NODE-01;
+- o run `32100527131`, commit `8d5963b`, passou em jobs separados: runtime vazio
+  idempotente/reversível e serviços com DNS por escopo, proxy allowlist, deny de
+  egress direto, grant/revogação, falha fechada e cleanup;
 - evidência sanitizada: `evidence/SLICE-002C/`.
 
 ## Backup/recovery
@@ -158,20 +160,20 @@ listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
 - rollback só quando os namespaces persistentes estiverem vazios.
 - F1.2b está concluído; não repetir o apply fora de reconciliação controlada e
   nenhum workload é permitido antes de F1.2c.
-- a base F1.2c não autoriza workload: a política dinâmica completa de bridges,
-  DNS, egress e grants continua bloqueante.
+- a base F1.2c não autoriza workload: os serviços passaram somente na VM
+  descartável e ainda exigem desired state/apply controlado no NODE-01.
 - o lifecycle declarativo de três bridges internas vazias passou somente na VM
   descartável (`1c0d698`, run `32075348131`): apply 3, idempotência 0, recusa de
   rede estranha e rollback 3; nenhuma bridge foi criada no NODE-01.
 
 ## Próximo passo exato
 
-**SLICE_002C_INTERNAL_NETWORK_DNS_EGRESS_COMPLETION**
+**SLICE_002C_NODE_01_NETWORK_SERVICES_DESIRED_STATE**
 
-Completar bridges internas, DNS por escopo, egress proxy-only e grants, e provar
-a matriz dinâmica IPv4/IPv6 em ambiente descartável. Não iniciar workload no
-NODE-01 antes dessa prova. Management Network, produção e rotação permanecem
-fora desse passo.
+Preparar desired state bounded, prechecks, rollback e evidência para bridges
+internas, DNS por escopo, egress proxy-only e grants no NODE-01. A matriz
+descartável já passou; nenhum workload real é autorizado antes do lifecycle
+controlado. Management Network, produção e rotação permanecem fora desse passo.
 
 ## Architecture/Technology Mapping — gaps condicionais
 

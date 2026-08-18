@@ -1,5 +1,26 @@
 # Cloud Infrastructure
 
+<!-- PROJECT_STATUS:START -->
+## STATUS ATUAL
+
+- **Status geral:** `IMPLEMENTATION_IN_PROGRESS`
+- **Progresso:** 3/32 slices `DONE`; slice atual `PARTIAL`
+- **Slice atual:** `F1.2c` — Network Enforcement
+- **Concluídos:** S0, F1.1, F1.2b
+- **Próximos:** F1.3, F1.4, F1.5
+- **HUMAN_GATEs no roadmap:** 4 (F1.2a, F1.5, F1.6, F5.4)
+- **Próximo passo exato:** `SLICE_002C_NODE_01_NETWORK_SERVICES_DESIRED_STATE`
+- **Último checkpoint:** `F1_2C_DISPOSABLE_NETWORK_SERVICES_PASS`
+- **Último commit relevante:** [`8d5963b`](https://github.com/leon337/cloud-infrastructure/commit/8d5963bc890b1e0847fe9e3ee40fe5d058693053)
+- **Última CI material:** [run `32100527131`](https://github.com/leon337/cloud-infrastructure/actions/runs/32100527131) — `PASS`
+- **GitHub Project:** `BLOCKED_EXTERNAL_MISSING_READ_PROJECT_AND_PROJECT_SCOPES`
+- **Produção:** `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`
+- **Rotação de credenciais:** `DEFERRED_BY_HUMAN_DECISION`
+- **Atualizado em:** `2026-08-18`
+
+> Esta seção é gerada das fontes canônicas; não edite manualmente.
+<!-- PROJECT_STATUS:END -->
+
 Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 
 > Nova IA/agente? Comece por [`CONTEXT.md`](CONTEXT.md).
@@ -19,7 +40,7 @@ O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/cur
 - UFW está ativo com `deny incoming` e somente OpenSSH em TCP 22; fail2ban protege o SSH.
 - sudo exige senha; não existe regra `NOPASSWD`; `ubuntu` saiu do grupo `lxd` e o LXD está desabilitado/inativo.
 - VNC do provedor foi revalidado como console out-of-band; Rescue está disponível, snapshots não estão configurados, backup do provedor não está contratado e firewall do provedor não está configurado.
-- backup diário sanitizado de configurações está ativo; a primeira cópia off-host teve hash validado e passou em extração de recuperação.
+- backup diário sanitizado de configurações está ativo; a primeira cópia off-host teve hash validado e o archive passou em teste de extração, não em restore funcional.
 - zero atualizações APT pendentes após upgrade e reboot final.
 
 ## Cloud Workstation
@@ -38,7 +59,10 @@ tecnologias e implementar incrementalmente a plataforma DEV/lab. A missão está
 [`docs/CODEX-EXECUTION-MISSION-001.md`](docs/CODEX-EXECUTION-MISSION-001.md) e o
 roadmap corrente em
 [`docs/45-revised-implementation-roadmap.md`](docs/45-revised-implementation-roadmap.md).
+A camada de acompanhamento está documentada em
+[`docs/48-status-layer-v1.md`](docs/48-status-layer-v1.md).
 
-Próximo passo exato: concluir `SLICE-001 — Foundations F1.1`, atualmente com
-desired state em validação e aplicação privilegiada pendente. Produção não está
-autorizada e rotação de credenciais permanece `DEFERRED_BY_HUMAN_DECISION`.
+F1.1 e F1.2b estão concluídos no NODE-01. A base F1.2c também está ativa no host,
+e a matriz de redes/DNS/proxy/grants passou em VM descartável. O estado e o
+próximo passo exatos são projetados automaticamente na seção `STATUS ATUAL`.
+Produção não está autorizada e a rotação permanece adiada por decisão humana.

@@ -13,6 +13,7 @@ cd "$REPOSITORY_ROOT"
 "$PYTHON" scripts/validate_yaml.py
 "$PYTHON" scripts/validate_manifests.py
 "$PYTHON" scripts/validate_state.py
+"$PYTHON" scripts/generate_project_status.py --check-readme
 "$PYTHON" - <<'PY'
 import sys
 import unittest

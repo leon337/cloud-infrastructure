@@ -323,7 +323,7 @@ def f1_2c_gate_errors(
     network_baseline: dict[str, Any],
     network_contract: dict[str, Any],
 ) -> list[str]:
-    """Require the proven F1.2c base while keeping the full-policy gate closed."""
+    """Require disposable F1.2c services while keeping the real-host gate closed."""
     errors: list[str] = []
     current_state = current["codex_execution"]["repo_only_preparations"][
         "network_enforcement_f1_2c"
@@ -354,9 +354,11 @@ def f1_2c_gate_errors(
         errors.append("F1.2c contract file is missing")
 
     metadata = network_contract["metadata"]
-    if metadata["status"] != "TECHNOLOGY_SELECTED_BASE_IMPLEMENTED":
+    if metadata["status"] != "TECHNOLOGY_SELECTED_DISPOSABLE_SERVICES_VALIDATED":
         errors.append("F1.2c contract technology checkpoint differs")
-    if metadata["operational_state"] != "BASE_ENFORCEMENT_APPLIED_FULL_POLICY_NOT_APPLIED":
+    if metadata["operational_state"] != (
+        "BASE_ENFORCEMENT_APPLIED_NETWORK_SERVICES_DISPOSABLE_PASS_NODE_01_NOT_APPLIED"
+    ):
         errors.append("F1.2c contract operational state differs")
     if metadata["technology_selection"] != (
         "DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS"

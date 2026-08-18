@@ -1,14 +1,15 @@
 schema_version: 1
 slice: SLICE-002C
 classification: SANITIZED_BASE_ENFORCEMENT_EVIDENCE
-generated_at_utc: "2026-08-17T22:23:00Z"
-status: BASE_ENFORCEMENT_REAL_PASS_FULL_POLICY_PENDING
+generated_at_utc: "2026-08-18T04:55:24Z"
+status: DISPOSABLE_NETWORK_SERVICES_PASS_NODE_01_BASE_ONLY
 git:
   repository: leon337/cloud-infrastructure
   working_branch: codex/mission-001-f1-2c-network-enforcement
   contract_commit: b4cbeb066605754d538ff5abe2d294f0759d6f59
   implementation_commit: d1da488ea0dbe149ff74387546fd0b3547fc8379
   internal_scope_proof_commit: 1c0d698198b239d03b911a0f9de362d3d8f8b9f2
+  network_services_proof_commit: 8d5963bc890b1e0847fe9e3ee40fe5d058693053
   remote_branch: PUBLISHED
 authority:
   requirements:
@@ -24,8 +25,8 @@ authority:
     - TM-10
 contract:
   path: platform/network/f1-2c-contract.yaml
-  status: TECHNOLOGY_SELECTED_BASE_IMPLEMENTED
-  operational_state: BASE_ENFORCEMENT_APPLIED_FULL_POLICY_NOT_APPLIED
+  status: TECHNOLOGY_SELECTED_DISPOSABLE_SERVICES_VALIDATED
+  operational_state: BASE_ENFORCEMENT_APPLIED_NETWORK_SERVICES_DISPOSABLE_PASS_NODE_01_NOT_APPLIED
   technology_selection: DOCKER_IPTABLES_NFT_DOCKER_USER_INTERNAL_BRIDGES_PROXY_EGRESS
   executable_rules_present: true
   executable_rules_scope: OWNED_FAIL_CLOSED_BASE_CHAINS_ONLY
@@ -36,19 +37,20 @@ contract:
     - ipv6
   first_workload: BLOCKED_UNTIL_ALL_REQUIRED_EVIDENCE_PASSES
 validation:
-  local_contract_tests: PASS_100_INTEGRATED
-  integrated_repo_tests: PASS_100
-  yaml_documents: PASS_36
+  local_contract_tests: PASS_109_INTEGRATED
+  integrated_repo_tests: PASS_109
+  yaml_documents: PASS_37
   state_crosscheck: PASS_F1_1_F1_2B_F1_2C_GATES_PRESERVED
   shell_syntax: PASS_6_UNCHANGED
   technology_adr: ACCEPTED_DEC_008
-  github_actions_run: 32075348131
-  github_actions_commit: 1c0d698198b239d03b911a0f9de362d3d8f8b9f2
-  foundation_actions_run: 32075348113
-  disposable_integration: PASS_BASE_AND_EMPTY_INTERNAL_SCOPE_APPLY_IDEMPOTENCE_REFUSAL_ROLLBACK
+  github_actions_run: 32100527131
+  github_actions_commit: 8d5963bc890b1e0847fe9e3ee40fe5d058693053
+  foundation_actions_run: 32100527237
+  disposable_integration: PASS_BASE_EMPTY_RUNTIME_AND_NETWORK_SERVICES
   disposable_internal_scopes: PASS_3_INTERNAL_EMPTY_SCOPES_CHANGED_3_THEN_0_ROLLBACK_3
   disposable_ipv4: PASS_BASE_OWNED_CHAINS
   disposable_ipv6: PASS_BASE_OWNED_CHAINS
+  disposable_network_services: PASS_SCOPED_DNS_PROXY_PROFILES_DIRECT_EGRESS_DENY_GRANT_REVOCATION_DEPENDENCY_FAILURE_CLEANUP
   real_vps_check_mode: NOT_EXECUTED
   real_vps_apply: PASS_AT_2026_08_17T21_58_36Z_CHANGED_1
   real_vps_idempotence: PASS_AT_2026_08_17T21_58_57Z_CHANGED_0
@@ -58,7 +60,7 @@ dependencies:
   f1_1_real_foundation: DONE
   f1_2b_disposable_runtime: PASS
   f1_2b_real_runtime: DONE_EMPTY_ROOT_ONLY
-  first_workload: BLOCKED_BY_FULL_F1_2C_NETWORK_DNS_EGRESS_AND_REMAINING_GATES
+  first_workload: BLOCKED_BY_NODE_01_NETWORK_SERVICES_DESIRED_STATE_AND_REMAINING_GATES
 production:
   deployment_authorized: false
 credential_rotation:

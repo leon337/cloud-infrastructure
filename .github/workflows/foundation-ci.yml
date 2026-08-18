@@ -42,11 +42,24 @@ jobs:
           sudo apt-get install --yes --no-install-recommends shellcheck
 
       - name: Validate schemas, policy, units and Ansible
+        id: repository-validation
         env:
           PYTHON: python
           REQUIRE_ANSIBLE: "1"
           REQUIRE_SHELLCHECK: "1"
         run: scripts/test.sh
+
+      - name: Publish canonical mission status summary
+        if: always()
+        env:
+          TESTS_RESULT: ${{ steps.repository-validation.outcome == 'success' && 'PASS' || 'FAIL' }}
+        run: |
+          python scripts/generate_project_status.py \
+            --check-readme \
+            --summary "${GITHUB_STEP_SUMMARY}" \
+            --tests-result "${TESTS_RESULT}" \
+            --commit "${GITHUB_SHA}" \
+            --timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
   disposable-integration:
     needs: validate
