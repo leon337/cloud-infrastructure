@@ -1,41 +1,42 @@
 # Runbook — GitHub Self-Hosted Runner Bootstrap para NODE-01
 
-Status: PREPARED — NOT EXECUTED
+Status: EXECUTED — HANDSHAKE PASS
 Missão: CODEX-EXECUTION-MISSION-001 / G1 Control Bridge
 Branch: mcf/mission-001-control-bridge-g1
+Data de execução: 2026-08-18
 
 ## Objetivo
 
-Registrar um GitHub Actions self-hosted runner no NODE-01 apenas para o bootstrap do Control Bridge G1. O runner será o transporte GitHub -> VPS para o primeiro handshake remoto read-only.
+Registrar um GitHub Actions self-hosted runner no NODE-01 apenas para o bootstrap do Control Bridge G1. O runner é o transporte GitHub -> VPS para o primeiro handshake remoto read-only.
 
 Este runbook não autoriza merge, produção, rotação de credenciais, Docker socket, sudo irrestrito ou operações mutantes na VPS.
 
-## Pré-condições obrigatórias
+## Pré-condições usadas
 
-1. PR #3 continua draft.
-2. Os workflows de validação do HEAD G1 devem estar verdes antes da instalação.
+1. PR #3 permaneceu draft.
+2. Os workflows de validação do HEAD anterior ao bootstrap estavam verdes.
 3. Operador conectado como `ubuntu` no NODE-01.
-4. Não usar `root` para executar o runner.
-5. Não adicionar `ubuntu` ao grupo `docker` por causa do G1.
-6. Não persistir registration token, PAT, senha ou chave no repositório, terminal history deliberado, Issue ou documentação.
+4. Runner não foi executado como `root`.
+5. `ubuntu` não foi adicionado ao grupo `docker` pelo G1.
+6. Registration token não foi versionado no repositório.
 
-## Registro no GitHub
+## Registro executado
 
-No repositório `leon337/cloud-infrastructure`, abrir:
+No repositório `leon337/cloud-infrastructure` foi usado:
 
 Settings -> Actions -> Runners -> New self-hosted runner
 
-Selecionar Linux / x64 e usar os comandos que o próprio GitHub gerar naquele momento. Não copiar comandos versionados deste runbook porque versão do runner e registration token são temporários.
+Arquitetura selecionada: Linux / x64.
 
-Diretório recomendado no NODE-01 para este bootstrap:
+Diretório usado no NODE-01:
 
 ```text
-/home/ubuntu/actions-runner-mcf-control
+/home/ubuntu/actions-runner
 ```
 
-Executar download, verificação de hash e `config.sh` exatamente conforme a página do GitHub.
+O pacote oficial GitHub Actions Runner 2.336.0 foi baixado e o checksum exibido pelo GitHub foi validado antes da extração.
 
-Ao configurar o runner:
+Configuração pretendida:
 
 ```text
 runner name: node-01-mcf-control
@@ -43,17 +44,34 @@ additional labels: node-01,mcf-control
 work folder: _work
 ```
 
-As labels padrão esperadas do GitHub são `self-hosted`, `Linux` e `X64`; o workflow G1 adiciona `node-01` e `mcf-control` ao roteamento.
+Configuração efetivamente observada no GitHub após o bootstrap:
+
+```text
+runner name: node--1-mcf-control
+labels: self-hosted, Linux, X64, node-01, mcf-control
+work folder: _work
+```
+
+O nome contém uma divergência de nomenclatura não bloqueante (`node--1` em vez de `node-01`). O roteamento depende das labels, e `node-01` + `mcf-control` estão corretas.
+
+Durante o bootstrap a label adicional foi inicialmente digitada como `mfc-control`; ela foi corrigida no GitHub para `mcf-control` antes do handshake comprovado.
 
 ## Serviço 24/7
 
-Depois que o runner aparecer como conectado no GitHub, instalar o runner como serviço usando o mecanismo `svc.sh` incluído no pacote oficial, mantendo o serviço associado ao usuário `ubuntu`.
+O runner foi instalado como serviço systemd usando `svc.sh`, associado ao usuário `ubuntu`.
 
-Validar no GitHub que o runner aparece `Idle` antes de qualquer probe.
+Evidência visual/terminal observada:
 
-## Invariantes pós-bootstrap
+```text
+Active: active (running)
+Connected to GitHub
+```
 
-O bootstrap G1 NÃO deve:
+O GitHub mostrou o runner online antes do primeiro probe.
+
+## Invariantes pós-bootstrap preservados
+
+O bootstrap G1 não foi usado para:
 
 - alterar SSH/UFW/XRDP/fail2ban;
 - publicar nova porta TCP/UDP;
@@ -65,39 +83,67 @@ O bootstrap G1 NÃO deve:
 
 ## Primeiro handshake
 
-O primeiro job aceito pelo runner deve executar somente o probe bounded versionado em `scripts/control_bridge_probe.py`.
+O primeiro job aceito pelo runner executou somente o probe bounded versionado em `scripts/control_bridge_probe.py`.
 
-Resultado mínimo esperado:
+Issue de retorno:
 
 ```text
-hostname
-identity
-kernel
-python
-disk
-memory
-service state
-mission-001 runner status, se disponível
+#4 — [VPS-CMD] PROBE — G1 first handshake
 ```
 
-O resultado deve retornar pelo GitHub e ser observável pelo MESTRE sem transporte manual de stdout por LEANDRO.
+Resultados publicados automaticamente por `github-actions[bot]`:
 
-## Critério de PASS
+```text
+VPS-PROBE-20260818-001 = PASS @ 2026-08-18T21:09:34Z
+VPS-PROBE-20260818-002 = PASS @ 2026-08-18T21:09:49Z
+```
+
+O resultado retornou pelo GitHub e foi lido pelo MESTRE sem transporte manual de stdout por LEANDRO.
+
+## Resultado observado
+
+```text
+hostname=vmi3506102
+identity=ubuntu uid=1000
+kernel=6.8.0-137-generic x86_64
+python=3.12.3
+root_fs=290G total / 15G used / 275G available
+memory=23Gi total / ~15Gi available
+ssh=active
+ufw=active
+docker=active
+containerd=active
+```
+
+A consulta opcional ao `codex-mission-001-runner status` retornou:
+
+```text
+exit=1
+sudo: a password is required
+```
+
+Isso confirma que o GitHub runner não recebeu sudo sem senha. O handshake permaneceu `PASS` porque os probes core retornaram exit code 0.
+
+## Critério de PASS — fechamento
 
 ```text
 RUNNER_REGISTERED=YES
 RUNNER_SERVICE=ACTIVE
-RUNNER_GITHUB_STATE=IDLE_BEFORE_JOB
-FIRST_JOB_ROUTE=node-01+mcf-control
-PROBE_EXIT_CODE=0
+RUNNER_GITHUB_CONNECTED=YES
+FIRST_JOB_ROUTE=node-01+mcf-control=PASS
+PROBE_CORE_EXIT_CODE=0
 RESULT_RETURNED_TO_GITHUB=YES
+RESULT_READ_BY_MESTRE=YES
 LEANDRO_MANUAL_STDOUT_RELAY=NO
-VPS_UNRELATED_SERVICES_CHANGED=NO
+PASSWORDLESS_SUDO=NO
+ARBITRARY_WRITE=NO
 ```
 
-## Falha / recuperação
+`VPS_UNRELATED_SERVICES_CHANGED=NO` não é declarado como prova completa de invariância por este runbook; o probe foi read-only e observou somente o conjunto previsto de serviços/recursos.
 
-Se o runner não registrar ou não receber job:
+## Falha / recuperação futura
+
+Se o runner deixar de registrar ou receber jobs:
 
 1. não ampliar permissões;
 2. coletar somente estado do serviço/runner;
@@ -107,4 +153,6 @@ Se o runner não registrar ou não receber job:
 
 ## Próxima evolução após PASS
 
-O handshake PASS libera apenas o planejamento/implementação do próximo slice do Control Bridge: operações não privilegiadas explícitas em workspaces de projeto. Capability Core, Node Agent, MCP e acesso privilegiado amplo continuam fora do G1 inicial.
+O handshake PASS libera apenas o planejamento/implementação do próximo slice do Control Bridge: operações não privilegiadas explícitas em workspaces de projeto, com testes unitários e de integração e retorno estruturado.
+
+Capability Core, Node Agent, MCP, acesso privilegiado amplo, Docker socket, root direto e shell arbitrário continuam fora do G1 inicial.
