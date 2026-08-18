@@ -167,10 +167,12 @@ probe() {
 
 proxy_probe() {
   local network=$1 proxy=$2 url=$3
-  sudo docker run --rm --network "$network" --read-only --cap-drop ALL \
+  local authority=${url#http://}
+  local host=${authority%%/*}
+  printf 'GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n' "$url" "$host" |
+  sudo docker run --rm --interactive --network "$network" --read-only --cap-drop ALL \
     --security-opt no-new-privileges --pids-limit 32 --memory 32m --cpus 0.25 \
-    --env "http_proxy=http://$proxy:3128" \
-    "$FIXTURE_IMAGE" wget -T 3 -qO- -Y on "$url"
+    "$FIXTURE_IMAGE" nc -w 3 "$proxy" 3128
 }
 
 probe cloud-scope-cp00000002 nslookup registry.shared.dev.internal 10.240.2.2 |
@@ -188,10 +190,11 @@ if ! proxy_probe cloud-scope-cp00000002 10.240.2.3 \
   proxy_diagnostics
   fail development_proxy_allow_failed
 fi
-if proxy_probe cloud-scope-cp00000003 10.240.3.3 \
-  http://security.ubuntu.com/index.html >/dev/null 2>&1; then
+proxy_probe cloud-scope-cp00000003 10.240.3.3 \
+  http://security.ubuntu.com/index.html >"$TMP_ROOT/restricted-proxy.out" ||
+  fail restricted_proxy_did_not_respond
+grep -q '403 Forbidden' "$TMP_ROOT/restricted-proxy.out" ||
   fail restricted_proxy_allowed_unlisted_destination
-fi
 if probe cloud-scope-cp00000002 wget -T 3 -qO- "http://$EGRESS_FIXTURE_IP/index.html" \
   >/dev/null 2>&1; then
   fail workload_reached_direct_egress
