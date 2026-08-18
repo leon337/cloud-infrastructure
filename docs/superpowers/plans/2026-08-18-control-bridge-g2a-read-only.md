@@ -4,138 +4,146 @@
 
 **Goal:** Implement the approved G2-A read-only Workspace Core so agents can inspect local project workspaces on NODE-01 through GitHub without shell, sudo, Docker, writes, clone/materialization, or a second project registry.
 
-**Architecture:** Keep GitHub transport concerns outside the Core. The Core validates a transport-neutral request, resolves `tenant/name/environment` through the existing Project manifests, resolves the transitional workspace root `/home/ubuntu/mcf-workspaces`, confines every filesystem path after realpath/symlink resolution, executes only nine allowlisted read-only capabilities, and returns a structured result. A thin GitHub adapter extracts the transport envelope, invokes the Core, publishes a short summary, and uploads large bounded payloads as Actions Artifacts.
+**Architecture:** GitHub transport stays outside the Core. The Core validates a transport-neutral request, resolves `tenant/name/environment` through existing validated Project manifests, maps that identity into the transitional workspace root `/home/ubuntu/mcf-workspaces`, confines filesystem access after symlink/realpath resolution, executes exactly nine read-only capabilities, and returns a structured result. The GitHub adapter owns Issue/run metadata, summaries, and optional Actions Artifacts.
 
-**Tech Stack:** Python 3.12 standard library, existing `PyYAML==6.0.3`, `jsonschema==4.26.0`, existing strict YAML loader, Git CLI, `unittest`, GitHub Actions self-hosted runner `node-01+mcf-control`.
+**Tech Stack:** Python 3.12, existing `PyYAML==6.0.3` and `jsonschema==4.26.0`, strict YAML loader, Git CLI, `unittest`, GitHub Actions self-hosted runner `node-01+mcf-control`.
 
 **Spec:** `docs/51-control-bridge-g2a-design.md`
 
 ## Global Constraints
 
-- G2-A is read-only. No `workspace.write`, `mkdir`, `delete`, Git mutation, clone, provisioning, shell, sudo, Docker, systemd mutation, network mutation, package management, secrets administration, deploy, backup/rollback, or production action.
+- G2-A is read-only. No `workspace.write`, `mkdir`, `delete`, Git mutation, clone, provisioning, shell, sudo, Docker, systemd mutation, network mutation, APT/system package management, secrets administration, deploy, backup/rollback, or production action.
 - Core protocol: `MCF_WORKSPACE_CONTROL_V1`; result protocol: `MCF_WORKSPACE_CONTROL_RESULT_V1`.
-- Core request contains only `protocol`, `request_id`, `project`, `operation`, and `arguments`; `issue_number`, run IDs, GitHub tokens, and event metadata remain in the GitHub adapter.
-- Project identity source of truth remains `platform/manifests/**/*.yaml`; do not create `registry.json`, SQLite, or another project database.
+- Core request fields are exactly `protocol`, `request_id`, `project`, `operation`, and `arguments`; GitHub Issue/run/event metadata never enters the Core request/result.
+- Project identity/desired state comes only from validated `platform/manifests/**/*.yaml`; no `registry.json`, SQLite, or parallel project database.
+- Files under `platform/manifests/examples/` remain validation fixtures/documentation and are **not** runtime project registrations.
 - Transitional workspace root: `/home/ubuntu/mcf-workspaces/<tenant>/<project>/<environment>`.
 - Core operations are exactly: `project.list`, `project.get`, `workspace.stat`, `workspace.list`, `workspace.read`, `git.status`, `git.branch`, `git.head`, `git.diff`.
-- `workspace.list` is non-recursive and capped at 500 direct children per request.
-- `workspace.read` accepts UTF-8 text only and is capped at 65,536 bytes inline. Files above the limit return `REFUSED` with `file_too_large`; invalid UTF-8 returns `REFUSED` with `binary_or_non_utf8`.
-- `git.diff` captures at most 1,048,576 bytes. Up to 131,072 bytes may be placed inline; larger output is returned as a generic attachment payload for the transport adapter to upload as an Artifact. Output above 1,048,576 bytes returns `REFUSED` with `diff_too_large`.
-- Per-operation subprocess timeout: 15 seconds. Timeout maps to Core status `TIMEOUT`.
-- `workspace.read` refuses `.git/**` and any path rejected by the repository's existing secret-path policy in `scripts/check_repository_secrets.py` (`.env*`, private-key filenames, key stores, `secret(s)` and `credential(s)` paths). `.env.example` remains allowed because the existing repository policy explicitly allows it.
-- Filesystem confinement is based on resolved paths and ancestry, not string filtering alone. Absolute paths, `~`, `..` escape, symlink escape, and cross-project escape must fail closed.
-- G2-A does not create a persistent dedupe store or local lock manager. `request_id` is correlation only.
-- The branch workflow remains push-bootstrap-only for the first real G2-A proof. Do not activate an Issue-triggered command bus on the default branch as part of this plan.
-- Production remains unauthorized. PR #3 remains draft and must not be merged by this plan.
+- `workspace.list`: one directory level, sorted, maximum 500 direct entries.
+- `workspace.read`: UTF-8 text only, maximum 65,536 bytes inline. Larger -> `REFUSED/file_too_large`; invalid UTF-8 -> `REFUSED/binary_or_non_utf8`.
+- `git.status`: maximum captured stdout 262,144 bytes; larger -> `REFUSED/git_status_too_large`.
+- `git.diff`: maximum captured output 1,048,576 bytes. Up to 131,072 bytes inline; 131,073..1,048,576 bytes -> generic attachment for the GitHub adapter; above 1,048,576 -> `REFUSED/diff_too_large`.
+- Subprocess timeout: 15 seconds. Timeout -> Core `TIMEOUT`.
+- `workspace.read` and `git.diff` fail closed on paths/content matching the existing repository secret policy. `.git/**`, `credentials.json`, `credentials.yaml`, and `credentials.yml` are additionally refused. `.env.example` remains allowed by the existing policy.
+- Filesystem confinement is based on resolved paths/ancestry, not only string filtering. Absolute paths, `~`, `..` escape, workspace symlink roots, symlink escape, and cross-project escape fail closed.
+- Git inspection must reject a repository whose resolved Git directory escapes the selected workspace. Linked worktrees with an external gitdir are therefore out of G2-A bootstrap scope.
+- Git commands disable optional locks, user/system config influence where practical, fsmonitor hooks, external diff, textconv, and color. No request supplies argv.
+- G2-A has no persistent dedupe store and no local lock manager. `request_id` is correlation only.
+- The first real G2-A workflow is push-bootstrap-only. No Issue-triggered command bus is activated by this plan.
+- **The implementation commit must not create `control/dispatch/g2a.json`.** The live dispatch file is created only after exact-head CI is green and LEANDRO authorizes the separate real execution gate.
+- Production remains unauthorized. PR #3 remains draft and is not merged by this plan.
 
 ---
 
-### Task 1: Make manifest validation reusable without creating a second registry
+### Task 1: Expose the existing manifest validator as a reusable catalog
 
 **Files:**
 - Modify: `scripts/validate_manifests.py`
 - Create: `tests/test_manifest_catalog.py`
 
 **Interfaces:**
-- Produces: `load_validated_manifests(manifest_directory: pathlib.Path = MANIFEST_DIRECTORY) -> list[dict[str, Any]]`
+- Produces: `ValidatedManifest(path: pathlib.Path, value: dict[str, Any])`
+- Produces: `ManifestValidationError(failures: list[str])`
+- Produces: `load_validated_manifests(manifest_directory: pathlib.Path = MANIFEST_DIRECTORY) -> list[ValidatedManifest]`
 - Produces: `project_key(manifest: dict[str, Any]) -> tuple[str, str, str]`
-- Existing CLI `python3 scripts/validate_manifests.py` must keep the same PASS/FAIL behavior.
+- Existing CLI behavior remains `MANIFEST_VALIDATION_PASS/FAIL`.
 
-- [ ] **Step 1: Write failing tests for reusable validated manifest loading**
+- [ ] **Step 1: Write failing catalog tests**
 
-Add tests that create a temporary manifest directory containing two valid `Project` manifests and assert:
+Create two valid temporary Project YAML files and assert:
 
 ```python
-manifests = MODULE.load_validated_manifests(temp_manifest_root)
-projects = [item for item in manifests if item["kind"] == "Project"]
+records = MODULE.load_validated_manifests(temp_root)
 self.assertEqual(
-    [MODULE.project_key(item) for item in projects],
+    [MODULE.project_key(r.value) for r in records],
     [("tenant-a", "project-a", "dev"), ("tenant-b", "project-b", "staging")],
 )
+self.assertTrue(all(r.path.is_absolute() for r in records))
 ```
 
-Also add a duplicate-key/invalid-manifest test that asserts `ManifestValidationError` is raised and that the exception message contains the path but not secret values.
+Add an invalid/duplicate-key manifest and assert `ManifestValidationError`; its message may contain the relative path and validation reason but not raw secret values.
 
-- [ ] **Step 2: Run the new tests and verify failure**
-
-Run:
+- [ ] **Step 2: Verify the tests fail**
 
 ```bash
 python3 -m unittest tests.test_manifest_catalog -v
 ```
 
-Expected: FAIL because `load_validated_manifests`, `project_key`, and `ManifestValidationError` do not exist.
+Expected: FAIL because the reusable types/functions do not exist.
 
-- [ ] **Step 3: Refactor the current validator into reusable functions**
+- [ ] **Step 3: Make `yaml_strict` import work both as CLI and imported module**
 
-Keep existing schema and semantic checks, but add:
+Replace the current import with:
 
 ```python
+try:
+    from .yaml_strict import load_strict
+except ImportError:  # direct execution: python3 scripts/validate_manifests.py
+    from yaml_strict import load_strict
+```
+
+- [ ] **Step 4: Add the reusable types/functions and move existing validation through them**
+
+Add:
+
+```python
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class ValidatedManifest:
+    path: pathlib.Path
+    value: dict[str, Any]
+
 class ManifestValidationError(ValueError):
     def __init__(self, failures: list[str]):
+        self.failures = tuple(failures)
         super().__init__("; ".join(failures))
-        self.failures = failures
-
 
 def project_key(manifest: dict[str, Any]) -> tuple[str, str, str]:
     metadata = manifest["metadata"]
     return metadata["tenant"], metadata["name"], metadata["environment"]
-
-
-def load_validated_manifests(
-    manifest_directory: pathlib.Path = MANIFEST_DIRECTORY,
-) -> list[dict[str, Any]]:
-    # Move the existing schema-load + YAML-load + schema-validation + semantic-check
-    # logic here. Return manifests only when the entire catalog validates.
-    # Raise ManifestValidationError(failures) on any validation failure.
 ```
 
-Change `main()` to call `load_validated_manifests()` and preserve:
+`load_validated_manifests()` must execute the same schema loading, strict YAML loading, JSON Schema validation, and `semantic_checks()` currently performed by `main()`. It returns `ValidatedManifest(path.resolve(), manifest)` only if the whole catalog validates; otherwise it raises `ManifestValidationError(failures)`. `main()` calls it and preserves current CLI output.
 
-```text
-MANIFEST_VALIDATION_PASS count=<n>
-MANIFEST_VALIDATION_FAIL <message>
-```
-
-- [ ] **Step 4: Run manifest tests and the existing repository validator**
-
-Run:
+- [ ] **Step 5: Run catalog + existing validation**
 
 ```bash
 python3 -m unittest tests.test_manifest_catalog tests.test_manifest_negative_cases -v
 python3 scripts/validate_manifests.py
+scripts/test.sh
 ```
 
-Expected: PASS and existing manifest validation output remains compatible.
+Expected: PASS.
 
-- [ ] **Step 5: Commit the reusable catalog change**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add scripts/validate_manifests.py tests/test_manifest_catalog.py
-git commit -m "refactor(g2a): expose validated project manifest catalog"
+git commit -m "refactor(g2a): expose validated manifest catalog"
 ```
 
 ---
 
-### Task 2: Add the transport-neutral Core protocol
+### Task 2: Add transport-neutral protocol and error types
 
 **Files:**
 - Create: `control_plane/__init__.py`
 - Create: `control_plane/g2a/__init__.py`
 - Create: `control_plane/g2a/protocol.py`
+- Create: `control_plane/g2a/errors.py`
 - Create: `tests/test_g2a_protocol.py`
 - Modify: `scripts/test.sh`
 
 **Interfaces:**
-- Produces: `ProjectKey(tenant: str, name: str, environment: str)`
-- Produces: `CoreRequest(protocol: str, request_id: str, project: ProjectKey, operation: str, arguments: dict[str, Any])`
-- Produces: `Attachment(name: str, media_type: str, content: bytes)`
-- Produces: `CoreExecution(result: dict[str, Any], attachment: Attachment | None)`
-- Produces: `parse_request(value: dict[str, Any]) -> CoreRequest`
+- `ProjectKey(tenant: str, name: str, environment: str)`
+- `CoreRequest(protocol: str, request_id: str, project: ProjectKey, operation: str, arguments: dict[str, Any])`
+- `Attachment(name: str, media_type: str, content: bytes)`
+- `CoreExecution(result: dict[str, Any], attachment: Attachment | None)`
+- `G2AError(code: str, status: str)` plus `RefusedError`, `NotFoundError`, `OperationTimeout`
+- `parse_request(value: dict[str, Any]) -> CoreRequest`
 
-- [ ] **Step 1: Write failing protocol tests**
-
-Tests must prove a valid request parses and each forbidden transport/core confusion fails:
+- [ ] **Step 1: Write failing strict-protocol tests**
 
 ```python
 VALID = {
@@ -145,30 +153,19 @@ VALID = {
     "operation": "git.status",
     "arguments": {},
 }
-
-request = parse_request(VALID)
-self.assertEqual(request.project, ProjectKey("tenant-a", "project-a", "dev"))
-
-for forbidden in ("issue_number", "cwd", "argv", "command", "workspace"):
-    candidate = dict(VALID)
-    candidate[forbidden] = 1
-    with self.assertRaisesRegex(ValueError, "unexpected_request_field"):
-        parse_request(candidate)
+request = MODULE.parse_request(VALID)
+self.assertEqual(request.project, MODULE.ProjectKey("tenant-a", "project-a", "dev"))
 ```
 
-Also reject unknown operations, invalid `request_id`, missing project keys, and invalid environments outside `dev|staging`.
+For each of `issue_number`, `cwd`, `argv`, `command`, `workspace`, add it as a top-level field and require `RefusedError("unexpected_request_field")`. Also reject unknown operations, `request_id` empty/>128 chars, unknown project keys, and environment outside `dev|staging`.
 
-- [ ] **Step 2: Run protocol tests and verify failure**
+- [ ] **Step 2: Verify failure**
 
 ```bash
 python3 -m unittest tests.test_g2a_protocol -v
 ```
 
-Expected: FAIL because the G2-A package does not exist.
-
-- [ ] **Step 3: Implement immutable protocol dataclasses and strict parsing**
-
-Use `@dataclass(frozen=True)` and an exact operation set:
+- [ ] **Step 3: Implement immutable dataclasses and exact operation allowlist**
 
 ```python
 OPERATIONS = frozenset({
@@ -177,387 +174,367 @@ OPERATIONS = frozenset({
 })
 ```
 
-Reject unknown top-level fields and unknown project fields. Keep status generation separate from transport metadata.
+Use `@dataclass(frozen=True)`. Do not add a generic execution/argv field.
 
-- [ ] **Step 4: Extend repository compile coverage and run tests**
+- [ ] **Step 4: Extend compile coverage**
 
-Change:
-
-```bash
-"$PYTHON" -m compileall -q scripts tests
-```
-
-to:
+Change `scripts/test.sh` compile step to:
 
 ```bash
 "$PYTHON" -m compileall -q scripts tests control_plane
 ```
 
-Then run:
+- [ ] **Step 5: Run tests/full suite and commit**
 
 ```bash
 python3 -m unittest tests.test_g2a_protocol -v
 scripts/test.sh
-```
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit protocol skeleton**
-
-```bash
 git add control_plane scripts/test.sh tests/test_g2a_protocol.py
-git commit -m "feat(g2a): add transport-neutral workspace protocol"
+git commit -m "feat(g2a): add transport-neutral core protocol"
 ```
 
 ---
 
-### Task 3: Resolve Projects and workspaces from existing manifests
+### Task 3: Resolve runtime Projects from validated manifests without a registry
 
 **Files:**
 - Create: `control_plane/g2a/projects.py`
 - Create: `tests/test_g2a_projects.py`
 
 **Interfaces:**
-- Consumes: `scripts.validate_manifests.load_validated_manifests`
-- Consumes: `ProjectKey`
-- Produces: `ProjectRecord(key: ProjectKey, manifest_path: pathlib.Path, manifest: dict[str, Any])`
-- Produces: `ProjectResolver.list() -> list[ProjectRecord]`
-- Produces: `ProjectResolver.get(key: ProjectKey) -> ProjectRecord`
-- Produces: `workspace_path(workspace_root: pathlib.Path, key: ProjectKey) -> pathlib.Path`
+- Consumes: `ValidatedManifest`, `load_validated_manifests`, `ProjectKey`
+- `ProjectRecord(key: ProjectKey, manifest_path: pathlib.Path, manifest: dict[str, Any])`
+- `ProjectResolver.list() -> list[ProjectRecord]`
+- `ProjectResolver.get(key: ProjectKey) -> ProjectRecord`
+- `workspace_path(workspace_root: pathlib.Path, key: ProjectKey) -> pathlib.Path`
+- `project_public_view(record: ProjectRecord) -> dict[str, Any]`
 
-- [ ] **Step 1: Write failing multi-project resolution tests**
+- [ ] **Step 1: Write failing multi-project tests**
 
-Create two temporary Project manifests and assert deterministic sort order, exact lookup, duplicate logical key refusal, and no use of `spec.capabilities` as an ACL.
-
-Expected workspace mapping:
+Build a temporary catalog containing `examples/project.example.yaml`, `project-a.yaml`, and `project-b.yaml`. Require:
 
 ```python
 self.assertEqual(
-    workspace_path(pathlib.Path("/tmp/root"), ProjectKey("tenant-a", "project-a", "dev")),
-    pathlib.Path("/tmp/root/tenant-a/project-a/dev"),
+    [r.key for r in resolver.list()],
+    [ProjectKey("tenant-a", "project-a", "dev"), ProjectKey("tenant-b", "project-b", "staging")],
 )
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+The `examples/` record must validate but not appear in the runtime list. Duplicate logical keys must raise `RefusedError("duplicate_project_key")`. Changing `spec.capabilities` must not deny G2-A inspection.
+
+- [ ] **Step 2: Verify failure**
 
 ```bash
 python3 -m unittest tests.test_g2a_projects -v
 ```
 
-Expected: FAIL because resolver functions do not exist.
+- [ ] **Step 3: Implement the resolver as a view over the canonical catalog**
 
-- [ ] **Step 3: Implement resolver as a view over validated manifests**
+Filter runtime Project records with:
 
-`ProjectResolver` must load the existing catalog every request or invocation; do not persist a second registry. Duplicate `tenant/name/environment` must raise `ValueError("duplicate_project_key")`.
+```python
+relative = record.path.relative_to(manifest_root.resolve())
+if relative.parts and relative.parts[0] == "examples":
+    continue
+if record.value.get("kind") != "Project":
+    continue
+```
 
-`project.get` response must omit `secretRefs` values entirely and return only non-secret desired-state metadata needed for inspection: identity, criticality, source repository/revision, persistence booleans, sandbox limits/network profile, preview enabled, and production gate state.
+Sort by `(tenant, name, environment)`. `get()` raises `NotFoundError("project_not_found")`.
 
-- [ ] **Step 4: Run resolver tests and full static suite**
+`project_public_view()` omits `secretRefs` entirely. It may return only identity, criticality, source repository/revision, persistence booleans, sandbox limits/network profile, preview enabled, and production gate state.
+
+- [ ] **Step 4: Implement deterministic workspace mapping**
+
+```python
+def workspace_path(root: pathlib.Path, key: ProjectKey) -> pathlib.Path:
+    return root / key.tenant / key.name / key.environment
+```
+
+This function does not create directories.
+
+- [ ] **Step 5: Run suite and commit**
 
 ```bash
 python3 -m unittest tests.test_g2a_projects -v
 scripts/test.sh
-```
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit project resolution**
-
-```bash
 git add control_plane/g2a/projects.py tests/test_g2a_projects.py
 git commit -m "feat(g2a): resolve projects from canonical manifests"
 ```
 
 ---
 
-### Task 4: Implement workspace confinement and read-only filesystem operations
+### Task 4: Implement workspace confinement, sensitive-content refusal, and bounded reads
 
 **Files:**
 - Create: `control_plane/g2a/workspace.py`
 - Create: `tests/test_g2a_workspace.py`
 
 **Interfaces:**
-- Produces: `resolve_confined(workspace: pathlib.Path, relative_path: str) -> pathlib.Path`
-- Produces: `workspace_stat(workspace: pathlib.Path) -> dict[str, Any]`
-- Produces: `workspace_list(workspace: pathlib.Path, relative_path: str = ".") -> dict[str, Any]`
-- Produces: `workspace_read(workspace: pathlib.Path, relative_path: str) -> dict[str, Any]`
+- `resolve_confined(workspace: pathlib.Path, relative_path: str) -> pathlib.Path`
+- `workspace_stat(workspace: pathlib.Path) -> dict[str, Any]`
+- `workspace_list(workspace: pathlib.Path, relative_path: str = ".") -> dict[str, Any]`
+- `workspace_read(workspace: pathlib.Path, relative_path: str) -> dict[str, Any]`
 
-- [ ] **Step 1: Write failing confinement tests**
+- [ ] **Step 1: Write failing path-confinement tests**
 
-Use temporary `project-a` and `project-b` directories. Required tests:
+Require refusal for absolute paths, `~`, traversal, symlink root, and symlink/cross-project escape:
 
 ```python
-with self.assertRaisesRegex(ValueError, "absolute_path_refused"):
+with self.assertRaisesRegex(RefusedError, "absolute_path_refused"):
     resolve_confined(project_a, "/etc/passwd")
-
-with self.assertRaisesRegex(ValueError, "path_escape_refused"):
+with self.assertRaisesRegex(RefusedError, "path_escape_refused"):
     resolve_confined(project_a, "../project-b/private.txt")
 ```
 
-Create a symlink inside A pointing to B and assert `symlink_escape_refused`. Assert a symlink whose target remains inside A is allowed.
+A symlink inside A targeting B must also produce `path_escape_refused`; an internal symlink to a file still inside A may resolve successfully.
 
-- [ ] **Step 2: Write failing limit and sensitive-path tests**
+- [ ] **Step 2: Write failing size/encoding/sensitive-data tests**
 
-Prove:
+Require:
 
-- 65,536-byte UTF-8 file succeeds;
-- 65,537-byte file returns/refuses `file_too_large`;
-- invalid UTF-8 refuses `binary_or_non_utf8`;
-- `.git/config`, `.env`, `secrets/token.txt`, `credentials.json`, `id_ed25519`, and `certificate.key` are refused using the repository's existing secret-path policy;
-- `.env.example` is allowed;
-- a directory with 501 direct children refuses `list_entry_limit`.
+```text
+65,536 UTF-8 bytes -> PASS
+65,537 bytes -> REFUSED/file_too_large
+invalid UTF-8 -> REFUSED/binary_or_non_utf8
+501 direct entries -> REFUSED/list_entry_limit
+```
 
-- [ ] **Step 3: Run workspace tests and verify failure**
+Paths `.git/config`, `.env`, `secrets/token.txt`, `credentials.json`, `credentials.yaml`, `credentials.yml`, `id_ed25519`, and `certificate.key` must be refused. `.env.example` must remain allowed.
+
+Create a normal-looking `notes.txt` containing synthetic `password=abcdefghijk` and require `REFUSED/secret_like_content`; no secret-like bytes may appear in the exception/result.
+
+- [ ] **Step 3: Verify failure**
 
 ```bash
 python3 -m unittest tests.test_g2a_workspace -v
 ```
 
-Expected: FAIL because workspace operations do not exist.
+- [ ] **Step 4: Implement confinement**
 
-- [ ] **Step 4: Implement realpath/ancestry confinement and bounded reads**
-
-Core rule:
+Rules:
 
 ```python
+raw = pathlib.PurePath(relative_path)
+if pathlib.Path(relative_path).is_absolute():
+    raise RefusedError("absolute_path_refused")
+if relative_path.startswith("~"):
+    raise RefusedError("tilde_path_refused")
+if workspace.is_symlink():
+    raise RefusedError("workspace_symlink_refused")
 workspace_real = workspace.resolve(strict=True)
 target = (workspace_real / relative_path).resolve(strict=True)
 if target != workspace_real and workspace_real not in target.parents:
-    raise ValueError("path_escape_refused")
+    raise RefusedError("path_escape_refused")
 ```
 
-Before resolution, explicitly reject absolute paths and any path beginning with `~`. After resolution, enforce ancestry. For `workspace.read`, call the existing `scripts.check_repository_secrets.path_is_forbidden()` on the POSIX path relative to the workspace and additionally refuse any `.git` segment.
+Missing workspace/file maps to `NotFoundError`, never directory creation.
 
-`workspace.list` is one level only, sorted by name, max 500 entries, returning only `name`, `type` (`file|directory|symlink`), and `size` for regular files. It must not follow child symlinks while listing.
+- [ ] **Step 5: Implement sensitive-path/content policy and bounded operations**
 
-- [ ] **Step 5: Run workspace tests and full suite**
+For reads, derive the resolved path relative to `workspace_real`. Refuse if any segment is `.git`, basename is one of `credentials.json|credentials.yaml|credentials.yml`, or `scripts.check_repository_secrets.path_is_forbidden(relative.as_posix())` returns true. Read at most 65,537 bytes; refuse over 65,536. Run `list(content_findings(data))`; if non-empty, return only `secret_like_content`, never the matched bytes/rule excerpt.
+
+`workspace.list` is non-recursive, sorted, does not follow child symlinks, and returns `name`, `type` (`file|directory|symlink`), and `size` only for regular files. Refuse after the 500th entry.
+
+- [ ] **Step 6: Run suite and commit**
 
 ```bash
 python3 -m unittest tests.test_g2a_workspace -v
 scripts/test.sh
-```
-
-Expected: PASS.
-
-- [ ] **Step 6: Commit confinement and reads**
-
-```bash
 git add control_plane/g2a/workspace.py tests/test_g2a_workspace.py
-git commit -m "feat(g2a): add confined read-only workspace operations"
+git commit -m "feat(g2a): add confined read-only workspace inspection"
 ```
 
 ---
 
-### Task 5: Add bounded local Git inspection
+### Task 5: Add bounded Git inspection without hooks, external diff, or external gitdir
 
 **Files:**
 - Create: `control_plane/g2a/git_inspection.py`
 - Create: `tests/test_g2a_git_inspection.py`
 
 **Interfaces:**
-- Produces: `git_status(workspace: pathlib.Path, timeout: int = 15) -> dict[str, Any]`
-- Produces: `git_branch(workspace: pathlib.Path, timeout: int = 15) -> dict[str, Any]`
-- Produces: `git_head(workspace: pathlib.Path, timeout: int = 15) -> dict[str, Any]`
-- Produces: `git_diff(workspace: pathlib.Path, timeout: int = 15) -> tuple[dict[str, Any], Attachment | None]`
+- `validate_git_repository(workspace: pathlib.Path, timeout: int = 15) -> pathlib.Path`
+- `git_status(workspace: pathlib.Path, timeout: int = 15) -> dict[str, Any]`
+- `git_branch(workspace: pathlib.Path, timeout: int = 15) -> dict[str, Any]`
+- `git_head(workspace: pathlib.Path, timeout: int = 15) -> dict[str, Any]`
+- `git_diff(workspace: pathlib.Path, timeout: int = 15) -> tuple[dict[str, Any], Attachment | None]`
 
-- [ ] **Step 1: Write failing Git fixture tests**
+- [ ] **Step 1: Write failing normal/detached/dirty tests**
 
-Create a temporary repository with one commit, a modified tracked file, and one untracked file. Assert:
+Create a temporary repo with one commit, one staged modification, one unstaged modification, and one untracked file. Assert HEAD, branch/detached state, dirty state, and that `git.diff` includes both staged and unstaged tracked changes relative to HEAD.
+
+- [ ] **Step 2: Write failing external-gitdir test**
+
+Create a workspace whose `.git` file points to a gitdir outside the workspace. `validate_git_repository()` must raise `RefusedError("external_git_dir")`.
+
+- [ ] **Step 3: Write failing timeout/output/secret-diff tests**
+
+Mock timeout -> `OperationTimeout("git_timeout")`. Require `git.status` >262,144 bytes -> `git_status_too_large`. Diff exactly 131,072 bytes stays inline; 131,073..1,048,576 becomes `Attachment`; >1,048,576 -> `diff_too_large`.
+
+Track a `.env` file or a normal tracked file whose diff contains synthetic `password=abcdefghijk`; `git.diff` must return `REFUSED/sensitive_path_in_diff` or `REFUSED/secret_like_content` without returning the secret-like content.
+
+- [ ] **Step 4: Implement a fixed Git execution helper**
+
+Use `shell=False`, `check=False`, `capture_output=True`, timeout 15, and an environment copied from `os.environ` with:
 
 ```python
-self.assertEqual(git_head(repo)["head"], expected_sha)
-self.assertEqual(git_branch(repo)["detached"], False)
-self.assertTrue(git_status(repo)["dirty"])
-self.assertIn("tracked.txt", git_diff(repo)[0]["files"])
+env["GIT_OPTIONAL_LOCKS"] = "0"
+env["GIT_CONFIG_NOSYSTEM"] = "1"
+env["HOME"] = "/nonexistent"
+env["XDG_CONFIG_HOME"] = "/nonexistent"
 ```
 
-Also test detached HEAD and a non-Git directory returning `NOT_FOUND`/`not_git_repository` through the Core mapping.
-
-- [ ] **Step 2: Write failing timeout/output-bound tests**
-
-Mock `subprocess.run` to raise `subprocess.TimeoutExpired` and assert timeout is preserved distinctly. Create diff output at 131,072 bytes (inline), 131,073 bytes (attachment), and above 1,048,576 bytes (`diff_too_large`).
-
-- [ ] **Step 3: Run tests and verify failure**
-
-```bash
-python3 -m unittest tests.test_g2a_git_inspection -v
-```
-
-Expected: FAIL because Git inspection module does not exist.
-
-- [ ] **Step 4: Implement only fixed Git argv**
-
-Internal helper may accept argv, but no Core request may supply argv. Public functions must hard-code:
+Prefix every Git invocation with fixed config:
 
 ```text
-git status --porcelain=v1 --branch --untracked-files=normal
-git symbolic-ref --quiet --short HEAD
-git rev-parse --verify HEAD
-git diff --no-ext-diff --no-textconv --
+git -c core.fsmonitor=false -c core.hooksPath=/dev/null
 ```
 
-Run with `cwd=workspace`, `shell=False`, `check=False`, `capture_output=True`, `timeout=15`, and environment `GIT_OPTIONAL_LOCKS=0`. Never run fetch, pull, checkout, commit, push, reset, clean, add, restore, switch, or submodule mutation.
+No caller-controlled argv is accepted.
 
-- [ ] **Step 5: Run Git tests and full suite**
+- [ ] **Step 5: Validate gitdir confinement before inspection**
+
+Run fixed `git rev-parse --absolute-git-dir`, resolve the returned path, and require it to be the workspace's `.git` path or a descendant of the workspace. Otherwise refuse `external_git_dir`.
+
+- [ ] **Step 6: Implement fixed inspection commands**
+
+Use only:
+
+```text
+git ... status --porcelain=v1 --branch --untracked-files=normal
+git ... symbolic-ref --quiet --short HEAD
+git ... rev-parse --verify HEAD
+git ... diff --name-only -z HEAD --
+git ... diff --no-ext-diff --no-textconv --no-color HEAD --
+```
+
+The `HEAD` diff includes staged + unstaged tracked changes. Untracked files remain visible through status, not diff.
+
+Before rendering diff content, parse the NUL-separated `--name-only` result and apply the same sensitive-path policy as Task 4. Then apply `content_findings()` to captured diff bytes. Fail closed before returning/uploading any sensitive content.
+
+- [ ] **Step 7: Run suite and commit**
 
 ```bash
 python3 -m unittest tests.test_g2a_git_inspection -v
 scripts/test.sh
-```
-
-Expected: PASS.
-
-- [ ] **Step 6: Commit Git inspection**
-
-```bash
 git add control_plane/g2a/git_inspection.py tests/test_g2a_git_inspection.py
 git commit -m "feat(g2a): add bounded local git inspection"
 ```
 
 ---
 
-### Task 6: Build the Core dispatcher and result serialization
+### Task 6: Build explicit Core dispatcher and result serialization
 
 **Files:**
 - Create: `control_plane/g2a/core.py`
 - Create: `tests/test_g2a_core.py`
 
 **Interfaces:**
-- Consumes: protocol, ProjectResolver, workspace operations, Git inspection.
-- Produces: `execute(request_value: dict[str, Any], *, manifest_root: pathlib.Path, workspace_root: pathlib.Path) -> CoreExecution`
+- `execute(request_value: dict[str, Any], *, manifest_root: pathlib.Path, workspace_root: pathlib.Path) -> CoreExecution`
 
-- [ ] **Step 1: Write failing end-to-end Core tests**
+- [ ] **Step 1: Write failing end-to-end Core tests for all nine operations**
 
-Use temporary manifest and workspace roots to prove all nine operations route correctly. Include exact status mapping:
+Use temporary manifest/workspace roots. Require mappings:
 
 ```text
 valid observation -> PASS
-unknown/malformed request -> REFUSED
+malformed/unknown operation -> REFUSED
 missing project/workspace/file/non-git repo -> NOT_FOUND
-path/sensitive policy rejection -> REFUSED
+confinement/sensitive policy -> REFUSED
 subprocess timeout -> TIMEOUT
-unexpected OSError/subprocess failure -> FAILED
+unexpected internal failure -> FAILED/internal_error
 ```
 
-Assert every result contains exactly:
+Every result must contain exactly `protocol, request_id, project, operation, status, started_at, finished_at, result, error, evidence`. Assert it contains no `issue_number`, GitHub token/run ID, absolute workspace path, or argv.
 
-```python
-{
-    "protocol", "request_id", "project", "operation", "status",
-    "started_at", "finished_at", "result", "error", "evidence"
-}
-```
-
-and contains no `issue_number`, GitHub token, workflow/run ID, absolute workspace path, or arbitrary argv.
-
-- [ ] **Step 2: Run Core tests and verify failure**
+- [ ] **Step 2: Verify failure**
 
 ```bash
 python3 -m unittest tests.test_g2a_core -v
 ```
 
-Expected: FAIL because dispatcher does not exist.
+- [ ] **Step 3: Implement explicit dispatch only**
 
-- [ ] **Step 3: Implement explicit operation dispatch**
+Use a mapping whose keys equal `OPERATIONS`; no `else: subprocess` or shell fallback. `project.list` returns all runtime Project records and does not require the selected project to exist; every other operation resolves `request.project` first.
 
-Use a dictionary whose keys are exactly `OPERATIONS`; do not implement a generic command fallback. `project.list` may ignore the request's project selector for lookup but the request still carries a syntactically valid project object for protocol uniformity; document returned list as catalog-wide. All other operations must resolve the selected Project first.
+Catch `G2AError` and preserve its safe code/status. Catch unexpected exceptions as `FAILED/internal_error` without serializing raw exception text.
 
-Evidence may include logical project key, workspace state (`PRESENT|ABSENT`), local Git HEAD, and dirty boolean. Evidence must not include absolute host paths.
+Evidence may contain logical project key, `workspace_state=PRESENT|ABSENT`, local Git HEAD, and dirty boolean. It must not contain absolute host paths.
 
-- [ ] **Step 4: Run Core tests and full suite**
+- [ ] **Step 4: Run suite and commit**
 
 ```bash
 python3 -m unittest tests.test_g2a_core -v
 scripts/test.sh
-```
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit Core dispatcher**
-
-```bash
 git add control_plane/g2a/core.py tests/test_g2a_core.py
 git commit -m "feat(g2a): add read-only workspace core dispatcher"
 ```
 
 ---
 
-### Task 7: Add the GitHub adapter, result publisher, and artifact path
+### Task 7: Add GitHub adapter/workflow without triggering the real VPS yet
 
 **Files:**
 - Create: `scripts/control_bridge_g2a.py`
 - Create: `scripts/control_bridge_g2a_publish.py`
 - Create: `tests/test_control_bridge_g2a_adapter.py`
-- Create: `control/dispatch/g2a.json`
+- Create: `control/examples/g2a-request.example.json`
 - Create: `.github/workflows/control-bridge-g2a.yml`
+- Do **not** create: `control/dispatch/g2a.json`
 
 **Interfaces:**
-- Adapter input on push: one transport document with `{ "transport": {...}, "request": {...} }`.
-- Adapter output files: `${RUNNER_TEMP}/g2a-envelope.json`, `${RUNNER_TEMP}/g2a-result.json`, optional `${RUNNER_TEMP}/g2a-attachment.bin`.
-- Publisher consumes envelope + Core result; Core result remains transport-neutral.
+- Versioned example/envelope shape: `{ "transport": {...}, "request": {...} }`.
+- Runtime outputs: `${RUNNER_TEMP}/g2a-envelope.json`, `${RUNNER_TEMP}/g2a-result.json`, optional `${RUNNER_TEMP}/g2a-attachment.bin`.
+- Publisher reads Issue metadata from envelope only.
 
-- [ ] **Step 1: Write failing adapter parsing tests**
+- [ ] **Step 1: Write failing adapter/publisher tests**
 
-Push fixture:
+Example request:
 
 ```json
 {
-  "transport": {"issue_number": 4},
+  "transport": {"issue_number": 1},
   "request": {
     "protocol": "MCF_WORKSPACE_CONTROL_V1",
-    "request_id": "G2A-BOOTSTRAP-001",
-    "project": {"tenant": "example-tenant", "name": "example-project", "environment": "dev"},
+    "request_id": "G2A-EXAMPLE-001",
+    "project": {"tenant": "tenant-a", "name": "project-a", "environment": "dev"},
     "operation": "project.get",
     "arguments": {}
   }
 }
 ```
 
-Assert the adapter returns the Core request unchanged and writes `issue_number` only to the envelope. Assert missing/invalid transport metadata cannot alter Core fields.
+Assert Core request is unchanged, `issue_number` exists only in envelope, publisher gets Issue number only from envelope, and Markdown is HTML-escaped/capped at 60,000 characters. Attachment bytes never enter Issue Markdown.
 
-- [ ] **Step 2: Write failing publisher tests**
-
-Mock `urllib.request.urlopen`. Assert Markdown contains request ID, operation, status, logical project key, compact result summary, and artifact marker when attachment metadata exists. Assert publisher reads `issue_number` from the envelope, not the Core result.
-
-- [ ] **Step 3: Run adapter tests and verify failure**
+- [ ] **Step 2: Verify failure**
 
 ```bash
 python3 -m unittest tests.test_control_bridge_g2a_adapter -v
 ```
 
-Expected: FAIL because adapter/publisher do not exist.
+- [ ] **Step 3: Implement adapter CLI with injectable roots**
 
-- [ ] **Step 4: Implement adapter CLI**
-
-CLI arguments:
+Arguments:
 
 ```text
---event-name
---event-path
---dispatch-file
---envelope-file
---result-file
---attachment-file
---manifest-root
---workspace-root
+--event-name --event-path --dispatch-file --envelope-file --result-file
+--attachment-file --manifest-root --workspace-root
 ```
 
-Defaults for the real workflow:
+Real defaults are checkout `platform/manifests` and `/home/ubuntu/mcf-workspaces`; tests pass temporary roots. Adapter never creates workspace root.
 
-```text
-manifest-root = <checkout>/platform/manifests
-workspace-root = /home/ubuntu/mcf-workspaces
-```
+- [ ] **Step 4: Implement publisher with compact safe output**
 
-For tests, both roots must be injectable. The adapter must never create the workspace root.
+Publisher skips if envelope has no positive `issue_number`. It posts request ID, operation, status, logical project key, safe summary, and artifact-present marker. It never posts raw attachment bytes or raw unexpected exception text.
 
-- [ ] **Step 5: Implement publisher and bounded Markdown**
+- [ ] **Step 5: Create non-triggering example request**
 
-Cap Issue Markdown at 60,000 characters, HTML-escape untrusted output, and never dump attachment bytes into the Issue. Publisher skips when no positive `issue_number` exists.
+Version `control/examples/g2a-request.example.json` with the exact example above. The live path `control/dispatch/g2a.json` remains absent.
 
-- [ ] **Step 6: Add push-bootstrap workflow**
+- [ ] **Step 6: Create push-bootstrap workflow**
 
-Create `.github/workflows/control-bridge-g2a.yml` with:
+Use:
 
 ```yaml
 name: control-bridge-g2a
@@ -577,90 +554,82 @@ jobs:
     timeout-minutes: 10
 ```
 
-Pin checkout to the repository's existing SHA:
+Checkout stays pinned to `actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09`.
 
-```yaml
-uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+Create a job-local venv only under `${RUNNER_TEMP}` and avoid persistent pip cache:
+
+```bash
+python3 -m venv "${RUNNER_TEMP}/g2a-venv"
+"${RUNNER_TEMP}/g2a-venv/bin/pip" install --disable-pip-version-check --no-cache-dir -r requirements-dev.lock
 ```
 
-Upload the optional attachment with:
+This does not use sudo or install system packages. Invoke the adapter with `${RUNNER_TEMP}/g2a-venv/bin/python`.
 
-```yaml
-uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-with:
-  name: g2a-${{ github.run_id }}
-  path: ${{ runner.temp }}/g2a-attachment.bin
-  if-no-files-found: ignore
-  retention-days: 7
+For optional attachment, pin `actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02`, `retention-days: 7`, and `if-no-files-found: ignore`.
+
+- [ ] **Step 7: Prove workflow creation cannot execute G2-A yet**
+
+Before commit:
+
+```bash
+test ! -e control/dispatch/g2a.json
 ```
 
-Do not add an Issue trigger in this first workflow.
+Expected: exit 0. Review the workflow path filter and confirm the commit changes no matching live dispatch path.
 
-- [ ] **Step 7: Run adapter tests and repository suite**
+- [ ] **Step 8: Run suite and commit**
 
 ```bash
 python3 -m unittest tests.test_control_bridge_g2a_adapter -v
 scripts/test.sh
-```
-
-Expected: PASS.
-
-- [ ] **Step 8: Commit adapter/workflow**
-
-```bash
+test ! -e control/dispatch/g2a.json
 git add scripts/control_bridge_g2a.py scripts/control_bridge_g2a_publish.py \
-  tests/test_control_bridge_g2a_adapter.py control/dispatch/g2a.json \
+  tests/test_control_bridge_g2a_adapter.py control/examples/g2a-request.example.json \
   .github/workflows/control-bridge-g2a.yml
-git commit -m "feat(g2a): add github adapter for read-only workspace core"
+git commit -m "feat(g2a): add dormant github read-only adapter"
 ```
 
 ---
 
-### Task 8: Prove multi-project isolation in integration before touching NODE-01 workspaces
+### Task 8: Prove multi-project isolation entirely in disposable test directories
 
 **Files:**
 - Create: `tests/test_g2a_integration.py`
 - Create: `tests/fixtures/g2a/README.md`
 
 **Interfaces:**
-- Uses only temporary directories and temporary Git repositories; no VPS mutation.
+- Temporary manifests and Git workspaces only; no NODE-01 workspace mutation.
 
-- [ ] **Step 1: Write the integration fixture builder in the test module**
+- [ ] **Step 1: Build two isolated fixture projects in the test**
 
-The test must create two manifests (`tenant-a/project-a/dev`, `tenant-b/project-b/dev`) and two workspaces with independent Git histories. Create an escape symlink in A pointing into B.
+Create `tenant-a/project-a/dev` and `tenant-b/project-b/dev`, each with independent Git history. Add an escape symlink in A pointing into B. Include a tracked sensitive-path fixture and synthetic secret-like-content fixture for refusal tests.
 
-- [ ] **Step 2: Add integration assertions**
+- [ ] **Step 2: Assert the complete read-only boundary**
 
-Prove in one test suite:
+Require:
 
 ```text
-project.list sees A and B
-project.get A does not expose secretRefs
+project.list sees A and B but not examples/
+project.get omits secretRefs
 workspace.stat A/B = PRESENT
-workspace.read A cannot read B via ../
-workspace.read A cannot read B via symlink
-git.status/head/branch/diff are project-local
-Core result contains no absolute workspace path
-large diff produces Attachment, not oversized inline Issue payload
+A cannot read B using ../ or symlink
+a sensitive path/content is REFUSED without content disclosure
+git status/head/branch/diff stay project-local
+external gitdir is REFUSED
+large safe diff becomes Attachment
+Core result contains no absolute workspace path or GitHub metadata
 ```
 
-- [ ] **Step 3: Run integration tests**
+- [ ] **Step 3: Run integration and full repository validation**
 
 ```bash
 python3 -m unittest tests.test_g2a_integration -v
+scripts/test.sh
 ```
 
 Expected: PASS.
 
-- [ ] **Step 4: Run complete repository validation**
-
-```bash
-scripts/test.sh
-```
-
-Expected: existing repository checks plus all new G2-A tests PASS.
-
-- [ ] **Step 5: Commit integration proof**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add tests/test_g2a_integration.py tests/fixtures/g2a/README.md
@@ -669,67 +638,79 @@ git commit -m "test(g2a): prove multi-project read-only isolation"
 
 ---
 
-### Task 9: Close repository CI before any real G2-A request
+### Task 9: Require green exact-head CI before any live dispatch exists
 
 **Files:**
-- No code changes unless CI reveals a defect.
+- No new live dispatch file.
+- No VPS workspace changes.
 
 **Interfaces:**
-- Gate: both `foundation-ci` and `docker-boundary-ci` must be `completed/success` for the exact implementation HEAD.
+- Gate: `foundation-ci` and `docker-boundary-ci` both `completed/success` for the exact implementation HEAD.
 
 - [ ] **Step 1: Push implementation HEAD and wait for PR checks**
 
-Do not trigger G2-A against NODE-01 until the exact HEAD has green repository CI.
+Do not create `control/dispatch/g2a.json` while checks are pending.
 
-- [ ] **Step 2: If CI fails, inspect the failing job and fix only the root cause**
+- [ ] **Step 2: If CI fails, inspect root cause and correct code/tests only**
 
-Re-run local/full tests before the correction commit. Do not weaken existing validation, skip tests, or broaden runner permissions.
+Do not weaken existing validation, skip tests, change runner labels, grant sudo, or add Docker access.
 
-- [ ] **Step 3: Record exact green run IDs and HEAD SHA in the implementation checkpoint draft**
+- [ ] **Step 3: Record exact green HEAD and run IDs in the future G2-A checkpoint draft**
 
-The checkpoint must distinguish repository CI from real-node evidence.
+Keep repository CI evidence distinct from real-node evidence.
 
 ---
 
-### Task 10: Run the first real read-only G2-A proof under a separate execution gate
+### Task 10: Separate HUMAN_GATE for the first real G2-A roundtrip
 
-**Files:**
-- Modify only `control/dispatch/g2a.json` to issue each read-only request.
-- Create after success: `docs/52-control-bridge-g2a-checkpoint.md`
-- Update after success: `docs/51-control-bridge-g2a-design.md` status section only.
-- Update after success: PR #3 body.
+**Files/objects created only after explicit gate:**
+- Create GitHub result Issue dedicated to G2-A.
+- Create then update: `control/dispatch/g2a.json` (each update intentionally triggers one read-only request).
+- After evidence: create `docs/52-control-bridge-g2a-checkpoint.md`.
+- After evidence: update G2-A status in `docs/51-control-bridge-g2a-design.md` and PR #3 body.
 
-**Interfaces:**
-- Requires an already materialized non-critical fixture workspace matching an existing valid Project manifest.
-- G2-A must not create/clone/materialize that workspace. If none exists, stop with `AGUARDANDO_DEPENDENCIA_EXTERNA` and request a separate bootstrap decision.
+**Precondition:** A non-critical, already materialized workspace must match a non-example valid Project manifest. G2-A itself does not create/clone/materialize it. If absent, stop as `AGUARDANDO_DEPENDENCIA_EXTERNA` and request a separate bootstrap decision.
 
-- [ ] **Step 1: Precheck without mutation**
+- [ ] **Step 1: Reconfirm runner boundary read-only**
 
-Use the existing G1 probe or equivalent read-only evidence to confirm runner online, `ubuntu` identity, no passwordless sudo, and no new privilege grant. Confirm the target fixture workspace exists before dispatching G2-A.
+Use G1 evidence/current read-only probe to confirm runner online as `ubuntu`, passwordless sudo still refused, no Docker socket/group grant added, and no new inbound port required.
 
-- [ ] **Step 2: Dispatch `workspace.stat` and require PASS**
+- [ ] **Step 2: Confirm a real registered fixture exists without creating it**
 
-Expected evidence: logical project key + `workspace_state=PRESENT`; no absolute host path in the Core result.
+Require valid non-example Project manifest + expected workspace at `/home/ubuntu/mcf-workspaces/<tenant>/<project>/<environment>`. If either is absent, stop; do not clone or mkdir.
 
-- [ ] **Step 3: Dispatch `workspace.list` and `workspace.read` on a known non-sensitive fixture file**
+- [ ] **Step 3: Create a dedicated result Issue and first live dispatch**
 
-Expected: bounded UTF-8 output; no mutation of mtime/content/hash.
+Create `control/dispatch/g2a.json` for `project.list`, pointing its transport envelope to the dedicated Issue. This file creation is the intentional first G2-A execution trigger.
 
-- [ ] **Step 4: Dispatch `git.status`, `git.branch`, `git.head`, and `git.diff`**
+- [ ] **Step 4: Execute positive observations sequentially**
 
-Expected: local observed state only. No fetch/pull/checkout/commit/push occurs.
+Update the dispatch file with unique request IDs for:
 
-- [ ] **Step 5: Prove negative confinement on the real runner**
+```text
+project.get
+workspace.stat
+workspace.list
+workspace.read (known non-sensitive fixture text)
+git.status
+git.branch
+git.head
+git.diff
+```
 
-Dispatch a request containing `../` and require `REFUSED`. Do not use an actual sensitive path as a positive target.
+Each request must return through GitHub before the next request is issued. No remote Git source lookup is duplicated through the runner.
 
-- [ ] **Step 6: Compare before/after fixture state**
+- [ ] **Step 5: Execute one negative confinement proof**
 
-Capture read-only hashes/stat before and after; require no content mutation. Confirm `sudo -n true` is still refused and no Docker group/socket privilege was added.
+Dispatch `workspace.read` with an argument containing `../` and require `REFUSED/path_escape_refused`. Do not target a real host secret as a positive read.
 
-- [ ] **Step 7: Write the G2-A checkpoint only after evidence is complete**
+- [ ] **Step 6: Prove no mutation**
 
-`docs/52-control-bridge-g2a-checkpoint.md` must record exact HEAD, CI run IDs, request IDs, Issue/result links, PASS/REFUSED evidence, and explicit non-claims:
+Compare fixture file hash/size/mtime and local Git HEAD/status before vs after. Require no G2-A-caused content change. Reconfirm `sudo -n true` refused and no Docker group/socket privilege was added.
+
+- [ ] **Step 7: Write checkpoint only after complete evidence**
+
+`docs/52-control-bridge-g2a-checkpoint.md` records exact implementation HEAD, CI run IDs, request IDs, dedicated Issue/result references, positive PASSes, negative REFUSED evidence, and:
 
 ```text
 G2A_READ_ONLY=PASS
@@ -740,38 +721,23 @@ DOCKER_SOCKET=NOT_GRANTED
 PRODUCTION=NOT_AUTHORIZED
 ```
 
-- [ ] **Step 8: Commit checkpoint documentation**
+- [ ] **Step 8: Commit checkpoint and require CI again**
 
 ```bash
 git add docs/52-control-bridge-g2a-checkpoint.md docs/51-control-bridge-g2a-design.md
 git commit -m "docs(g2a): record read-only workspace proof"
 ```
 
-Run commit-bound CI again after the checkpoint commit before any merge discussion.
+The checkpoint HEAD must pass commit-bound CI before any merge discussion.
 
 ---
 
 ## Plan Self-Review
 
-### Spec coverage
+**Spec coverage:** Tasks 1/3 cover manifest-backed multi-project resolution; 2/6 transport-neutral Core; 3 transitional root/no materialization; 4 path/symlink/cross-project confinement and bounded reads; 5 bounded local Git inspection; 7 transport envelope/summaries/artifacts without premature live trigger; 8 disposable integration; 9 exact-head CI; 10 separate real-node gate. G2-B remains outside this plan.
 
-- Multi-project Project resolution: Tasks 1 and 3.
-- Transport-neutral Core request/result: Tasks 2 and 6.
-- Transitional workspace root and no materialization: Tasks 3, 7, 10.
-- Path traversal/symlink/cross-project refusal: Tasks 4 and 8.
-- `project.list/get`: Tasks 3 and 6.
-- `workspace.stat/list/read`: Tasks 4 and 6.
-- `git.status/branch/head/diff`: Tasks 5 and 6.
-- Source state vs workspace state: enforced by scope; no GitHub-remote read capability is added.
-- Small result vs Artifact: Tasks 5 and 7.
-- No dedupe/locks/writes: Global Constraints and all task interfaces.
-- Unit tests, integration tests, exact-head CI, real read-only proof: Tasks 1-10.
-- G2-B remains outside this plan.
+**Security review:** The plan additionally closes four implementation-level gaps without expanding capability: runtime examples are not registrations; secret-like content is not returned through read/diff; Git directories may not escape the workspace; and creating the G2-A workflow cannot itself trigger the runner because the live dispatch file remains absent until Task 10.
 
-### Type consistency
+**Type consistency:** `ValidatedManifest -> ProjectRecord -> ProjectKey`; `CoreRequest -> ProjectResolver/workspace/Git operations -> CoreExecution`; `Attachment` belongs to Core output but Issue/run metadata remains in the adapter envelope.
 
-The plan uses `ProjectKey`, `CoreRequest`, `Attachment`, and `CoreExecution` from Task 2 consistently. `ProjectResolver` consumes `ProjectKey`; Core consumes resolver/workspace/Git modules; GitHub adapter consumes `CoreExecution` and keeps the envelope separate.
-
-### Execution boundary
-
-Creating this plan does **not** authorize implementation. Code changes begin only after an explicit implementation gate. The real NODE-01 proof in Task 10 is a second gate after unit/integration tests and green commit-bound CI.
+**Execution boundary:** Creating or editing this plan does **not** authorize implementation. Tasks 1-9 require a separate implementation authorization. Task 10 requires a second explicit HUMAN_GATE for the first real G2-A request on NODE-01.
