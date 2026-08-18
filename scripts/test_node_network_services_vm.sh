@@ -95,10 +95,6 @@ if ! apply_output=$(sudo "$SERVICE" apply 2>&1); then
   sudo docker exec cp-dns-dev /coredns -version >&2 || printf '%s\n' 'DIAGNOSTIC dns-dev-version=FAIL' >&2
   sudo docker exec cp-dns-restricted /coredns -version >&2 ||
     printf '%s\n' 'DIAGNOSTIC dns-restricted-version=FAIL' >&2
-  sudo docker exec cp-proxy-dev squid -k check >&2 ||
-    printf '%s\n' 'DIAGNOSTIC proxy-dev-config=FAIL' >&2
-  sudo docker exec cp-proxy-restricted squid -k check >&2 ||
-    printf '%s\n' 'DIAGNOSTIC proxy-restricted-config=FAIL' >&2
   sudo iptables -w 5 -S CLOUD-PLATFORM-SVC >&2 || true
   sudo iptables -w 5 -S CLOUD-PLATFORM-EGRESS >&2 || true
   sudo iptables -w 5 -S DOCKER-USER >&2 || true
