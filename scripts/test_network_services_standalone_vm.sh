@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 
 readonly CONFIRMATION=GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
-readonly ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+readonly ROOT
 readonly ENFORCEMENT_SOURCE=$ROOT/platform/network/cloud-platform-network-enforcement
 readonly ENFORCEMENT_DESTINATION=/usr/local/libexec/cloud-platform-network-enforcement
 readonly RECONCILER=$ROOT/scripts/reconcile_network_scopes.py
