@@ -71,7 +71,21 @@ printf '%s\n' SLICE-002C-NODE-01-SERVICES-V1 | sudo tee "$SERVICE_MARKER" >/dev/
 sudo chown root:root "$SERVICE_MARKER"
 sudo chmod 0600 "$SERVICE_MARKER"
 
-sudo "$SERVICE" apply | grep -q 'changed=1' || fail first_apply_failed
+apply_output=''
+if ! apply_output=$(sudo "$SERVICE" apply 2>&1); then
+  printf '%s\n' "$apply_output" >&2
+  sudo docker container ls --all --no-trunc >&2 || true
+  sudo docker network ls >&2 || true
+  for diagnostic_container in cp-dns-dev cp-dns-restricted cp-proxy-dev cp-proxy-restricted; do
+    printf 'DIAGNOSTIC container=%s\n' "$diagnostic_container" >&2
+    sudo docker inspect --format '{{json .State}}' "$diagnostic_container" >&2 || true
+    sudo docker logs --tail 80 "$diagnostic_container" >&2 || true
+  done
+  sudo iptables -w 5 -S CLOUD-PLATFORM-SVC >&2 || true
+  sudo iptables -w 5 -S CLOUD-PLATFORM-EGRESS >&2 || true
+  fail first_apply_failed
+fi
+grep -q 'changed=1' <<<"$apply_output" || fail first_apply_change_missing
 sudo "$SERVICE" apply | grep -q 'changed=0' || fail idempotence_failed
 sudo "$SERVICE" check | grep -q 'NETWORK_SERVICES_CHECK=PASS' || fail check_failed
 
