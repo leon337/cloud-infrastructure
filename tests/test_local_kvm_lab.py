@@ -102,6 +102,22 @@ class LocalKvmLabTests(unittest.TestCase):
         self.assertIn("vmi3506102", script)
         self.assertIn("sudo -n true", script)
 
+    def test_candidate_transfer_is_exact_bundle_and_fixed_guest_harness(self):
+        text = LAUNCHER.read_text()
+        self.assertIn('git -C "$ROOT" bundle create "$RUN_ROOT/candidate.bundle" HEAD', text)
+        self.assertIn('"$RUN_ROOT/candidate.bundle" mcf-lab@127.0.0.1:/tmp/candidate.bundle', text)
+        self.assertIn("git clone /tmp/candidate.bundle /home/mcf-lab/cloud-infrastructure", text)
+        self.assertIn('git rev-parse HEAD', text)
+        self.assertIn("'$CANDIDATE_SHA'", text)
+        self.assertIn(
+            "DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY",
+            text,
+        )
+        self.assertIn("scripts/test_node_network_services_vm.sh", text)
+        self.assertNotIn("github.com/leon337/cloud-infrastructure", text)
+        self.assertNotIn("GITHUB_TOKEN", text)
+        self.assertNotIn("github_pat_", text)
+
 
 if __name__ == "__main__":
     unittest.main()
