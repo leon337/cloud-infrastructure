@@ -4,15 +4,15 @@
   },
   "request": {
     "protocol": "MCF_WORKSPACE_CONTROL_V1",
-    "request_id": "G2A-NODE01-20260819-006",
+    "request_id": "G2A-NODE01-20260819-007",
     "project": {
       "tenant": "leon337",
       "name": "g2a-smoke",
       "environment": "dev"
     },
-    "operation": "workspace.list",
+    "operation": "workspace.read",
     "arguments": {
-      "path": "."
+      "path": "platform/manifests/g2a-smoke.yaml"
     }
   }
 }
