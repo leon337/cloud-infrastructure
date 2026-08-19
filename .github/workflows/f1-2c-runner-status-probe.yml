@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: f1-2c-runner-status-probe-${{ github.event.pull_request.number || github.ref }}
@@ -16,41 +16,32 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact KVM Task 2 implementation
+      - name: Check out exact KVM Task 2 GREEN head
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: fix/f1-2c-systemd-runtime-lock
-          fetch-depth: 0
-          persist-credentials: true
+          ref: 34bb05e7e5072a45ea0f16bffa1af757b29db63f
+          fetch-depth: 1
+          persist-credentials: false
 
-      - name: Verify exact head and unprivileged host boundary
+      - name: Verify unprivileged boundary and executable contract
         run: |
-          test "$(git rev-parse HEAD)" = "7e32c0822cab8f3dee6d2717caf8df2dbed802cf"
+          test "$(git rev-parse HEAD)" = "34bb05e7e5072a45ea0f16bffa1af757b29db63f"
           if sudo -n true 2>/dev/null; then exit 1; fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then exit 1; fi
+          test -x scripts/run_f1_2c_kvm_lab.sh
           echo 'TDD_BOUNDARY_PASS'
 
-      - name: Mark launcher executable and prove focused GREEN
+      - name: Verify Task 2 tests and full static suite
+        env:
+          PYTHON: python3
+          REQUIRE_ANSIBLE: "0"
+          REQUIRE_SHELLCHECK: "0"
         run: |
-          chmod 0755 scripts/run_f1_2c_kvm_lab.sh
-          python3 -m unittest -v tests.test_local_kvm_lab.LocalKvmLabTests.test_host_preflight_is_fail_closed_and_unprivileged
-          python3 -m unittest -v \
-            tests.test_local_kvm_lab.LocalKvmLabTests.test_image_is_release_pinned_by_url_and_sha256 \
-            tests.test_local_kvm_lab.LocalKvmLabTests.test_launcher_has_one_fixed_candidate_argument_and_no_arbitrary_command
-          bash -n scripts/run_f1_2c_kvm_lab.sh
-          git diff --check
-          echo 'TDD_KVM_TASK2_GREEN_CONFIRMED'
-
-      - name: Commit tested executable mode only
-        run: |
-          test -z "$(git status --porcelain | grep -v '^ M scripts/run_f1_2c_kvm_lab.sh$')"
-          git config user.name 'MCF controlled automation'
-          git config user.email 'mcf-controlled-automation@users.noreply.github.com'
-          git add scripts/run_f1_2c_kvm_lab.sh
-          git diff --cached --check
-          git commit -m 'chore(f1.2c): mark KVM lab launcher executable'
-          git push origin HEAD:fix/f1-2c-systemd-runtime-lock
-          echo 'KVM_TASK2_MODE_PUSH_PASS'
+          python3 -m unittest -v tests.test_local_kvm_lab
+          scripts/test.sh
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          echo 'KVM_TASK2_FULL_STATIC_PASS'
 
       - name: Preserve current host safety evidence
         run: |
