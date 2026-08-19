@@ -11,8 +11,6 @@ from typing import Any
 
 PROTOCOL = "MCF_CONTROL_BRIDGE_PROBE_V1"
 RESULT_PROTOCOL = "MCF_CONTROL_BRIDGE_PROBE_RESULT_V1"
-WORKSPACE = "/home/ubuntu/mcf-workspaces/leon337/g2a-smoke/dev"
-FIXTURE = f"{WORKSPACE}/platform/manifests/g2a-smoke.yaml"
 
 
 def now() -> str:
@@ -103,26 +101,15 @@ def build_result(request_id: str, issue_number: int) -> dict[str, Any]:
         run_probe("ufw", ["systemctl", "is-active", "ufw"]),
         run_probe("docker", ["systemctl", "is-active", "docker"]),
         run_probe("containerd", ["systemctl", "is-active", "containerd"]),
-        run_probe(
-            "fixture_fingerprint",
-            [
-                "python3",
-                "-c",
-                "import hashlib,pathlib; p=pathlib.Path(%r); s=p.stat(); print(hashlib.sha256(p.read_bytes()).hexdigest(), s.st_size, s.st_mtime_ns)" % FIXTURE,
-            ],
-        ),
-        run_probe("workspace_git_head", ["git", "-C", WORKSPACE, "rev-parse", "HEAD"]),
-        run_probe("workspace_git_status", ["git", "-C", WORKSPACE, "status", "--porcelain=v1"]),
-        run_probe("sudo_n_true", ["sudo", "-n", "true"]),
-        run_probe(
-            "docker_socket_access",
-            [
-                "python3",
-                "-c",
-                "import os; print('granted' if os.access('/var/run/docker.sock', os.R_OK | os.W_OK) else 'refused')",
-            ],
-        ),
     ]
+    runner_path = pathlib.Path("/usr/local/sbin/codex-mission-001-runner")
+    if runner_path.is_file():
+        probes.append(
+            run_probe(
+                "mission001_runner_status",
+                ["sudo", "-n", str(runner_path), "status"],
+            )
+        )
     all_core_ok = all(item["exit_code"] == 0 for item in probes[:6])
     return {
         "protocol": RESULT_PROTOCOL,
