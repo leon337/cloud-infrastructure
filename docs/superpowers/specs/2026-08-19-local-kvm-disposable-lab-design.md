@@ -1,6 +1,6 @@
 # Local KVM Disposable Integration Lab Design
 
-Status: DESIGN_APPROVED_IN_CHAT — WRITTEN_SPEC_REVIEW_PENDING
+Status: WRITTEN_SPEC_READY_FOR_REVIEW
 
 Date: 2026-08-19
 
@@ -38,7 +38,7 @@ The guest is considered disposable. Nothing inside the guest is a source of dura
 
 The first implementation targets the official Ubuntu 24.04 LTS cloud image for amd64.
 
-The launcher may download the image into a user-owned cache directory such as `~/.cache/mcf-kvm-lab/`, but must verify a repository-pinned SHA-256 before use. A digest mismatch is a hard refusal.
+The launcher may download the image into a user-owned cache directory such as `~/.cache/mcf-kvm-lab/`, but must verify a repository-pinned SHA-256 before use. A digest mismatch is a hard refusal. The first run therefore requires internet access to obtain the official image and guest packages, but does not require a paid service.
 
 The cached base image is never modified directly. Each run creates a qcow2 overlay using the cached image as its backing file.
 
