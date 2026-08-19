@@ -16,51 +16,31 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact 3GiB resource-profile GREEN commit
+      - name: Check out exact sealed-marker RED commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: 26da9877b7f9e2547866c8cb89c9657564acfe54
+          ref: 0a18a0860cc4b56acec5e6e0708cefbc7d36dbc8
           fetch-depth: 1
           persist-credentials: false
 
       - name: Verify read-only runner boundary
         run: |
-          test "$(git rev-parse HEAD)" = "26da9877b7f9e2547866c8cb89c9657564acfe54"
+          test "$(git rev-parse HEAD)" = "0a18a0860cc4b56acec5e6e0708cefbc7d36dbc8"
           if sudo -n true 2>/dev/null; then exit 1; fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then exit 1; fi
-          test -x scripts/run_f1_2c_kvm_lab.sh
-          echo 'KVM_RESOURCE_GREEN_BOUNDARY_PASS'
+          echo 'KVM_MARKER_RED_BOUNDARY_PASS'
 
-      - name: Verify 3GiB resource profile focused GREEN
+      - name: Prove sealed marker identity contract is RED
         run: |
-          python3 -m unittest -v \
-            tests.test_local_kvm_lab.LocalKvmLabTests.test_qemu_uses_kvm_overlay_and_loopback_only_user_networking
-          bash -n scripts/run_f1_2c_kvm_lab.sh
-          echo 'KVM_RESOURCE_PROFILE_GREEN_CONFIRMED'
-
-      - name: Provision pinned ShellCheck in runner temp
-        env:
-          SHELLCHECK_VERSION: v0.11.0
-          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
-        run: |
-          archive="${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}.tar.xz"
-          curl --fail --location --proto '=https' --tlsv1.2 \
-            --output "${archive}" \
-            "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
-          printf '%s  %s\n' "${SHELLCHECK_SHA256}" "${archive}" | sha256sum --check
-          tar -xJf "${archive}" -C "${RUNNER_TEMP}"
-          printf '%s\n' "${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}" >> "${GITHUB_PATH}"
-
-      - name: Run complete static suite
-        env:
-          PYTHON: python3
-          REQUIRE_ANSIBLE: "0"
-          REQUIRE_SHELLCHECK: "1"
-        run: |
-          scripts/test.sh
-          git diff --exit-code
-          test -z "$(git status --porcelain)"
-          echo 'KVM_RESOURCE_PROFILE_FULL_STATIC_PASS'
+          set +e
+          output=$(python3 -m unittest -v \
+            tests.test_local_kvm_lab.LocalKvmLabTests.test_disposable_harness_has_separate_github_and_local_kvm_gates 2>&1)
+          rc=$?
+          set -e
+          printf '%s\n' "$output"
+          [[ "$rc" -ne 0 ]] || { echo 'TDD_RED_REFUSED test_unexpectedly_passed' >&2; exit 1; }
+          grep -Eq 'AssertionError|assert' <<<"$output" || { echo 'TDD_RED_REFUSED wrong_failure_mode' >&2; exit 1; }
+          echo 'KVM_SEALED_MARKER_RED_CONFIRMED'
 
       - name: Preserve current host safety evidence
         run: |
