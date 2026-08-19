@@ -2,9 +2,9 @@
   "transport": {"issue_number": 5},
   "request": {
     "protocol": "MCF_WORKSPACE_CONTROL_V1",
-    "request_id": "G2A-NODE01-20260819-008",
+    "request_id": "G2A-NODE01-20260819-009",
     "project": {"tenant": "leon337", "name": "g2a-smoke", "environment": "dev"},
-    "operation": "git.status",
+    "operation": "git.branch",
     "arguments": {}
   }
 }
