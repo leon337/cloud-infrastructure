@@ -41,7 +41,8 @@ free_kib=$(df -Pk "${TMPDIR:-/tmp}" | awk 'NR==2 {print $4}')
 
 readonly CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/mcf-kvm-lab"
 readonly BASE_IMAGE="$CACHE_DIR/$MCF_KVM_IMAGE_NAME"
-mkdir -p -m 0700 "$CACHE_DIR"
+mkdir -p "$CACHE_DIR"
+chmod 0700 "$CACHE_DIR"
 
 verify_image() {
   printf '%s  %s\n' "$MCF_KVM_IMAGE_SHA256" "$1" | sha256sum --check --status
@@ -60,11 +61,15 @@ else
   trap - RETURN
 fi
 
-readonly RUN_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/mcf-f1-2c-kvm.XXXXXXXX")
+RUN_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/mcf-f1-2c-kvm.XXXXXXXX")
+readonly RUN_ROOT
 readonly EVIDENCE_ROOT="${XDG_STATE_HOME:-$HOME/.local/state}/mcf-kvm-lab/evidence"
-readonly EVIDENCE_DIR="$EVIDENCE_ROOT/$(date -u +%Y%m%dT%H%M%SZ)-${CANDIDATE_SHA:0:12}"
-mkdir -p -m 0700 "$EVIDENCE_DIR"
-readonly STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+EVIDENCE_DIR="$EVIDENCE_ROOT/$(date -u +%Y%m%dT%H%M%SZ)-${CANDIDATE_SHA:0:12}"
+readonly EVIDENCE_DIR
+mkdir -p "$EVIDENCE_DIR"
+chmod 0700 "$EVIDENCE_DIR"
+STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+readonly STARTED_AT
 
 qemu_pid_is_ours() {
   local pid cmdline owner_uid
@@ -121,7 +126,8 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM HUP
 
-readonly RUN_ID=$(od -An -N6 -tx1 /dev/urandom | tr -d ' \n')
+RUN_ID=$(od -An -N6 -tx1 /dev/urandom | tr -d ' \n')
+readonly RUN_ID
 readonly GUEST_HOSTNAME="mcf-f1-2c-kvm-$RUN_ID"
 readonly SSH_KEY="$RUN_ROOT/id_ed25519"
 ssh-keygen -q -t ed25519 -N '' -f "$SSH_KEY"
@@ -219,7 +225,8 @@ else
 fi
 
 IFS= read -r qemu_version < <(qemu-system-x86_64 --version)
-readonly FINISHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+FINISHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+readonly FINISHED_AT
 printf '%s\n' \
   "candidate_sha=$CANDIDATE_SHA" \
   "image_sha256=$MCF_KVM_IMAGE_SHA256" \
