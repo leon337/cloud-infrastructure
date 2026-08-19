@@ -14,7 +14,7 @@ concurrency:
 jobs:
   probe:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Verify NODE-01 identity and unprivileged boundary
         run: |
@@ -29,31 +29,6 @@ jobs:
             exit 1
           fi
           echo 'RUNNER_PROBE_BOUNDARY_PASS'
-
-      - name: Inspect Mission 001 objects without reading protected content
-        run: |
-          for path in \
-            /usr/local/sbin/codex-mission-001-runner \
-            /usr/local/libexec/codex-mission-001-revoke \
-            /etc/codex-mission-001-autonomous-runner.managed \
-            /etc/sudoers.d/91-codex-mission-001-temporary \
-            /etc/systemd/system/codex-mission-001-revoke.service \
-            /etc/systemd/system/codex-mission-001-revoke.timer \
-            /var/lib/codex-mission-001 \
-            /opt/codex-mission-001/repository \
-            /var/log/codex-mission-001; do
-            if [[ -e "${path}" ]]; then
-              stat -c 'MISSION_OBJECT_PRESENT path=%n type=%F owner=%U group=%G mode=%a size=%s mtime=%Y' "${path}" || \
-                echo "MISSION_OBJECT_PRESENT_METADATA_DENIED path=${path}"
-            else
-              echo "MISSION_OBJECT_ABSENT path=${path}"
-            fi
-          done
-          printf 'REVOKE_TIMER_ACTIVE='; systemctl is-active codex-mission-001-revoke.timer 2>/dev/null || true
-          printf 'REVOKE_TIMER_ENABLED='; systemctl is-enabled codex-mission-001-revoke.timer 2>/dev/null || true
-          printf 'REVOKE_SERVICE_ACTIVE='; systemctl is-active codex-mission-001-revoke.service 2>/dev/null || true
-          systemctl show codex-mission-001-revoke.timer \
-            -p ActiveState -p UnitFileState -p NextElapseUSecRealtime -p LastTriggerUSec 2>/dev/null || true
 
       - name: Verify exact current runner fingerprint
         run: |
@@ -115,12 +90,45 @@ jobs:
           grep -q '^GIT_SHA=c9f909945b544d22dbabc619252456f7190f7ae9$' <<<"${output}"
           echo 'MISSION_RUNNER_EXACT_STATUS=ACTIVE'
 
-      - name: Run exact allowlisted Mission 001 check
+      - name: Run exact allowlisted Mission 001 check before apply
         run: |
           sudo -n /usr/local/sbin/codex-mission-001-runner check
-          echo 'MISSION_RUNNER_EXACT_CHECK=PASS'
+          echo 'MISSION_RUNNER_EXACT_CHECK_PREAPPLY=PASS'
 
-      - name: Run exact allowlisted Mission 001 test
+      - name: Run exact allowlisted Mission 001 test before apply
         run: |
           sudo -n /usr/local/sbin/codex-mission-001-runner test
-          echo 'MISSION_RUNNER_EXACT_TEST=PASS'
+          echo 'MISSION_RUNNER_EXACT_TEST_PREAPPLY=PASS'
+
+      - name: First controlled F1.2c network-services apply
+        run: |
+          output=$(sudo -n /usr/local/sbin/codex-mission-001-runner apply)
+          printf '%s\n' "${output}"
+          grep -q '^MISSION_APPLY=PASS slice=F1.2c_network_services changed=1 base_changed=0 services_changed=1$' <<<"${output}"
+          echo 'F1_2C_FIRST_APPLY=PASS'
+
+      - name: Second controlled apply must be idempotent
+        run: |
+          output=$(sudo -n /usr/local/sbin/codex-mission-001-runner apply)
+          printf '%s\n' "${output}"
+          grep -q '^MISSION_APPLY=PASS slice=F1.2c_network_services changed=0 base_changed=0 services_changed=0$' <<<"${output}"
+          echo 'F1_2C_SECOND_APPLY_IDEMPOTENT=PASS'
+
+      - name: Final exact allowlisted Mission 001 check
+        run: |
+          sudo -n /usr/local/sbin/codex-mission-001-runner check
+          echo 'MISSION_RUNNER_EXACT_CHECK_POSTAPPLY=PASS'
+
+      - name: Verify human access services and failed units after apply
+        run: |
+          for unit in ssh ufw fail2ban xrdp xrdp-sesman docker containerd cloud-platform-network-enforcement.service cloud-platform-network-services.service; do
+            state=$(systemctl is-active "${unit}" 2>/dev/null || true)
+            printf 'POSTAPPLY_SERVICE unit=%s state=%s\n' "${unit}" "${state}"
+            [[ "${state}" == active ]]
+          done
+          failed=$(systemctl --failed --no-legend --plain | sed '/^[[:space:]]*$/d')
+          if [[ -n "${failed}" ]]; then
+            printf 'POSTAPPLY_REFUSED failed_units=%s\n' "${failed}" >&2
+            exit 1
+          fi
+          echo 'F1_2C_POSTAPPLY_HOST_GATES=PASS'
