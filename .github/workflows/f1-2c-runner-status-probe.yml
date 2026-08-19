@@ -16,51 +16,31 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact sealed-marker GREEN commit
+      - name: Check out exact systemd-diagnostics RED commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: 6d7f677fc5eeeec6b8781fef2c75abb29a7f86b1
+          ref: d1a1937bd3dccdc1ce133688549a8cdbc1178ad5
           fetch-depth: 1
           persist-credentials: false
 
       - name: Verify read-only runner boundary
         run: |
-          test "$(git rev-parse HEAD)" = "6d7f677fc5eeeec6b8781fef2c75abb29a7f86b1"
+          test "$(git rev-parse HEAD)" = "d1a1937bd3dccdc1ce133688549a8cdbc1178ad5"
           if sudo -n true 2>/dev/null; then exit 1; fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then exit 1; fi
-          test -x scripts/run_f1_2c_kvm_lab.sh
-          echo 'KVM_MARKER_GREEN_BOUNDARY_PASS'
+          echo 'KVM_DIAGNOSTICS_RED_BOUNDARY_PASS'
 
-      - name: Verify sealed marker focused GREEN
+      - name: Prove systemd failure diagnostics are RED
         run: |
-          python3 -m unittest -v \
-            tests.test_local_kvm_lab.LocalKvmLabTests.test_disposable_harness_has_separate_github_and_local_kvm_gates
-          bash -n scripts/test_node_network_services_vm.sh
-          echo 'KVM_SEALED_MARKER_GREEN_CONFIRMED'
-
-      - name: Provision pinned ShellCheck in runner temp
-        env:
-          SHELLCHECK_VERSION: v0.11.0
-          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
-        run: |
-          archive="${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}.tar.xz"
-          curl --fail --location --proto '=https' --tlsv1.2 \
-            --output "${archive}" \
-            "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
-          printf '%s  %s\n' "${SHELLCHECK_SHA256}" "${archive}" | sha256sum --check
-          tar -xJf "${archive}" -C "${RUNNER_TEMP}"
-          printf '%s\n' "${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}" >> "${GITHUB_PATH}"
-
-      - name: Run complete static suite
-        env:
-          PYTHON: python3
-          REQUIRE_ANSIBLE: "0"
-          REQUIRE_SHELLCHECK: "1"
-        run: |
-          scripts/test.sh
-          git diff --exit-code
-          test -z "$(git status --porcelain)"
-          echo 'KVM_SEALED_MARKER_FULL_STATIC_PASS'
+          set +e
+          output=$(python3 -m unittest -v \
+            tests.test_node_network_services.NodeNetworkServicesTests.test_disposable_vm_harness_dumps_root_cause_when_systemd_service_is_inactive 2>&1)
+          rc=$?
+          set -e
+          printf '%s\n' "$output"
+          [[ "$rc" -ne 0 ]] || { echo 'TDD_RED_REFUSED test_unexpectedly_passed' >&2; exit 1; }
+          grep -Eq 'AssertionError|assert' <<<"$output" || { echo 'TDD_RED_REFUSED wrong_failure_mode' >&2; exit 1; }
+          echo 'KVM_SYSTEMD_DIAGNOSTICS_RED_CONFIRMED'
 
       - name: Preserve current host safety evidence
         run: |
