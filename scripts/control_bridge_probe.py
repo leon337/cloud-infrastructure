@@ -110,6 +110,20 @@ def build_result(request_id: str, issue_number: int) -> dict[str, Any]:
             ["python3", "-c", "import jsonschema, yaml; print('g2a-imports-ok')"],
         ),
         run_probe("python_pip", ["python3", "-m", "pip", "--version"]),
+        run_probe(
+            "g2a_adapter_tests",
+            [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests",
+                "-p",
+                "test_control_bridge_g2a_adapter.py",
+            ],
+            timeout=60,
+        ),
     ]
     runner_path = pathlib.Path("/usr/local/sbin/codex-mission-001-runner")
     if runner_path.is_file():
