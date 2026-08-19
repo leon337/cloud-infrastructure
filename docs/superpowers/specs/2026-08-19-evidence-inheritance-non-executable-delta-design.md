@@ -1,9 +1,9 @@
 # Evidence Inheritance for Non-Executable Delta — Design
 
-Status: DRAFT_FOR_WRITTEN_REVIEW
+Status: APPROVED_FOR_IMPLEMENTATION
 Date: 2026-08-19
 Scope: F1.2c validation policy only
-Authority: LEANDRO approval of the in-chat design; written-spec review still required before implementation
+Authority: LEANDRO approved the written specification in project conversation on 2026-08-19
 
 ## Goal
 
