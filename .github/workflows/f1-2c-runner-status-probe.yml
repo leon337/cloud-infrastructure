@@ -16,31 +16,35 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact KVM Task 7 RED commit
+      - name: Check out exact KVM Task 7 GREEN commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: f4a3fb06feedf37cf30cd4ed07b45fdfa43f24fb
+          ref: 7aa6d6bb3a06ee8286c888538ec0504aaf0b5f7b
           fetch-depth: 1
           persist-credentials: false
 
       - name: Verify unprivileged boundary
         run: |
-          test "$(git rev-parse HEAD)" = "f4a3fb06feedf37cf30cd4ed07b45fdfa43f24fb"
+          test "$(git rev-parse HEAD)" = "7aa6d6bb3a06ee8286c888538ec0504aaf0b5f7b"
           if sudo -n true 2>/dev/null; then exit 1; fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then exit 1; fi
           test -x scripts/run_f1_2c_kvm_lab.sh
           echo 'TDD_BOUNDARY_PASS'
 
-      - name: Prove KVM Task 7 evidence contract is RED
+      - name: Verify Task 7 focused and complete static suite
+        env:
+          PYTHON: python3
+          REQUIRE_ANSIBLE: "0"
+          REQUIRE_SHELLCHECK: "0"
         run: |
-          set +e
-          output=$(python3 -m unittest -v tests.test_local_kvm_lab.LocalKvmLabTests.test_evidence_is_non_secret_and_cleanup_is_bounded 2>&1)
-          rc=$?
-          set -e
-          printf '%s\n' "$output"
-          [[ "$rc" -ne 0 ]] || { echo 'TDD_RED_REFUSED test_unexpectedly_passed' >&2; exit 1; }
-          grep -Eq 'AssertionError|assert' <<<"$output" || { echo 'TDD_RED_REFUSED wrong_failure_mode' >&2; exit 1; }
-          echo 'TDD_KVM_TASK7_RED_CONFIRMED'
+          python3 -m unittest -v tests.test_local_kvm_lab.LocalKvmLabTests.test_evidence_is_non_secret_and_cleanup_is_bounded
+          python3 -m unittest -v tests.test_local_kvm_lab
+          bash -n scripts/run_f1_2c_kvm_lab.sh
+          bash -n scripts/test_node_network_services_vm.sh
+          scripts/test.sh
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          echo 'KVM_TASK7_GREEN_CONFIRMED'
 
       - name: Preserve current host safety evidence
         run: |
