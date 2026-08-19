@@ -16,34 +16,30 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact KVM Task 4 GREEN commit
+      - name: Check out exact KVM Task 5 RED commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: cf3b667f4c9c3ae36be8a11acc56f83d5206042d
+          ref: 065c8e202768482a75946ec6b8687bd18deb9b36
           fetch-depth: 1
           persist-credentials: false
 
       - name: Verify unprivileged boundary
         run: |
-          test "$(git rev-parse HEAD)" = "cf3b667f4c9c3ae36be8a11acc56f83d5206042d"
+          test "$(git rev-parse HEAD)" = "065c8e202768482a75946ec6b8687bd18deb9b36"
           if sudo -n true 2>/dev/null; then exit 1; fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then exit 1; fi
-          test -x scripts/run_f1_2c_kvm_lab.sh
           echo 'TDD_BOUNDARY_PASS'
 
-      - name: Verify Task 4 focused and complete static suite
-        env:
-          PYTHON: python3
-          REQUIRE_ANSIBLE: "0"
-          REQUIRE_SHELLCHECK: "0"
+      - name: Prove KVM Task 5 dual identity gate is RED
         run: |
-          python3 -m unittest -v tests.test_local_kvm_lab.LocalKvmLabTests.test_qemu_uses_kvm_overlay_and_loopback_only_user_networking
-          python3 -m unittest -v tests.test_local_kvm_lab
-          bash -n scripts/run_f1_2c_kvm_lab.sh
-          scripts/test.sh
-          git diff --exit-code
-          test -z "$(git status --porcelain)"
-          echo 'KVM_TASK4_GREEN_CONFIRMED'
+          set +e
+          output=$(python3 -m unittest -v tests.test_local_kvm_lab.LocalKvmLabTests.test_disposable_harness_has_separate_github_and_local_kvm_gates 2>&1)
+          rc=$?
+          set -e
+          printf '%s\n' "$output"
+          [[ "$rc" -ne 0 ]] || { echo 'TDD_RED_REFUSED test_unexpectedly_passed' >&2; exit 1; }
+          grep -Eq 'AssertionError|assert' <<<"$output" || { echo 'TDD_RED_REFUSED wrong_failure_mode' >&2; exit 1; }
+          echo 'TDD_KVM_TASK5_RED_CONFIRMED'
 
       - name: Preserve current host safety evidence
         run: |
