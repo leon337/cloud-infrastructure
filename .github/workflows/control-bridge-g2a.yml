@@ -27,19 +27,15 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Create isolated Python environment
+      - name: Verify bounded Python dependencies
         run: |
-          python3 -m venv "${RUNNER_TEMP}/g2a-venv"
-          "${RUNNER_TEMP}/g2a-venv/bin/pip" install \
-            --disable-pip-version-check \
-            --no-cache-dir \
-            -r requirements-dev.lock
+          python3 -c "import jsonschema, yaml; print('G2A_RUNTIME_DEPENDENCIES_PASS')"
 
       - name: Execute bounded read-only request
         env:
           CONTROL_BRIDGE_EVENT_NAME: ${{ github.event_name }}
         run: |
-          "${RUNNER_TEMP}/g2a-venv/bin/python" scripts/control_bridge_g2a.py \
+          python3 scripts/control_bridge_g2a.py \
             --event-name "${CONTROL_BRIDGE_EVENT_NAME}" \
             --event-path "${GITHUB_EVENT_PATH}" \
             --dispatch-file control/dispatch/g2a.json \
@@ -59,7 +55,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          "${RUNNER_TEMP}/g2a-venv/bin/python" scripts/control_bridge_g2a_publish.py \
+          python3 scripts/control_bridge_g2a_publish.py \
             --envelope-file "${RUNNER_TEMP}/g2a-envelope.json" \
             --result-file "${RUNNER_TEMP}/g2a-result.json" \
             --attachment-file "${RUNNER_TEMP}/g2a-attachment.bin" \
