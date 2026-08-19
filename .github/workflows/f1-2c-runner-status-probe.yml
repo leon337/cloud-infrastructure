@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: f1-2c-runner-status-probe-${{ github.event.pull_request.number || github.ref }}
@@ -16,105 +16,31 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact KVM Task 5 test head
+      - name: Check out exact KVM Task 6 RED commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: fix/f1-2c-systemd-runtime-lock
-          fetch-depth: 0
-          persist-credentials: true
+          ref: 087467fb93318c751a328e2e1d9e3065a378f67e
+          fetch-depth: 1
+          persist-credentials: false
 
-      - name: Verify exact head and unprivileged host boundary
+      - name: Verify unprivileged boundary
         run: |
-          test "$(git rev-parse HEAD)" = "31d70f910b89fd754c6a52585734857814a81a9f"
+          test "$(git rev-parse HEAD)" = "087467fb93318c751a328e2e1d9e3065a378f67e"
           if sudo -n true 2>/dev/null; then exit 1; fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then exit 1; fi
+          test -x scripts/run_f1_2c_kvm_lab.sh
           echo 'TDD_BOUNDARY_PASS'
 
-      - name: Apply minimal dual-identity gate refactor
+      - name: Prove KVM Task 6 bundle transfer test is RED
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('scripts/test_node_network_services_vm.sh')
-          text = path.read_text()
-          old_constant = 'readonly CONFIRMATION=GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY\n'
-          new_constant = (
-              'readonly GITHUB_CONFIRMATION=GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY\n'
-              'readonly LOCAL_KVM_CONFIRMATION=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY\n'
-          )
-          if text.count(old_constant) != 1:
-              raise SystemExit('FIX_REFUSED unexpected_confirmation_constant_shape')
-          text = text.replace(old_constant, new_constant, 1)
-
-          old_gate = '''[[ $# -eq 0 ]] || fail unexpected_arguments
-          [[ ${DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM:-} == "$CONFIRMATION" ]] ||
-            fail missing_exact_confirmation
-          [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]] ||
-            fail not_github_hosted
-          [[ ${ImageOS:-} == ubuntu24 && $(id -un) == runner ]] || fail unexpected_runner
-          case "$(hostname --short)" in node-01 | vmi3506102) fail real_dev_node ;; esac
-          systemd-detect-virt --quiet --vm || fail not_disposable_vm
-          sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
-          '''
-          new_gate = '''verify_github_hosted_identity() {
-            [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]] || return 1
-            [[ ${ImageOS:-} == ubuntu24 && $(id -un) == runner ]] || return 1
-            systemd-detect-virt --quiet --vm || return 1
-          }
-
-          verify_local_kvm_identity() {
-            [[ $(id -un) == mcf-lab ]] || return 1
-            [[ $(hostname --short) == mcf-f1-2c-kvm-* ]] || return 1
-            [[ -f /etc/mcf-f1-2c-kvm-lab && ! -L /etc/mcf-f1-2c-kvm-lab ]] || return 1
-            grep -Fxq MCF_F1_2C_KVM_LAB_V1 /etc/mcf-f1-2c-kvm-lab || return 1
-            grep -Fxq 'VERSION_ID="24.04"' /etc/os-release || return 1
-            case "$(systemd-detect-virt 2>/dev/null || true)" in kvm | qemu) ;; *) return 1 ;; esac
-          }
-
-          [[ $# -eq 0 ]] || fail unexpected_arguments
-          case ${DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM:-} in
-            "$GITHUB_CONFIRMATION")
-              verify_github_hosted_identity || fail invalid_github_hosted_identity
-              ;;
-            "$LOCAL_KVM_CONFIRMATION")
-              verify_local_kvm_identity || fail invalid_local_kvm_identity
-              ;;
-            *) fail missing_exact_confirmation ;;
-          esac
-          case "$(hostname --short)" in node-01 | vmi3506102) fail real_dev_node ;; esac
-          sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
-          '''
-          if text.count(old_gate) != 1:
-              raise SystemExit('FIX_REFUSED unexpected_identity_gate_shape')
-          text = text.replace(old_gate, new_gate, 1)
-          path.write_text(text)
-          PY
-          git diff --check
-
-      - name: Prove Task 5 GREEN and shared lifecycle preserved
-        env:
-          PYTHON: python3
-          REQUIRE_ANSIBLE: "0"
-          REQUIRE_SHELLCHECK: "0"
-        run: |
-          python3 -m unittest -v \
-            tests.test_local_kvm_lab.LocalKvmLabTests.test_disposable_harness_has_separate_github_and_local_kvm_gates \
-            tests.test_node_network_services.NodeNetworkServicesTests.test_disposable_identities_share_one_full_privileged_lifecycle \
-            tests.test_node_network_services.NodeNetworkServicesTests.test_disposable_vm_harness_exercises_the_exact_systemd_service
-          bash -n scripts/test_node_network_services_vm.sh
-          scripts/test.sh
-          echo 'KVM_TASK5_GREEN_CONFIRMED'
-
-      - name: Commit only the tested harness refactor
-        run: |
-          test -z "$(git status --porcelain | grep -v '^ M scripts/test_node_network_services_vm.sh$')"
-          git config user.name 'MCF controlled automation'
-          git config user.email 'mcf-controlled-automation@users.noreply.github.com'
-          git add scripts/test_node_network_services_vm.sh
-          git diff --cached --check
-          git commit -m 'feat(f1.2c): authorize explicit local KVM disposable identity'
-          git push origin HEAD:fix/f1-2c-systemd-runtime-lock
-          echo 'KVM_TASK5_PUSH_PASS'
+          set +e
+          output=$(python3 -m unittest -v tests.test_local_kvm_lab.LocalKvmLabTests.test_candidate_transfer_is_exact_bundle_and_fixed_guest_harness 2>&1)
+          rc=$?
+          set -e
+          printf '%s\n' "$output"
+          [[ "$rc" -ne 0 ]] || { echo 'TDD_RED_REFUSED test_unexpectedly_passed' >&2; exit 1; }
+          grep -Eq 'AssertionError|assert' <<<"$output" || { echo 'TDD_RED_REFUSED wrong_failure_mode' >&2; exit 1; }
+          echo 'TDD_KVM_TASK6_RED_CONFIRMED'
 
       - name: Preserve current host safety evidence
         run: |
