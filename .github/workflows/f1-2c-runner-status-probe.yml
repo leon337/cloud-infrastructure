@@ -16,10 +16,10 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact TDD RED commit
+      - name: Check out exact TDD GREEN commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: 3751d80f7c6ea2b9a9d5bc3b74dc54f310ce9555
+          ref: 5cb4ea6868562083cca1cfaee47c8c1e7c127cd5
           fetch-depth: 1
           persist-credentials: false
 
@@ -33,26 +33,25 @@ jobs:
             echo 'TDD_REFUSED docker_socket_read_write' >&2
             exit 1
           fi
-          test "$(git rev-parse HEAD)" = "3751d80f7c6ea2b9a9d5bc3b74dc54f310ce9555"
+          test "$(git rev-parse HEAD)" = "5cb4ea6868562083cca1cfaee47c8c1e7c127cd5"
           echo 'TDD_BOUNDARY_PASS'
 
-      - name: Prove exact-systemd disposable harness regression is RED
-        shell: bash
+      - name: Prove exact-systemd disposable harness regression is GREEN
         run: |
-          set +e
           python3 -m unittest -v \
-            tests.test_node_network_services.NodeNetworkServicesTests.test_disposable_vm_harness_exercises_the_exact_systemd_service \
-            >"${RUNNER_TEMP}/systemd-harness-red.log" 2>&1
-          rc=$?
-          set -e
-          cat "${RUNNER_TEMP}/systemd-harness-red.log"
-          if [[ "$rc" -eq 0 ]]; then
-            echo 'TDD_RED_REFUSED test_unexpectedly_passed' >&2
-            exit 1
-          fi
-          grep -q 'platform/systemd/cloud-platform-network-services.service' \
-            "${RUNNER_TEMP}/systemd-harness-red.log"
-          echo 'TDD_SYSTEMD_HARNESS_RED_CONFIRMED'
+            tests.test_node_network_services.NodeNetworkServicesTests.test_disposable_vm_harness_exercises_the_exact_systemd_service
+          echo 'TDD_SYSTEMD_HARNESS_GREEN_CONFIRMED'
+
+      - name: Verify complete static suite
+        env:
+          PYTHON: python3
+          REQUIRE_ANSIBLE: "0"
+          REQUIRE_SHELLCHECK: "0"
+        run: |
+          scripts/test.sh
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          echo 'TDD_FULL_STATIC_GREEN_CONFIRMED'
 
       - name: Preserve current host safety evidence
         run: |
