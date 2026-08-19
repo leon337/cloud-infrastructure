@@ -16,33 +16,30 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact KVM Task 3 GREEN commit
+      - name: Check out exact KVM Task 4 RED commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: c5ff5aeeb5897ed24a22f93570db291dc388c637
+          ref: 4931dff3ac0049e6d927670ba1c7ebb0857604aa
           fetch-depth: 1
           persist-credentials: false
 
       - name: Verify unprivileged boundary
         run: |
-          test "$(git rev-parse HEAD)" = "c5ff5aeeb5897ed24a22f93570db291dc388c637"
+          test "$(git rev-parse HEAD)" = "4931dff3ac0049e6d927670ba1c7ebb0857604aa"
           if sudo -n true 2>/dev/null; then exit 1; fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then exit 1; fi
-          test -x scripts/run_f1_2c_kvm_lab.sh
           echo 'TDD_BOUNDARY_PASS'
 
-      - name: Verify Task 3 focused and complete static suite
-        env:
-          PYTHON: python3
-          REQUIRE_ANSIBLE: "0"
-          REQUIRE_SHELLCHECK: "0"
+      - name: Prove KVM Task 4 QEMU boundary test is RED
         run: |
-          python3 -m unittest -v tests.test_local_kvm_lab.LocalKvmLabTests.test_cloud_init_creates_only_ephemeral_lab_identity
-          python3 -m unittest -v tests.test_local_kvm_lab
-          scripts/test.sh
-          git diff --exit-code
-          test -z "$(git status --porcelain)"
-          echo 'KVM_TASK3_GREEN_CONFIRMED'
+          set +e
+          output=$(python3 -m unittest -v tests.test_local_kvm_lab.LocalKvmLabTests.test_qemu_uses_kvm_overlay_and_loopback_only_user_networking 2>&1)
+          rc=$?
+          set -e
+          printf '%s\n' "$output"
+          [[ "$rc" -ne 0 ]] || { echo 'TDD_RED_REFUSED test_unexpectedly_passed' >&2; exit 1; }
+          grep -Eq 'AssertionError|assert' <<<"$output" || { echo 'TDD_RED_REFUSED wrong_failure_mode' >&2; exit 1; }
+          echo 'TDD_KVM_TASK4_RED_CONFIRMED'
 
       - name: Preserve current host safety evidence
         run: |
