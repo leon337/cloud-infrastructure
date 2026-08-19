@@ -33,6 +33,34 @@ jobs:
           fi
           echo 'SELF_HOSTED_STATIC_CI_BOUNDARY_PASS: no passwordless sudo'
 
+      - name: Probe existing unprivileged isolation capabilities
+        run: |
+          for cmd in qemu-system-x86_64 cloud-hypervisor firecracker systemd-nspawn bwrap podman docker unshare; do
+            if path=$(command -v "$cmd" 2>/dev/null); then
+              printf 'ISOLATION_TOOL_PRESENT %s=%s\n' "$cmd" "$path"
+            else
+              printf 'ISOLATION_TOOL_ABSENT %s\n' "$cmd"
+            fi
+          done
+          if [[ -r /dev/kvm && -w /dev/kvm ]]; then
+            echo 'KVM_ACCESS=read-write'
+          elif [[ -e /dev/kvm ]]; then
+            ls -l /dev/kvm || true
+            echo 'KVM_ACCESS=present-but-not-read-write'
+          else
+            echo 'KVM_ACCESS=absent'
+          fi
+          if [[ -S /var/run/docker.sock ]]; then
+            ls -l /var/run/docker.sock || true
+            if [[ -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then
+              echo 'DOCKER_SOCKET_ACCESS=read-write'
+            else
+              echo 'DOCKER_SOCKET_ACCESS=present-but-not-read-write'
+            fi
+          else
+            echo 'DOCKER_SOCKET_ACCESS=absent'
+          fi
+
       - name: Provision pinned ShellCheck in runner temp
         env:
           SHELLCHECK_VERSION: v0.11.0
