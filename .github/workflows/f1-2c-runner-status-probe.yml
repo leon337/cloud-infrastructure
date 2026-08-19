@@ -16,7 +16,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact KVM Task 7 GREEN commit
+      - name: Check out exact KVM candidate
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: 7aa6d6bb3a06ee8286c888538ec0504aaf0b5f7b
@@ -29,22 +29,31 @@ jobs:
           if sudo -n true 2>/dev/null; then exit 1; fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then exit 1; fi
           test -x scripts/run_f1_2c_kvm_lab.sh
-          echo 'TDD_BOUNDARY_PASS'
+          echo 'KVM_TASK8_BOUNDARY_PASS'
 
-      - name: Verify Task 7 focused and complete static suite
+      - name: Provision pinned ShellCheck in runner temp
+        env:
+          SHELLCHECK_VERSION: v0.11.0
+          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+        run: |
+          archive="${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}.tar.xz"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            --output "${archive}" \
+            "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          printf '%s  %s\n' "${SHELLCHECK_SHA256}" "${archive}" | sha256sum --check
+          tar -xJf "${archive}" -C "${RUNNER_TEMP}"
+          printf '%s\n' "${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}" >> "${GITHUB_PATH}"
+
+      - name: Run final exact-head static gate
         env:
           PYTHON: python3
           REQUIRE_ANSIBLE: "0"
-          REQUIRE_SHELLCHECK: "0"
+          REQUIRE_SHELLCHECK: "1"
         run: |
-          python3 -m unittest -v tests.test_local_kvm_lab.LocalKvmLabTests.test_evidence_is_non_secret_and_cleanup_is_bounded
-          python3 -m unittest -v tests.test_local_kvm_lab
-          bash -n scripts/run_f1_2c_kvm_lab.sh
-          bash -n scripts/test_node_network_services_vm.sh
           scripts/test.sh
           git diff --exit-code
           test -z "$(git status --porcelain)"
-          echo 'KVM_TASK7_GREEN_CONFIRMED'
+          echo 'KVM_TASK8_FULL_STATIC_PASS'
 
       - name: Preserve current host safety evidence
         run: |
