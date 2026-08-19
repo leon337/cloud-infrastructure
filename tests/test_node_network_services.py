@@ -97,6 +97,19 @@ class NodeNetworkServicesTests(unittest.TestCase):
         self.assertIn("ProtectSystem=strict", unit)
         self.assertNotIn("/bin/sh", unit)
 
+    def test_systemd_strict_protection_has_private_writable_runtime_lock(self):
+        unit = UNIT.read_text()
+        runtime = PAYLOAD.read_text()
+        self.assertIn("ProtectSystem=strict", unit)
+        self.assertIn("RuntimeDirectory=cloud-platform-network-services", unit)
+        self.assertIn("RuntimeDirectoryMode=0700", unit)
+        self.assertIn(
+            "readonly LOCK=/run/cloud-platform-network-services/lock",
+            runtime,
+        )
+        self.assertNotIn("/run/lock/cloud-platform-network-services.lock", runtime)
+        self.assertNotIn("ReadWritePaths=/run/lock", unit)
+
     def test_apply_hash_inventory_matches_every_installed_source(self):
         operation = APPLY.read_text()
         sources = (
