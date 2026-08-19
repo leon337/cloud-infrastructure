@@ -177,3 +177,19 @@ done
 
 printf 'KVM_LAB_GUEST_READY candidate=%s run_id=%s guest=%s ssh_port=%s\n' \
   "$CANDIDATE_SHA" "$RUN_ID" "$GUEST_HOSTNAME" "$SSH_PORT"
+
+git -C "$ROOT" bundle create "$RUN_ROOT/candidate.bundle" HEAD
+scp -q -i "$SSH_KEY" -P "$SSH_PORT" -o BatchMode=yes \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  "$RUN_ROOT/candidate.bundle" mcf-lab@127.0.0.1:/tmp/candidate.bundle
+
+"${SSH[@]}" "set -Eeuo pipefail; \
+  test ! -e /home/mcf-lab/cloud-infrastructure; \
+  git clone /tmp/candidate.bundle /home/mcf-lab/cloud-infrastructure >/dev/null; \
+  cd /home/mcf-lab/cloud-infrastructure; \
+  test \"\$(git rev-parse HEAD)\" = '$CANDIDATE_SHA'; \
+  test -z \"\$(git status --porcelain)\"; \
+  DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY \
+    scripts/test_node_network_services_vm.sh"
+
+printf 'KVM_LAB_HARNESS_PASS candidate=%s run_id=%s\n' "$CANDIDATE_SHA" "$RUN_ID"
