@@ -20,7 +20,7 @@ require_command() {
 
 for command in \
   qemu-system-x86_64 qemu-img cloud-localds ssh scp ssh-keygen git curl sha256sum \
-  od tr sed python3 awk df seq sleep stat kill; do
+  od tr sed python3 awk df seq sleep stat kill date tee tail; do
   require_command "$command"
 done
 
@@ -64,6 +64,7 @@ readonly RUN_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/mcf-f1-2c-kvm.XXXXXXXX")
 readonly EVIDENCE_ROOT="${XDG_STATE_HOME:-$HOME/.local/state}/mcf-kvm-lab/evidence"
 readonly EVIDENCE_DIR="$EVIDENCE_ROOT/$(date -u +%Y%m%dT%H%M%SZ)-${CANDIDATE_SHA:0:12}"
 mkdir -p -m 0700 "$EVIDENCE_DIR"
+readonly STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 qemu_pid_is_ours() {
   local pid cmdline owner_uid
@@ -183,7 +184,10 @@ scp -q -i "$SSH_KEY" -P "$SSH_PORT" -o BatchMode=yes \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
   "$RUN_ROOT/candidate.bundle" mcf-lab@127.0.0.1:/tmp/candidate.bundle
 
-"${SSH[@]}" "set -Eeuo pipefail; \
+guest_release=$("${SSH[@]}" "set -Eeuo pipefail; . /etc/os-release; printf '%s' \"\$VERSION_ID\"")
+[[ $guest_release == 24.04 ]] || refuse unexpected_guest_release
+
+GUEST_HARNESS_COMMAND="set -Eeuo pipefail; \
   test ! -e /home/mcf-lab/cloud-infrastructure; \
   git clone /tmp/candidate.bundle /home/mcf-lab/cloud-infrastructure >/dev/null; \
   cd /home/mcf-lab/cloud-infrastructure; \
@@ -191,5 +195,50 @@ scp -q -i "$SSH_KEY" -P "$SSH_PORT" -o BatchMode=yes \
   test -z \"\$(git status --porcelain)\"; \
   DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY \
     scripts/test_node_network_services_vm.sh"
+readonly GUEST_HARNESS_COMMAND
 
-printf 'KVM_LAB_HARNESS_PASS candidate=%s run_id=%s\n' "$CANDIDATE_SHA" "$RUN_ID"
+set +e
+"${SSH[@]}" "$GUEST_HARNESS_COMMAND" 2>&1 | tee "$EVIDENCE_DIR/harness.log"
+harness_rc=${PIPESTATUS[0]}
+set -e
+
+"${SSH[@]}" 'sudo systemctl poweroff' >/dev/null 2>&1 || true
+for _ in $(seq 1 40); do
+  if [[ ! -f $RUN_ROOT/qemu.pid ]]; then
+    break
+  fi
+  IFS= read -r shutdown_pid <"$RUN_ROOT/qemu.pid" || break
+  [[ $shutdown_pid =~ ^[0-9]+$ && -d /proc/$shutdown_pid ]] || break
+  sleep 0.25
+done
+
+if [[ -f $RUN_ROOT/serial.log ]]; then
+  tail -n 200 "$RUN_ROOT/serial.log" >"$EVIDENCE_DIR/serial-tail.log"
+else
+  : >"$EVIDENCE_DIR/serial-tail.log"
+fi
+
+IFS= read -r qemu_version < <(qemu-system-x86_64 --version)
+readonly FINISHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+printf '%s\n' \
+  "candidate_sha=$CANDIDATE_SHA" \
+  "image_sha256=$MCF_KVM_IMAGE_SHA256" \
+  "qemu_version=$qemu_version" \
+  "guest_release=$guest_release" \
+  "run_id=$RUN_ID" \
+  "started_at=$STARTED_AT" \
+  "finished_at=$FINISHED_AT" \
+  "harness_exit_code=$harness_rc" \
+  >"$EVIDENCE_DIR/metadata.env"
+chmod 0600 "$EVIDENCE_DIR/metadata.env" "$EVIDENCE_DIR/harness.log" "$EVIDENCE_DIR/serial-tail.log"
+
+cleanup
+trap - EXIT INT TERM HUP
+
+if (( harness_rc == 0 )); then
+  printf 'KVM_LAB_PASS candidate=%s evidence=%s\n' "$CANDIDATE_SHA" "$EVIDENCE_DIR"
+else
+  printf 'KVM_LAB_FAIL candidate=%s rc=%s evidence=%s\n' \
+    "$CANDIDATE_SHA" "$harness_rc" "$EVIDENCE_DIR" >&2
+  exit "$harness_rc"
+fi
