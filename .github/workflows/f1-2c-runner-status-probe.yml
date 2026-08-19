@@ -16,10 +16,10 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact TDD GREEN commit
+      - name: Check out exact KVM Task 1 RED commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: 5cb4ea6868562083cca1cfaee47c8c1e7c127cd5
+          ref: 946b45e317554d4a3c6b8caf469ab41e793ff852
           fetch-depth: 1
           persist-credentials: false
 
@@ -33,25 +33,25 @@ jobs:
             echo 'TDD_REFUSED docker_socket_read_write' >&2
             exit 1
           fi
-          test "$(git rev-parse HEAD)" = "5cb4ea6868562083cca1cfaee47c8c1e7c127cd5"
+          test "$(git rev-parse HEAD)" = "946b45e317554d4a3c6b8caf469ab41e793ff852"
           echo 'TDD_BOUNDARY_PASS'
 
-      - name: Prove exact-systemd disposable harness regression is GREEN
+      - name: Prove KVM Task 1 tests are RED for missing implementation
         run: |
-          python3 -m unittest -v \
-            tests.test_node_network_services.NodeNetworkServicesTests.test_disposable_vm_harness_exercises_the_exact_systemd_service
-          echo 'TDD_SYSTEMD_HARNESS_GREEN_CONFIRMED'
-
-      - name: Verify complete static suite
-        env:
-          PYTHON: python3
-          REQUIRE_ANSIBLE: "0"
-          REQUIRE_SHELLCHECK: "0"
-        run: |
-          scripts/test.sh
-          git diff --exit-code
-          test -z "$(git status --porcelain)"
-          echo 'TDD_FULL_STATIC_GREEN_CONFIRMED'
+          test ! -e platform/kvm/f1-2c-ubuntu-24.04-amd64.env
+          test ! -e scripts/run_f1_2c_kvm_lab.sh
+          for test_name in \
+            tests.test_local_kvm_lab.LocalKvmLabTests.test_image_is_release_pinned_by_url_and_sha256 \
+            tests.test_local_kvm_lab.LocalKvmLabTests.test_launcher_has_one_fixed_candidate_argument_and_no_arbitrary_command; do
+            set +e
+            output=$(python3 -m unittest -v "$test_name" 2>&1)
+            rc=$?
+            set -e
+            printf '%s\n' "$output"
+            [[ "$rc" -ne 0 ]] || { echo 'TDD_RED_REFUSED test_unexpectedly_passed' >&2; exit 1; }
+            grep -Fq 'FileNotFoundError' <<<"$output" || { echo 'TDD_RED_REFUSED wrong_failure_mode' >&2; exit 1; }
+          done
+          echo 'TDD_KVM_TASK1_RED_CONFIRMED'
 
       - name: Preserve current host safety evidence
         run: |
