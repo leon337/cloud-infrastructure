@@ -20,7 +20,7 @@ Draft PR #9, branch `fix/f1-2c-systemd-runtime-lock`.
 
 Executable fix and exact-systemd harness commit: `5cb4ea6868562083cca1cfaee47c8c1e7c127cd5`.
 
-The branch head additionally contains this documentation record only.
+Current branch head: `50b5026630a86a998936d9760bf7c81d936e3a6e`. The commits after the executable fix are documentation-only.
 
 The minimal fix keeps `ProtectSystem=strict`, moves the lock to `/run/cloud-platform-network-services/lock`, and adds the systemd-managed private runtime directory:
 
