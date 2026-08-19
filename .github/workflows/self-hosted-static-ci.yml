@@ -1,0 +1,47 @@
+name: self-hosted-static-ci
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: self-hosted-static-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-validate:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out exact validation state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify unprivileged boundary
+        run: |
+          id
+          python3 --version
+          if sudo -n true 2>/dev/null; then
+            echo 'SELF_HOSTED_STATIC_CI_REFUSED: unexpected passwordless sudo' >&2
+            exit 1
+          fi
+          echo 'SELF_HOSTED_STATIC_CI_BOUNDARY_PASS: no passwordless sudo'
+
+      - name: Run repository static validation without installs
+        env:
+          PYTHON: python3
+          REQUIRE_ANSIBLE: "0"
+          REQUIRE_SHELLCHECK: "0"
+        run: scripts/test.sh
+
+      - name: Confirm checkout remains repository-local
+        if: always()
+        run: |
+          git status --short
+          echo 'SELF_HOSTED_STATIC_CI_COMPLETE'
