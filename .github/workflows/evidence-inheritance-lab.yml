@@ -1,9 +1,6 @@
 name: evidence-inheritance-lab
 
 on:
-  push:
-    branches:
-      - validation/evidence-inheritance-tool-20260819
   pull_request:
   workflow_dispatch:
 
@@ -11,7 +8,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: evidence-inheritance-lab-${{ github.ref }}
+  group: evidence-inheritance-lab-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -39,3 +36,10 @@ jobs:
 
       - name: Run focused evidence-inheritance tests
         run: python3 -m unittest -v tests.test_evidence_inheritance
+
+      - name: Run complete unprivileged repository static suite
+        env:
+          PYTHON: python3
+          REQUIRE_ANSIBLE: "0"
+          REQUIRE_SHELLCHECK: "0"
+        run: scripts/test.sh
