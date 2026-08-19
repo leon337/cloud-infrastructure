@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: f1-2c-runner-status-probe-${{ github.event.pull_request.number || github.ref }}
@@ -16,43 +16,20 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact failing KVM candidate
+      - name: Check out exact final KVM candidate
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: fix/f1-2c-systemd-runtime-lock
-          fetch-depth: 0
-          persist-credentials: true
+          ref: 453dc0f2ad054aa8db7e9c5fb81f215af855de42
+          fetch-depth: 1
+          persist-credentials: false
 
-      - name: Verify exact RED head and unprivileged boundary
+      - name: Verify read-only runner boundary
         run: |
-          test "$(git rev-parse HEAD)" = "7aa6d6bb3a06ee8286c888538ec0504aaf0b5f7b"
+          test "$(git rev-parse HEAD)" = "453dc0f2ad054aa8db7e9c5fb81f215af855de42"
           if sudo -n true 2>/dev/null; then exit 1; fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then exit 1; fi
-          echo 'KVM_TASK8_FIX_BOUNDARY_PASS'
-
-      - name: Apply only the six ShellCheck root-cause fixes
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('scripts/run_f1_2c_kvm_lab.sh')
-          text = path.read_text()
-          replacements = {
-              'mkdir -p -m 0700 "$CACHE_DIR"': 'mkdir -p "$CACHE_DIR"\nchmod 0700 "$CACHE_DIR"',
-              'readonly RUN_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/mcf-f1-2c-kvm.XXXXXXXX")': 'RUN_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/mcf-f1-2c-kvm.XXXXXXXX")\nreadonly RUN_ROOT',
-              'readonly EVIDENCE_DIR="$EVIDENCE_ROOT/$(date -u +%Y%m%dT%H%M%SZ)-${CANDIDATE_SHA:0:12}"': 'EVIDENCE_DIR="$EVIDENCE_ROOT/$(date -u +%Y%m%dT%H%M%SZ)-${CANDIDATE_SHA:0:12}"\nreadonly EVIDENCE_DIR',
-              'mkdir -p -m 0700 "$EVIDENCE_DIR"': 'mkdir -p "$EVIDENCE_DIR"\nchmod 0700 "$EVIDENCE_DIR"',
-              'readonly STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)': 'STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)\nreadonly STARTED_AT',
-              "readonly RUN_ID=$(od -An -N6 -tx1 /dev/urandom | tr -d ' \\n')": "RUN_ID=$(od -An -N6 -tx1 /dev/urandom | tr -d ' \\n')\nreadonly RUN_ID",
-              'readonly FINISHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)': 'FINISHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)\nreadonly FINISHED_AT',
-          }
-          for old, new in replacements.items():
-              if text.count(old) != 1:
-                  raise SystemExit(f'FIX_REFUSED unexpected_shape:{old}')
-              text = text.replace(old, new, 1)
-          path.write_text(text)
-          PY
-          git diff --check
+          test -x scripts/run_f1_2c_kvm_lab.sh
+          echo 'KVM_TASK8_FINAL_BOUNDARY_PASS'
 
       - name: Provision pinned ShellCheck in runner temp
         env:
@@ -67,26 +44,16 @@ jobs:
           tar -xJf "${archive}" -C "${RUNNER_TEMP}"
           printf '%s\n' "${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}" >> "${GITHUB_PATH}"
 
-      - name: Verify root-cause fix with complete suite
+      - name: Run final exact-head static gate
         env:
           PYTHON: python3
           REQUIRE_ANSIBLE: "0"
           REQUIRE_SHELLCHECK: "1"
         run: |
           scripts/test.sh
-          git diff --check
-          echo 'KVM_TASK8_SHELLCHECK_FIX_GREEN'
-
-      - name: Commit only the tested launcher robustness fix
-        run: |
-          test -z "$(git status --porcelain | grep -v '^ M scripts/run_f1_2c_kvm_lab.sh$')"
-          git config user.name 'MCF controlled automation'
-          git config user.email 'mcf-controlled-automation@users.noreply.github.com'
-          git add scripts/run_f1_2c_kvm_lab.sh
-          git diff --cached --check
-          git commit -m 'fix(f1.2c): harden KVM launcher shell semantics'
-          git push origin HEAD:fix/f1-2c-systemd-runtime-lock
-          echo 'KVM_TASK8_FIX_PUSH_PASS'
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          echo 'KVM_TASK8_FINAL_STATIC_PASS'
 
       - name: Preserve current host safety evidence
         run: |
