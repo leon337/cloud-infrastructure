@@ -9,6 +9,7 @@ LAUNCHER = ROOT / "scripts/run_f1_2c_kvm_lab.sh"
 IMAGE_ENV = ROOT / "platform/kvm/f1-2c-ubuntu-24.04-amd64.env"
 USER_DATA = ROOT / "platform/kvm/f1-2c-cloud-init-user-data.yaml.in"
 META_DATA = ROOT / "platform/kvm/f1-2c-cloud-init-meta-data.yaml.in"
+VM_HARNESS = ROOT / "scripts/test_node_network_services_vm.sh"
 
 
 class LocalKvmLabTests(unittest.TestCase):
@@ -86,6 +87,20 @@ class LocalKvmLabTests(unittest.TestCase):
         for forbidden in ("tap,", "-netdev tap", "brctl", "macvtap"):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, text)
+
+    def test_disposable_harness_has_separate_github_and_local_kvm_gates(self):
+        script = VM_HARNESS.read_text()
+        self.assertIn("GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY", script)
+        self.assertIn("MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY", script)
+        self.assertIn("verify_github_hosted_identity", script)
+        self.assertIn("verify_local_kvm_identity", script)
+        self.assertIn("MCF_F1_2C_KVM_LAB_V1", script)
+        self.assertIn("/etc/mcf-f1-2c-kvm-lab", script)
+        self.assertIn("mcf-f1-2c-kvm-", script)
+        self.assertIn("VERSION_ID=\"24.04\"", script)
+        self.assertIn("systemd-detect-virt", script)
+        self.assertIn("vmi3506102", script)
+        self.assertIn("sudo -n true", script)
 
 
 if __name__ == "__main__":
