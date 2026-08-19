@@ -16,39 +16,64 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact pushed fix commit
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          ref: 67dc8351ebeb14132c5831bae3464165cf604b72
-          fetch-depth: 1
-          persist-credentials: false
-
       - name: Verify unprivileged boundary
         run: |
+          printf 'NODE_HOST=%s\n' "$(hostname)"
+          id
           if sudo -n true 2>/dev/null; then
-            echo 'VERIFY_REFUSED unexpected_generic_passwordless_sudo' >&2
+            echo 'CAPABILITY_PROBE_REFUSED unexpected_generic_passwordless_sudo' >&2
             exit 1
           fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then
-            echo 'VERIFY_REFUSED docker_socket_read_write' >&2
+            echo 'CAPABILITY_PROBE_REFUSED docker_socket_read_write' >&2
             exit 1
           fi
-          test "$(git rev-parse HEAD)" = "67dc8351ebeb14132c5831bae3464165cf604b72"
-          echo 'VERIFY_BOUNDARY_PASS'
+          echo 'CAPABILITY_BOUNDARY_PASS'
 
-      - name: Verify focused regression on pushed commit
+      - name: Inspect disposable-environment tooling read-only
+        shell: bash
         run: |
-          python3 -m unittest -v \
-            tests.test_node_network_services.NodeNetworkServicesTests.test_systemd_strict_protection_has_private_writable_runtime_lock
-          echo 'VERIFY_PUSHED_FOCUSED_PASS'
+          set -u
+          tools=(
+            systemd-nspawn machinectl debootstrap mmdebstrap
+            qemu-system-x86_64 qemu-kvm firecracker
+            podman incus lxc-start
+            rootlesskit slirp4netns newuidmap newgidmap
+            dockerd-rootless.sh dockerd docker
+            unshare bwrap systemd-run
+          )
+          for tool in "${tools[@]}"; do
+            if command -v "$tool" >/dev/null 2>&1; then
+              printf 'TOOL name=%s path=%s\n' "$tool" "$(command -v "$tool")"
+            else
+              printf 'TOOL name=%s path=ABSENT\n' "$tool"
+            fi
+          done
+          printf 'USERNS_UNPRIVILEGED_CLONE='; cat /proc/sys/kernel/unprivileged_userns_clone 2>/dev/null || echo UNKNOWN
+          printf 'MAX_USER_NAMESPACES='; cat /proc/sys/user/max_user_namespaces 2>/dev/null || echo UNKNOWN
+          printf 'SYSTEMD_VIRT='; systemd-detect-virt 2>/dev/null || true
+          printf 'CGROUP_TYPE='; stat -fc %T /sys/fs/cgroup 2>/dev/null || true
+          printf 'CGROUP_CONTROLLERS='; cat /sys/fs/cgroup/cgroup.controllers 2>/dev/null || true
 
-      - name: Verify complete static suite on pushed commit
-        env:
-          PYTHON: python3
-          REQUIRE_ANSIBLE: "0"
-          REQUIRE_SHELLCHECK: "0"
+      - name: Probe unprivileged namespace creation without mutation
+        shell: bash
         run: |
-          scripts/test.sh
-          git diff --exit-code
-          test -z "$(git status --porcelain)"
-          echo 'VERIFY_PUSHED_FULL_STATIC_PASS'
+          set +e
+          unshare --user --map-root-user --mount --pid --fork true
+          rc=$?
+          set -e
+          printf 'UNSHARE_USER_MOUNT_PID_RC=%s\n' "$rc"
+          if [[ "$rc" -eq 0 ]]; then
+            echo 'UNPRIVILEGED_NAMESPACE_PASS'
+          else
+            echo 'UNPRIVILEGED_NAMESPACE_UNAVAILABLE'
+          fi
+
+      - name: Preserve current host safety evidence
+        run: |
+          for unit in ssh ufw fail2ban xrdp xrdp-sesman docker containerd cloud-platform-network-enforcement.service; do
+            state=$(systemctl is-active "${unit}" 2>/dev/null || true)
+            printf 'ESSENTIAL_SERVICE unit=%s state=%s\n' "${unit}" "${state}"
+          done
+          systemctl is-active cloud-platform-network-services.service 2>/dev/null || true
+          systemctl --failed --no-legend --plain || true
