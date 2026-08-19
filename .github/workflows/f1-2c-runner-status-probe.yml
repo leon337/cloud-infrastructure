@@ -14,57 +14,29 @@ concurrency:
 jobs:
   probe:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
-      - name: Verify diagnostic boundary
+      - name: Verify rollback boundary
         run: |
           printf 'NODE_HOST=%s\n' "$(hostname)"
-          id
           if sudo -n true 2>/dev/null; then
-            echo 'DIAGNOSTIC_REFUSED unexpected_generic_passwordless_sudo' >&2
+            echo 'ROLLBACK_PROBE_REFUSED unexpected_generic_passwordless_sudo' >&2
             exit 1
           fi
-          echo 'DIAGNOSTIC_BOUNDARY_PASS'
+          test "$(sha256sum /usr/local/sbin/codex-mission-001-runner | awk '{print $1}')" = \
+            "83772473ae19f7ddc7e06864ee408bc48b19cff4025cc1e7ec6b609f58fedc96"
+          echo 'ROLLBACK_BOUNDARY_PASS'
 
-      - name: Capture network-services unit state
+      - name: Attempt exact allowlisted rollback once
         run: |
-          systemctl status cloud-platform-network-services.service --no-pager --full || true
-          systemctl show cloud-platform-network-services.service \
-            -p ActiveState -p SubState -p Result -p ExecMainCode -p ExecMainStatus \
-            -p FragmentPath -p UnitFileState --no-pager || true
-          systemctl cat cloud-platform-network-services.service --no-pager || true
+          set +e
+          output=$(sudo -n /usr/local/sbin/codex-mission-001-runner rollback 2>&1)
+          rc=$?
+          set -e
+          printf '%s\n' "${output}"
+          printf 'ROLLBACK_RC=%s\n' "${rc}"
 
-      - name: Capture network-services journal
-        run: |
-          journalctl -u cloud-platform-network-services.service -n 250 --no-pager -o short-iso || true
-
-      - name: Capture installed surface metadata only
-        run: |
-          for path in \
-            /etc/cloud-platform-network-services.managed \
-            /usr/local/libexec/cloud-platform-network-services \
-            /etc/systemd/system/cloud-platform-network-services.service \
-            /etc/sysctl.d/90-cloud-platform-network-forwarding.conf \
-            /etc/cloud-platform/network-services \
-            /etc/cloud-platform/network-services/compose.yaml; do
-            if [[ -e "${path}" ]]; then
-              stat -c 'SURFACE_PRESENT path=%n type=%F owner=%U group=%G mode=%a size=%s mtime=%Y' "${path}" || true
-              if [[ -f "${path}" && -r "${path}" && "${path}" != /etc/cloud-platform-network-services.managed ]]; then
-                sha256sum "${path}" || true
-              fi
-            else
-              echo "SURFACE_ABSENT path=${path}"
-            fi
-          done
-
-      - name: Capture network state read-only
-        run: |
-          ip -o link show | sed -n '/cp[0-9a-f]\{8\}/p;/cpeg[0-9]\{4\}/p' || true
-          ip -4 route show table all | sed -n '/10\.240\./p' || true
-          printf 'IPV4_FORWARD='; sysctl -n net.ipv4.ip_forward
-          printf 'IPV6_FORWARD='; sysctl -n net.ipv6.conf.all.forwarding
-
-      - name: Capture allowlisted runner status and check
+      - name: Capture post-attempt state
         run: |
           set +e
           sudo -n /usr/local/sbin/codex-mission-001-runner status
@@ -72,11 +44,8 @@ jobs:
           sudo -n /usr/local/sbin/codex-mission-001-runner check
           echo "RUNNER_CHECK_RC=$?"
           set -e
-
-      - name: Verify human access services remain active
-        run: |
+          systemctl status cloud-platform-network-services.service --no-pager --full || true
           for unit in ssh ufw fail2ban xrdp xrdp-sesman docker containerd cloud-platform-network-enforcement.service; do
             state=$(systemctl is-active "${unit}" 2>/dev/null || true)
             printf 'ESSENTIAL_SERVICE unit=%s state=%s\n' "${unit}" "${state}"
           done
-          systemctl --failed --no-legend --plain || true
