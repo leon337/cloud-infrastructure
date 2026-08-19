@@ -31,7 +31,7 @@ verify_local_kvm_identity() {
   [[ $(id -un) == mcf-lab ]] || return 1
   [[ $(hostname --short) == mcf-f1-2c-kvm-* ]] || return 1
   [[ -f /etc/mcf-f1-2c-kvm-lab && ! -L /etc/mcf-f1-2c-kvm-lab ]] || return 1
-  grep -Fxq MCF_F1_2C_KVM_LAB_V1 /etc/mcf-f1-2c-kvm-lab || return 1
+  sudo -n grep -Fxq MCF_F1_2C_KVM_LAB_V1 /etc/mcf-f1-2c-kvm-lab || return 1
   grep -Fxq 'VERSION_ID="24.04"' /etc/os-release || return 1
   case "$(systemd-detect-virt 2>/dev/null || true)" in kvm | qemu) ;; *) return 1 ;; esac
 }
