@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: f1-2c-runner-status-probe-${{ github.event.pull_request.number || github.ref }}
@@ -16,103 +16,39 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     steps:
-      - name: Check out exact fix branch
+      - name: Check out exact pushed fix commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: fix/f1-2c-systemd-runtime-lock
-          fetch-depth: 0
-          persist-credentials: true
+          ref: 67dc8351ebeb14132c5831bae3464165cf604b72
+          fetch-depth: 1
+          persist-credentials: false
 
       - name: Verify unprivileged boundary
         run: |
           if sudo -n true 2>/dev/null; then
-            echo 'TDD_REFUSED unexpected_generic_passwordless_sudo' >&2
+            echo 'VERIFY_REFUSED unexpected_generic_passwordless_sudo' >&2
             exit 1
           fi
           if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then
-            echo 'TDD_REFUSED docker_socket_read_write' >&2
+            echo 'VERIFY_REFUSED docker_socket_read_write' >&2
             exit 1
           fi
-          echo 'TDD_BOUNDARY_PASS'
+          test "$(git rev-parse HEAD)" = "67dc8351ebeb14132c5831bae3464165cf604b72"
+          echo 'VERIFY_BOUNDARY_PASS'
 
-      - name: Apply minimal runtime-directory fix in working tree
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import hashlib
-
-          helper = Path('platform/network/cloud-platform-network-services')
-          unit = Path('platform/systemd/cloud-platform-network-services.service')
-          apply = Path('automation/mission-001/operations/apply')
-
-          old_lock = 'readonly LOCK=/run/lock/cloud-platform-network-services.lock'
-          new_lock = 'readonly LOCK=/run/cloud-platform-network-services/lock'
-          helper_text = helper.read_text()
-          if helper_text.count(old_lock) != 1:
-              raise SystemExit('FIX_REFUSED unexpected_helper_lock_shape')
-          helper_text = helper_text.replace(old_lock, new_lock)
-          helper.write_text(helper_text)
-
-          unit_text = unit.read_text()
-          anchor = 'ProtectSystem=strict\n'
-          addition = (
-              'ProtectSystem=strict\n'
-              'RuntimeDirectory=cloud-platform-network-services\n'
-              'RuntimeDirectoryMode=0700\n'
-          )
-          if unit_text.count(anchor) != 1:
-              raise SystemExit('FIX_REFUSED unexpected_unit_shape')
-          unit_text = unit_text.replace(anchor, addition)
-          unit.write_text(unit_text)
-
-          helper_digest = hashlib.sha256(helper.read_bytes()).hexdigest()
-          unit_digest = hashlib.sha256(unit.read_bytes()).hexdigest()
-
-          apply_text = apply.read_text()
-          old_helper_digest = '06d0f016809a2e8d9cf0be5a258766563cc686fe40b21ec3578a99c731421060'
-          old_unit_digest = 'dfe10b0e0046242695fe5ba03215f49aa938cf94b733bba3b1a2ba9cfad7e6d1'
-          if apply_text.count(old_helper_digest) != 1:
-              raise SystemExit('FIX_REFUSED unexpected_helper_digest_inventory')
-          if apply_text.count(old_unit_digest) != 1:
-              raise SystemExit('FIX_REFUSED unexpected_unit_digest_inventory')
-          apply_text = apply_text.replace(old_helper_digest, helper_digest)
-          apply_text = apply_text.replace(old_unit_digest, unit_digest)
-          apply.write_text(apply_text)
-
-          print(f'FIX_HELPER_SHA256={helper_digest}')
-          print(f'FIX_UNIT_SHA256={unit_digest}')
-          PY
-          git diff --check
-          git diff -- platform/network/cloud-platform-network-services \
-            platform/systemd/cloud-platform-network-services.service \
-            automation/mission-001/operations/apply
-
-      - name: Prove focused regression test GREEN
+      - name: Verify focused regression on pushed commit
         run: |
           python3 -m unittest -v \
             tests.test_node_network_services.NodeNetworkServicesTests.test_systemd_strict_protection_has_private_writable_runtime_lock
-          echo 'TDD_GREEN_FOCUSED_PASS'
+          echo 'VERIFY_PUSHED_FOCUSED_PASS'
 
-      - name: Run complete unprivileged static suite
+      - name: Verify complete static suite on pushed commit
         env:
           PYTHON: python3
           REQUIRE_ANSIBLE: "0"
           REQUIRE_SHELLCHECK: "0"
         run: |
           scripts/test.sh
-          echo 'TDD_GREEN_FULL_STATIC_PASS'
-
-      - name: Commit only the tested fix to fix branch
-        run: |
-          git status --short
-          git diff --exit-code -- tests/test_node_network_services.py
-          git config user.name 'MCF controlled automation'
-          git config user.email 'mcf-controlled-automation@users.noreply.github.com'
-          git add \
-            platform/network/cloud-platform-network-services \
-            platform/systemd/cloud-platform-network-services.service \
-            automation/mission-001/operations/apply
-          git diff --cached --check
-          git commit -m 'fix(f1.2c): provide private systemd runtime lock directory'
-          git push origin HEAD:fix/f1-2c-systemd-runtime-lock
-          echo 'TDD_FIX_PUSH_PASS'
+          git diff --exit-code
+          git status --porcelain | grep -q '^$' || { git status --short; exit 1; }
+          echo 'VERIFY_PUSHED_FULL_STATIC_PASS'
