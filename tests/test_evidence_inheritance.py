@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import pathlib
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location(
-    "evidence_inheritance", ROOT / "scripts" / "classify_evidence_inheritance.py"
-)
+SCRIPT = ROOT / "scripts" / "classify_evidence_inheritance.py"
+ANCHOR = "f771cfd09f1824562ddfdaea507fb3cb0781f6ac"
+CANDIDATE = "c9f909945b544d22dbabc619252456f7190f7ae9"
+SPEC = importlib.util.spec_from_file_location("evidence_inheritance", SCRIPT)
 assert SPEC and SPEC.loader
 EVIDENCE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(EVIDENCE)
@@ -228,63 +231,100 @@ credential_rotation:
         anchor = self.seed_state(repo)
         repo.write("state/current.yaml", self.current_yaml(production_authorized="true"))
         candidate = repo.commit("production")
-        self.assertEqual(
-            self.classify(root, anchor, candidate)["reason"],
-            "REFUSED_PROTECTED_STATE_CHANGE",
-        )
+        self.assertEqual(self.classify(root, anchor, candidate)["reason"], "REFUSED_PROTECTED_STATE_CHANGE")
 
     def test_production_gate_change_is_refused(self):
         repo, root = self.make_repo()
         anchor = self.seed_state(repo)
         repo.write("state/current.yaml", self.current_yaml(production_gate="AUTHORIZED"))
         candidate = repo.commit("gate")
-        self.assertEqual(
-            self.classify(root, anchor, candidate)["reason"],
-            "REFUSED_PROTECTED_STATE_CHANGE",
-        )
+        self.assertEqual(self.classify(root, anchor, candidate)["reason"], "REFUSED_PROTECTED_STATE_CHANGE")
 
     def test_credential_rotation_change_is_refused(self):
         repo, root = self.make_repo()
         anchor = self.seed_state(repo)
         repo.write("state/current.yaml", self.current_yaml(credential_rotation="AUTHORIZED"))
         candidate = repo.commit("rotation")
-        self.assertEqual(
-            self.classify(root, anchor, candidate)["reason"],
-            "REFUSED_PROTECTED_STATE_CHANGE",
-        )
+        self.assertEqual(self.classify(root, anchor, candidate)["reason"], "REFUSED_PROTECTED_STATE_CHANGE")
 
     def test_working_branch_change_is_refused(self):
         repo, root = self.make_repo()
         anchor = self.seed_state(repo)
         repo.write("state/current.yaml", self.current_yaml(working_branch="main"))
         candidate = repo.commit("branch")
-        self.assertEqual(
-            self.classify(root, anchor, candidate)["reason"],
-            "REFUSED_PROTECTED_STATE_CHANGE",
-        )
+        self.assertEqual(self.classify(root, anchor, candidate)["reason"], "REFUSED_PROTECTED_STATE_CHANGE")
 
     def test_unlisted_state_key_change_is_refused(self):
         repo, root = self.make_repo()
         anchor = self.seed_state(repo)
-        repo.write(
-            "state/current.yaml",
-            self.current_yaml(extra_status="  vps_resident_components: ONE\n"),
-        )
+        repo.write("state/current.yaml", self.current_yaml(extra_status="  vps_resident_components: ONE\n"))
         candidate = repo.commit("unlisted")
-        self.assertEqual(
-            self.classify(root, anchor, candidate)["reason"],
-            "REFUSED_PROTECTED_STATE_CHANGE",
-        )
+        self.assertEqual(self.classify(root, anchor, candidate)["reason"], "REFUSED_PROTECTED_STATE_CHANGE")
 
     def test_invalid_yaml_is_refused(self):
         repo, root = self.make_repo()
         anchor = self.seed_state(repo)
         repo.write("state/current.yaml", "platform_discovery: [\n")
         candidate = repo.commit("invalid yaml")
-        self.assertEqual(
-            self.classify(root, anchor, candidate)["reason"],
-            "REFUSED_PROTECTED_STATE_CHANGE",
+        self.assertEqual(self.classify(root, anchor, candidate)["reason"], "REFUSED_PROTECTED_STATE_CHANGE")
+
+
+class EvidenceInheritanceCliTests(EvidenceTestCase):
+    def seed_docs_delta(self, repo: GitRepoFixture) -> tuple[str, str]:
+        repo.write("README.md", "before\n")
+        anchor = repo.commit("anchor")
+        repo.write("README.md", "after\n")
+        candidate = repo.commit("candidate")
+        return anchor, candidate
+
+    def run_cli(self, root: pathlib.Path, *args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(SCRIPT), *args],
+            cwd=root,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
+
+    def test_cli_refuses_failed_static_evidence(self):
+        repo, root = self.make_repo()
+        anchor, candidate = self.seed_docs_delta(repo)
+        proc = self.run_cli(
+            root,
+            "--anchor", anchor,
+            "--candidate", candidate,
+            "--static-run-id", "123",
+            "--static-conclusion", "FAIL",
+        )
+        self.assertEqual(proc.returncode, 2)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["reason"], "REFUSED_STATIC_EVIDENCE_MISSING")
+
+    def test_cli_emits_deterministic_pass_record(self):
+        repo, root = self.make_repo()
+        anchor, candidate = self.seed_docs_delta(repo)
+        proc = self.run_cli(
+            root,
+            "--anchor", anchor,
+            "--candidate", candidate,
+            "--static-run-id", "456",
+            "--static-conclusion", "PASS",
+        )
+        self.assertEqual(proc.returncode, 0)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["schema_version"], 1)
+        self.assertEqual(result["policy"], "F1_2C_NON_EXECUTABLE_EVIDENCE_INHERITANCE_V1")
+        self.assertEqual(result["decision"], "PASS")
+        self.assertEqual(result["protected_state"], "PASS")
+        self.assertEqual(result["static_evidence"], {"conclusion": "PASS", "run_id": "456"})
+
+    def test_real_f1_2c_candidate_is_non_material_and_guard_safe(self):
+        result = EVIDENCE.classify_repository_delta(ROOT, ANCHOR, CANDIDATE)
+        self.assertEqual(result["decision"], "PASS", result)
+        self.assertEqual(result["anchor"], ANCHOR)
+        self.assertEqual(result["candidate"], CANDIDATE)
+        self.assertIn("state/current.yaml", result["state_changes"])
 
 
 if __name__ == "__main__":
