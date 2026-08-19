@@ -18,6 +18,7 @@ UNIT = ROOT / "platform/systemd/cloud-platform-network-services.service"
 SYSCTL = ROOT / "platform/sysctl/90-cloud-platform-network-forwarding.conf"
 APPLY = ROOT / "automation/mission-001/operations/apply"
 ROLLBACK = ROOT / "automation/mission-001/operations/rollback"
+VM_HARNESS = ROOT / "scripts/test_node_network_services_vm.sh"
 
 
 class NodeNetworkServicesTests(unittest.TestCase):
@@ -109,6 +110,26 @@ class NodeNetworkServicesTests(unittest.TestCase):
         )
         self.assertNotIn("/run/lock/cloud-platform-network-services.lock", runtime)
         self.assertNotIn("ReadWritePaths=/run/lock", unit)
+
+    def test_disposable_vm_harness_exercises_the_exact_systemd_service(self):
+        harness = VM_HARNESS.read_text()
+        self.assertIn(
+            "platform/systemd/cloud-platform-network-services.service",
+            harness,
+        )
+        self.assertIn(
+            "systemctl enable --now cloud-platform-network-services.service",
+            harness,
+        )
+        self.assertIn(
+            "systemctl is-active --quiet cloud-platform-network-services.service",
+            harness,
+        )
+        self.assertIn(
+            "systemctl disable --now cloud-platform-network-services.service",
+            harness,
+        )
+        self.assertIn("journalctl -u cloud-platform-network-services.service", harness)
 
     def test_apply_hash_inventory_matches_every_installed_source(self):
         operation = APPLY.read_text()
