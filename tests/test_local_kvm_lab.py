@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+import stat
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -27,6 +28,32 @@ class LocalKvmLabTests(unittest.TestCase):
         self.assertIn("[[ $1 =~ ^[0-9a-f]{40}$ ]] || refuse invalid_candidate_sha", text)
         self.assertNotIn("eval ", text)
         self.assertNotIn('bash -c "$' , text)
+
+    def test_host_preflight_is_fail_closed_and_unprivileged(self):
+        text = LAUNCHER.read_text()
+        for command in (
+            "qemu-system-x86_64",
+            "qemu-img",
+            "cloud-localds",
+            "ssh",
+            "scp",
+            "ssh-keygen",
+            "git",
+            "curl",
+            "sha256sum",
+        ):
+            with self.subTest(command=command):
+                self.assertIn(command, text)
+        self.assertIn("/dev/kvm", text)
+        self.assertIn("vmi3506102", text)
+        self.assertIn("node-01", text)
+        self.assertIn("git -C \"$ROOT\" status --porcelain", text)
+        self.assertIn("mcf-f1-2c-kvm.", text)
+        self.assertNotRegex(text, r"(?m)^\s*sudo\b")
+        self.assertNotRegex(text, r"(?m)^\s*(iptables|ip6tables|docker)\b")
+        self.assertNotIn("-netdev tap", text)
+        self.assertNotIn("brctl", text)
+        self.assertTrue(LAUNCHER.stat().st_mode & stat.S_IXUSR)
 
 
 if __name__ == "__main__":
