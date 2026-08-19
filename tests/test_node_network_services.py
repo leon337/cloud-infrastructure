@@ -131,6 +131,25 @@ class NodeNetworkServicesTests(unittest.TestCase):
         )
         self.assertIn("journalctl -u cloud-platform-network-services.service", harness)
 
+    def test_disposable_identities_share_one_full_privileged_lifecycle(self):
+        harness = VM_HARNESS.read_text()
+        github_gate = harness.index("GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY")
+        local_gate = harness.index("MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY")
+        lifecycle = harness.index("sudo install -d -o root -g root -m 0755 /usr/local/libexec")
+        self.assertLess(github_gate, lifecycle)
+        self.assertLess(local_gate, lifecycle)
+        for marker in (
+            "systemctl enable --now cloud-platform-network-services.service",
+            "probe nslookup api.github.com",
+            "direct_egress_allowed",
+            "development_proxy_failed",
+            "systemctl restart docker.service",
+            "NETWORK_SERVICES_ROLLBACK=PASS",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, harness)
+        self.assertEqual(harness.count("NODE_NETWORK_SERVICES_VM_PASS"), 1)
+
     def test_apply_hash_inventory_matches_every_installed_source(self):
         operation = APPLY.read_text()
         sources = (
