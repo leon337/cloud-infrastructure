@@ -66,6 +66,7 @@ class LocalKvmLabTests(unittest.TestCase):
         self.assertIn("ssh_pwauth: false", user_data)
         self.assertIn("__MCF_KVM_SSH_PUBLIC_KEY__", user_data)
         self.assertIn("/etc/mcf-f1-2c-kvm-lab", user_data)
+        self.assertIn("permissions: '0400'", user_data)
         self.assertIn("MCF_F1_2C_KVM_LAB_V1", user_data)
         self.assertIn("docker.io", user_data)
         self.assertIn("hostname: mcf-f1-2c-kvm-__MCF_KVM_RUN_ID__", meta)
@@ -98,6 +99,10 @@ class LocalKvmLabTests(unittest.TestCase):
         self.assertIn("verify_local_kvm_identity", script)
         self.assertIn("MCF_F1_2C_KVM_LAB_V1", script)
         self.assertIn("/etc/mcf-f1-2c-kvm-lab", script)
+        self.assertIn(
+            "sudo -n grep -Fxq MCF_F1_2C_KVM_LAB_V1 /etc/mcf-f1-2c-kvm-lab",
+            script,
+        )
         self.assertIn("mcf-f1-2c-kvm-", script)
         self.assertIn("VERSION_ID=\"24.04\"", script)
         self.assertIn("systemd-detect-virt", script)
