@@ -100,10 +100,9 @@ class G2AGitHubAdapterTests(unittest.TestCase):
         self.assertIn("artifact", body.lower())
         self.assertNotIn("ATTACHMENT_SECRET_BYTES", body)
 
-    def test_versioned_example_and_workflow_are_dormant(self):
+    def test_versioned_example_and_workflow_are_bounded(self):
         example = json.loads((ROOT / "control" / "examples" / "g2a-request.example.json").read_text(encoding="utf-8"))
         self.assertEqual(example["request"]["protocol"], "MCF_WORKSPACE_CONTROL_V1")
-        self.assertTrue((ROOT / "control" / "dispatch" / "g2a.json").exists())
 
         workflow = (ROOT / ".github" / "workflows" / "control-bridge-g2a.yml").read_text(encoding="utf-8")
         self.assertIn("control/dispatch/g2a.json", workflow)
@@ -114,6 +113,14 @@ class G2AGitHubAdapterTests(unittest.TestCase):
         self.assertNotIn("docker ", workflow.lower())
         self.assertIn("actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09", workflow)
         self.assertIn("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", workflow)
+
+    def test_workflow_uses_existing_system_python_without_runtime_package_install(self):
+        workflow = (ROOT / ".github" / "workflows" / "control-bridge-g2a.yml").read_text(encoding="utf-8")
+        self.assertNotIn("venv", workflow.lower())
+        self.assertNotIn("pip", workflow.lower())
+        self.assertIn("import jsonschema, yaml", workflow)
+        self.assertIn("python3 scripts/control_bridge_g2a.py", workflow)
+        self.assertIn("python3 scripts/control_bridge_g2a_publish.py", workflow)
 
 
 if __name__ == "__main__":
