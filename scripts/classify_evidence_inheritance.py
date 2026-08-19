@@ -187,6 +187,13 @@ def validate_state_delta(
     candidate: str,
     changed_state_files: list[str],
 ) -> dict[str, Any]:
+    if not changed_state_files:
+        return {
+            "decision": "PASS",
+            "reason": "STATE_UNCHANGED",
+            "state_changes": {},
+        }
+
     state_changes: dict[str, list[str]] = {}
     candidate_docs: dict[str, Any] = {}
 
