@@ -7,6 +7,8 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 LAUNCHER = ROOT / "scripts/run_f1_2c_kvm_lab.sh"
 IMAGE_ENV = ROOT / "platform/kvm/f1-2c-ubuntu-24.04-amd64.env"
+USER_DATA = ROOT / "platform/kvm/f1-2c-cloud-init-user-data.yaml.in"
+META_DATA = ROOT / "platform/kvm/f1-2c-cloud-init-meta-data.yaml.in"
 
 
 class LocalKvmLabTests(unittest.TestCase):
@@ -54,6 +56,20 @@ class LocalKvmLabTests(unittest.TestCase):
         self.assertNotIn("-netdev tap", text)
         self.assertNotIn("brctl", text)
         self.assertTrue(LAUNCHER.stat().st_mode & stat.S_IXUSR)
+
+    def test_cloud_init_creates_only_ephemeral_lab_identity(self):
+        user_data = USER_DATA.read_text()
+        meta = META_DATA.read_text()
+        self.assertIn("name: mcf-lab", user_data)
+        self.assertIn("sudo: ALL=(ALL) NOPASSWD:ALL", user_data)
+        self.assertIn("ssh_pwauth: false", user_data)
+        self.assertIn("__MCF_KVM_SSH_PUBLIC_KEY__", user_data)
+        self.assertIn("/etc/mcf-f1-2c-kvm-lab", user_data)
+        self.assertIn("MCF_F1_2C_KVM_LAB_V1", user_data)
+        self.assertIn("docker.io", user_data)
+        self.assertIn("hostname: mcf-f1-2c-kvm-__MCF_KVM_RUN_ID__", meta)
+        self.assertNotIn("github_pat_", user_data)
+        self.assertNotIn("BEGIN OPENSSH PRIVATE KEY", user_data)
 
 
 if __name__ == "__main__":
