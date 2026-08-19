@@ -101,6 +101,10 @@ def build_result(request_id: str, issue_number: int) -> dict[str, Any]:
         run_probe("ufw", ["systemctl", "is-active", "ufw"]),
         run_probe("docker", ["systemctl", "is-active", "docker"]),
         run_probe("containerd", ["systemctl", "is-active", "containerd"]),
+        run_probe(
+            "python_ensurepip",
+            ["python3", "-c", "import ensurepip; print(ensurepip.version())"],
+        ),
     ]
     runner_path = pathlib.Path("/usr/local/sbin/codex-mission-001-runner")
     if runner_path.is_file():
