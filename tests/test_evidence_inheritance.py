@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import importlib.util
-import json
-import os
 import pathlib
 import stat
 import subprocess
@@ -49,21 +47,23 @@ class GitRepoFixture:
         return self.run("git", "rev-parse", "HEAD").stdout.strip()
 
 
-class EvidenceInheritancePathTests(unittest.TestCase):
+class EvidenceTestCase(unittest.TestCase):
     def make_repo(self):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         root = pathlib.Path(temp.name)
         return GitRepoFixture(root), root
 
+    def classify(self, root: pathlib.Path, anchor: str, candidate: str):
+        return EVIDENCE.classify_repository_delta(root, anchor, candidate)
+
+
+class EvidenceInheritancePathTests(EvidenceTestCase):
     def seed(self, repo: GitRepoFixture) -> str:
         repo.write("README.md", "baseline\n")
         repo.write("history/SESSION.md", "baseline\n")
         repo.write("scripts/example.sh", "#!/bin/sh\nexit 0\n", 0o755)
         return repo.commit("baseline")
-
-    def classify(self, root: pathlib.Path, anchor: str, candidate: str):
-        return EVIDENCE.classify_repository_delta(root, anchor, candidate)
 
     def test_history_only_delta_is_candidate_non_material(self):
         repo, root = self.make_repo()
@@ -117,7 +117,6 @@ class EvidenceInheritancePathTests(unittest.TestCase):
     def test_rename_is_refused(self):
         repo, root = self.make_repo()
         anchor = self.seed(repo)
-        self.assertTrue((root / "README.md").exists())
         (root / "README.md").rename(root / "CONTEXT.md")
         candidate = repo.commit("rename")
         result = self.classify(root, anchor, candidate)
@@ -141,6 +140,151 @@ class EvidenceInheritancePathTests(unittest.TestCase):
         candidate = repo.commit("other")
         result = self.classify(root, anchor, candidate)
         self.assertEqual(result["reason"], "REFUSED_INVALID_ANCHOR")
+
+
+class EvidenceInheritanceStateTests(EvidenceTestCase):
+    def current_yaml(
+        self,
+        *,
+        production_authorized: str = "false",
+        production_gate: str = "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED",
+        credential_rotation: str = "DEFERRED_BY_HUMAN_DECISION",
+        working_branch: str = "codex/mission-001-f1-2c-network-enforcement",
+        last_ci_run_id: int = 1,
+        extra_status: str = "",
+    ) -> str:
+        return f"""documentation_state: BASE
+project:
+  credential_rotation: {credential_rotation}
+  phases:
+    future_platform_implementation: BASE
+  next_exact_step: BASE
+status_layer:
+  last_material_checkpoint: BASE
+  last_relevant_commit: 0000000000000000000000000000000000000000
+  last_ci_run_id: {last_ci_run_id}
+{extra_status}platform_discovery:
+  production_promotion_authorized: {production_authorized}
+authorization:
+  credential_rotation: {credential_rotation}
+  production_promotion: {production_gate}
+  next_step: BASE
+codex_execution:
+  mission: docs/CODEX-EXECUTION-MISSION-001.md
+  working_branch: {working_branch}
+  active_slice: BASE
+  repo_only_preparations:
+    network_enforcement_f1_2c:
+      status: BASE
+      disposable_integration: BASE
+      node_01_services_desired_state: BASE
+"""
+
+    def platform_discovery_yaml(self) -> str:
+        return """phase: BASE
+production_promotion_authorized: false
+credential_rotation: DEFERRED_BY_HUMAN_DECISION
+execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
+implementation:
+  current_slice_status: BASE
+  next_step: BASE
+  f1_2c_repo_only:
+    status: BASE
+    disposable_integration: BASE
+    node_01_services_desired_state: BASE
+  production_promotion: NOT_AUTHORIZED
+  credential_rotation: DEFERRED_BY_HUMAN_DECISION
+"""
+
+    def components_yaml(self) -> str:
+        return """platform_components:
+  network_enforcement:
+    lifecycle: BASE
+    validation:
+      disposable_integration: BASE
+      node_01_services_desired_state: BASE
+production:
+  deployment_authorized: false
+  promotion_gate: LEANDRO
+credential_rotation:
+  status: DEFERRED_BY_HUMAN_DECISION
+"""
+
+    def seed_state(self, repo: GitRepoFixture) -> str:
+        repo.write("state/current.yaml", self.current_yaml())
+        repo.write("state/platform-discovery.yaml", self.platform_discovery_yaml())
+        repo.write("state/components.yaml", self.components_yaml())
+        return repo.commit("state baseline")
+
+    def test_allowed_f1_2c_progress_state_change_passes(self):
+        repo, root = self.make_repo()
+        anchor = self.seed_state(repo)
+        repo.write("state/current.yaml", self.current_yaml(last_ci_run_id=2))
+        candidate = repo.commit("progress")
+        self.assertEqual(self.classify(root, anchor, candidate)["decision"], "PASS")
+
+    def test_production_authorization_true_is_refused(self):
+        repo, root = self.make_repo()
+        anchor = self.seed_state(repo)
+        repo.write("state/current.yaml", self.current_yaml(production_authorized="true"))
+        candidate = repo.commit("production")
+        self.assertEqual(
+            self.classify(root, anchor, candidate)["reason"],
+            "REFUSED_PROTECTED_STATE_CHANGE",
+        )
+
+    def test_production_gate_change_is_refused(self):
+        repo, root = self.make_repo()
+        anchor = self.seed_state(repo)
+        repo.write("state/current.yaml", self.current_yaml(production_gate="AUTHORIZED"))
+        candidate = repo.commit("gate")
+        self.assertEqual(
+            self.classify(root, anchor, candidate)["reason"],
+            "REFUSED_PROTECTED_STATE_CHANGE",
+        )
+
+    def test_credential_rotation_change_is_refused(self):
+        repo, root = self.make_repo()
+        anchor = self.seed_state(repo)
+        repo.write("state/current.yaml", self.current_yaml(credential_rotation="AUTHORIZED"))
+        candidate = repo.commit("rotation")
+        self.assertEqual(
+            self.classify(root, anchor, candidate)["reason"],
+            "REFUSED_PROTECTED_STATE_CHANGE",
+        )
+
+    def test_working_branch_change_is_refused(self):
+        repo, root = self.make_repo()
+        anchor = self.seed_state(repo)
+        repo.write("state/current.yaml", self.current_yaml(working_branch="main"))
+        candidate = repo.commit("branch")
+        self.assertEqual(
+            self.classify(root, anchor, candidate)["reason"],
+            "REFUSED_PROTECTED_STATE_CHANGE",
+        )
+
+    def test_unlisted_state_key_change_is_refused(self):
+        repo, root = self.make_repo()
+        anchor = self.seed_state(repo)
+        repo.write(
+            "state/current.yaml",
+            self.current_yaml(extra_status="  vps_resident_components: ONE\n"),
+        )
+        candidate = repo.commit("unlisted")
+        self.assertEqual(
+            self.classify(root, anchor, candidate)["reason"],
+            "REFUSED_PROTECTED_STATE_CHANGE",
+        )
+
+    def test_invalid_yaml_is_refused(self):
+        repo, root = self.make_repo()
+        anchor = self.seed_state(repo)
+        repo.write("state/current.yaml", "platform_discovery: [\n")
+        candidate = repo.commit("invalid yaml")
+        self.assertEqual(
+            self.classify(root, anchor, candidate)["reason"],
+            "REFUSED_PROTECTED_STATE_CHANGE",
+        )
 
 
 if __name__ == "__main__":
