@@ -1,0 +1,41 @@
+name: evidence-inheritance-lab
+
+on:
+  push:
+    branches:
+      - validation/evidence-inheritance-tool-20260819
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evidence-inheritance-lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tdd:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+    steps:
+      - name: Check out validation branch
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify unprivileged boundary
+        run: |
+          if sudo -n true 2>/dev/null; then
+            echo 'EVIDENCE_LAB_REFUSED unexpected_passwordless_sudo' >&2
+            exit 1
+          fi
+          if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then
+            echo 'EVIDENCE_LAB_REFUSED docker_socket_read_write' >&2
+            exit 1
+          fi
+          echo 'EVIDENCE_LAB_BOUNDARY_PASS'
+
+      - name: Run focused evidence-inheritance tests
+        run: python3 -m unittest -v tests.test_evidence_inheritance
