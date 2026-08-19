@@ -118,6 +118,33 @@ class LocalKvmLabTests(unittest.TestCase):
         self.assertNotIn("GITHUB_TOKEN", text)
         self.assertNotIn("github_pat_", text)
 
+    def test_evidence_is_non_secret_and_cleanup_is_bounded(self):
+        text = LAUNCHER.read_text()
+        for field in (
+            "candidate_sha=",
+            "image_sha256=",
+            "qemu_version=",
+            "guest_release=",
+            "run_id=",
+            "started_at=",
+            "finished_at=",
+            "harness_exit_code=",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, text)
+        self.assertIn('$EVIDENCE_DIR/harness.log', text)
+        self.assertIn('$EVIDENCE_DIR/serial-tail.log', text)
+        self.assertIn('tail -n 200', text)
+        self.assertIn('PIPESTATUS[0]', text)
+        self.assertIn('KVM_LAB_PASS candidate=%s evidence=%s', text)
+        self.assertIn('KVM_LAB_FAIL candidate=%s rc=%s evidence=%s', text)
+        self.assertIn('qemu_pid_is_ours', text)
+        self.assertIn('mcf-f1-2c-kvm.*', text)
+        self.assertNotIn('set -x', text)
+        self.assertNotIn('cp "$SSH_KEY"', text)
+        self.assertNotIn('env >', text)
+        self.assertNotIn('printenv', text)
+
 
 if __name__ == "__main__":
     unittest.main()
