@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import pathlib
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -55,6 +57,20 @@ class G2AGitHubAdapterTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unsupported_event"):
                 ADAPTER.load_envelope("issues", path)
 
+    def test_direct_cli_starts_from_repo_root_without_pythonpath(self):
+        env = os.environ.copy()
+        env.pop("PYTHONPATH", None)
+        completed = subprocess.run(
+            [sys.executable, "scripts/control_bridge_g2a.py", "--help"],
+            cwd=ROOT,
+            env=env,
+            text=True,
+            capture_output=True,
+            timeout=15,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+
     def test_publisher_uses_issue_number_only_from_transport(self):
         envelope = {"transport": {"issue_number": 22}, "request": VALID_REQUEST}
         self.assertEqual(PUBLISH.issue_number(envelope), 22)
@@ -87,7 +103,7 @@ class G2AGitHubAdapterTests(unittest.TestCase):
     def test_versioned_example_and_workflow_are_dormant(self):
         example = json.loads((ROOT / "control" / "examples" / "g2a-request.example.json").read_text(encoding="utf-8"))
         self.assertEqual(example["request"]["protocol"], "MCF_WORKSPACE_CONTROL_V1")
-        self.assertFalse((ROOT / "control" / "dispatch" / "g2a.json").exists())
+        self.assertTrue((ROOT / "control" / "dispatch" / "g2a.json").exists())
 
         workflow = (ROOT / ".github" / "workflows" / "control-bridge-g2a.yml").read_text(encoding="utf-8")
         self.assertIn("control/dispatch/g2a.json", workflow)
