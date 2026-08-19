@@ -1,9 +1,9 @@
 # Evidence Inheritance for Non-Executable Delta — Design
 
-Status: PROPOSED_AFTER_HUMAN_APPROVAL
+Status: DRAFT_FOR_WRITTEN_REVIEW
 Date: 2026-08-19
 Scope: F1.2c validation policy only
-Authority: LEANDRO approval in project conversation
+Authority: LEANDRO approval of the in-chat design; written-spec review still required before implementation
 
 ## Goal
 
@@ -87,9 +87,11 @@ Evidence inheritance is valid only when all of the following are true:
 
 ## Current F1.2c application
 
-The current candidate lineage from `f771cfd09f1824562ddfdaea507fb3cb0781f6ac` to `0fb5214ff8e823c971160eccd436893b5bed7330` contains documentation, evidence, history and state-projection updates; no `automation/**`, `scripts/**`, `tests/**`, `platform/**`, workflow or dependency file changed in that delta.
+The F1.2c lineage from `f771cfd09f1824562ddfdaea507fb3cb0781f6ac` through the pre-policy checkpoint `0fb5214ff8e823c971160eccd436893b5bed7330` contains documentation, evidence, history and state-projection updates; no `automation/**`, `scripts/**`, `tests/**`, `platform/**`, workflow or dependency file changed in that delta.
 
-However, because state files changed, implementation must not rely on path names alone. It must prove that the changed state fields are evidence/progress projections and that production/credential/mission safety guards retain their tested values.
+The policy/spec commits themselves are documentation changes and must also be included in the eventual candidate comparison before inheritance is accepted.
+
+Because state files changed, implementation must not rely on path names alone. It must prove that the changed state fields are evidence/progress projections and that production/credential/mission safety guards retain their tested values.
 
 Fresh self-hosted static validation on NODE-01 has already demonstrated that the unprivileged validation path is viable without granting sudo or Docker access. That evidence supports the design but does not itself implement this policy.
 
@@ -109,7 +111,7 @@ No refusal may be overridden automatically.
 
 This design does not:
 
-- make GitHub-hosted CI optional for future material implementation changes;
+- make fresh full disposable integration optional for future material implementation changes; the execution venue may be GitHub-hosted or a future isolated self-hosted environment, but the isolation/evidence requirement remains;
 - authorize destructive tests on NODE-01;
 - grant Docker socket, root, unrestricted sudo or arbitrary shell;
 - authorize production;
