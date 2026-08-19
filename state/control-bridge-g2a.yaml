@@ -5,9 +5,9 @@ repository: leon337/cloud-infrastructure
 branch: mcf/mission-001-control-bridge-g1
 base_branch: codex/mission-001-f1-2c-network-enforcement
 pull_request: 3
-status: TASKS_1_9_COMPLETE_WAITING_HUMAN_GATE_TASK_10
+status: TASK_10_LIVE_PROOF_PASS_CHECKPOINT_CI_PENDING
 implementation:
-  tested_head: e36065268f609cbbfc64c6644d4c943f169756c9
+  last_full_hosted_ci_green_head: 204967b5748273615eb20ce4d6e2020839233f72
   tasks:
     task_1_manifest_catalog: DONE
     task_2_transport_neutral_protocol: DONE
@@ -15,20 +15,21 @@ implementation:
     task_4_workspace_confinement: DONE
     task_5_git_inspection: DONE
     task_6_core_dispatcher: DONE
-    task_7_github_adapter_dormant: DONE
+    task_7_github_adapter: DONE
     task_8_disposable_multi_project_integration: DONE
     task_9_exact_head_ci_and_reconciliation: DONE
-    task_10_first_real_node01_roundtrip: WAITING_HUMAN_GATE
+    task_10_first_real_node01_roundtrip: PASS
 ci:
-  exact_tested_head: e36065268f609cbbfc64c6644d4c943f169756c9
+  last_full_hosted_ci_green_head: 204967b5748273615eb20ce4d6e2020839233f72
   foundation_ci:
-    run_number: 145
-    run_id: 32198917421
+    run_number: 157
+    run_id: 32249250284
     conclusion: SUCCESS
   docker_boundary_ci:
-    run_number: 140
-    run_id: 32198917456
+    run_number: 152
+    run_id: 32249250290
     conclusion: SUCCESS
+  checkpoint_head_final_ci: PENDING
 capabilities:
   - project.list
   - project.get
@@ -45,17 +46,28 @@ project_source_of_truth:
   validator: scripts/validate_manifests.py
   parallel_registry: false
 workspace:
+  fixture_project: leon337/g2a-smoke/dev
   transitional_root: /home/ubuntu/mcf-workspaces/<tenant>/<project>/<environment>
-  provisioning: false
-  clone: false
-  materialization: false
-  mutation: false
-live_gate:
-  dispatch_file: control/dispatch/g2a.json
-  dispatch_file_expected_state: ABSENT
-  task_10_authorized: false
-  real_node01_roundtrip_executed: false
-  real_workspace_mutation_executed: false
+  provisioning_by_g2a: false
+  clone_by_g2a: false
+  mutation_by_g2a: false
+live_proof:
+  issue: 5
+  real_node01_roundtrip_executed: true
+  positive_requests:
+    - G2A-NODE01-20260819-003
+    - G2A-NODE01-20260819-004
+    - G2A-NODE01-20260819-005
+    - G2A-NODE01-20260819-006
+    - G2A-NODE01-20260819-007
+    - G2A-NODE01-20260819-008
+    - G2A-NODE01-20260819-009
+    - G2A-NODE01-20260819-010
+    - G2A-NODE01-20260819-011
+    - G2A-NODE01-20260819-013
+  negative_request: G2A-NODE01-20260819-012
+  negative_result: REFUSED_path_escape_refused
+  no_mutation: PASS
 security_boundaries:
   sudo_automatic: false
   root_direct: false
@@ -64,6 +76,10 @@ security_boundaries:
   services_mutated: false
   production_mutated: false
   shell_arbitrary: false
+future:
+  g2b_write: NOT_IMPLEMENTED
+  shell: NOT_IMPLEMENTED
+  production: NOT_AUTHORIZED
 continuity:
   canonical_checkpoint: docs/52-control-bridge-g2a-implementation-checkpoint.md
   architecture: docs/51-control-bridge-g2a-design.md
@@ -71,4 +87,4 @@ continuity:
   g1_checkpoint: docs/50-control-bridge-g1-handshake-checkpoint.md
   live_state_precedence: true
   chat_memory_required: false
-next_exact_step: HUMAN_GATE_TASK_10_FIRST_REAL_G2A_NODE01_ROUNDTRIP
+next_exact_step: DESIGN_G2B_BOUNDED_WRITE_AFTER_CHECKPOINT_CI_GREEN
