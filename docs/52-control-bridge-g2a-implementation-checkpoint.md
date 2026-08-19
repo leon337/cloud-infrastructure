@@ -1,7 +1,7 @@
 # 52 — CONTROL BRIDGE G2-A IMPLEMENTATION CHECKPOINT
 
 Data: 2026-08-19
-Status: **TASKS_1_9_COMPLETE — WAITING_HUMAN_GATE_TASK_10**
+Status: **TASK_10_LIVE_PROOF_PASS — CHECKPOINT_CI_PENDING**
 Missão: `CODEX-EXECUTION-MISSION-001` / MCF VPS Control Plane
 Branch: `mcf/mission-001-control-bridge-g1`
 Base deliberada: `codex/mission-001-f1-2c-network-enforcement`
@@ -10,37 +10,7 @@ Autoridade humana: LEANDRO
 
 ## Objetivo deste checkpoint
 
-Congelar o estado material do G2-A após a implementação e validação das Tasks 1–9, para que outra sessão, agente ou Codex consiga retomar a missão sem depender da memória do chat.
-
-Este checkpoint é a fonte de continuidade específica do Control Bridge G2-A. O `CHECKPOINT.md` principal continua descrevendo a trilha de implementação da plataforma/VPS (F1.2c); este documento descreve a capability transversal de control plane.
-
-## Estado testado e comprovado
-
-Implementação G2-A testada no commit:
-
-```text
-e36065268f609cbbfc64c6644d4c943f169756c9
-```
-
-Último commit material desse HEAD:
-
-```text
-test(g2a): document disposable integration fixtures
-```
-
-CI commit-bound desse SHA exato:
-
-```text
-foundation-ci #145
-run_id=32198917421
-COMPLETED / SUCCESS
-
-docker-boundary-ci #140
-run_id=32198917456
-COMPLETED / SUCCESS
-```
-
-O `foundation-ci #145` executou a suíte estática/unitária e a integração descartável. O `docker-boundary-ci #140` também concluiu `SUCCESS` no mesmo HEAD.
+Congelar o estado material e a evidência real do G2-A após o primeiro roundtrip read-only no NODE-01. Este documento é a fonte de continuidade específica do Control Bridge G2-A; GitHub live e CI do SHA aplicável continuam prevalecendo para estado operacional.
 
 ## Estado por Task
 
@@ -51,15 +21,130 @@ Task 3  ProjectResolver por manifests ............. DONE
 Task 4  Workspace read-only confinado ............. DONE
 Task 5  Git inspection bounded .................... DONE
 Task 6  Core dispatcher explícito ................. DONE
-Task 7  GitHub adapter dormente ................... DONE
+Task 7  GitHub adapter ............................ DONE
 Task 8  Integração multi-project descartável ...... DONE
 Task 9  CI exato + reconciliação .................. DONE
-Task 10 Primeiro roundtrip G2-A real NODE-01 ...... WAITING_HUMAN_GATE
+Task 10 Primeiro roundtrip G2-A real NODE-01 ...... PASS
 ```
 
-## Capacidades implementadas
+## CI de implementação comprovado antes do roundtrip
 
-G2-A permanece estritamente read-only e implementa somente:
+O fix de execução direta do adapter foi validado no SHA:
+
+```text
+204967b5748273615eb20ce4d6e2020839233f72
+```
+
+CI commit-bound desse SHA:
+
+```text
+foundation-ci #157
+run_id=32249250284
+COMPLETED / SUCCESS
+
+docker-boundary-ci #152
+run_id=32249250290
+COMPLETED / SUCCESS
+```
+
+Durante o primeiro live dispatch foram identificadas duas incompatibilidades de runtime e corrigidas por TDD:
+
+1. execução direta de `scripts/control_bridge_g2a.py` não resolvia o pacote `control_plane`;
+2. NODE-01 possui `jsonschema` e `PyYAML`, mas não possui `venv/ensurepip/pip`; o workflow foi ajustado para usar o Python 3.12 do sistema sem instalar pacotes, sem sudo e sem ampliar privilégios.
+
+O adapter corrigido teve `8/8` testes direcionados executados com sucesso no próprio NODE-01 antes do roundtrip final.
+
+## Fixture real usada
+
+Project lógico:
+
+```text
+leon337/g2a-smoke/dev
+```
+
+Workspace transitório:
+
+```text
+/home/ubuntu/mcf-workspaces/leon337/g2a-smoke/dev
+```
+
+A fixture é DEV, não crítica, rebuildable e sem autorização de produção.
+
+## Issue de evidência
+
+```text
+Issue #5 — G2-A — NODE-01 read-only roundtrip evidence
+```
+
+Todos os resultados abaixo retornaram automaticamente do self-hosted runner para essa Issue.
+
+## Roundtrip positivo real
+
+```text
+G2A-NODE01-20260819-003  project.list      PASS
+G2A-NODE01-20260819-004  project.get       PASS
+G2A-NODE01-20260819-005  workspace.stat    PASS
+G2A-NODE01-20260819-006  workspace.list    PASS
+G2A-NODE01-20260819-007  workspace.read    PASS
+G2A-NODE01-20260819-008  git.status        PASS
+G2A-NODE01-20260819-009  git.branch        PASS
+G2A-NODE01-20260819-010  git.head          PASS
+G2A-NODE01-20260819-011  git.diff          PASS
+```
+
+Leitura adicional usada na prova de não mutação:
+
+```text
+G2A-NODE01-20260819-013  workspace.read    PASS
+```
+
+## Prova negativa de confinamento
+
+Request:
+
+```text
+G2A-NODE01-20260819-012
+operation=workspace.read
+path=../README.md
+```
+
+Resultado obrigatório observado:
+
+```text
+status=REFUSED
+error=path_escape_refused
+```
+
+Nenhum segredo real do host foi usado como leitura positiva.
+
+## Prova de não mutação
+
+Antes e depois de uma leitura G2-A final, a fixture permaneceu idêntica:
+
+```text
+sha256=f9238cd615de9637c8df196a6e2f5592e43d40f68847b9a0bce2236ff2b360c0
+size=705
+mtime_ns=1787138952926672279
+```
+
+Git local antes/depois:
+
+```text
+HEAD=f8d97e6a20888f455a377c4c296ab9267a7fde9d
+status_porcelain=<empty>
+```
+
+Boundary de privilégio reconfirmado:
+
+```text
+sudo -n true = REFUSED / password required
+Docker socket read+write access = REFUSED
+runner user = ubuntu
+```
+
+Portanto não houve mudança de conteúdo, HEAD Git, dirty state, sudo automático ou acesso ao Docker socket causada pelo G2-A.
+
+## Capacidades comprovadas no NODE-01
 
 ```text
 project.list
@@ -73,96 +158,29 @@ git.head
 git.diff
 ```
 
-O Core permanece transport-neutral. GitHub Issue/run/event metadata fica no adapter e não entra no Core Request.
+O Core permanece transport-neutral e não aceita shell/argv arbitrário pelo request.
 
-## Project source of truth
-
-Não existe registry paralelo.
-
-Identidade e desired state de Project continuam vindo de:
+## Estado canônico do gate
 
 ```text
-platform/manifests/**/*.yaml
-platform/schemas/project.schema.json
-scripts/validate_manifests.py
+G2A_READ_ONLY=PASS
+G2B_WRITE=NOT_IMPLEMENTED
+SHELL=NOT_IMPLEMENTED
+SUDO=NOT_GRANTED
+DOCKER_SOCKET=NOT_GRANTED
+PRODUCTION=NOT_AUTHORIZED
 ```
 
-O G2-A somente resolve e observa o workspace local.
+## Limites que continuam intactos
 
-## Workspace root transitório
-
-Mapeamento aprovado para bootstrap:
-
-```text
-/home/ubuntu/mcf-workspaces/<tenant>/<project>/<environment>
-```
-
-O G2-A não cria, clona, materializa ou remove workspaces.
-
-## Segurança e confinamento implementados
-
-- path absoluto recusado;
-- `~` recusado;
-- traversal `..` recusado antes de tocar o filesystem;
-- symlink root recusado;
-- symlink/cross-project escape recusado;
-- Git directory externo ao workspace recusado;
-- arquivos/paths sensíveis recusados;
-- conteúdo com padrão de segredo recusado;
-- leitura UTF-8 bounded;
-- listagem bounded;
-- Git subprocess com argv fixo, `shell=False`, timeout e limites de saída;
-- nenhuma capability recebe shell/argv arbitrário do request.
-
-## Prova de integração
-
-A integração G2-A executada nas Tasks 1–8 foi somente em fixtures/diretórios temporários do CI.
-
-Ela comprovou, entre outros:
-
-- resolução de múltiplos Projects;
-- isolamento A/B;
-- traversal recusado;
-- symlink escape recusado;
-- leitura bounded;
-- inspeção Git local;
-- diff grande tratado como attachment bounded;
-- gitdir externo recusado.
-
-Esses testes NÃO usaram o NODE-01 como workspace real.
-
-## Gate real preservado
-
-O arquivo abaixo continua deliberadamente AUSENTE:
-
-```text
-control/dispatch/g2a.json
-```
-
-A presença desse arquivo é o gatilho do primeiro workflow G2-A real. Sua criação pertence exclusivamente à Task 10 e exige HUMAN_GATE separado de LEANDRO.
-
-Portanto:
-
-```text
-G2A_LIVE_DISPATCH=NO
-G2A_REAL_NODE01_ROUNDTRIP=NO
-G2A_REAL_WORKSPACE_MUTATION=NO
-TASK_10_AUTHORIZED=NO
-```
-
-## Fronteiras que permanecem intactas
-
-Não foram autorizados nem executados pelo G2-A:
+Não estão autorizados por este checkpoint:
 
 ```text
 workspace.write/mkdir/delete
 Git fetch/pull/checkout/commit/push
-clone/materialização
 shell arbitrário
-sudo automático
-root direto
-Docker socket
-grupo docker
+sudo automático/root direto
+Docker socket/grupo docker
 docker exec/compose
 systemctl mutante
 UFW/SSH/rede
@@ -170,48 +188,24 @@ APT/packages
 secrets
 deploy
 produção
-backup/rollback privilegiado
 ```
 
-## Relação com G1
+## CI final do checkpoint
 
-G1 continua comprovado pelo checkpoint:
+Este checkpoint deve passar `foundation-ci` e `docker-boundary-ci` no HEAD que o contém antes de qualquer discussão de merge ou declaração de fechamento total do G2-A.
+
+Enquanto esse CI final não estiver verde:
 
 ```text
-docs/50-control-bridge-g1-handshake-checkpoint.md
+LIVE_NODE01_PROOF=PASS
+CHECKPOINT_CI=PENDING
+MERGE=NO
 ```
 
-G1 provou o transporte:
+## Próximo passo após CI verde
+
+G2-B é um design e uma autorização separados. A próxima capability pretendida é escrita limitada, inicialmente somente em workspace DEV descartável, com precondition, evidência e rollback, sem shell/root/Docker/produção.
 
 ```text
-ChatGPT -> GitHub -> Actions -> self-hosted runner -> VPS -> GitHub -> ChatGPT
+NEXT_CONTROL_BRIDGE_STEP=DESIGN_G2B_BOUNDED_WRITE
 ```
-
-G2-A adiciona o Core read-only multi-project, mas o primeiro roundtrip real desse Core ainda está bloqueado por HUMAN_GATE.
-
-## Relação com documentos anteriores
-
-- `docs/51-control-bridge-g2a-design.md` registra a arquitetura aprovada antes da implementação;
-- `docs/superpowers/plans/2026-08-18-control-bridge-g2a-read-only.md` registra o plano TDD aprovado antes da execução;
-- os campos de status pré-implementação desses documentos são históricos e são **SUPERSEDED para estado de execução** por este checkpoint;
-- para arquitetura, eles continuam válidos;
-- para estado atual de execução, usar este checkpoint + GitHub live + CI do SHA aplicável.
-
-## Regras de retomada
-
-Uma nova IA/agente deve:
-
-1. ler `README.md`;
-2. ler este checkpoint;
-3. conferir o PR #3 e o HEAD live;
-4. conferir o CI do HEAD aplicável;
-5. confirmar que `control/dispatch/g2a.json` continua ausente;
-6. não executar Task 10 sem autorização explícita de LEANDRO.
-
-## Próximo passo exato
-
-```text
-NEXT_CONTROL_BRIDGE_STEP=HUMAN_GATE_TASK_10_FIRST_REAL_G2A_NODE01_ROUNDTRIP
-```
-
-Nenhuma autorização para Task 10 é inferida deste checkpoint ou da implementação das Tasks 1–9.
