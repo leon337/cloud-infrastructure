@@ -18,7 +18,7 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || refuse "missing_command_$1"
 }
 
-for command in qemu-system-x86_64 qemu-img cloud-localds ssh scp ssh-keygen git curl sha256sum; do
+for command in qemu-system-x86_64 qemu-img cloud-localds ssh scp ssh-keygen git curl sha256sum od tr sed; do
   require_command "$command"
 done
 
@@ -62,9 +62,26 @@ cleanup() {
     *) printf '%s\n' 'KVM_LAB_CLEANUP_REFUSED invalid_run_root' >&2; return 1 ;;
   esac
   rm -f -- "$RUN_ROOT"/candidate.bundle "$RUN_ROOT"/seed.img "$RUN_ROOT"/overlay.qcow2 \
-    "$RUN_ROOT"/id_ed25519 "$RUN_ROOT"/id_ed25519.pub "$RUN_ROOT"/qemu.pid
+    "$RUN_ROOT"/id_ed25519 "$RUN_ROOT"/id_ed25519.pub "$RUN_ROOT"/qemu.pid \
+    "$RUN_ROOT"/user-data "$RUN_ROOT"/meta-data
   rmdir -- "$RUN_ROOT" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM HUP
 
-printf 'KVM_LAB_PREFLIGHT=PASS candidate=%s\n' "$CANDIDATE_SHA"
+readonly RUN_ID=$(od -An -N6 -tx1 /dev/urandom | tr -d ' \n')
+readonly GUEST_HOSTNAME="mcf-f1-2c-kvm-$RUN_ID"
+readonly SSH_KEY="$RUN_ROOT/id_ed25519"
+ssh-keygen -q -t ed25519 -N '' -f "$SSH_KEY"
+chmod 0600 "$SSH_KEY"
+
+ssh_pub=$(<"$SSH_KEY.pub")
+sed \
+  -e "s|__MCF_KVM_RUN_ID__|$RUN_ID|g" \
+  -e "s|__MCF_KVM_SSH_PUBLIC_KEY__|$ssh_pub|g" \
+  "$ROOT/platform/kvm/f1-2c-cloud-init-user-data.yaml.in" >"$RUN_ROOT/user-data"
+sed "s|__MCF_KVM_RUN_ID__|$RUN_ID|g" \
+  "$ROOT/platform/kvm/f1-2c-cloud-init-meta-data.yaml.in" >"$RUN_ROOT/meta-data"
+cloud-localds "$RUN_ROOT/seed.img" "$RUN_ROOT/user-data" "$RUN_ROOT/meta-data"
+
+printf 'KVM_LAB_PREFLIGHT=PASS candidate=%s run_id=%s guest=%s\n' \
+  "$CANDIDATE_SHA" "$RUN_ID" "$GUEST_HOSTNAME"
