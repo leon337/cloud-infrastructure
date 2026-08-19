@@ -1,0 +1,76 @@
+name: f1-2c-runner-status-probe
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: f1-2c-runner-status-probe-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    steps:
+      - name: Verify NODE-01 identity and unprivileged boundary
+        run: |
+          printf 'NODE_HOST=%s\n' "$(hostname)"
+          id
+          if sudo -n true 2>/dev/null; then
+            echo 'RUNNER_PROBE_REFUSED unexpected_generic_passwordless_sudo' >&2
+            exit 1
+          fi
+          if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then
+            echo 'RUNNER_PROBE_REFUSED docker_socket_read_write' >&2
+            exit 1
+          fi
+          echo 'RUNNER_PROBE_BOUNDARY_PASS'
+
+      - name: Inspect Mission 001 objects without reading protected content
+        run: |
+          for path in \
+            /usr/local/sbin/codex-mission-001-runner \
+            /etc/codex-mission-001-autonomous-runner.managed \
+            /etc/sudoers.d/91-codex-mission-001-temporary \
+            /var/lib/codex-mission-001 \
+            /opt/codex-mission-001/repository \
+            /var/log/codex-mission-001; do
+            if [[ -e "${path}" ]]; then
+              stat -c 'MISSION_OBJECT_PRESENT path=%n type=%F owner=%U group=%G mode=%a' "${path}" || \
+                echo "MISSION_OBJECT_PRESENT_METADATA_DENIED path=${path}"
+            else
+              echo "MISSION_OBJECT_ABSENT path=${path}"
+            fi
+          done
+          printf 'REVOKE_TIMER_ACTIVE='; systemctl is-active codex-mission-001-revoke.timer 2>/dev/null || true
+          printf 'REVOKE_TIMER_ENABLED='; systemctl is-enabled codex-mission-001-revoke.timer 2>/dev/null || true
+          printf 'REVOKE_SERVICE_ACTIVE='; systemctl is-active codex-mission-001-revoke.service 2>/dev/null || true
+
+      - name: Verify essential host services read-only
+        run: |
+          for unit in ssh ufw fail2ban xrdp xrdp-sesman docker containerd; do
+            state=$(systemctl is-active "${unit}" 2>/dev/null || true)
+            printf 'ESSENTIAL_SERVICE unit=%s state=%s\n' "${unit}" "${state}"
+          done
+
+      - name: Attempt only the allowlisted Mission 001 status operation
+        run: |
+          runner=/usr/local/sbin/codex-mission-001-runner
+          if [[ ! -x "${runner}" ]]; then
+            echo 'MISSION_RUNNER_EXACT_STATUS=UNAVAILABLE reason=runner_missing_or_not_executable'
+            exit 0
+          fi
+          set +e
+          output=$(sudo -n "${runner}" status 2>&1)
+          rc=$?
+          set -e
+          printf '%s\n' "${output}"
+          if [[ ${rc} -eq 0 ]]; then
+            echo 'MISSION_RUNNER_EXACT_STATUS=ACTIVE'
+          else
+            printf 'MISSION_RUNNER_EXACT_STATUS=UNAVAILABLE rc=%s\n' "${rc}"
+          fi
