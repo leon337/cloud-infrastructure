@@ -16,36 +16,34 @@ jobs:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 5
     steps:
-      - name: Verify rollback boundary
+      - name: Check out fix branch as unprivileged test subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: fix/f1-2c-systemd-runtime-lock
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify unprivileged boundary
         run: |
-          printf 'NODE_HOST=%s\n' "$(hostname)"
           if sudo -n true 2>/dev/null; then
-            echo 'ROLLBACK_PROBE_REFUSED unexpected_generic_passwordless_sudo' >&2
+            echo 'TDD_REFUSED unexpected_generic_passwordless_sudo' >&2
             exit 1
           fi
-          test "$(sha256sum /usr/local/sbin/codex-mission-001-runner | awk '{print $1}')" = \
-            "83772473ae19f7ddc7e06864ee408bc48b19cff4025cc1e7ec6b609f58fedc96"
-          echo 'ROLLBACK_BOUNDARY_PASS'
+          echo 'TDD_BOUNDARY_PASS'
 
-      - name: Attempt exact allowlisted rollback once
+      - name: Prove runtime-lock regression test is RED
         run: |
           set +e
-          output=$(sudo -n /usr/local/sbin/codex-mission-001-runner rollback 2>&1)
+          python3 -m unittest -v \
+            tests.test_node_network_services.NodeNetworkServicesTests.test_systemd_strict_protection_has_private_writable_runtime_lock \
+            >"${RUNNER_TEMP}/runtime-lock-red.log" 2>&1
           rc=$?
           set -e
-          printf '%s\n' "${output}"
-          printf 'ROLLBACK_RC=%s\n' "${rc}"
-
-      - name: Capture post-attempt state
-        run: |
-          set +e
-          sudo -n /usr/local/sbin/codex-mission-001-runner status
-          echo "RUNNER_STATUS_RC=$?"
-          sudo -n /usr/local/sbin/codex-mission-001-runner check
-          echo "RUNNER_CHECK_RC=$?"
-          set -e
-          systemctl status cloud-platform-network-services.service --no-pager --full || true
-          for unit in ssh ufw fail2ban xrdp xrdp-sesman docker containerd cloud-platform-network-enforcement.service; do
-            state=$(systemctl is-active "${unit}" 2>/dev/null || true)
-            printf 'ESSENTIAL_SERVICE unit=%s state=%s\n' "${unit}" "${state}"
-          done
+          cat "${RUNNER_TEMP}/runtime-lock-red.log"
+          if [[ ${rc} -eq 0 ]]; then
+            echo 'TDD_RED_REFUSED test_unexpectedly_passed' >&2
+            exit 1
+          fi
+          grep -q 'RuntimeDirectory=cloud-platform-network-services' \
+            "${RUNNER_TEMP}/runtime-lock-red.log"
+          echo 'TDD_RED_CONFIRMED'
