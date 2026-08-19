@@ -21,6 +21,17 @@ readonly BUSYBOX=busybox@sha256:7a3ebe5bfd1a4a19797d20b0c0bb39d44393e9a03fd852c0
 
 fail() { printf 'NODE_NETWORK_SERVICES_VM_FAIL reason=%s\n' "$1" >&2; exit 1; }
 
+diagnose_network_services_failure() {
+  printf '%s\n' '=== NETWORK_SERVICES_SYSTEMD_STATUS ===' >&2
+  sudo systemctl status cloud-platform-network-services.service --no-pager --full >&2 || true
+  printf '%s\n' '=== NETWORK_SERVICES_JOURNAL ===' >&2
+  sudo journalctl -u cloud-platform-network-services.service -n 160 --no-pager >&2 || true
+  printf '%s\n' '=== DOCKER_COMPOSE_VERSION ===' >&2
+  sudo docker compose version >&2 || true
+  printf '%s\n' '=== DOCKER_VERSION ===' >&2
+  sudo docker version >&2 || true
+}
+
 verify_github_hosted_identity() {
   [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]] || return 1
   [[ ${ImageOS:-} == ubuntu24 && $(id -un) == runner ]] || return 1
@@ -104,11 +115,13 @@ sudo chmod 0600 "$SERVICE_MARKER"
 sudo install -o root -g root -m 0644 "$SERVICE_UNIT_SOURCE" "$SERVICE_UNIT"
 sudo systemctl daemon-reload
 if ! sudo systemctl enable --now cloud-platform-network-services.service; then
-  sudo systemctl status cloud-platform-network-services.service --no-pager --full >&2 || true
-  sudo journalctl -u cloud-platform-network-services.service -n 120 --no-pager >&2 || true
+  diagnose_network_services_failure
   fail systemd_service_start_failed
 fi
-sudo systemctl is-active --quiet cloud-platform-network-services.service || fail systemd_service_inactive
+if ! sudo systemctl is-active --quiet cloud-platform-network-services.service; then
+  diagnose_network_services_failure
+  fail systemd_service_inactive
+fi
 sudo journalctl -u cloud-platform-network-services.service -n 120 --no-pager | \
   grep -q 'NETWORK_SERVICES_APPLY=PASS changed=1' || fail systemd_first_apply_evidence_missing
 
