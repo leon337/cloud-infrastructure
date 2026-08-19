@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
+import json
 import pathlib
 import re
 import subprocess
+import sys
 from typing import Any
 
 import yaml
@@ -11,6 +14,7 @@ import yaml
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _MISSING = object()
+POLICY_NAME = "F1_2C_NON_EXECUTABLE_EVIDENCE_INHERITANCE_V1"
 
 ALLOWED_DOC_EXACT = {
     "CHECKPOINT.md",
@@ -91,6 +95,15 @@ PROTECTED_EXPECTED = {
     ("state/components.yaml", "production.promotion_gate"): "LEANDRO",
     ("state/components.yaml", "credential_rotation.status"): "DEFERRED_BY_HUMAN_DECISION",
 }
+
+
+class UsageError(ValueError):
+    pass
+
+
+class EvidenceArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        raise UsageError(message)
 
 
 def _git(repo: pathlib.Path, *args: str) -> subprocess.CompletedProcess[bytes]:
@@ -293,3 +306,81 @@ def classify_repository_delta(repo: pathlib.Path, anchor: str, candidate: str) -
         "state_changes": state_result["state_changes"],
         "static_evidence": None,
     }
+
+
+def build_evidence_record(
+    repo: pathlib.Path,
+    anchor: str,
+    candidate: str,
+    static_run_id: str,
+    static_conclusion: str,
+) -> dict[str, Any]:
+    delta = classify_repository_delta(repo, anchor, candidate)
+    protected_state = "REFUSED" if delta["reason"] == "REFUSED_PROTECTED_STATE_CHANGE" else "PASS"
+
+    record: dict[str, Any] = {
+        "schema_version": 1,
+        "policy": POLICY_NAME,
+        "decision": delta["decision"],
+        "reason": delta["reason"],
+        "anchor": anchor,
+        "candidate": candidate,
+        "changed_paths": delta["changed_paths"],
+        "state_changes": delta["state_changes"],
+        "protected_state": protected_state,
+        "static_evidence": None,
+    }
+
+    if delta["decision"] != "PASS":
+        return record
+
+    if not static_run_id.strip() or static_conclusion != "PASS":
+        record["decision"] = "REFUSED"
+        record["reason"] = "REFUSED_STATIC_EVIDENCE_MISSING"
+        return record
+
+    record["reason"] = "NON_EXECUTABLE_DELTA_GUARDS_UNCHANGED_STATIC_PASS"
+    record["static_evidence"] = {
+        "run_id": static_run_id,
+        "conclusion": "PASS",
+    }
+    return record
+
+
+def _parser() -> EvidenceArgumentParser:
+    parser = EvidenceArgumentParser(description="Classify F1.2c evidence inheritance")
+    parser.add_argument("--anchor", required=True)
+    parser.add_argument("--candidate", required=True)
+    parser.add_argument("--static-run-id", required=True)
+    parser.add_argument("--static-conclusion", required=True)
+    parser.add_argument("--output", type=pathlib.Path)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    try:
+        args = _parser().parse_args(argv)
+    except UsageError as exc:
+        print(f"USAGE_ERROR: {exc}", file=sys.stderr)
+        return 64
+
+    try:
+        record = build_evidence_record(
+            pathlib.Path.cwd(),
+            args.anchor,
+            args.candidate,
+            args.static_run_id,
+            args.static_conclusion,
+        )
+        rendered = json.dumps(record, sort_keys=True, indent=2) + "\n"
+        if args.output is not None:
+            args.output.write_text(rendered, encoding="utf-8")
+        sys.stdout.write(rendered)
+        return 0 if record["decision"] == "PASS" else 2
+    except (OSError, ValueError) as exc:
+        print(f"EVIDENCE_CLASSIFIER_ERROR: {exc}", file=sys.stderr)
+        return 64
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
