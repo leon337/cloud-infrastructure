@@ -5,7 +5,7 @@ readonly VERSION=SLICE-002C-NODE-01-SERVICES-V1
 readonly ROOT=/etc/cloud-platform/network-services
 readonly COMPOSE=$ROOT/compose.yaml
 readonly MARKER=/etc/cloud-platform-network-services.managed
-readonly LOCK=/run/lock/cloud-platform-network-services.lock
+readonly LOCK=/run/cloud-platform-network-services/lock
 readonly SCOPE_LABEL=cloud.platform.managed=mission-001-f1-2c
 readonly EGRESS_NETWORK=cloud-platform-egress
 readonly EGRESS_INTERFACE=cpeg0001
