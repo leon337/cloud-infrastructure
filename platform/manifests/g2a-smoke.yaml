@@ -1,0 +1,34 @@
+apiVersion: platform.leandro.dev/v1alpha1
+kind: Project
+metadata:
+  tenant: leon337
+  name: g2a-smoke
+  environment: dev
+spec:
+  criticality: rebuildable
+  source:
+    repository: https://github.com/leon337/cloud-infrastructure.git
+    revision: mcf/mission-001-control-bridge-g1
+  capabilities:
+    - test
+  persistence:
+    git: true
+    devDatabase: false
+    objectStorage: false
+    volumes: []
+  sandbox:
+    disposable: true
+    limits:
+      cpuMillicores: 500
+      memoryMiB: 512
+      pids: 128
+    network:
+      ingress: none
+      egressProfile: none
+      sharedServices: []
+  preview:
+    enabled: false
+  secretRefs: []
+  production:
+    promotionAuthorized: false
+    humanGate: LEANDRO
