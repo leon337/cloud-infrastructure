@@ -23,7 +23,7 @@
 
 Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 
-> Nova IA/agente? Comece por [`CONTEXT.md`](CONTEXT.md).
+> Nova IA/agente? Comece por [`CONTEXT.md`](CONTEXT.md). Para a capability transversal MCF VPS Control Plane, leia também [`docs/52-control-bridge-g2a-implementation-checkpoint.md`](docs/52-control-bridge-g2a-implementation-checkpoint.md) e [`state/control-bridge-g2a.yaml`](state/control-bridge-g2a.yaml).
 
 ## Finalidade
 
@@ -31,7 +31,23 @@ Configurar, proteger, documentar e tornar reproduzível a VPS enquanto LEANDRO a
 
 ## Continuidade
 
-O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada; `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; o GitHub é a memória canônica após validação e publicação.
+O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada da trilha principal da plataforma; `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; o GitHub é a memória canônica após validação e publicação.
+
+A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever o estado da trilha F1.2c. O estado atual dessa capability está em `docs/52-control-bridge-g2a-implementation-checkpoint.md` e `state/control-bridge-g2a.yaml`. GitHub live, código, testes e CI do SHA aplicável prevalecem sobre status históricos em documentos anteriores.
+
+## Control Bridge — estado transversal reconciliado
+
+- **G1:** handshake real `ChatGPT -> GitHub -> Actions -> self-hosted runner -> VPS -> GitHub -> ChatGPT` comprovado.
+- **G2-A:** Tasks 1–9 concluídas; implementação read-only multi-project validada no HEAD material `e36065268f609cbbfc64c6644d4c943f169756c9`.
+- **CI desse HEAD:** `foundation-ci #145` (`32198917421`) `SUCCESS`; `docker-boundary-ci #140` (`32198917456`) `SUCCESS`.
+- **Task 10:** `WAITING_HUMAN_GATE` — primeiro roundtrip G2-A real no NODE-01 ainda não autorizado.
+- **Live dispatch:** `control/dispatch/g2a.json` deve permanecer ausente até autorização explícita de LEANDRO.
+- **Mutação real de workspace pelo G2-A:** não executada.
+- **Produção / sudo automático / root direto / Docker socket:** não autorizados pelo G2-A.
+- **Checkpoint canônico do G2-A:** `docs/52-control-bridge-g2a-implementation-checkpoint.md`.
+- **Estado machine-readable do G2-A:** `state/control-bridge-g2a.yaml`.
+
+Os cabeçalhos pré-implementação em `docs/51-control-bridge-g2a-design.md` e no plano TDD permanecem como registro histórico do gate anterior; para estado executivo atual do G2-A, o checkpoint 52 + estado live prevalecem.
 
 ## Estado operacional — baseline reconciliada em 16/08/2026
 
@@ -64,5 +80,7 @@ A camada de acompanhamento está documentada em
 
 F1.1 e F1.2b estão concluídos no NODE-01. A base F1.2c também está ativa no host,
 e a matriz de redes/DNS/proxy/grants passou em VM descartável. O estado e o
-próximo passo exatos são projetados automaticamente na seção `STATUS ATUAL`.
+próximo passo exatos da trilha principal são projetados automaticamente na seção `STATUS ATUAL`.
 Produção não está autorizada e a rotação permanece adiada por decisão humana.
+
+A trilha transversal Control Bridge não altera o próximo passo F1.2c. Seu estado é recuperado separadamente pelo checkpoint 52 e por `state/control-bridge-g2a.yaml`.
