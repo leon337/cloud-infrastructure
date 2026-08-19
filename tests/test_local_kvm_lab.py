@@ -71,6 +71,22 @@ class LocalKvmLabTests(unittest.TestCase):
         self.assertNotIn("github_pat_", user_data)
         self.assertNotIn("BEGIN OPENSSH PRIVATE KEY", user_data)
 
+    def test_qemu_uses_kvm_overlay_and_loopback_only_user_networking(self):
+        text = LAUNCHER.read_text()
+        self.assertIn("-enable-kvm", text)
+        self.assertIn("-cpu host", text)
+        self.assertIn("-smp 2", text)
+        self.assertIn("-m 4096", text)
+        self.assertIn("overlay.qcow2", text)
+        self.assertIn("hostfwd=tcp:127.0.0.1:", text)
+        self.assertIn("-nic", text)
+        self.assertIn("user,model=virtio-net-pci", text)
+        self.assertIn("guest_readiness_timeout", text)
+        self.assertNotIn("pkill qemu", text)
+        for forbidden in ("tap,", "-netdev tap", "brctl", "macvtap"):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, text)
+
 
 if __name__ == "__main__":
     unittest.main()
