@@ -14,7 +14,7 @@ concurrency:
 jobs:
   probe:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Verify NODE-01 identity and unprivileged boundary
         run: |
@@ -55,61 +55,72 @@ jobs:
           systemctl show codex-mission-001-revoke.timer \
             -p ActiveState -p UnitFileState -p NextElapseUSecRealtime -p LastTriggerUSec 2>/dev/null || true
 
-      - name: Fingerprint expired installation read-only
+      - name: Verify exact current runner fingerprint
         run: |
-          for path in \
-            /usr/local/sbin/codex-mission-001-runner \
-            /usr/local/libexec/codex-mission-001-revoke \
-            /etc/systemd/system/codex-mission-001-revoke.service \
-            /etc/systemd/system/codex-mission-001-revoke.timer; do
-            if [[ -f "${path}" && -r "${path}" ]]; then
-              sha256sum "${path}"
-            fi
-          done
-          export GIT_OPTIONAL_LOCKS=0
-          if [[ -d /opt/codex-mission-001/repository/.git ]]; then
-            printf 'STALE_REPO_HEAD='; git -C /opt/codex-mission-001/repository rev-parse HEAD 2>/dev/null || true
-            printf 'STALE_REPO_BRANCH='; git -C /opt/codex-mission-001/repository branch --show-current 2>/dev/null || true
-            if git -C /opt/codex-mission-001/repository diff --quiet 2>/dev/null && \
-               git -C /opt/codex-mission-001/repository diff --cached --quiet 2>/dev/null; then
-              echo 'STALE_REPO_CLEAN=YES'
-            else
-              echo 'STALE_REPO_CLEAN=NO_OR_UNREADABLE'
-            fi
-          fi
-          for path in \
-            /tmp/codex-mission-001.bundle \
-            /tmp/codex-mission-001.bundle.sig \
-            /tmp/bootstrap_mission_001_autonomous_runner.sh; do
-            if [[ -f "${path}" ]]; then
-              stat -c 'PENDING_SOURCE path=%n owner=%U group=%G mode=%a size=%s mtime=%Y' "${path}"
-              if [[ -r "${path}" ]]; then sha256sum "${path}"; fi
-            else
-              echo "PENDING_SOURCE_ABSENT path=${path}"
-            fi
-          done
+          test "$(sha256sum /usr/local/sbin/codex-mission-001-runner | awk '{print $1}')" = \
+            "83772473ae19f7ddc7e06864ee408bc48b19cff4025cc1e7ec6b609f58fedc96"
+          echo 'MISSION_RUNNER_FINGERPRINT_PASS'
 
-      - name: Verify essential host services read-only
+      - name: Verify essential host and route gates read-only
         run: |
-          for unit in ssh ufw fail2ban xrdp xrdp-sesman docker containerd; do
+          for unit in ssh ufw fail2ban xrdp xrdp-sesman docker containerd cloud-platform-network-enforcement.service; do
             state=$(systemctl is-active "${unit}" 2>/dev/null || true)
             printf 'ESSENTIAL_SERVICE unit=%s state=%s\n' "${unit}" "${state}"
+            [[ "${state}" == active ]]
           done
+          ! systemctl is-active --quiet snap.lxd.daemon.service
+          ! systemctl is-active --quiet snap.lxd.daemon.unix.socket
+          test -f /etc/cloud-platform-network-enforcement.managed
+          failed=$(systemctl --failed --no-legend --plain | sed '/^[[:space:]]*$/d')
+          if [[ -n "${failed}" ]]; then
+            printf 'PREAPPLY_REFUSED failed_units=%s\n' "${failed}" >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import ipaddress
+          import subprocess
 
-      - name: Attempt only the allowlisted Mission 001 status operation
+          desired = [
+              ipaddress.ip_network("10.240.0.0/16"),
+              ipaddress.ip_network("10.240.254.0/24"),
+          ]
+          text = subprocess.check_output(
+              ["ip", "-4", "route", "show", "table", "all"], text=True
+          )
+          collisions = []
+          for line in text.splitlines():
+              network = None
+              for token in line.split():
+                  try:
+                      network = ipaddress.ip_network(token, strict=False)
+                  except ValueError:
+                      continue
+                  if network.version == 4:
+                      break
+              if network is None:
+                  continue
+              if any(network.overlaps(target) for target in desired):
+                  collisions.append(line)
+          if collisions:
+              raise SystemExit("PREAPPLY_REFUSED route_collision=" + " | ".join(collisions))
+          print("PREAPPLY_ROUTE_COLLISION_PASS")
+          PY
+          echo 'PREAPPLY_HOST_GATES_PASS'
+
+      - name: Run exact allowlisted Mission 001 status
         run: |
-          runner=/usr/local/sbin/codex-mission-001-runner
-          if [[ ! -x "${runner}" ]]; then
-            echo 'MISSION_RUNNER_EXACT_STATUS=UNAVAILABLE reason=runner_missing_or_not_executable'
-            exit 0
-          fi
-          set +e
-          output=$(sudo -n "${runner}" status 2>&1)
-          rc=$?
-          set -e
+          output=$(sudo -n /usr/local/sbin/codex-mission-001-runner status)
           printf '%s\n' "${output}"
-          if [[ ${rc} -eq 0 ]]; then
-            echo 'MISSION_RUNNER_EXACT_STATUS=ACTIVE'
-          else
-            printf 'MISSION_RUNNER_EXACT_STATUS=UNAVAILABLE rc=%s\n' "${rc}"
-          fi
+          grep -q '^MISSION_RUNNER_STATUS=ACTIVE$' <<<"${output}"
+          grep -q '^GIT_SHA=c9f909945b544d22dbabc619252456f7190f7ae9$' <<<"${output}"
+          echo 'MISSION_RUNNER_EXACT_STATUS=ACTIVE'
+
+      - name: Run exact allowlisted Mission 001 check
+        run: |
+          sudo -n /usr/local/sbin/codex-mission-001-runner check
+          echo 'MISSION_RUNNER_EXACT_CHECK=PASS'
+
+      - name: Run exact allowlisted Mission 001 test
+        run: |
+          sudo -n /usr/local/sbin/codex-mission-001-runner test
+          echo 'MISSION_RUNNER_EXACT_TEST=PASS'
