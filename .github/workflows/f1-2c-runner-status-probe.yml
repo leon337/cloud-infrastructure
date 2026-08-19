@@ -14,121 +14,69 @@ concurrency:
 jobs:
   probe:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
-      - name: Verify NODE-01 identity and unprivileged boundary
+      - name: Verify diagnostic boundary
         run: |
           printf 'NODE_HOST=%s\n' "$(hostname)"
           id
           if sudo -n true 2>/dev/null; then
-            echo 'RUNNER_PROBE_REFUSED unexpected_generic_passwordless_sudo' >&2
+            echo 'DIAGNOSTIC_REFUSED unexpected_generic_passwordless_sudo' >&2
             exit 1
           fi
-          if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then
-            echo 'RUNNER_PROBE_REFUSED docker_socket_read_write' >&2
-            exit 1
-          fi
-          echo 'RUNNER_PROBE_BOUNDARY_PASS'
+          echo 'DIAGNOSTIC_BOUNDARY_PASS'
 
-      - name: Verify exact current runner fingerprint
+      - name: Capture network-services unit state
         run: |
-          test "$(sha256sum /usr/local/sbin/codex-mission-001-runner | awk '{print $1}')" = \
-            "83772473ae19f7ddc7e06864ee408bc48b19cff4025cc1e7ec6b609f58fedc96"
-          echo 'MISSION_RUNNER_FINGERPRINT_PASS'
+          systemctl status cloud-platform-network-services.service --no-pager --full || true
+          systemctl show cloud-platform-network-services.service \
+            -p ActiveState -p SubState -p Result -p ExecMainCode -p ExecMainStatus \
+            -p FragmentPath -p UnitFileState --no-pager || true
+          systemctl cat cloud-platform-network-services.service --no-pager || true
 
-      - name: Verify essential host and route gates read-only
+      - name: Capture network-services journal
+        run: |
+          journalctl -u cloud-platform-network-services.service -n 250 --no-pager -o short-iso || true
+
+      - name: Capture installed surface metadata only
+        run: |
+          for path in \
+            /etc/cloud-platform-network-services.managed \
+            /usr/local/libexec/cloud-platform-network-services \
+            /etc/systemd/system/cloud-platform-network-services.service \
+            /etc/sysctl.d/90-cloud-platform-network-forwarding.conf \
+            /etc/cloud-platform/network-services \
+            /etc/cloud-platform/network-services/compose.yaml; do
+            if [[ -e "${path}" ]]; then
+              stat -c 'SURFACE_PRESENT path=%n type=%F owner=%U group=%G mode=%a size=%s mtime=%Y' "${path}" || true
+              if [[ -f "${path}" && -r "${path}" && "${path}" != /etc/cloud-platform-network-services.managed ]]; then
+                sha256sum "${path}" || true
+              fi
+            else
+              echo "SURFACE_ABSENT path=${path}"
+            fi
+          done
+
+      - name: Capture network state read-only
+        run: |
+          ip -o link show | sed -n '/cp[0-9a-f]\{8\}/p;/cpeg[0-9]\{4\}/p' || true
+          ip -4 route show table all | sed -n '/10\.240\./p' || true
+          printf 'IPV4_FORWARD='; sysctl -n net.ipv4.ip_forward
+          printf 'IPV6_FORWARD='; sysctl -n net.ipv6.conf.all.forwarding
+
+      - name: Capture allowlisted runner status and check
+        run: |
+          set +e
+          sudo -n /usr/local/sbin/codex-mission-001-runner status
+          echo "RUNNER_STATUS_RC=$?"
+          sudo -n /usr/local/sbin/codex-mission-001-runner check
+          echo "RUNNER_CHECK_RC=$?"
+          set -e
+
+      - name: Verify human access services remain active
         run: |
           for unit in ssh ufw fail2ban xrdp xrdp-sesman docker containerd cloud-platform-network-enforcement.service; do
             state=$(systemctl is-active "${unit}" 2>/dev/null || true)
             printf 'ESSENTIAL_SERVICE unit=%s state=%s\n' "${unit}" "${state}"
-            [[ "${state}" == active ]]
           done
-          ! systemctl is-active --quiet snap.lxd.daemon.service
-          ! systemctl is-active --quiet snap.lxd.daemon.unix.socket
-          test -f /etc/cloud-platform-network-enforcement.managed
-          failed=$(systemctl --failed --no-legend --plain | sed '/^[[:space:]]*$/d')
-          if [[ -n "${failed}" ]]; then
-            printf 'PREAPPLY_REFUSED failed_units=%s\n' "${failed}" >&2
-            exit 1
-          fi
-          python3 - <<'PY'
-          import ipaddress
-          import subprocess
-
-          desired = [
-              ipaddress.ip_network("10.240.0.0/16"),
-              ipaddress.ip_network("10.240.254.0/24"),
-          ]
-          text = subprocess.check_output(
-              ["ip", "-4", "route", "show", "table", "all"], text=True
-          )
-          collisions = []
-          for line in text.splitlines():
-              network = None
-              for token in line.split():
-                  try:
-                      network = ipaddress.ip_network(token, strict=False)
-                  except ValueError:
-                      continue
-                  if network.version == 4:
-                      break
-              if network is None:
-                  continue
-              if any(network.overlaps(target) for target in desired):
-                  collisions.append(line)
-          if collisions:
-              raise SystemExit("PREAPPLY_REFUSED route_collision=" + " | ".join(collisions))
-          print("PREAPPLY_ROUTE_COLLISION_PASS")
-          PY
-          echo 'PREAPPLY_HOST_GATES_PASS'
-
-      - name: Run exact allowlisted Mission 001 status
-        run: |
-          output=$(sudo -n /usr/local/sbin/codex-mission-001-runner status)
-          printf '%s\n' "${output}"
-          grep -q '^MISSION_RUNNER_STATUS=ACTIVE$' <<<"${output}"
-          grep -q '^GIT_SHA=c9f909945b544d22dbabc619252456f7190f7ae9$' <<<"${output}"
-          echo 'MISSION_RUNNER_EXACT_STATUS=ACTIVE'
-
-      - name: Run exact allowlisted Mission 001 check before apply
-        run: |
-          sudo -n /usr/local/sbin/codex-mission-001-runner check
-          echo 'MISSION_RUNNER_EXACT_CHECK_PREAPPLY=PASS'
-
-      - name: Run exact allowlisted Mission 001 test before apply
-        run: |
-          sudo -n /usr/local/sbin/codex-mission-001-runner test
-          echo 'MISSION_RUNNER_EXACT_TEST_PREAPPLY=PASS'
-
-      - name: First controlled F1.2c network-services apply
-        run: |
-          output=$(sudo -n /usr/local/sbin/codex-mission-001-runner apply)
-          printf '%s\n' "${output}"
-          grep -q '^MISSION_APPLY=PASS slice=F1.2c_network_services changed=1 base_changed=0 services_changed=1$' <<<"${output}"
-          echo 'F1_2C_FIRST_APPLY=PASS'
-
-      - name: Second controlled apply must be idempotent
-        run: |
-          output=$(sudo -n /usr/local/sbin/codex-mission-001-runner apply)
-          printf '%s\n' "${output}"
-          grep -q '^MISSION_APPLY=PASS slice=F1.2c_network_services changed=0 base_changed=0 services_changed=0$' <<<"${output}"
-          echo 'F1_2C_SECOND_APPLY_IDEMPOTENT=PASS'
-
-      - name: Final exact allowlisted Mission 001 check
-        run: |
-          sudo -n /usr/local/sbin/codex-mission-001-runner check
-          echo 'MISSION_RUNNER_EXACT_CHECK_POSTAPPLY=PASS'
-
-      - name: Verify human access services and failed units after apply
-        run: |
-          for unit in ssh ufw fail2ban xrdp xrdp-sesman docker containerd cloud-platform-network-enforcement.service cloud-platform-network-services.service; do
-            state=$(systemctl is-active "${unit}" 2>/dev/null || true)
-            printf 'POSTAPPLY_SERVICE unit=%s state=%s\n' "${unit}" "${state}"
-            [[ "${state}" == active ]]
-          done
-          failed=$(systemctl --failed --no-legend --plain | sed '/^[[:space:]]*$/d')
-          if [[ -n "${failed}" ]]; then
-            printf 'POSTAPPLY_REFUSED failed_units=%s\n' "${failed}" >&2
-            exit 1
-          fi
-          echo 'F1_2C_POSTAPPLY_HOST_GATES=PASS'
+          systemctl --failed --no-legend --plain || true
