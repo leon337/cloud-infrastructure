@@ -34,7 +34,7 @@ esac
 
 mem_kib=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
 [[ $mem_kib =~ ^[0-9]+$ ]] || refuse host_memory_probe_failed
-(( mem_kib >= 5 * 1024 * 1024 )) || refuse insufficient_host_memory
+(( mem_kib >= 4 * 1024 * 1024 )) || refuse insufficient_host_memory
 free_kib=$(df -Pk "${TMPDIR:-/tmp}" | awk 'NR==2 {print $4}')
 [[ $free_kib =~ ^[0-9]+$ ]] || refuse host_disk_probe_failed
 (( free_kib >= 30 * 1024 * 1024 )) || refuse insufficient_host_disk
@@ -156,7 +156,7 @@ PY
 readonly SSH_PORT
 
 qemu-system-x86_64 \
-  -enable-kvm -cpu host -smp 2 -m 4096 \
+  -enable-kvm -cpu host -smp 2 -m 3072 \
   -drive "file=$RUN_ROOT/overlay.qcow2,if=virtio,format=qcow2" \
   -drive "file=$RUN_ROOT/seed.img,if=virtio,format=raw,readonly=on" \
   -nic "user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22" \
