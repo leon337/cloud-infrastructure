@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly CONFIRMATION=GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
+readonly GITHUB_CONFIRMATION=GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY
+readonly LOCAL_KVM_CONFIRMATION=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 readonly ROOT
 readonly BASE_SOURCE=$ROOT/platform/network/cloud-platform-network-enforcement
@@ -20,14 +21,32 @@ readonly BUSYBOX=busybox@sha256:7a3ebe5bfd1a4a19797d20b0c0bb39d44393e9a03fd852c0
 
 fail() { printf 'NODE_NETWORK_SERVICES_VM_FAIL reason=%s\n' "$1" >&2; exit 1; }
 
+verify_github_hosted_identity() {
+  [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]] || return 1
+  [[ ${ImageOS:-} == ubuntu24 && $(id -un) == runner ]] || return 1
+  systemd-detect-virt --quiet --vm || return 1
+}
+
+verify_local_kvm_identity() {
+  [[ $(id -un) == mcf-lab ]] || return 1
+  [[ $(hostname --short) == mcf-f1-2c-kvm-* ]] || return 1
+  [[ -f /etc/mcf-f1-2c-kvm-lab && ! -L /etc/mcf-f1-2c-kvm-lab ]] || return 1
+  grep -Fxq MCF_F1_2C_KVM_LAB_V1 /etc/mcf-f1-2c-kvm-lab || return 1
+  grep -Fxq 'VERSION_ID="24.04"' /etc/os-release || return 1
+  case "$(systemd-detect-virt 2>/dev/null || true)" in kvm | qemu) ;; *) return 1 ;; esac
+}
+
 [[ $# -eq 0 ]] || fail unexpected_arguments
-[[ ${DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM:-} == "$CONFIRMATION" ]] ||
-  fail missing_exact_confirmation
-[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]] ||
-  fail not_github_hosted
-[[ ${ImageOS:-} == ubuntu24 && $(id -un) == runner ]] || fail unexpected_runner
+case ${DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM:-} in
+  "$GITHUB_CONFIRMATION")
+    verify_github_hosted_identity || fail invalid_github_hosted_identity
+    ;;
+  "$LOCAL_KVM_CONFIRMATION")
+    verify_local_kvm_identity || fail invalid_local_kvm_identity
+    ;;
+  *) fail missing_exact_confirmation ;;
+esac
 case "$(hostname --short)" in node-01 | vmi3506102) fail real_dev_node ;; esac
-systemd-detect-virt --quiet --vm || fail not_disposable_vm
 sudo -n true >/dev/null 2>&1 || fail passwordless_sudo_unavailable
 [[ -x $BASE_SOURCE && -f $BASE_UNIT_SOURCE && -x $SERVICE_SOURCE && -f $SERVICE_UNIT_SOURCE && -f $SOURCE_CONFIG/compose.yaml ]] ||
   fail source_missing
