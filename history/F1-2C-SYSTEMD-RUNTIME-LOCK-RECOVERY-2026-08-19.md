@@ -18,7 +18,9 @@ Essential access and host services remained active: SSH, UFW, fail2ban, XRDP, Do
 
 Draft PR #9, branch `fix/f1-2c-systemd-runtime-lock`.
 
-Current fix commit: `5cb4ea6868562083cca1cfaee47c8c1e7c127cd5`.
+Executable fix and exact-systemd harness commit: `5cb4ea6868562083cca1cfaee47c8c1e7c127cd5`.
+
+The branch head additionally contains this documentation record only.
 
 The minimal fix keeps `ProtectSystem=strict`, moves the lock to `/run/cloud-platform-network-services/lock`, and adds the systemd-managed private runtime directory:
 
@@ -35,7 +37,7 @@ A second gap was then identified: the previous disposable NODE-01 network-servic
 
 A second regression test was added and RED was confirmed. The disposable harness was then extended so the future disposable run must install and exercise the exact systemd unit, verify its journal and active state, verify idempotence, restart Docker and observe systemd reconciliation, and perform bounded cleanup.
 
-Fresh unprivileged verification on exact commit `5cb4ea6868562083cca1cfaee47c8c1e7c127cd5`:
+Fresh unprivileged verification on exact executable commit `5cb4ea6868562083cca1cfaee47c8c1e7c127cd5`:
 
 - focused exact-systemd harness regression: PASS;
 - complete static suite: PASS;
