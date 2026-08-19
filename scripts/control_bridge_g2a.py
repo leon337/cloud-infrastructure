@@ -7,6 +7,10 @@ import pathlib
 import sys
 from typing import Any
 
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from control_plane.g2a.core import execute
 
 
@@ -48,7 +52,6 @@ def load_envelope(event_name: str, dispatch_file: pathlib.Path) -> dict[str, Any
 
 
 def main() -> int:
-    root = pathlib.Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser()
     parser.add_argument("--event-name", required=True)
     parser.add_argument("--event-path", type=pathlib.Path, required=True)
@@ -56,7 +59,7 @@ def main() -> int:
     parser.add_argument("--envelope-file", type=pathlib.Path, required=True)
     parser.add_argument("--result-file", type=pathlib.Path, required=True)
     parser.add_argument("--attachment-file", type=pathlib.Path, required=True)
-    parser.add_argument("--manifest-root", type=pathlib.Path, default=root / "platform" / "manifests")
+    parser.add_argument("--manifest-root", type=pathlib.Path, default=ROOT / "platform" / "manifests")
     parser.add_argument("--workspace-root", type=pathlib.Path, default=pathlib.Path("/home/ubuntu/mcf-workspaces"))
     args = parser.parse_args()
 
