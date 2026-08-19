@@ -131,6 +131,24 @@ class NodeNetworkServicesTests(unittest.TestCase):
         )
         self.assertIn("journalctl -u cloud-platform-network-services.service", harness)
 
+    def test_disposable_vm_harness_dumps_root_cause_when_systemd_service_is_inactive(self):
+        harness = VM_HARNESS.read_text()
+        self.assertIn("diagnose_network_services_failure()", harness)
+        self.assertIn(
+            "systemctl status cloud-platform-network-services.service --no-pager --full",
+            harness,
+        )
+        self.assertIn(
+            "journalctl -u cloud-platform-network-services.service -n 160 --no-pager",
+            harness,
+        )
+        self.assertIn("docker compose version", harness)
+        self.assertIn(
+            "if ! sudo systemctl is-active --quiet cloud-platform-network-services.service; then",
+            harness,
+        )
+        self.assertGreaterEqual(harness.count("diagnose_network_services_failure"), 3)
+
     def test_disposable_identities_share_one_full_privileged_lifecycle(self):
         harness = VM_HARNESS.read_text()
         github_gate = harness.index("GITHUB_HOSTED_UBUNTU_24_04_DISPOSABLE_VM_ONLY")
