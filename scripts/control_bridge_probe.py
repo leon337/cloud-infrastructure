@@ -11,6 +11,8 @@ from typing import Any
 
 PROTOCOL = "MCF_CONTROL_BRIDGE_PROBE_V1"
 RESULT_PROTOCOL = "MCF_CONTROL_BRIDGE_PROBE_RESULT_V1"
+WORKSPACE = "/home/ubuntu/mcf-workspaces/leon337/g2a-smoke/dev"
+FIXTURE = f"{WORKSPACE}/platform/manifests/g2a-smoke.yaml"
 
 
 def now() -> str:
@@ -102,37 +104,25 @@ def build_result(request_id: str, issue_number: int) -> dict[str, Any]:
         run_probe("docker", ["systemctl", "is-active", "docker"]),
         run_probe("containerd", ["systemctl", "is-active", "containerd"]),
         run_probe(
-            "python_ensurepip",
-            ["python3", "-c", "import ensurepip; print(ensurepip.version())"],
-        ),
-        run_probe(
-            "python_g2a_imports",
-            ["python3", "-c", "import jsonschema, yaml; print('g2a-imports-ok')"],
-        ),
-        run_probe("python_pip", ["python3", "-m", "pip", "--version"]),
-        run_probe(
-            "g2a_adapter_tests",
+            "fixture_fingerprint",
             [
                 "python3",
-                "-m",
-                "unittest",
-                "discover",
-                "-s",
-                "tests",
-                "-p",
-                "test_control_bridge_g2a_adapter.py",
+                "-c",
+                "import hashlib,pathlib; p=pathlib.Path(%r); s=p.stat(); print(hashlib.sha256(p.read_bytes()).hexdigest(), s.st_size, s.st_mtime_ns)" % FIXTURE,
             ],
-            timeout=60,
+        ),
+        run_probe("workspace_git_head", ["git", "-C", WORKSPACE, "rev-parse", "HEAD"]),
+        run_probe("workspace_git_status", ["git", "-C", WORKSPACE, "status", "--porcelain=v1"]),
+        run_probe("sudo_n_true", ["sudo", "-n", "true"]),
+        run_probe(
+            "docker_socket_access",
+            [
+                "python3",
+                "-c",
+                "import os; print('granted' if os.access('/var/run/docker.sock', os.R_OK | os.W_OK) else 'refused')",
+            ],
         ),
     ]
-    runner_path = pathlib.Path("/usr/local/sbin/codex-mission-001-runner")
-    if runner_path.is_file():
-        probes.append(
-            run_probe(
-                "mission001_runner_status",
-                ["sudo", "-n", str(runner_path), "status"],
-            )
-        )
     all_core_ok = all(item["exit_code"] == 0 for item in probes[:6])
     return {
         "protocol": RESULT_PROTOCOL,
