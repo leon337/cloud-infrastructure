@@ -1,0 +1,11 @@
+---
+- ansible.builtin.import_playbook: controller-preflight.yml
+
+- name: Install the protected G2-B executor without issuing authority
+  hosts: platform_nodes
+  gather_facts: true
+  become: true
+  serial: 1
+
+  roles:
+    - role: control_bridge_g2b
