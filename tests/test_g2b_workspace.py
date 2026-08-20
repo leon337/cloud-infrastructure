@@ -74,6 +74,31 @@ class G2BWorkspaceTests(unittest.TestCase):
         self.assertEqual(outcome.after.sha256, hashlib.sha256(b"new\n").hexdigest())
         self.assertEqual(stat.S_IMODE(self.target.stat().st_mode), 0o600)
 
+    def test_overwrite_publishes_generated_recovery_name_before_exchange(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o600)
+        before = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        published: list[str] = []
+
+        def publish(name: str) -> None:
+            self.assertEqual(self.target.read_bytes(), b"original\n")
+            self.assertEqual((self.workspace / name).read_bytes(), b"mutated\n")
+            published.append(name)
+
+        outcome = atomic_write(
+            self.workspace,
+            PILOT_PATH,
+            b"mutated\n",
+            precondition=Precondition(sha256=before.sha256),
+            expected_uid=self.expected_uid,
+            recovery_name_publisher=publish,
+        )
+
+        self.assertEqual(outcome.after.sha256, hashlib.sha256(b"mutated\n").hexdigest())
+        self.assertEqual(len(published), 1)
+        self.assertRegex(published[0], r"^\.g2b-write-[0-9a-f]{32}\.tmp$")
+        self.assertFalse((self.workspace / published[0]).exists())
+
     def test_absolute_traversal_tilde_and_nested_paths_are_refused(self) -> None:
         cases = (
             (str(self.target), "absolute_path_refused"),

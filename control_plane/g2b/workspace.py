@@ -10,7 +10,7 @@ import os
 from pathlib import Path, PurePosixPath
 import secrets
 import stat
-from typing import Iterator
+from typing import Callable, Iterator
 
 from scripts.check_repository_secrets import content_findings
 
@@ -44,6 +44,15 @@ class WriteOutcome:
     path: str
     before: TargetState
     after: TargetState
+
+
+@dataclass(frozen=True)
+class RecoveryCandidate:
+    """Exact safe state of one internally generated recovery object."""
+
+    name: str
+    operation: str
+    state: TargetState
 
 
 class MutationStateError(G2BError):
@@ -83,6 +92,63 @@ def inspect_target(
         return _inspect_target_fd(workspace_fd, name, expected_uid)
 
 
+def list_recovery_candidates(
+    workspace: str | Path,
+    *,
+    operation: str,
+    expected_uid: int,
+) -> tuple[RecoveryCandidate, ...]:
+    """List validated internal recovery objects for one fixed operation."""
+    prefix = _recovery_prefix(operation)
+    with _open_workspace(workspace, expected_uid) as workspace_fd:
+        try:
+            names = sorted(os.listdir(workspace_fd))
+        except OSError:
+            raise RefusedError("recovery_inspection_failed") from None
+        candidates: list[RecoveryCandidate] = []
+        for name in names:
+            if not name.startswith(prefix):
+                continue
+            _validate_internal_recovery_name(name, operation)
+            candidates.append(
+                RecoveryCandidate(
+                    name=name,
+                    operation=operation,
+                    state=_inspect_target_fd(workspace_fd, name, expected_uid),
+                )
+            )
+        return tuple(candidates)
+
+
+def cleanup_recovery_candidate(
+    workspace: str | Path,
+    candidate: RecoveryCandidate,
+    *,
+    expected_uid: int,
+) -> None:
+    """Delete only one exact, validated, internally named recovery object."""
+    if not isinstance(candidate, RecoveryCandidate):
+        raise RefusedError("invalid_recovery_candidate")
+    _validate_internal_recovery_name(candidate.name, candidate.operation)
+    if not isinstance(candidate.state, TargetState) or not candidate.state.exists:
+        raise RefusedError("invalid_recovery_candidate")
+    with _open_workspace(workspace, expected_uid) as workspace_fd:
+        before = _inspect_target_fd(workspace_fd, candidate.name, expected_uid)
+        if before != candidate.state:
+            raise ConflictError("recovery_candidate_changed")
+        current = _inspect_target_fd(workspace_fd, candidate.name, expected_uid)
+        if current != before:
+            raise ConflictError("recovery_candidate_changed")
+        try:
+            os.unlink(candidate.name, dir_fd=workspace_fd)
+            os.fsync(workspace_fd)
+        except OSError:
+            raise RefusedError("recovery_cleanup_failed") from None
+        after = _inspect_target_fd(workspace_fd, candidate.name, expected_uid)
+        if after.exists:
+            raise RefusedError("recovery_cleanup_failed")
+
+
 def atomic_write(
     workspace: str | Path,
     relative_path: str,
@@ -91,6 +157,7 @@ def atomic_write(
     precondition: Precondition,
     expected_uid: int,
     max_content_bytes: int = MAX_CONTENT_BYTES,
+    recovery_name_publisher: Callable[[str], None] | None = None,
 ) -> WriteOutcome:
     """Atomically replace one confined file after enforcing its precondition."""
     name = _validate_relative_path(relative_path)
@@ -110,6 +177,7 @@ def atomic_write(
             target_mode=target_mode,
             expected_current=before,
             expected_uid=expected_uid,
+            recovery_name_publisher=recovery_name_publisher,
         )
     return WriteOutcome(path=relative_path, before=before, after=after)
 
@@ -476,8 +544,11 @@ def _atomic_replace_fd(
     target_mode: int,
     expected_current: TargetState,
     expected_uid: int,
+    recovery_name_publisher: Callable[[str], None] | None = None,
 ) -> TargetState:
-    temporary = _internal_name("write")
+    if recovery_name_publisher is not None and not callable(recovery_name_publisher):
+        raise RefusedError("invalid_recovery_name_publisher")
+    temporary = _internal_name(operation)
     temporary_fd: int | None = None
     cleanup_temporary = True
     namespace_applied = False
@@ -496,6 +567,8 @@ def _atomic_replace_fd(
         os.fchmod(temporary_fd, target_mode)
         os.fsync(temporary_fd)
         prepared = _inspect_target_fd(workspace_fd, temporary, expected_uid)
+        if recovery_name_publisher is not None:
+            recovery_name_publisher(temporary)
 
         try:
             current = _inspect_target_fd(workspace_fd, name, expected_uid)
@@ -648,6 +721,21 @@ def _write_all(target_fd: int, content: bytes) -> None:
 
 def _internal_name(purpose: str) -> str:
     return f".g2b-{purpose}-{secrets.token_hex(16)}.tmp"
+
+
+def _recovery_prefix(operation: str) -> str:
+    if operation not in {"write", "restore", "delete"}:
+        raise RefusedError("invalid_recovery_operation")
+    return f".g2b-{operation}-"
+
+
+def _validate_internal_recovery_name(name: str, operation: str) -> None:
+    prefix = _recovery_prefix(operation)
+    if not isinstance(name, str) or not name.startswith(prefix) or not name.endswith(".tmp"):
+        raise RefusedError("invalid_recovery_name")
+    token = name[len(prefix) : -4]
+    if len(token) != 32 or any(character not in "0123456789abcdef" for character in token):
+        raise RefusedError("invalid_recovery_name")
 
 
 def _revert_exchange(

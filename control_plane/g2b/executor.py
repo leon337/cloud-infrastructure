@@ -17,11 +17,14 @@ from .protocol import MutationRequest, Precondition, RESULT_PROTOCOL, parse_requ
 from .state import RECEIPT_FIELDS, StateStore, canonical_request_digest
 from .workspace import (
     MutationStateError,
+    RecoveryCandidate,
     TargetState,
     atomic_delete,
     atomic_restore,
     atomic_write,
+    cleanup_recovery_candidate,
     inspect_target,
+    list_recovery_candidates,
 )
 
 
@@ -307,6 +310,11 @@ def _execute_write(
             )
         raise
 
+    def publish_recovery_name(name: str) -> None:
+        nonlocal recovery
+        recovery = dict(recovery, workspace_recovery_name=name)
+        store.update_recovery(recovery)
+
     try:
         outcome = atomic_write(
             workspace_root,
@@ -315,6 +323,7 @@ def _execute_write(
             precondition=request.precondition,
             expected_uid=expected_uid,
             max_content_bytes=context.grant.max_content_bytes,
+            recovery_name_publisher=publish_recovery_name,
         )
     except MutationStateError as error:
         observed = _exact_state(error.observed_after)
@@ -341,7 +350,9 @@ def _execute_write(
             observation=observed,
             resolution=resolution,
             active=active,
-            workspace_recovery_name=error.recovery_name,
+            workspace_recovery_name=_merge_recovery_name(
+                recovery["workspace_recovery_name"], error.recovery_name
+            ),
         )
         store.update_recovery(updated)
         receipt = context.receipt(
@@ -399,7 +410,7 @@ def _execute_rollback(
         raise ConflictError("original_mutation_not_found")
     if recovery["grant_id"] != context.grant.grant_id or recovery["active"] is not True:
         raise ConflictError("mutation_not_active")
-    if recovery["after"] is None:
+    if recovery["resolution"] != "APPLIED" or recovery["after"] is None:
         raise ConflictError("mutation_state_indeterminate")
 
     expected_after = _target_state(recovery["after"])
@@ -435,9 +446,7 @@ def _execute_rollback(
             rollback_observation=_exact_state(error.observed_after),
             resolution=resolution,
             active=True,
-            workspace_recovery_name=(
-                error.recovery_name or recovery["workspace_recovery_name"]
-            ),
+            workspace_recovery_name=recovery["workspace_recovery_name"],
         )
         store.update_recovery(updated)
         receipt = context.receipt(
@@ -512,7 +521,9 @@ def _record_mutation_state_error(
             observation=_exact_state(error.observed_after),
             resolution=resolution,
             active=active,
-            workspace_recovery_name=error.recovery_name,
+            workspace_recovery_name=_merge_recovery_name(
+                recovery["workspace_recovery_name"], error.recovery_name
+            ),
         )
         store.update_recovery(updated)
     receipt = context.receipt(
@@ -631,42 +642,156 @@ def _reconcile_prepared_recoveries(
     now: Callable[[], datetime],
 ) -> None:
     for recovery in store.recoveries():
-        if recovery["resolution"] == "PREPARED":
-            try:
-                observed = inspect_target(
-                    workspace_root,
-                    recovery["path"],
-                    expected_uid=expected_uid,
-                )
-            except G2BError:
-                observed = None
-            if observed is not None and _exact_state(observed) == recovery["before"]:
-                if recovery["snapshot"]:
-                    store.delete_snapshot(recovery["request_id"])
-                recovery = dict(
-                    recovery,
-                    observation=_exact_state(observed),
-                    resolution="REVERTED",
-                    active=False,
-                )
-            elif _matches_expected_target(observed, recovery["expected_after"]):
-                recovery = dict(
-                    recovery,
-                    after=_exact_state(observed),
-                    observation=_exact_state(observed),
-                    resolution="APPLIED",
-                    active=True,
-                )
-            else:
-                recovery = dict(
-                    recovery,
-                    observation=_exact_state(observed),
-                    resolution="INDETERMINATE",
-                    active=True,
-                )
-            store.update_recovery(recovery)
+        recovery = _reconcile_workspace_recovery(
+            store,
+            recovery,
+            workspace_root=workspace_root,
+            expected_uid=expected_uid,
+        )
         if recovery["resolution"] in {"APPLIED", "REVERTED", "INDETERMINATE"}:
             _ensure_recovery_receipt(store, recovery, now=now)
+
+
+def _reconcile_workspace_recovery(
+    store: StateStore,
+    recovery: dict[str, Any],
+    *,
+    workspace_root: Path,
+    expected_uid: int,
+) -> dict[str, Any]:
+    if recovery["resolution"] not in {"PREPARED", "APPLIED", "INDETERMINATE"}:
+        return recovery
+    try:
+        observed = inspect_target(
+            workspace_root,
+            recovery["path"],
+            expected_uid=expected_uid,
+        )
+    except G2BError:
+        return _make_recovery_indeterminate(store, recovery, observed=None)
+    try:
+        candidates = list_recovery_candidates(
+            workspace_root,
+            operation="write",
+            expected_uid=expected_uid,
+        )
+    except G2BError:
+        return _make_recovery_indeterminate(store, recovery, observed=observed)
+    if len(candidates) > 1:
+        return _make_recovery_indeterminate(store, recovery, observed=observed)
+
+    candidate = candidates[0] if candidates else None
+    published_name = recovery["workspace_recovery_name"]
+    if published_name is not None:
+        if candidate is not None and candidate.name != published_name:
+            return _make_recovery_indeterminate(store, recovery, observed=observed)
+    elif candidate is not None:
+        recovery = dict(recovery, workspace_recovery_name=candidate.name)
+        store.update_recovery(recovery)
+
+    target_is_before = _exact_state(observed) == recovery["before"]
+    target_is_expected = _matches_expected_target(observed, recovery["expected_after"])
+    candidate_is_before = (
+        candidate is not None and _exact_state(candidate.state) == recovery["before"]
+    )
+    candidate_is_expected = (
+        candidate is not None
+        and _matches_expected_target(candidate.state, recovery["expected_after"])
+    )
+
+    if recovery["resolution"] == "PREPARED":
+        if target_is_before and (candidate is None or candidate_is_expected):
+            if candidate is not None and not _consume_recovery_candidate(
+                workspace_root, candidate, expected_uid=expected_uid
+            ):
+                return _make_recovery_indeterminate(store, recovery, observed=observed)
+            if recovery["snapshot"]:
+                store.delete_snapshot(recovery["request_id"])
+            updated = dict(
+                recovery,
+                observation=_exact_state(observed),
+                resolution="REVERTED",
+                active=False,
+            )
+            store.update_recovery(updated)
+            return updated
+        if target_is_expected and (
+            candidate is None
+            or (recovery["before"]["exists"] and candidate_is_before)
+        ):
+            if candidate is not None and not _consume_recovery_candidate(
+                workspace_root, candidate, expected_uid=expected_uid
+            ):
+                return _make_recovery_indeterminate(store, recovery, observed=observed)
+            updated = dict(
+                recovery,
+                after=_exact_state(observed),
+                observation=_exact_state(observed),
+                resolution="APPLIED",
+                active=True,
+            )
+            store.update_recovery(updated)
+            return updated
+        return _make_recovery_indeterminate(store, recovery, observed=observed)
+
+    committed_after = recovery["after"]
+    if (
+        recovery["resolution"] == "APPLIED"
+        and committed_after is not None
+        and _exact_state(observed) == committed_after
+        and (candidate is None or candidate_is_before)
+    ):
+        if candidate is not None and not _consume_recovery_candidate(
+            workspace_root, candidate, expected_uid=expected_uid
+        ):
+            return _make_recovery_indeterminate(store, recovery, observed=observed)
+        return recovery
+    if recovery["resolution"] == "APPLIED" and candidate is None:
+        return recovery
+    return _make_recovery_indeterminate(store, recovery, observed=observed)
+
+
+def _consume_recovery_candidate(
+    workspace_root: Path,
+    candidate: RecoveryCandidate,
+    *,
+    expected_uid: int,
+) -> bool:
+    try:
+        cleanup_recovery_candidate(
+            workspace_root,
+            candidate,
+            expected_uid=expected_uid,
+        )
+    except G2BError:
+        return False
+    return True
+
+
+def _make_recovery_indeterminate(
+    store: StateStore,
+    recovery: dict[str, Any],
+    *,
+    observed: TargetState | None,
+) -> dict[str, Any]:
+    if recovery["resolution"] == "INDETERMINATE":
+        return recovery
+    updated = dict(
+        recovery,
+        observation=_exact_state(observed),
+        resolution="INDETERMINATE",
+        active=True,
+    )
+    store.update_recovery(updated)
+    return updated
+
+
+def _merge_recovery_name(current: str | None, observed: str | None) -> str | None:
+    if current is None:
+        return observed
+    if observed not in {None, current}:
+        raise RefusedError("recovery_name_mismatch")
+    return current
 
 
 def _ensure_recovery_receipt(

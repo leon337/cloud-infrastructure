@@ -47,7 +47,7 @@ RECEIPT_FIELDS = frozenset(
     }
 )
 
-_STATE_DIRECTORIES = ("receipts", "snapshots", "recovery", "revocations")
+_STATE_DIRECTORIES = ("receipts", "snapshots", "recovery", "revocations", "audit_pending")
 _STATE_MODE = 0o700
 _FILE_MODE = 0o600
 _MAX_LOCK_SECONDS = 10.0
@@ -687,6 +687,7 @@ class StateStore:
                 os.close(fd)
 
     def _ensure_audit(self, event: dict[str, Any]) -> None:
+        _validate_audit_event(event)
         events = self._read_audit_events()
         if event in events:
             return
@@ -702,31 +703,151 @@ class StateStore:
             )
             if same_receipt or same_revocation:
                 raise RefusedError("audit_event_conflict")
+        self._save_pending_audit(event)
         self._append_audit(event)
+        self._delete_pending_audit(event)
 
     def _read_audit_events(self) -> list[dict[str, Any]]:
         with self._root_fd() as root_fd:
             raw = self._read_optional(root_fd, "audit.jsonl")
-        if raw is None or raw == b"":
-            return []
-        if not raw.endswith(b"\n"):
-            raise RefusedError("invalid_audit_log")
-        events: list[dict[str, Any]] = []
-        for line in raw.splitlines():
-            value = _decode_json_object(line, "invalid_audit_log")
-            if set(value) != {
-                "event",
-                "request_id",
-                "request_digest",
-                "grant_id",
-                "operation",
-                "status",
-                "error",
-                "at",
-            }:
+        raw = raw or b""
+        pending = self._pending_audit_events()
+        if not raw.endswith(b"\n") and raw:
+            if len(pending) != 1:
                 raise RefusedError("invalid_audit_log")
-            events.append(value)
+            event = pending[0]
+            self._validate_pending_audit_source(event)
+            boundary = raw.rfind(b"\n") + 1
+            complete = raw[:boundary]
+            tail = raw[boundary:]
+            serialized = _encode_json(event) + b"\n"
+            if not tail or not serialized.startswith(tail):
+                raise RefusedError("invalid_audit_log")
+            events = _decode_audit_events(complete)
+            self._truncate_audit(boundary)
+            raw = complete
+        else:
+            events = _decode_audit_events(raw)
+        if len(pending) > 1:
+            raise RefusedError("invalid_audit_pending")
+        if pending:
+            event = pending[0]
+            self._validate_pending_audit_source(event)
+            if event not in events:
+                for existing in events:
+                    if _same_audit_identity(existing, event):
+                        raise RefusedError("audit_event_conflict")
+                self._append_audit(event)
+                events.append(event)
+            self._delete_pending_audit(event)
         return events
+
+    def _save_pending_audit(self, event: dict[str, Any]) -> None:
+        serialized = _encode_json(event)
+        name = _audit_pending_name(event)
+        with self._child_fd("audit_pending") as pending_fd:
+            created = self._atomic_create(pending_fd, name, serialized)
+            if not created:
+                existing = self._read_optional(pending_fd, name)
+                if existing != serialized:
+                    raise RefusedError("audit_pending_conflict")
+
+    def _delete_pending_audit(self, event: dict[str, Any]) -> None:
+        name = _audit_pending_name(event)
+        with self._child_fd("audit_pending") as pending_fd:
+            existing = self._read_optional(pending_fd, name)
+            if existing is None:
+                return
+            if existing != _encode_json(event):
+                raise RefusedError("audit_pending_conflict")
+            try:
+                os.unlink(name, dir_fd=pending_fd)
+                os.fsync(pending_fd)
+            except OSError:
+                raise RefusedError("audit_pending_delete_failed") from None
+
+    def _pending_audit_events(self) -> list[dict[str, Any]]:
+        events: list[dict[str, Any]] = []
+        with self._child_fd("audit_pending") as pending_fd:
+            try:
+                names = sorted(os.listdir(pending_fd))
+            except OSError:
+                raise RefusedError("state_read_failed") from None
+            for name in names:
+                if not _hashed_state_filename(name):
+                    raise RefusedError("unsafe_state_file")
+                raw = self._read_optional(pending_fd, name)
+                if raw is None:
+                    raise RefusedError("unsafe_state_file")
+                event = _decode_json_object(raw, "invalid_audit_pending")
+                _validate_audit_event(event)
+                if name != _audit_pending_name(event):
+                    raise RefusedError("audit_pending_identity_mismatch")
+                events.append(event)
+        return events
+
+    def _validate_pending_audit_source(self, event: dict[str, Any]) -> None:
+        if event["request_id"] is not None:
+            name = _hashed_name(event["request_id"])
+            with self._child_fd("receipts") as receipts_fd:
+                raw = self._read_optional(receipts_fd, name)
+            if raw is None:
+                raise RefusedError("audit_pending_source_missing")
+            receipt = _decode_json_object(raw, "invalid_receipt")
+            _validate_receipt(receipt, serialized=raw)
+            if _receipt_audit_event(receipt) != event:
+                raise RefusedError("audit_pending_source_mismatch")
+            return
+        revocation = self._read_revocation(event["grant_id"])
+        if revocation is None:
+            raise RefusedError("audit_pending_source_missing")
+        expected = {
+            "event": "revoke",
+            "request_id": None,
+            "request_digest": None,
+            "grant_id": revocation["grant_id"],
+            "operation": "revoke",
+            "status": "REVOKED",
+            "error": None,
+            "at": revocation["revoked_at"],
+        }
+        if event != expected:
+            raise RefusedError("audit_pending_source_mismatch")
+
+    def _truncate_audit(self, size: int) -> None:
+        with self._root_fd() as root_fd:
+            try:
+                before = os.stat("audit.jsonl", dir_fd=root_fd, follow_symlinks=False)
+                _validate_file_metadata(
+                    before,
+                    expected_uid=self.expected_uid,
+                    error_code="unsafe_audit_file",
+                )
+                fd = os.open(
+                    "audit.jsonl",
+                    os.O_RDWR | os.O_CLOEXEC | os.O_NOFOLLOW,
+                    dir_fd=root_fd,
+                )
+            except OSError:
+                raise RefusedError("unsafe_audit_file") from None
+            try:
+                opened = os.fstat(fd)
+                _validate_file_metadata(
+                    opened,
+                    expected_uid=self.expected_uid,
+                    error_code="unsafe_audit_file",
+                )
+                if (before.st_dev, before.st_ino) != (opened.st_dev, opened.st_ino):
+                    raise RefusedError("unsafe_audit_file")
+                if not isinstance(size, int) or size < 0 or size > opened.st_size:
+                    raise RefusedError("invalid_audit_log")
+                os.ftruncate(fd, size)
+                os.fsync(fd)
+                os.fsync(root_fd)
+            except OSError:
+                raise RefusedError("audit_repair_failed") from None
+            finally:
+                os.close(fd)
 
 
 def _open_validated_directory(
@@ -942,10 +1063,10 @@ def _validate_recovery_transition(current: dict[str, Any], updated: dict[str, An
             raise RefusedError("invalid_recovery_transition")
         if not _matches_expected_state(updated["after"], current["expected_after"]):
             raise RefusedError("invalid_recovery_transition")
-    if current["workspace_recovery_name"] is not None and updated["workspace_recovery_name"] not in {
-        current["workspace_recovery_name"],
-        None,
-    }:
+    if (
+        current["workspace_recovery_name"] is not None
+        and updated["workspace_recovery_name"] != current["workspace_recovery_name"]
+    ):
         raise RefusedError("invalid_recovery_transition")
     transitions = {
         "PREPARED": {"PREPARED", "APPLIED", "REVERTED", "INDETERMINATE"},
@@ -1084,12 +1205,11 @@ def _state_temporary_name(value: str) -> bool:
 def _workspace_recovery_name(value: Any) -> bool:
     if value is None:
         return True
-    prefixes = (".g2b-write-", ".g2b-restore-", ".g2b-delete-")
-    for prefix in prefixes:
-        if value.startswith(prefix) and value.endswith(".tmp"):
-            token = value[len(prefix) : -4]
-            return len(token) == 32 and all(character in "0123456789abcdef" for character in token)
-    return False
+    prefix = ".g2b-write-"
+    if not isinstance(value, str) or not value.startswith(prefix) or not value.endswith(".tmp"):
+        return False
+    token = value[len(prefix) : -4]
+    return len(token) == 32 and all(character in "0123456789abcdef" for character in token)
 
 
 def _safe_identifier(value: Any) -> bool:
@@ -1145,6 +1265,72 @@ def _receipt_audit_event(receipt: dict[str, Any], *, event: str | None = None) -
         "error": receipt["error"],
         "at": receipt["finished_at"],
     }
+
+
+def _validate_audit_event(value: Any) -> None:
+    fields = {
+        "event",
+        "request_id",
+        "request_digest",
+        "grant_id",
+        "operation",
+        "status",
+        "error",
+        "at",
+    }
+    if not isinstance(value, dict) or set(value) != fields:
+        raise RefusedError("invalid_audit_log")
+    if (
+        value.get("event") not in {"write", "rollback", "revoke"}
+        or not _safe_identifier(value.get("grant_id"))
+        or value.get("operation") not in OPERATIONS
+        or value.get("status") not in _STATUSES
+        or not _timestamp(value.get("at"))
+    ):
+        raise RefusedError("invalid_audit_log")
+    if value.get("error") is not None and not _safe_error_code(value.get("error")):
+        raise RefusedError("invalid_audit_log")
+    if value["request_id"] is None:
+        if (
+            value["event"] != "revoke"
+            or value["request_digest"] is not None
+            or value["operation"] != "revoke"
+        ):
+            raise RefusedError("invalid_audit_log")
+    elif not _safe_identifier(value["request_id"]) or not _sha256(value["request_digest"]):
+        raise RefusedError("invalid_audit_log")
+
+
+def _decode_audit_events(raw: bytes) -> list[dict[str, Any]]:
+    if not raw:
+        return []
+    if not raw.endswith(b"\n"):
+        raise RefusedError("invalid_audit_log")
+    events: list[dict[str, Any]] = []
+    for line in raw.splitlines():
+        event = _decode_json_object(line, "invalid_audit_log")
+        _validate_audit_event(event)
+        events.append(event)
+    return events
+
+
+def _same_audit_identity(first: dict[str, Any], second: dict[str, Any]) -> bool:
+    if first["request_id"] is not None and second["request_id"] is not None:
+        return first["request_id"] == second["request_id"]
+    return (
+        first["event"] == "revoke"
+        and second["event"] == "revoke"
+        and first["grant_id"] == second["grant_id"]
+    )
+
+
+def _audit_pending_name(event: dict[str, Any]) -> str:
+    identifier = (
+        "request:" + event["request_id"]
+        if event["request_id"] is not None
+        else "revocation:" + event["grant_id"]
+    )
+    return _hashed_name(identifier)
 
 
 def _rename_noreplace_state(directory_fd: int, source: str, destination: str) -> None:

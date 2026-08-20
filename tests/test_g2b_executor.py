@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import patch
 
 from control_plane.g2b import executor as executor_module
+from control_plane.g2b import workspace as workspace_module
 from control_plane.g2b.errors import ConflictError, RefusedError
 from control_plane.g2b.executor import execute_request
 from control_plane.g2b.grant import TransportPrincipal, canonical_bundle_sha256
@@ -289,6 +290,106 @@ class G2BExecutorTests(unittest.TestCase):
         )
         self.assertIsNotNone(store.lookup_request(request["request_id"]))
 
+    def test_overwrite_exchange_crash_consumes_exact_displaced_original_before_pass(self) -> None:
+        request, recovery_name = self._crash_overwrite_at_exchange(
+            "G2B-EXEC-CRASH-EXCHANGE-0001"
+        )
+        target = self.workspace / PILOT_PATH
+        self.assertEqual(target.read_bytes(), b"mutated\n")
+        self.assertEqual((self.workspace / recovery_name).read_bytes(), b"original\n")
+        store = StateStore(self.state_root, self.lock_path, expected_uid=self.expected_uid)
+        prepared = store.lookup_recovery(request["request_id"])
+        self.assertEqual(prepared["resolution"], "PREPARED")
+        self.assertEqual(prepared["workspace_recovery_name"], recovery_name)
+
+        replay = self.execute(request)
+
+        self.assertEqual(replay["status"], "PASS")
+        self.assertTrue(replay["replayed"])
+        self.assertFalse((self.workspace / recovery_name).exists())
+        recovery = store.lookup_recovery(request["request_id"])
+        self.assertEqual(recovery["resolution"], "APPLIED")
+        self.assertEqual(recovery["workspace_recovery_name"], recovery_name)
+
+        rollback = self.execute(
+            action_request(
+                "G2B-EXEC-CRASH-EXCHANGE-ROLLBACK",
+                "rollback",
+                original_request_id=request["request_id"],
+            )
+        )
+        self.assertEqual(rollback["status"], "ROLLED_BACK")
+        self.assertEqual(target.read_bytes(), b"original\n")
+
+    def test_multiple_exchange_recovery_candidates_remain_active_indeterminate(self) -> None:
+        request, recovery_name = self._crash_overwrite_at_exchange(
+            "G2B-EXEC-CRASH-AMBIGUOUS-0001"
+        )
+        duplicate_name = ".g2b-write-" + "f" * 32 + ".tmp"
+        self.assertNotEqual(recovery_name, duplicate_name)
+        duplicate = self.workspace / duplicate_name
+        duplicate.write_bytes(b"original\n")
+        os.chmod(duplicate, 0o600)
+
+        result = self.execute(request)
+
+        self.assertEqual(result["status"], "FAILED")
+        self.assertEqual(result["error"], "mutation_state_indeterminate")
+        store = StateStore(self.state_root, self.lock_path, expected_uid=self.expected_uid)
+        recovery = store.lookup_recovery(request["request_id"])
+        self.assertEqual(recovery["resolution"], "INDETERMINATE")
+        self.assertTrue(recovery["active"])
+        self.assertTrue((self.workspace / recovery_name).exists())
+        self.assertTrue(duplicate.exists())
+
+    def test_unverifiable_exchange_recovery_candidate_remains_indeterminate(self) -> None:
+        request, recovery_name = self._crash_overwrite_at_exchange(
+            "G2B-EXEC-CRASH-UNVERIFIABLE-0001"
+        )
+        candidate = self.workspace / recovery_name
+        candidate.unlink()
+        candidate.symlink_to(self.workspace / PILOT_PATH)
+
+        result = self.execute(request)
+
+        self.assertEqual(result["status"], "FAILED")
+        self.assertEqual(result["error"], "mutation_state_indeterminate")
+        store = StateStore(self.state_root, self.lock_path, expected_uid=self.expected_uid)
+        recovery = store.lookup_recovery(request["request_id"])
+        self.assertEqual(recovery["resolution"], "INDETERMINATE")
+        self.assertTrue(recovery["active"])
+        self.assertTrue(candidate.is_symlink())
+
+    def test_ambiguous_candidate_on_applied_overwrite_blocks_rollback(self) -> None:
+        target = self.workspace / PILOT_PATH
+        target.write_bytes(b"original\n")
+        os.chmod(target, 0o600)
+        before = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        request = write_request("G2B-EXEC-APPLIED-AMBIGUOUS", "mutated\n")
+        request["arguments"]["precondition"] = {"sha256": before.sha256}
+        self.assertEqual(self.execute(request)["status"], "PASS")
+        store = StateStore(self.state_root, self.lock_path, expected_uid=self.expected_uid)
+        recovery = store.lookup_recovery(request["request_id"])
+        first = self.workspace / recovery["workspace_recovery_name"]
+        second = self.workspace / (".g2b-write-" + "e" * 32 + ".tmp")
+        for candidate in (first, second):
+            candidate.write_bytes(b"original\n")
+            os.chmod(candidate, 0o600)
+
+        rollback = self.execute(
+            action_request(
+                "G2B-EXEC-APPLIED-AMBIGUOUS-ROLLBACK",
+                "rollback",
+                original_request_id=request["request_id"],
+            )
+        )
+
+        self.assertEqual(rollback["status"], "CONFLICT")
+        self.assertEqual(rollback["error"], "mutation_state_indeterminate")
+        self.assertEqual(target.read_bytes(), b"mutated\n")
+        self.assertTrue(first.exists())
+        self.assertTrue(second.exists())
+
     def test_precommit_refusal_resolves_journal_and_releases_global_slot(self) -> None:
         with patch.object(
             executor_module,
@@ -402,7 +503,7 @@ class G2BExecutorTests(unittest.TestCase):
             )
         )
         self.assertEqual(second["status"], "CONFLICT")
-        self.assertEqual(second["error"], "target_changed")
+        self.assertEqual(second["error"], "mutation_state_indeterminate")
         self.assertEqual(target.read_bytes(), b"unrelated drift\n")
 
     def test_receipt_audit_failure_is_repaired_without_contradicting_pass(self) -> None:
@@ -615,6 +716,34 @@ class G2BExecutorTests(unittest.TestCase):
                 expected_uid=self.expected_uid if expected_uid is None else expected_uid,
                 now=lambda: NOW,
             )
+
+    def _crash_overwrite_at_exchange(self, request_id: str):
+        target = self.workspace / PILOT_PATH
+        target.write_bytes(b"original\n")
+        os.chmod(target, 0o600)
+        before = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        request = write_request(request_id, "mutated\n")
+        request["arguments"]["precondition"] = {"sha256": before.sha256}
+        real_exchange = workspace_module._rename_exchange
+        real_unlink = os.unlink
+
+        def exchange_then_exit(*args, **kwargs):
+            real_exchange(*args, **kwargs)
+            raise SystemExit("synthetic death after RENAME_EXCHANGE")
+
+        def preserve_displaced_original(path, *args, **kwargs):
+            if isinstance(path, str) and path.startswith(".g2b-write-"):
+                raise SystemExit("synthetic process is already dead")
+            return real_unlink(path, *args, **kwargs)
+
+        with patch.object(workspace_module, "_rename_exchange", side_effect=exchange_then_exit):
+            with patch.object(workspace_module.os, "unlink", side_effect=preserve_displaced_original):
+                with self.assertRaises(SystemExit):
+                    self.execute(request)
+
+        candidates = sorted(self.workspace.glob(".g2b-write-*.tmp"))
+        self.assertEqual(len(candidates), 1)
+        return request, candidates[0].name
 
     def _write_grant(self, **changes: object) -> None:
         value: dict[str, object] = {

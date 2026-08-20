@@ -10,6 +10,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from control_plane.g2b import state as state_module
 from control_plane.g2b.errors import RefusedError, TimeoutError
 from control_plane.g2b.state import RECEIPT_FIELDS, StateStore, canonical_request_digest
 
@@ -68,7 +69,7 @@ class G2BStateStoreTests(unittest.TestCase):
         self.store()
 
         self.assertEqual(stat.S_IMODE(self.state_root.stat().st_mode), 0o700)
-        for name in ("receipts", "snapshots", "recovery", "revocations"):
+        for name in ("receipts", "snapshots", "recovery", "revocations", "audit_pending"):
             child = self.state_root / name
             self.assertTrue(child.is_dir())
             self.assertFalse(child.is_symlink())
@@ -180,6 +181,43 @@ class G2BStateStoreTests(unittest.TestCase):
         events = (self.state_root / "audit.jsonl").read_text(encoding="utf-8").splitlines()
         self.assertEqual(len(events), 1)
 
+    def test_receipt_backed_torn_audit_tail_is_repaired_but_arbitrary_tail_is_refused(self) -> None:
+        store = self.store()
+        value = receipt("G2B-STATE-AUDIT-TORN-0001")
+        original_write_all = state_module._write_all
+        tore_audit = False
+
+        def tear_audit_write(fd, content):
+            nonlocal tore_audit
+            if content.endswith(b"\n") and not tore_audit:
+                tore_audit = True
+                os.write(fd, content[: max(1, len(content) // 2)])
+                raise SystemExit("synthetic process death")
+            return original_write_all(fd, content)
+
+        with patch.object(state_module, "_write_all", side_effect=tear_audit_write):
+            with self.assertRaises(SystemExit):
+                store.record_write(value)
+
+        receipt_files = list((self.state_root / "receipts").iterdir())
+        self.assertEqual(len(receipt_files), 1)
+        self.assertFalse((self.state_root / "audit.jsonl").read_bytes().endswith(b"\n"))
+
+        store.record_write(value)
+
+        self.assertEqual(store.lookup_request(value["request_id"]), value)
+        audit_path = self.state_root / "audit.jsonl"
+        events = audit_path.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(events), 1)
+        self.assertEqual(json.loads(events[0])["request_id"], value["request_id"])
+        self.assertEqual(list((self.state_root / "audit_pending").iterdir()), [])
+
+        with audit_path.open("ab") as stream:
+            stream.write(b"arbitrary-corruption")
+        with self.assertRaises(RefusedError) as corruption:
+            store.lookup_request(value["request_id"])
+        self.assertEqual(corruption.exception.code, "invalid_audit_log")
+
     def test_recovery_baselines_and_committed_after_are_immutable(self) -> None:
         store = self.store()
         value = self._recovery("G2B-STATE-MONOTONIC-0001")
@@ -219,6 +257,24 @@ class G2BStateStoreTests(unittest.TestCase):
         with self.assertRaises(RefusedError) as after_error:
             store.update_recovery(changed_after)
         self.assertEqual(after_error.exception.code, "invalid_recovery_transition")
+
+    def test_workspace_recovery_name_is_monotonic_once_published(self) -> None:
+        store = self.store()
+        value = self._recovery("G2B-STATE-RECOVERY-NAME-0001")
+        store.prepare_recovery(value)
+        published = dict(
+            value,
+            workspace_recovery_name=".g2b-write-" + "a" * 32 + ".tmp",
+        )
+        store.update_recovery(published)
+
+        for replacement in (None, ".g2b-write-" + "b" * 32 + ".tmp"):
+            with self.subTest(replacement=replacement):
+                with self.assertRaises(RefusedError) as caught:
+                    store.update_recovery(
+                        dict(published, workspace_recovery_name=replacement)
+                    )
+                self.assertEqual(caught.exception.code, "invalid_recovery_transition")
 
     def test_recognized_abandoned_state_temporary_is_removed_under_lock(self) -> None:
         store = self.store()
