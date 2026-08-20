@@ -21,7 +21,16 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(mission["pull_request"], 11)
         self.assertEqual(mission["roadmap"]["R1"], "COMPLETE")
         self.assertEqual(mission["roadmap"]["R2"], "COMPLETE")
-        self.assertEqual(mission["roadmap"]["R3"], "NEXT")
+        self.assertEqual(mission["roadmap"]["R3"], "COMPLETE")
+        self.assertEqual(mission["roadmap"]["R4"], "NEXT")
+        self.assertEqual(
+            state["continuity"]["startup_recovery_protocol"],
+            "governance/AI-STARTUP-RECOVERY-PROTOCOL.md",
+        )
+        self.assertEqual(
+            state["continuity"]["startup_recovery_protocol_state"],
+            "state/startup-recovery-protocol.yaml",
+        )
         self.assertEqual(
             state["continuity"]["g2b_recovery_checkpoint_doc"],
             "docs/54-control-bridge-g2b-recovery-checkpoint.md",
@@ -45,12 +54,13 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             "ISOLATED_DO_NOT_MODIFY",
         )
 
-    def test_entrypoints_identify_active_mission_and_do_not_treat_mainline_as_active(self):
+    def test_entrypoints_require_protocol_and_point_to_r4(self):
         for relative in ("README.md", "CONTEXT.md", "CHECKPOINT.md"):
             text = (ROOT / relative).read_text()
             self.assertNotIn("Codex está indisponível", text)
-            self.assertIn("CONTROL_BRIDGE_G2B", text)
-            self.assertIn("R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL", text)
+            self.assertIn("governance/AI-STARTUP-RECOVERY-PROTOCOL.md", text)
+            self.assertIn("state/startup-recovery-protocol.yaml", text)
+            self.assertIn("R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY", text)
             self.assertIn("codex/control-bridge-g2b", text)
             self.assertIn("docs/54-control-bridge-g2b-recovery-checkpoint.md", text)
 
@@ -73,18 +83,39 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertFalse(state["evidence"]["real_rollback"])
         self.assertFalse(state["evidence"]["real_revocation"])
 
-    def test_active_mission_state_points_to_r3_and_closed_human_gates(self):
+    def test_active_mission_state_points_to_r4_and_closed_human_gates(self):
         state = yaml.safe_load((ROOT / "state/active-mission.yaml").read_text())
         self.assertEqual(state["continuity_roadmap"]["R1"], "COMPLETE")
         self.assertEqual(state["continuity_roadmap"]["R2"], "COMPLETE")
-        self.assertEqual(state["continuity_roadmap"]["R3"], "NEXT")
+        self.assertEqual(state["continuity_roadmap"]["R3"], "COMPLETE")
+        self.assertEqual(state["continuity_roadmap"]["R4"], "NEXT")
+        self.assertEqual(
+            state["startup_recovery_protocol"]["protocol_version"],
+            "CLOUD_INFRA_AI_STARTUP_RECOVERY_V1",
+        )
         self.assertEqual(
             state["control_bridge_g2b"]["recovery_checkpoint_doc"],
             "docs/54-control-bridge-g2b-recovery-checkpoint.md",
         )
         self.assertEqual(
             state["next_exact_step"],
-            "R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL",
+            "R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY",
         )
         for value in state["human_gates"].values():
             self.assertIn("NOT_AUTHORIZED", value)
+
+    def test_startup_recovery_contract_is_fail_closed(self):
+        protocol = yaml.safe_load((ROOT / "state/startup-recovery-protocol.yaml").read_text())
+        self.assertEqual(protocol["status"], "ACTIVE_REQUIRED")
+        self.assertEqual(
+            protocol["principle"],
+            "NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS",
+        )
+        self.assertTrue(protocol["startup_gate"]["implementation_must_not_begin_before_report"])
+        self.assertTrue(protocol["startup_gate"]["pass_required_for_mutation"])
+        self.assertTrue(protocol["startup_gate"]["human_gate_still_applies_after_pass"])
+        self.assertFalse(protocol["verdicts"]["PASS_READ_ONLY"]["implementation_allowed"])
+        self.assertFalse(protocol["verdicts"]["BLOCKED_RECONCILIATION"]["implementation_allowed"])
+        self.assertFalse(protocol["verdicts"]["WAITING_HUMAN_GATE"]["implementation_allowed"])
+        self.assertIn("LOCAL_REMOTE_DIVERGENCE_UNEXPLAINED", protocol["fail_closed_conditions"])
+        self.assertIn("UNCOMMITTED_OR_UNTRACKED_WORK_WITH_UNKNOWN_OWNERSHIP", protocol["fail_closed_conditions"])
