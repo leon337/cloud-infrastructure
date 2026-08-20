@@ -8,6 +8,8 @@ A missão transversal ativa é **Repository Continuity & Context Recovery Harden
 MISSION_ISSUE=10
 MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 MISSION_STATE=state/active-mission.yaml
+STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+STARTUP_PROTOCOL_STATE=state/startup-recovery-protocol.yaml
 G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
 ACTIVE_BRANCH=codex/control-bridge-g2b
 ACTIVE_PR=11_DRAFT_DO_NOT_MERGE
@@ -19,12 +21,14 @@ NODE01_G2B_GATE=CLOSED
 F1_2C=PARALLEL_ISOLATED_DO_NOT_MODIFY
 ROADMAP_R1=COMPLETE
 ROADMAP_R2=COMPLETE
+ROADMAP_R3=COMPLETE
+ROADMAP_R4=NEXT
 R2_STRUCTURAL_RECONCILIATION=PASS
 R2_GITHUB_ACTIONS=INCONCLUSIVE_VALIDATE_FAILED_NO_EXPOSED_STEPS
-NEXT_EXACT_STEP=R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+NEXT_EXACT_STEP=R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
 ```
 
-> Nova IA/agente: leia primeiro [`state/active-mission.yaml`](state/active-mission.yaml), depois [`CONTEXT.md`](CONTEXT.md) e [`CHECKPOINT.md`](CHECKPOINT.md). Não assuma que `main` ou a trilha F1.2c é o trabalho ativo. Verifique branch/PR/GitHub real antes de executar qualquer mudança.
+> Nova IA/agente: execute primeiro [`governance/AI-STARTUP-RECOVERY-PROTOCOL.md`](governance/AI-STARTUP-RECOVERY-PROTOCOL.md), usando o contrato [`state/startup-recovery-protocol.yaml`](state/startup-recovery-protocol.yaml). Depois leia [`state/active-mission.yaml`](state/active-mission.yaml), [`CONTEXT.md`](CONTEXT.md) e [`CHECKPOINT.md`](CHECKPOINT.md). Não implemente antes de `RECOVERY_VERDICT=PASS` e não assuma estado local `CLEAN` quando ele não puder ser verificado.
 
 > A seção `PROJECT_STATUS` abaixo é uma projeção gerada da **trilha principal da plataforma**. Ela não substitui o estado da missão transversal ativa acima.
 
@@ -57,11 +61,11 @@ Configurar, proteger, documentar e tornar reproduzível a VPS enquanto LEANDRO a
 
 ## Continuidade
 
-O repositório implementa o PUC v1.0. `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada de continuidade. `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; Git/GitHub devem conter o estado recuperável antes de uma missão depender deles.
+O repositório implementa o PUC v1.0. `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`, `state/startup-recovery-protocol.yaml`, `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` formam a entrada de continuidade. `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; Git/GitHub devem conter o estado recuperável antes de uma missão depender deles.
 
 A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever a trilha principal F1.2c. O estado específico está em `state/control-bridge-g2b.yaml`; o checkpoint técnico recuperado está em `docs/54-control-bridge-g2b-recovery-checkpoint.md`; o estado da missão de recuperação está em `state/active-mission.yaml` e `docs/53-repository-continuity-context-recovery-mission.md`.
 
-GitHub live, branch/PR aplicável, código, testes e evidência do SHA aplicável prevalecem sobre afirmações históricas. Em divergência entre fontes, o agente deve reconciliar antes de agir; não deve escolher silenciosamente a versão mais conveniente.
+GitHub live, branch/PR aplicável, código, testes e evidência do SHA aplicável prevalecem sobre afirmações históricas. Em divergência entre fontes, o agente deve retornar `BLOCKED_RECONCILIATION`; não deve escolher silenciosamente a versão mais conveniente.
 
 ## Control Bridge — estado transversal reconciliado
 
