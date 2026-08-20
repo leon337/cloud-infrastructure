@@ -390,6 +390,53 @@ class G2BExecutorTests(unittest.TestCase):
         self.assertTrue(first.exists())
         self.assertTrue(second.exists())
 
+    def test_applied_recovery_preserves_candidate_when_target_inode_is_replaced(self) -> None:
+        target = self.workspace / PILOT_PATH
+        target.write_bytes(b"original\n")
+        os.chmod(target, 0o600)
+        before = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        request = write_request("G2B-EXEC-APPLIED-REPLACED-INODE", "mutated\n")
+        request["arguments"]["precondition"] = {"sha256": before.sha256}
+        real_unlink = workspace_module.os.unlink
+
+        def fail_candidate_cleanup(path, *args, **kwargs):
+            if isinstance(path, str) and path.startswith(".g2b-write-"):
+                raise OSError("synthetic cleanup failure")
+            return real_unlink(path, *args, **kwargs)
+
+        with patch.object(
+            workspace_module.os, "unlink", side_effect=fail_candidate_cleanup
+        ):
+            failed = self.execute(request)
+
+        self.assertEqual(failed["status"], "FAILED")
+        self.assertEqual(failed["error"], "write_cleanup_failed")
+        store = StateStore(self.state_root, self.lock_path, expected_uid=self.expected_uid)
+        applied = store.lookup_recovery(request["request_id"])
+        self.assertEqual(applied["resolution"], "APPLIED")
+        candidate = self.workspace / applied["workspace_recovery_name"]
+        self.assertTrue(candidate.exists())
+        committed_inode = applied["after"]["inode"]
+
+        displaced_committed = self.workspace / "displaced-committed-target"
+        target.rename(displaced_committed)
+        target.write_bytes(b"mutated\n")
+        os.chmod(target, 0o600)
+        replacement = inspect_target(
+            self.workspace, PILOT_PATH, expected_uid=self.expected_uid
+        )
+        self.assertNotEqual(replacement.inode, committed_inode)
+        self.assertEqual(replacement.sha256, applied["after"]["sha256"])
+
+        status = self.execute(action_request("G2B-EXEC-APPLIED-REPLACED-STATUS", "status"))
+
+        self.assertEqual(status["status"], "PASS")
+        recovery = store.lookup_recovery(request["request_id"])
+        self.assertEqual(recovery["resolution"], "INDETERMINATE")
+        self.assertTrue(recovery["active"])
+        self.assertTrue(candidate.exists())
+        self.assertEqual(target.read_bytes(), b"mutated\n")
+
     def test_precommit_refusal_resolves_journal_and_releases_global_slot(self) -> None:
         with patch.object(
             executor_module,

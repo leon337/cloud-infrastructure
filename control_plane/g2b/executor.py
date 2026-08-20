@@ -659,6 +659,8 @@ def _reconcile_workspace_recovery(
 ) -> dict[str, Any]:
     if recovery["resolution"] not in {"PREPARED", "APPLIED", "INDETERMINATE"}:
         return recovery
+    if recovery["resolution"] == "INDETERMINATE":
+        return recovery
 
     def publish_recovery_name(name: str) -> None:
         nonlocal recovery
@@ -675,8 +677,14 @@ def _reconcile_workspace_recovery(
         reconciled = reconcile_write_recovery(
             workspace_root,
             recovery["path"],
+            phase=recovery["resolution"],
             published_name=recovery["workspace_recovery_name"],
             before=_target_state(recovery["before"]),
+            committed_after=(
+                None
+                if recovery["after"] is None
+                else _target_state(recovery["after"])
+            ),
             expected_size=expected["size"],
             expected_mode=expected["mode"],
             expected_sha256=expected["sha256"],
@@ -714,8 +722,6 @@ def _reconcile_workspace_recovery(
     if recovery["resolution"] == "APPLIED":
         if reconciled.resolution == "INDETERMINATE" and reconciled.has_candidates:
             return _make_recovery_indeterminate(store, recovery, observed=observed)
-        return recovery
-    if recovery["resolution"] == "INDETERMINATE":
         return recovery
     return _make_recovery_indeterminate(store, recovery, observed=observed)
 

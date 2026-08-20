@@ -117,8 +117,10 @@ class G2BWorkspaceTests(unittest.TestCase):
         result = workspace_module.reconcile_write_recovery(
             self.workspace,
             PILOT_PATH,
+            phase="PREPARED",
             published_name=None,
             before=before,
+            committed_after=None,
             expected_size=len(b"mutated\n"),
             expected_mode=0o600,
             expected_sha256=hashlib.sha256(b"mutated\n").hexdigest(),
@@ -148,8 +150,10 @@ class G2BWorkspaceTests(unittest.TestCase):
         ambiguous = workspace_module.reconcile_write_recovery(
             self.workspace,
             PILOT_PATH,
+            phase="PREPARED",
             published_name=None,
             before=before,
+            committed_after=None,
             expected_size=len(b"mutated\n"),
             expected_mode=0o600,
             expected_sha256=hashlib.sha256(b"mutated\n").hexdigest(),
@@ -176,8 +180,10 @@ class G2BWorkspaceTests(unittest.TestCase):
             workspace_module.reconcile_write_recovery(
                 self.workspace,
                 PILOT_PATH,
+                phase="PREPARED",
                 published_name=None,
                 before=before,
+                committed_after=None,
                 expected_size=len(b"mutated\n"),
                 expected_mode=0o600,
                 expected_sha256=hashlib.sha256(b"mutated\n").hexdigest(),
@@ -188,6 +194,79 @@ class G2BWorkspaceTests(unittest.TestCase):
         self.assertEqual(changed.exception.code, "recovery_candidate_changed")
         self.assertTrue(original_candidate.exists())
         self.assertTrue(displaced.exists())
+
+    def test_reconciliation_validates_phase_and_committed_state_combinations(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o600)
+        before = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        self.target.write_bytes(b"mutated\n")
+        committed_after = inspect_target(
+            self.workspace, PILOT_PATH, expected_uid=self.expected_uid
+        )
+        expected = {
+            "expected_size": len(b"mutated\n"),
+            "expected_mode": 0o600,
+            "expected_sha256": hashlib.sha256(b"mutated\n").hexdigest(),
+        }
+
+        cases = (
+            ("UNKNOWN", None),
+            ("PREPARED", committed_after),
+            ("APPLIED", None),
+            ("APPLIED", before),
+        )
+        for phase, after in cases:
+            with self.subTest(phase=phase, after=after):
+                with self.assertRaises(RefusedError) as caught:
+                    workspace_module.reconcile_write_recovery(
+                        self.workspace,
+                        PILOT_PATH,
+                        phase=phase,
+                        published_name=None,
+                        before=before,
+                        committed_after=after,
+                        expected_uid=self.expected_uid,
+                        **expected,
+                    )
+                self.assertEqual(caught.exception.code, "invalid_recovery_phase_state")
+
+    def test_applied_reconciliation_revalidates_exact_pairing_at_cleanup_boundary(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o600)
+        before = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        candidate_name = ".g2b-write-" + "d" * 32 + ".tmp"
+        self.target.rename(self.workspace / candidate_name)
+        self.target.write_bytes(b"mutated\n")
+        os.chmod(self.target, 0o600)
+        committed_after = inspect_target(
+            self.workspace, PILOT_PATH, expected_uid=self.expected_uid
+        )
+        displaced_committed = self.workspace / "displaced-committed-target"
+
+        def replace_target_at_boundary(name: str) -> None:
+            self.assertEqual(name, candidate_name)
+            self.target.rename(displaced_committed)
+            self.target.write_bytes(b"mutated\n")
+            os.chmod(self.target, 0o600)
+
+        with self.assertRaises(ConflictError) as changed:
+            workspace_module.reconcile_write_recovery(
+                self.workspace,
+                PILOT_PATH,
+                phase="APPLIED",
+                published_name=None,
+                before=before,
+                committed_after=committed_after,
+                expected_size=len(b"mutated\n"),
+                expected_mode=0o600,
+                expected_sha256=hashlib.sha256(b"mutated\n").hexdigest(),
+                expected_uid=self.expected_uid,
+                recovery_name_publisher=replace_target_at_boundary,
+            )
+
+        self.assertEqual(changed.exception.code, "recovery_candidate_changed")
+        self.assertTrue((self.workspace / candidate_name).exists())
+        self.assertTrue(displaced_committed.exists())
 
     def test_absolute_traversal_tilde_and_nested_paths_are_refused(self) -> None:
         cases = (

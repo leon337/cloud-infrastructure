@@ -96,8 +96,10 @@ def reconcile_write_recovery(
     workspace: str | Path,
     relative_path: str,
     *,
+    phase: str,
     published_name: str | None,
     before: TargetState,
+    committed_after: TargetState | None,
     expected_size: int,
     expected_mode: int,
     expected_sha256: str,
@@ -118,6 +120,14 @@ def reconcile_write_recovery(
         or any(character not in "0123456789abcdef" for character in expected_sha256)
     ):
         raise RefusedError("invalid_recovery_expected_state")
+    _validate_reconciliation_phase(
+        phase,
+        committed_after=committed_after,
+        expected_size=expected_size,
+        expected_mode=expected_mode,
+        expected_uid=expected_uid,
+        expected_sha256=expected_sha256,
+    )
     if published_name is not None:
         _validate_internal_recovery_name(published_name, "write")
     if recovery_name_publisher is not None and not callable(recovery_name_publisher):
@@ -137,29 +147,18 @@ def reconcile_write_recovery(
                 return RecoveryReconciliation("INDETERMINATE", target, True)
             recovery_name_publisher(candidate[0])
 
-        target_is_before = target == before
-        target_is_expected = _matches_recovery_expected(
-            target,
+        resolution = _recovery_pairing_resolution(
+            phase=phase,
+            target=target,
+            candidate=None if candidate is None else candidate[1],
+            before=before,
+            committed_after=committed_after,
             expected_size=expected_size,
             expected_mode=expected_mode,
             expected_uid=expected_uid,
             expected_sha256=expected_sha256,
         )
-        candidate_is_before = candidate is not None and candidate[1] == before
-        candidate_is_expected = candidate is not None and _matches_recovery_expected(
-            candidate[1],
-            expected_size=expected_size,
-            expected_mode=expected_mode,
-            expected_uid=expected_uid,
-            expected_sha256=expected_sha256,
-        )
-        if target_is_before and (candidate is None or candidate_is_expected):
-            resolution = "REVERTED"
-        elif target_is_expected and (
-            candidate is None or (before.exists and candidate_is_before)
-        ):
-            resolution = "APPLIED"
-        else:
+        if resolution == "INDETERMINATE":
             return RecoveryReconciliation(
                 "INDETERMINATE", target, candidate is not None
             )
@@ -171,7 +170,22 @@ def reconcile_write_recovery(
         boundary_candidate = _inspect_target_fd(
             workspace_fd, candidate[0], expected_uid
         )
-        if boundary_target != target or boundary_candidate != candidate[1]:
+        boundary_resolution = _recovery_pairing_resolution(
+            phase=phase,
+            target=boundary_target,
+            candidate=boundary_candidate,
+            before=before,
+            committed_after=committed_after,
+            expected_size=expected_size,
+            expected_mode=expected_mode,
+            expected_uid=expected_uid,
+            expected_sha256=expected_sha256,
+        )
+        if (
+            boundary_target != target
+            or boundary_candidate != candidate[1]
+            or boundary_resolution != resolution
+        ):
             raise ConflictError("recovery_candidate_changed")
         try:
             os.unlink(candidate[0], dir_fd=workspace_fd)
@@ -814,6 +828,79 @@ def _validate_reconciliation_state(value: TargetState, *, expected_uid: int) -> 
         or any(character not in "0123456789abcdef" for character in value.sha256)
     ):
         raise RefusedError("invalid_recovery_before_state")
+
+
+def _validate_reconciliation_phase(
+    phase: str,
+    *,
+    committed_after: TargetState | None,
+    expected_size: int,
+    expected_mode: int,
+    expected_uid: int,
+    expected_sha256: str,
+) -> None:
+    if phase == "PREPARED":
+        if committed_after is None:
+            return
+        raise RefusedError("invalid_recovery_phase_state")
+    if phase != "APPLIED" or committed_after is None:
+        raise RefusedError("invalid_recovery_phase_state")
+    try:
+        _validate_reconciliation_state(committed_after, expected_uid=expected_uid)
+    except RefusedError:
+        raise RefusedError("invalid_recovery_phase_state") from None
+    if not _matches_recovery_expected(
+        committed_after,
+        expected_size=expected_size,
+        expected_mode=expected_mode,
+        expected_uid=expected_uid,
+        expected_sha256=expected_sha256,
+    ):
+        raise RefusedError("invalid_recovery_phase_state")
+
+
+def _recovery_pairing_resolution(
+    *,
+    phase: str,
+    target: TargetState,
+    candidate: TargetState | None,
+    before: TargetState,
+    committed_after: TargetState | None,
+    expected_size: int,
+    expected_mode: int,
+    expected_uid: int,
+    expected_sha256: str,
+) -> str:
+    candidate_is_before = candidate is not None and candidate == before
+    if phase == "APPLIED":
+        if target == committed_after and (
+            candidate is None or (before.exists and candidate_is_before)
+        ):
+            return "APPLIED"
+        return "INDETERMINATE"
+
+    target_is_before = target == before
+    target_is_expected = _matches_recovery_expected(
+        target,
+        expected_size=expected_size,
+        expected_mode=expected_mode,
+        expected_uid=expected_uid,
+        expected_sha256=expected_sha256,
+    )
+    candidate_is_expected = candidate is not None and _matches_recovery_expected(
+        candidate,
+        expected_size=expected_size,
+        expected_mode=expected_mode,
+        expected_uid=expected_uid,
+        expected_sha256=expected_sha256,
+    )
+    if target_is_before and (candidate is None or candidate_is_expected):
+        return "REVERTED"
+    if target_is_expected and (
+        candidate is None or (before.exists and candidate_is_before)
+    ):
+        return "APPLIED"
+    return "INDETERMINATE"
 
 
 def _matches_recovery_expected(
