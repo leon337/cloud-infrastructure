@@ -99,6 +99,96 @@ class G2BWorkspaceTests(unittest.TestCase):
         self.assertRegex(published[0], r"^\.g2b-write-[0-9a-f]{32}\.tmp$")
         self.assertFalse((self.workspace / published[0]).exists())
 
+    def test_no_public_caller_selected_recovery_deletion_capability_exists(self) -> None:
+        self.assertFalse(hasattr(workspace_module, "RecoveryCandidate"))
+        self.assertFalse(hasattr(workspace_module, "list_recovery_candidates"))
+        self.assertFalse(hasattr(workspace_module, "cleanup_recovery_candidate"))
+
+    def test_transaction_reconciliation_internally_selects_unique_exact_candidate(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o600)
+        before = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        candidate_name = ".g2b-write-" + "a" * 32 + ".tmp"
+        self.target.rename(self.workspace / candidate_name)
+        self.target.write_bytes(b"mutated\n")
+        os.chmod(self.target, 0o600)
+        published: list[str] = []
+
+        result = workspace_module.reconcile_write_recovery(
+            self.workspace,
+            PILOT_PATH,
+            published_name=None,
+            before=before,
+            expected_size=len(b"mutated\n"),
+            expected_mode=0o600,
+            expected_sha256=hashlib.sha256(b"mutated\n").hexdigest(),
+            expected_uid=self.expected_uid,
+            recovery_name_publisher=published.append,
+        )
+
+        self.assertEqual(result.resolution, "APPLIED")
+        self.assertEqual(published, [candidate_name])
+        self.assertEqual(self.target.read_bytes(), b"mutated\n")
+        self.assertFalse((self.workspace / candidate_name).exists())
+
+    def test_transaction_reconciliation_refuses_ambiguity_and_boundary_replacement(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o600)
+        before = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        first_name = ".g2b-write-" + "b" * 32 + ".tmp"
+        second_name = ".g2b-write-" + "c" * 32 + ".tmp"
+        self.target.rename(self.workspace / first_name)
+        self.target.write_bytes(b"mutated\n")
+        os.chmod(self.target, 0o600)
+        second = self.workspace / second_name
+        second.write_bytes(b"original\n")
+        os.chmod(second, 0o600)
+        published: list[str] = []
+
+        ambiguous = workspace_module.reconcile_write_recovery(
+            self.workspace,
+            PILOT_PATH,
+            published_name=None,
+            before=before,
+            expected_size=len(b"mutated\n"),
+            expected_mode=0o600,
+            expected_sha256=hashlib.sha256(b"mutated\n").hexdigest(),
+            expected_uid=self.expected_uid,
+            recovery_name_publisher=published.append,
+        )
+
+        self.assertEqual(ambiguous.resolution, "INDETERMINATE")
+        self.assertEqual(published, [])
+        self.assertTrue((self.workspace / first_name).exists())
+        self.assertTrue(second.exists())
+
+        second.unlink()
+        original_candidate = self.workspace / first_name
+        displaced = self.workspace / "displaced-outside-reserved-name"
+
+        def replace_at_boundary(name: str) -> None:
+            self.assertEqual(name, first_name)
+            original_candidate.rename(displaced)
+            original_candidate.write_bytes(b"original\n")
+            os.chmod(original_candidate, 0o600)
+
+        with self.assertRaises(ConflictError) as changed:
+            workspace_module.reconcile_write_recovery(
+                self.workspace,
+                PILOT_PATH,
+                published_name=None,
+                before=before,
+                expected_size=len(b"mutated\n"),
+                expected_mode=0o600,
+                expected_sha256=hashlib.sha256(b"mutated\n").hexdigest(),
+                expected_uid=self.expected_uid,
+                recovery_name_publisher=replace_at_boundary,
+            )
+
+        self.assertEqual(changed.exception.code, "recovery_candidate_changed")
+        self.assertTrue(original_candidate.exists())
+        self.assertTrue(displaced.exists())
+
     def test_absolute_traversal_tilde_and_nested_paths_are_refused(self) -> None:
         cases = (
             (str(self.target), "absolute_path_refused"),

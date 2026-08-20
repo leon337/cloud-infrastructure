@@ -47,12 +47,12 @@ class WriteOutcome:
 
 
 @dataclass(frozen=True)
-class RecoveryCandidate:
-    """Exact safe state of one internally generated recovery object."""
+class RecoveryReconciliation:
+    """Safe transaction-bound result without exposing a deletion target."""
 
-    name: str
-    operation: str
-    state: TargetState
+    resolution: str
+    target: TargetState
+    has_candidates: bool
 
 
 class MutationStateError(G2BError):
@@ -92,61 +92,97 @@ def inspect_target(
         return _inspect_target_fd(workspace_fd, name, expected_uid)
 
 
-def list_recovery_candidates(
+def reconcile_write_recovery(
     workspace: str | Path,
+    relative_path: str,
     *,
-    operation: str,
+    published_name: str | None,
+    before: TargetState,
+    expected_size: int,
+    expected_mode: int,
+    expected_sha256: str,
     expected_uid: int,
-) -> tuple[RecoveryCandidate, ...]:
-    """List validated internal recovery objects for one fixed operation."""
-    prefix = _recovery_prefix(operation)
+    recovery_name_publisher: Callable[[str], None] | None = None,
+) -> RecoveryReconciliation:
+    """Reconcile and clean only a uniquely transaction-bound write artifact."""
+    name = _validate_relative_path(relative_path)
+    _validate_reconciliation_state(before, expected_uid=expected_uid)
+    if (
+        not isinstance(expected_size, int)
+        or isinstance(expected_size, bool)
+        or expected_size < 0
+        or expected_size > MAX_CONTENT_BYTES
+        or expected_mode not in _SAFE_TARGET_MODES
+        or not isinstance(expected_sha256, str)
+        or len(expected_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in expected_sha256)
+    ):
+        raise RefusedError("invalid_recovery_expected_state")
+    if published_name is not None:
+        _validate_internal_recovery_name(published_name, "write")
+    if recovery_name_publisher is not None and not callable(recovery_name_publisher):
+        raise RefusedError("invalid_recovery_name_publisher")
+
     with _open_workspace(workspace, expected_uid) as workspace_fd:
-        try:
-            names = sorted(os.listdir(workspace_fd))
-        except OSError:
-            raise RefusedError("recovery_inspection_failed") from None
-        candidates: list[RecoveryCandidate] = []
-        for name in names:
-            if not name.startswith(prefix):
-                continue
-            _validate_internal_recovery_name(name, operation)
-            candidates.append(
-                RecoveryCandidate(
-                    name=name,
-                    operation=operation,
-                    state=_inspect_target_fd(workspace_fd, name, expected_uid),
-                )
+        target = _inspect_target_fd(workspace_fd, name, expected_uid)
+        candidates = _write_recovery_candidates_fd(workspace_fd, expected_uid)
+        if len(candidates) > 1:
+            return RecoveryReconciliation("INDETERMINATE", target, True)
+        candidate = candidates[0] if candidates else None
+        if published_name is not None:
+            if candidate is not None and candidate[0] != published_name:
+                return RecoveryReconciliation("INDETERMINATE", target, True)
+        elif candidate is not None:
+            if recovery_name_publisher is None:
+                return RecoveryReconciliation("INDETERMINATE", target, True)
+            recovery_name_publisher(candidate[0])
+
+        target_is_before = target == before
+        target_is_expected = _matches_recovery_expected(
+            target,
+            expected_size=expected_size,
+            expected_mode=expected_mode,
+            expected_uid=expected_uid,
+            expected_sha256=expected_sha256,
+        )
+        candidate_is_before = candidate is not None and candidate[1] == before
+        candidate_is_expected = candidate is not None and _matches_recovery_expected(
+            candidate[1],
+            expected_size=expected_size,
+            expected_mode=expected_mode,
+            expected_uid=expected_uid,
+            expected_sha256=expected_sha256,
+        )
+        if target_is_before and (candidate is None or candidate_is_expected):
+            resolution = "REVERTED"
+        elif target_is_expected and (
+            candidate is None or (before.exists and candidate_is_before)
+        ):
+            resolution = "APPLIED"
+        else:
+            return RecoveryReconciliation(
+                "INDETERMINATE", target, candidate is not None
             )
-        return tuple(candidates)
 
+        if candidate is None:
+            return RecoveryReconciliation(resolution, target, False)
 
-def cleanup_recovery_candidate(
-    workspace: str | Path,
-    candidate: RecoveryCandidate,
-    *,
-    expected_uid: int,
-) -> None:
-    """Delete only one exact, validated, internally named recovery object."""
-    if not isinstance(candidate, RecoveryCandidate):
-        raise RefusedError("invalid_recovery_candidate")
-    _validate_internal_recovery_name(candidate.name, candidate.operation)
-    if not isinstance(candidate.state, TargetState) or not candidate.state.exists:
-        raise RefusedError("invalid_recovery_candidate")
-    with _open_workspace(workspace, expected_uid) as workspace_fd:
-        before = _inspect_target_fd(workspace_fd, candidate.name, expected_uid)
-        if before != candidate.state:
-            raise ConflictError("recovery_candidate_changed")
-        current = _inspect_target_fd(workspace_fd, candidate.name, expected_uid)
-        if current != before:
+        boundary_target = _inspect_target_fd(workspace_fd, name, expected_uid)
+        boundary_candidate = _inspect_target_fd(
+            workspace_fd, candidate[0], expected_uid
+        )
+        if boundary_target != target or boundary_candidate != candidate[1]:
             raise ConflictError("recovery_candidate_changed")
         try:
-            os.unlink(candidate.name, dir_fd=workspace_fd)
+            os.unlink(candidate[0], dir_fd=workspace_fd)
             os.fsync(workspace_fd)
         except OSError:
             raise RefusedError("recovery_cleanup_failed") from None
-        after = _inspect_target_fd(workspace_fd, candidate.name, expected_uid)
-        if after.exists:
+        after_candidate = _inspect_target_fd(workspace_fd, candidate[0], expected_uid)
+        after_target = _inspect_target_fd(workspace_fd, name, expected_uid)
+        if after_candidate.exists or after_target != target:
             raise RefusedError("recovery_cleanup_failed")
+        return RecoveryReconciliation(resolution, target, True)
 
 
 def atomic_write(
@@ -721,6 +757,80 @@ def _write_all(target_fd: int, content: bytes) -> None:
 
 def _internal_name(purpose: str) -> str:
     return f".g2b-{purpose}-{secrets.token_hex(16)}.tmp"
+
+
+def _write_recovery_candidates_fd(
+    workspace_fd: int,
+    expected_uid: int,
+) -> tuple[tuple[str, TargetState], ...]:
+    prefix = _recovery_prefix("write")
+    try:
+        names = sorted(os.listdir(workspace_fd))
+    except OSError:
+        raise RefusedError("recovery_inspection_failed") from None
+    candidates: list[tuple[str, TargetState]] = []
+    for name in names:
+        if not name.startswith(prefix):
+            continue
+        _validate_internal_recovery_name(name, "write")
+        candidates.append(
+            (name, _inspect_target_fd(workspace_fd, name, expected_uid))
+        )
+    return tuple(candidates)
+
+
+def _validate_reconciliation_state(value: TargetState, *, expected_uid: int) -> None:
+    if not isinstance(value, TargetState) or not isinstance(value.exists, bool):
+        raise RefusedError("invalid_recovery_before_state")
+    if not value.exists:
+        if any(
+            field is not None
+            for field in (
+                value.size,
+                value.mode,
+                value.uid,
+                value.device,
+                value.inode,
+                value.sha256,
+            )
+        ):
+            raise RefusedError("invalid_recovery_before_state")
+        return
+    if (
+        not isinstance(value.size, int)
+        or isinstance(value.size, bool)
+        or value.size < 0
+        or value.size > MAX_CONTENT_BYTES
+        or value.mode not in _SAFE_TARGET_MODES
+        or value.uid != expected_uid
+        or not isinstance(value.device, int)
+        or isinstance(value.device, bool)
+        or value.device < 0
+        or not isinstance(value.inode, int)
+        or isinstance(value.inode, bool)
+        or value.inode < 0
+        or not isinstance(value.sha256, str)
+        or len(value.sha256) != 64
+        or any(character not in "0123456789abcdef" for character in value.sha256)
+    ):
+        raise RefusedError("invalid_recovery_before_state")
+
+
+def _matches_recovery_expected(
+    value: TargetState,
+    *,
+    expected_size: int,
+    expected_mode: int,
+    expected_uid: int,
+    expected_sha256: str,
+) -> bool:
+    return (
+        value.exists
+        and value.size == expected_size
+        and value.mode == expected_mode
+        and value.uid == expected_uid
+        and value.sha256 == expected_sha256
+    )
 
 
 def _recovery_prefix(operation: str) -> str:
