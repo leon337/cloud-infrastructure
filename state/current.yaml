@@ -1,14 +1,17 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-20
-documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK7_PARTIAL_CONTINUITY_R2_COMPLETE
+updated_at: 2026-08-21
+documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK7_PARTIAL_CONTINUITY_R3_COMPLETE
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
   current_state_independent_validation_report: governance/CONTINUITY-VALIDATION-2026-08-16-MISSION-001.md
   future_state_validation_policy: PUC_REVALIDATION_REQUIRED
   canonical_entrypoint: CONTEXT.md
+  startup_recovery_protocol: governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+  startup_recovery_protocol_state: state/startup-recovery-protocol.yaml
+  startup_recovery_principle: NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
   active_mission_state: state/active-mission.yaml
   active_mission_doc: docs/53-repository-continuity-context-recovery-mission.md
   active_mission_issue: 10
@@ -16,8 +19,8 @@ continuity:
   active_branch: codex/control-bridge-g2b
   g2b_recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
-  active_roadmap_stage: R2_COMPLETE_R3_NEXT
-  next_exact_step: R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+  active_roadmap_stage: R3_COMPLETE_R4_NEXT
+  next_exact_step: R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
   checkpoint: CHECKPOINT.md
   platform_discovery_state: state/platform-discovery.yaml
   codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
@@ -43,7 +46,8 @@ active_mission:
   roadmap:
     R1: COMPLETE
     R2: COMPLETE
-    R3: NEXT
+    R3: COMPLETE
+    R4: NEXT
 control_bridge:
   priority: P0
   g1: PASS_REAL_NODE_01_ROUNDTRIP
