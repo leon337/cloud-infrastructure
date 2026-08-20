@@ -22,6 +22,10 @@ _SAFE_TARGET_MODES = frozenset({0o600, 0o640, 0o644})
 _ABSENT = None
 _RENAME_NOREPLACE = 1
 _RENAME_EXCHANGE = 2
+_RENAME_RACE_ERRNOS = frozenset({errno.ENOENT, errno.ESTALE})
+_RENAME_UNSUPPORTED_ERRNOS = frozenset(
+    {errno.ENOSYS, errno.EOPNOTSUPP, errno.EINVAL, errno.EXDEV}
+)
 
 
 @dataclass(frozen=True)
@@ -167,10 +171,9 @@ def atomic_delete(
         tombstone = _internal_name("delete")
         try:
             _rename_noreplace(workspace_fd, name, workspace_fd, tombstone)
-        except FileExistsError:
-            raise RefusedError("internal_name_collision") from None
-        except OSError:
-            raise ConflictError("target_changed") from None
+        except OSError as error:
+            _raise_precommit_rename_error(error, destination="internal")
+            raise AssertionError("unreachable")
 
         try:
             moved = _inspect_target_fd(workspace_fd, tombstone, expected_uid)
@@ -232,7 +235,17 @@ def atomic_delete(
                 resolution="INDETERMINATE",
             ) from None
 
-        after = _inspect_target_fd(workspace_fd, name, expected_uid)
+        try:
+            after = _inspect_target_fd(workspace_fd, name, expected_uid)
+        except (G2BError, OSError):
+            raise MutationStateError(
+                "final_target_indeterminate",
+                operation="delete",
+                path=name,
+                before=before,
+                observed_after=None,
+                resolution="INDETERMINATE",
+            ) from None
         if after.exists:
             raise MutationStateError(
                 "final_target_mismatch",
@@ -492,7 +505,11 @@ def _atomic_replace_fd(
             raise ConflictError("target_changed")
 
         if expected_current.exists:
-            _rename_exchange(workspace_fd, temporary, workspace_fd, name)
+            try:
+                _rename_exchange(workspace_fd, temporary, workspace_fd, name)
+            except OSError as error:
+                _raise_precommit_rename_error(error, destination="target")
+                raise AssertionError("unreachable")
             namespace_applied = True
             cleanup_temporary = False
             try:
@@ -534,8 +551,9 @@ def _atomic_replace_fd(
         else:
             try:
                 _rename_noreplace(workspace_fd, temporary, workspace_fd, name)
-            except FileExistsError:
-                raise ConflictError("target_changed") from None
+            except OSError as error:
+                _raise_precommit_rename_error(error, destination="target")
+                raise AssertionError("unreachable")
             namespace_applied = True
             cleanup_temporary = False
 
@@ -709,19 +727,14 @@ def _revert_delete(
 ) -> None:
     try:
         _rename_noreplace(workspace_fd, tombstone, workspace_fd, name)
-    except FileExistsError:
+    except OSError as error:
+        recovery_code = (
+            "delete_recovery_blocked"
+            if _rename_error_category(error) == "DESTINATION_EXISTS"
+            else "delete_recovery_failed"
+        )
         raise MutationStateError(
-            "delete_recovery_blocked",
-            operation="delete",
-            path=name,
-            before=before,
-            observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
-            resolution="INDETERMINATE",
-            recovery_name=tombstone,
-        ) from None
-    except OSError:
-        raise MutationStateError(
-            "delete_recovery_failed",
+            recovery_code,
             operation="delete",
             path=name,
             before=before,
@@ -749,6 +762,29 @@ def _revert_delete(
         observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
         resolution="REVERTED",
     )
+
+
+def _rename_error_category(error: OSError) -> str:
+    if error.errno == errno.EEXIST:
+        return "DESTINATION_EXISTS"
+    if error.errno in _RENAME_RACE_ERRNOS:
+        return "RACE"
+    if error.errno in _RENAME_UNSUPPORTED_ERRNOS:
+        return "UNSUPPORTED"
+    return "IO"
+
+
+def _raise_precommit_rename_error(error: OSError, *, destination: str) -> None:
+    category = _rename_error_category(error)
+    if category == "DESTINATION_EXISTS":
+        if destination == "target":
+            raise ConflictError("target_changed") from None
+        raise RefusedError("internal_name_collision") from None
+    if category == "RACE":
+        raise ConflictError("target_changed") from None
+    if category == "UNSUPPORTED":
+        raise RefusedError("atomic_rename_unsupported") from None
+    raise RefusedError("atomic_rename_failed") from None
 
 
 def _rename_noreplace(

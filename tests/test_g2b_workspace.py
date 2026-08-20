@@ -328,6 +328,48 @@ class G2BWorkspaceTests(unittest.TestCase):
         self.assertEqual(self.target.read_bytes(), b"raced\n")
         self.assertEqual(list(self.workspace.glob(".g2b-write-*")), [])
 
+    def test_absent_write_rename_disappearance_is_a_conflict(self) -> None:
+        with patch.object(
+            workspace_module,
+            "_rename_noreplace",
+            side_effect=FileNotFoundError(errno.ENOENT, "synthetic rename race"),
+        ):
+            with self.assertRaises(ConflictError) as caught:
+                atomic_write(
+                    self.workspace,
+                    PILOT_PATH,
+                    b"pilot\n",
+                    precondition=Precondition(state="ABSENT"),
+                    expected_uid=self.expected_uid,
+                )
+
+        self.assertEqual(caught.exception.code, "target_changed")
+        self.assertFalse(self.target.exists())
+        self.assertEqual(list(self.workspace.glob(".g2b-write-*")), [])
+
+    def test_absent_write_unsupported_and_io_rename_errors_are_refused(self) -> None:
+        for error_number, expected_code in (
+            (errno.ENOSYS, "atomic_rename_unsupported"),
+            (errno.EIO, "atomic_rename_failed"),
+        ):
+            with self.subTest(error_number=error_number):
+                with patch.object(
+                    workspace_module,
+                    "_rename_noreplace",
+                    side_effect=OSError(error_number, "synthetic rename failure"),
+                ):
+                    with self.assertRaises(RefusedError) as caught:
+                        atomic_write(
+                            self.workspace,
+                            PILOT_PATH,
+                            b"pilot\n",
+                            precondition=Precondition(state="ABSENT"),
+                            expected_uid=self.expected_uid,
+                        )
+                self.assertEqual(caught.exception.code, expected_code)
+                self.assertFalse(self.target.exists())
+                self.assertEqual(list(self.workspace.glob(".g2b-write-*")), [])
+
     def test_existing_target_replacement_at_exchange_boundary_is_reverted(self) -> None:
         self.target.write_bytes(b"original\n")
         os.chmod(self.target, 0o644)
@@ -369,6 +411,112 @@ class G2BWorkspaceTests(unittest.TestCase):
         self.assertEqual(caught.exception.resolution, "REVERTED")
         self.assertEqual(self.target.read_bytes(), b"raced\n")
         self.assertEqual(list(self.workspace.glob(".g2b-write-*")), [])
+
+    def test_write_exchange_disappearance_is_a_precommit_conflict(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o644)
+        expected = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+
+        with patch.object(
+            workspace_module,
+            "_rename_exchange",
+            side_effect=FileNotFoundError(errno.ENOENT, "synthetic exchange race"),
+        ):
+            with self.assertRaises(ConflictError) as caught:
+                atomic_write(
+                    self.workspace,
+                    PILOT_PATH,
+                    b"pilot\n",
+                    precondition=Precondition(sha256=expected.sha256),
+                    expected_uid=self.expected_uid,
+                )
+
+        self.assertEqual(caught.exception.code, "target_changed")
+        self.assertEqual(self.target.read_bytes(), b"original\n")
+        self.assertEqual(list(self.workspace.glob(".g2b-write-*")), [])
+
+    def test_restore_exchange_disappearance_is_a_precommit_conflict(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o600)
+        original = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        written = atomic_write(
+            self.workspace,
+            PILOT_PATH,
+            b"mutated\n",
+            precondition=Precondition(sha256=original.sha256),
+            expected_uid=self.expected_uid,
+        )
+
+        with patch.object(
+            workspace_module,
+            "_rename_exchange",
+            side_effect=FileNotFoundError(errno.ENOENT, "synthetic exchange race"),
+        ):
+            with self.assertRaises(ConflictError) as caught:
+                atomic_restore(
+                    self.workspace,
+                    PILOT_PATH,
+                    b"original\n",
+                    expected_current=written.after,
+                    restore_mode=original.mode,
+                    expected_uid=self.expected_uid,
+                )
+
+        self.assertEqual(caught.exception.code, "target_changed")
+        self.assertEqual(self.target.read_bytes(), b"mutated\n")
+        self.assertEqual(list(self.workspace.glob(".g2b-write-*")), [])
+
+    def test_write_exchange_unsupported_error_is_refused(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o644)
+        expected = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+
+        with patch.object(
+            workspace_module,
+            "_rename_exchange",
+            side_effect=OSError(errno.EOPNOTSUPP, "synthetic unsupported exchange"),
+        ):
+            with self.assertRaises(RefusedError) as caught:
+                atomic_write(
+                    self.workspace,
+                    PILOT_PATH,
+                    b"pilot\n",
+                    precondition=Precondition(sha256=expected.sha256),
+                    expected_uid=self.expected_uid,
+                )
+
+        self.assertEqual(caught.exception.code, "atomic_rename_unsupported")
+        self.assertEqual(self.target.read_bytes(), b"original\n")
+
+    def test_restore_exchange_io_error_is_refused(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o600)
+        original = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        written = atomic_write(
+            self.workspace,
+            PILOT_PATH,
+            b"mutated\n",
+            precondition=Precondition(sha256=original.sha256),
+            expected_uid=self.expected_uid,
+        )
+
+        with patch.object(
+            workspace_module,
+            "_rename_exchange",
+            side_effect=OSError(errno.EIO, "synthetic exchange I/O failure"),
+        ):
+            with self.assertRaises(RefusedError) as caught:
+                atomic_restore(
+                    self.workspace,
+                    PILOT_PATH,
+                    b"original\n",
+                    expected_current=written.after,
+                    restore_mode=original.mode,
+                    expected_uid=self.expected_uid,
+                )
+
+        self.assertEqual(caught.exception.code, "atomic_rename_failed")
+        self.assertEqual(self.target.read_bytes(), b"mutated\n")
 
     def test_write_directory_fsync_failure_reports_indeterminate_applied_state(self) -> None:
         real_fsync = os.fsync
@@ -597,6 +745,79 @@ class G2BWorkspaceTests(unittest.TestCase):
         self.assertEqual(self.target.read_bytes(), b"replacement\n")
         self.assertEqual(list(self.workspace.glob(".g2b-delete-*")), [])
 
+    def test_delete_move_rename_errno_classification_is_fail_closed(self) -> None:
+        cases = (
+            (errno.ENOENT, ConflictError, "target_changed"),
+            (errno.EEXIST, RefusedError, "internal_name_collision"),
+            (errno.EINVAL, RefusedError, "atomic_rename_unsupported"),
+            (errno.EXDEV, RefusedError, "atomic_rename_unsupported"),
+            (errno.EIO, RefusedError, "atomic_rename_failed"),
+        )
+        for error_number, error_type, expected_code in cases:
+            with self.subTest(error_number=error_number):
+                self.target.write_bytes(b"original\n")
+                os.chmod(self.target, 0o644)
+                expected = inspect_target(
+                    self.workspace,
+                    PILOT_PATH,
+                    expected_uid=self.expected_uid,
+                )
+                with patch.object(
+                    workspace_module,
+                    "_rename_noreplace",
+                    side_effect=OSError(error_number, "synthetic delete move failure"),
+                ):
+                    with self.assertRaises(error_type) as caught:
+                        atomic_delete(
+                            self.workspace,
+                            PILOT_PATH,
+                            expected_current=expected,
+                            expected_uid=self.expected_uid,
+                        )
+                self.assertEqual(caught.exception.code, expected_code)
+                self.assertEqual(self.target.read_bytes(), b"original\n")
+                self.target.unlink()
+
+    def test_delete_recovery_unsupported_errno_remains_post_mutation_state(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o644)
+        expected = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        real_noreplace = workspace_module._rename_noreplace
+        calls = 0
+
+        def fail_recovery_only(
+            source_fd: int,
+            source: str,
+            destination_fd: int,
+            destination: str,
+        ) -> None:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                real_noreplace(source_fd, source, destination_fd, destination)
+                os.chmod(destination, 0o664, dir_fd=destination_fd, follow_symlinks=False)
+                return
+            raise OSError(errno.EOPNOTSUPP, "synthetic recovery unsupported")
+
+        with patch.object(
+            workspace_module,
+            "_rename_noreplace",
+            side_effect=fail_recovery_only,
+        ):
+            with self.assertRaises(workspace_module.MutationStateError) as caught:
+                atomic_delete(
+                    self.workspace,
+                    PILOT_PATH,
+                    expected_current=expected,
+                    expected_uid=self.expected_uid,
+                )
+
+        self.assertEqual(caught.exception.code, "delete_recovery_failed")
+        self.assertEqual(caught.exception.resolution, "INDETERMINATE")
+        self.assertFalse(self.target.exists())
+        self.assertIsNotNone(caught.exception.recovery_name)
+        self.assertTrue((self.workspace / caught.exception.recovery_name).exists())
+
     def test_delete_unsafe_moved_entry_is_restored_without_stranding(self) -> None:
         self.target.write_bytes(b"original\n")
         os.chmod(self.target, 0o644)
@@ -720,6 +941,69 @@ class G2BWorkspaceTests(unittest.TestCase):
         self.assertEqual(caught.exception.resolution, "INDETERMINATE")
         self.assertFalse(caught.exception.observed_after.exists)
         self.assertFalse(self.target.exists())
+
+    def test_delete_symlink_recreated_after_fsync_preserves_mutation_context(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o644)
+        expected = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        outside = self.root / "outside.txt"
+        outside.write_bytes(b"outside-private-material\n")
+        real_fsync = os.fsync
+        recreated = False
+
+        def recreate_symlink_after_fsync(fd: int) -> None:
+            nonlocal recreated
+            real_fsync(fd)
+            if stat.S_ISDIR(os.fstat(fd).st_mode) and not recreated:
+                recreated = True
+                self.target.symlink_to(outside)
+
+        with patch("control_plane.g2b.workspace.os.fsync", side_effect=recreate_symlink_after_fsync):
+            with self.assertRaises(workspace_module.MutationStateError) as caught:
+                atomic_delete(
+                    self.workspace,
+                    PILOT_PATH,
+                    expected_current=expected,
+                    expected_uid=self.expected_uid,
+                )
+
+        self.assertEqual(caught.exception.code, "final_target_indeterminate")
+        self.assertEqual(caught.exception.resolution, "INDETERMINATE")
+        self.assertEqual(caught.exception.before, expected)
+        self.assertIsNone(caught.exception.observed_after)
+        self.assertEqual(str(caught.exception), "final_target_indeterminate")
+        self.assertNotIn("outside-private-material", str(caught.exception))
+        self.assertTrue(self.target.is_symlink())
+
+    def test_delete_unsafe_file_recreated_after_fsync_preserves_mutation_context(self) -> None:
+        self.target.write_bytes(b"original\n")
+        os.chmod(self.target, 0o644)
+        expected = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        real_fsync = os.fsync
+        recreated = False
+
+        def recreate_unsafe_file_after_fsync(fd: int) -> None:
+            nonlocal recreated
+            real_fsync(fd)
+            if stat.S_ISDIR(os.fstat(fd).st_mode) and not recreated:
+                recreated = True
+                self.target.write_bytes(b"unsafe-recreated\n")
+                os.chmod(self.target, 0o664)
+
+        with patch("control_plane.g2b.workspace.os.fsync", side_effect=recreate_unsafe_file_after_fsync):
+            with self.assertRaises(workspace_module.MutationStateError) as caught:
+                atomic_delete(
+                    self.workspace,
+                    PILOT_PATH,
+                    expected_current=expected,
+                    expected_uid=self.expected_uid,
+                )
+
+        self.assertEqual(caught.exception.code, "final_target_indeterminate")
+        self.assertEqual(caught.exception.resolution, "INDETERMINATE")
+        self.assertEqual(caught.exception.before, expected)
+        self.assertIsNone(caught.exception.observed_after)
+        self.assertEqual(stat.S_IMODE(self.target.stat().st_mode), 0o664)
 
 
 if __name__ == "__main__":
