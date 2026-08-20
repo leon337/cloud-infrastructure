@@ -1,5 +1,5 @@
 protocol_version: MCF_CONTROL_BRIDGE_G2B_STATE_V1
-updated_at: 2026-08-20
+updated_at: 2026-08-21
 scope: TRANSVERSAL_CONTROL_PLANE
 priority: P0
 repository: leon337/cloud-infrastructure
@@ -48,8 +48,11 @@ continuity:
   mission_issue: 10
   mission_state: state/active-mission.yaml
   mission_doc: docs/53-repository-continuity-context-recovery-mission.md
-  roadmap_stage: R2_COMPLETE_R3_NEXT
+  startup_recovery_protocol: governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+  startup_recovery_protocol_state: state/startup-recovery-protocol.yaml
+  roadmap_stage: R3_COMPLETE_R4_NEXT
   f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
   f1_2c_rule: ISOLATED_DO_NOT_MODIFY
 technical_next_exact_step: FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
-next_exact_step: R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+technical_next_step_gate: DEFERRED_UNTIL_R8
+next_exact_step: R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
