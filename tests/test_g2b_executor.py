@@ -723,6 +723,37 @@ class G2BExecutorTests(unittest.TestCase):
         self.assertEqual(rollback["status"], "CONFLICT")
         self.assertEqual(rollback["error"], "mutation_state_indeterminate")
 
+    def test_historical_reconciliation_rejects_impossible_receipt_operation_error(self) -> None:
+        parsed = executor_module.parse_request(write_request("G2B-HISTORICAL-ERROR-0001"))
+
+        result = executor_module._transient_result(
+            parsed,
+            request_digest=executor_module.canonical_request_digest(
+                write_request("G2B-HISTORICAL-ERROR-0001")
+            ),
+            transport_principal=self.principal,
+            started_at=NOW,
+            status="REFUSED",
+            error="invalid_receipt_operation",
+            phase="historical_reconciliation",
+        )
+
+        self.assertEqual(result, executor_module._invalid_public_result())
+
+    def test_write_success_constructor_requires_a_present_after_state(self) -> None:
+        result = self.execute(write_request("G2B-WRITE-SUCCESS-SHAPE-0001"))
+        result["after"] = {
+            "exists": False,
+            "size": None,
+            "mode": None,
+            "sha256": None,
+        }
+
+        self.assertEqual(
+            executor_module._public_result(phase="write_success", value=result),
+            executor_module._invalid_public_result(),
+        )
+
     def execute(
         self,
         request: dict[str, object],

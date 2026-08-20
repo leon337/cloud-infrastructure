@@ -146,7 +146,7 @@ _RECOVERY_READ_UPDATE_ERRORS = _STATE_IO_REFUSED_ERRORS | frozenset(
     }
 )
 _HISTORICAL_RECONCILIATION_ERRORS = (
-    _RECEIPT_REFUSED_ERRORS
+    (_RECEIPT_REFUSED_ERRORS - {"invalid_receipt_operation"})
     | _RECOVERY_READ_UPDATE_ERRORS
     | frozenset(
         {
@@ -486,7 +486,11 @@ def _matches_public_result_state_shape(value: dict[str, Any], shape: str) -> boo
     if shape == "reconciled_indeterminate":
         return before is not None
     if shape == "write_success":
-        return before is not None and after is not None
+        return (
+            before is not None
+            and isinstance(after, dict)
+            and after.get("exists") is True
+        )
     if shape == "rollback_success":
         return isinstance(before, dict) and before.get("exists") is True and after is not None
     return False

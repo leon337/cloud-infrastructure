@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import copy
+from datetime import datetime
 import importlib.util
 import io
 import hashlib
@@ -1627,6 +1628,53 @@ class G2BPublisherTests(unittest.TestCase):
                     "invalid_publication_result",
                     PUBLISH.markdown(envelope(operation), candidate),
                 )
+
+    def test_impossible_historical_receipt_operation_error_is_rejected_by_both_consumers(self) -> None:
+        from control_plane.g2b import executor as core_executor
+        from control_plane.g2b.grant import TransportPrincipal
+
+        request_value = request("workspace.write")
+        core_request = core_executor.parse_request(request_value)
+        candidate = core_executor._transient_result(
+            core_request,
+            request_digest=core_executor.canonical_request_digest(request_value),
+            transport_principal=TransportPrincipal(ACTOR_LOGIN, ACTOR_ID),
+            started_at=datetime.fromisoformat("2026-08-20T12:00:00+00:00"),
+            status="REFUSED",
+            error="invalid_receipt_operation",
+            phase="historical_reconciliation",
+        )
+        parsed = ADAPTER.parse_request(request_value)
+
+        self.assertEqual(candidate, core_executor._invalid_public_result())
+        with self.assertRaisesRegex(ValueError, "invalid_executor_result"):
+            ADAPTER.validate_executor_result(
+                candidate, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+            )
+        self.assertIn(
+            "invalid_publication_result",
+            PUBLISH.markdown(envelope("workspace.write"), candidate),
+        )
+
+    def test_absent_write_success_after_state_is_rejected_by_both_consumers(self) -> None:
+        candidate = executor_result("workspace.write")
+        candidate["after"] = {
+            "exists": False,
+            "size": None,
+            "mode": None,
+            "sha256": None,
+        }
+        request_value = request("workspace.write")
+        parsed = ADAPTER.parse_request(request_value)
+
+        with self.assertRaisesRegex(ValueError, "invalid_executor_result"):
+            ADAPTER.validate_executor_result(
+                candidate, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+            )
+        self.assertIn(
+            "invalid_publication_result",
+            PUBLISH.markdown(envelope("workspace.write"), candidate),
+        )
 
     def test_dynamic_core_error_code_is_publishable_only_as_a_valid_correlated_receipt(self) -> None:
         candidate = executor_result()
