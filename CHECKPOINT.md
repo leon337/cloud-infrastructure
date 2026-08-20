@@ -9,6 +9,7 @@ MISSION=REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
 MISSION_ISSUE=10
 MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 MISSION_STATE=state/active-mission.yaml
+G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
 STATUS=ACTIVE
 AUTHORITY=LEANDRO
 ORCHESTRATOR=MESTRE_MCF
@@ -101,10 +102,11 @@ Fonte detalhada: `docs/52-control-bridge-g2a-implementation-checkpoint.md`.
 4. `state/current.yaml`
 5. `state/control-bridge-g2b.yaml`
 6. `docs/53-repository-continuity-context-recovery-mission.md`
-7. Issue #10
-8. PR #11
-9. spec e plano G2-B
-10. evidência Git/CI aplicável
+7. `docs/54-control-bridge-g2b-recovery-checkpoint.md`
+8. Issue #10
+9. PR #11
+10. spec e plano G2-B
+11. evidência Git/CI aplicável
 
 Em caso de divergência, reconciliar antes de agir. Chats não são fonte canônica.
 
