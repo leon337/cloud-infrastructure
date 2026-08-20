@@ -16,6 +16,18 @@ import urllib.request
 from typing import Any
 
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from control_plane.g2b.executor import (
+    PUBLIC_RESULT_CONTRACT,
+    PUBLIC_RESULT_ERROR_CODES,
+    PUBLIC_RESULT_FIELDS,
+    PUBLIC_RESULT_STATUSES,
+)
+
+
 _MAX_RESULT_BYTES = 8192
 _MAX_DISPATCH_BYTES = 131_072
 _MAX_MARKDOWN_CHARACTERS = 59_999
@@ -25,151 +37,16 @@ _REQUEST_ID = re.compile(r"^[A-Z0-9][A-Z0-9-]{0,127}$")
 _GRANT_ID = re.compile(r"^[A-Z0-9][A-Z0-9-]{0,127}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _OPERATIONS = frozenset({"workspace.write", "rollback", "status", "revoke"})
-_STATUSES = frozenset(
-    {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED"}
-)
-_STATUSES_BY_OPERATION = {
-    "workspace.write": frozenset({"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"}),
-    "rollback": frozenset({"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK"}),
-    "status": frozenset({"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"}),
-    "revoke": frozenset({"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "REVOKED"}),
-}
+_STATUSES = PUBLIC_RESULT_STATUSES
 _SUCCESS_STATUSES = frozenset({"PASS", "ROLLED_BACK", "REVOKED"})
-_RESULT_FIELDS = frozenset(
-    {
-        "protocol", "request_id", "request_digest", "mission_id", "declared_actor",
-        "authority", "transport_principal", "grant_id", "project", "operation", "path",
-        "started_at", "finished_at", "precondition", "before", "after", "status",
-        "replayed", "rollback_request_id", "revocation_request_id", "error",
-    }
-)
+_RESULT_FIELDS = PUBLIC_RESULT_FIELDS
 _LOCAL_RESULT_FIELDS = frozenset(
     {
         "request_id", "operation", "project", "path", "status", "error", "grant_id",
         "started_at", "finished_at", "before", "after", "replayed", "receipt_id",
     }
 )
-_CORE_ERROR_CODES = frozenset(
-    """
-    absolute_path_refused active_mutation_exists atomic_rename_failed atomic_rename_unsupported
-    atomic_write_failed audit_event_conflict audit_pending_conflict audit_pending_delete_failed
-    audit_pending_identity_mismatch audit_pending_source_mismatch audit_pending_source_missing
-    audit_repair_failed audit_write_failed binary_or_non_utf8 content_too_large
-    delete_durability_indeterminate delete_recovery_blocked delete_recovery_failed
-    delete_revert_durability_indeterminate delete_cleanup_failed
-    execution_uid_mismatch executor_digest_mismatch executor_root_required final_target_indeterminate
-    final_target_mismatch grant_actor_mismatch grant_content_too_large grant_missing
-    grant_mission_mismatch grant_not_active grant_operation_mismatch grant_path_mismatch
-    grant_principal_mismatch grant_project_mismatch grant_revoked internal_error
-    internal_name_collision invalid_arguments invalid_audit_log invalid_audit_pending invalid_content
-    invalid_content_limit invalid_declared_actor invalid_environment invalid_execution_uid
-    invalid_expected_state invalid_grant invalid_grant_duration invalid_lock_timeout invalid_mission_id
-    invalid_now invalid_original_request_id invalid_path invalid_precondition invalid_project
-    invalid_protocol invalid_receipt invalid_receipt_operation invalid_receipt_schema invalid_recovery
-    invalid_recovery_before_state invalid_recovery_expected_state invalid_recovery_name
-    invalid_recovery_name_publisher invalid_recovery_operation invalid_recovery_phase_state
-    invalid_recovery_transition invalid_relative_path invalid_request invalid_request_id
-    invalid_revocation invalid_snapshot invalid_state_identifier invalid_state_value
-    invalid_transport_principal lock_failed lock_timeout mutation_not_active
-    mutation_reconciled_reverted mutation_state_indeterminate nested_path_refused
-    original_mutation_not_found path_escape_refused precondition_mismatch receipt_already_exists
-    receipt_identity_mismatch recovery_already_exists recovery_candidate_changed
-    recovery_cleanup_failed recovery_identity_mismatch recovery_inspection_failed recovery_missing
-    recovery_name_mismatch request_id_conflict request_must_be_object result_too_large
-    root_execution_refused secret_like_content secret_like_receipt secret_like_recovery
-    secret_like_revocation secret_like_snapshot snapshot_already_exists snapshot_delete_failed
-    snapshot_mismatch snapshot_missing state_file_too_large state_read_failed
-    state_temporary_cleanup_failed state_write_failed target_changed target_hardlink_refused
-    target_inspection_failed target_mode_refused target_not_regular target_owner_mismatch
-    target_read_failed target_symlink_refused tilde_path_refused unexpected_arguments_field
-    unexpected_project_field unexpected_request_field unknown_operation unsafe_audit_event
-    unsafe_audit_file unsafe_executor_bundle unsafe_grant_file unsafe_grant_mode unsafe_grant_owner
-    unsafe_lock_file unsafe_state_directory unsafe_state_file unsafe_temporary_file workspace_changed
-    workspace_inspection_failed workspace_mode_refused workspace_not_directory workspace_not_found
-    workspace_open_failed workspace_owner_mismatch workspace_symlink_refused unsafe_state_mode
-    write_cleanup_failed write_durability_indeterminate write_state_indeterminate
-    write_recovery_blocked write_recovery_failed write_revert_cleanup_failed
-    write_revert_durability_indeterminate restore_cleanup_failed restore_durability_indeterminate
-    restore_state_indeterminate restore_recovery_blocked restore_recovery_failed
-    restore_revert_cleanup_failed restore_revert_durability_indeterminate
-    """.split()
-)
-_COMMON_REFUSED_ERRORS = frozenset(
-    """
-    audit_event_conflict audit_pending_conflict audit_pending_delete_failed
-    audit_pending_identity_mismatch audit_pending_source_mismatch
-    audit_pending_source_missing audit_repair_failed audit_write_failed executor_digest_mismatch
-    grant_actor_mismatch grant_missing grant_mission_mismatch grant_not_active
-    grant_operation_mismatch grant_principal_mismatch grant_project_mismatch grant_revoked
-    invalid_audit_log invalid_audit_pending invalid_grant invalid_grant_duration invalid_now
-    invalid_receipt invalid_receipt_schema invalid_recovery invalid_recovery_before_state
-    invalid_recovery_expected_state invalid_recovery_name invalid_recovery_operation
-    invalid_recovery_phase_state invalid_recovery_transition invalid_revocation lock_failed
-    receipt_already_exists receipt_identity_mismatch recovery_identity_mismatch recovery_missing
-    secret_like_receipt secret_like_recovery state_file_too_large state_read_failed
-    state_temporary_cleanup_failed state_write_failed unsafe_audit_event unsafe_audit_file
-    unsafe_executor_bundle unsafe_grant_file unsafe_grant_mode unsafe_grant_owner unsafe_lock_file
-    unsafe_state_directory unsafe_state_file unsafe_state_mode
-    """.split()
-)
-_WORKSPACE_REFUSED_ERRORS = frozenset(
-    """
-    atomic_rename_failed atomic_rename_unsupported atomic_write_failed content_too_large internal_name_collision
-    target_hardlink_refused target_inspection_failed target_mode_refused target_not_regular
-    target_owner_mismatch target_read_failed target_symlink_refused unsafe_temporary_file
-    workspace_inspection_failed workspace_mode_refused workspace_not_directory workspace_not_found
-    workspace_open_failed workspace_owner_mismatch workspace_symlink_refused
-    """.split()
-)
-_REFUSED_ERRORS_BY_OPERATION = {
-    "workspace.write": _COMMON_REFUSED_ERRORS | _WORKSPACE_REFUSED_ERRORS | frozenset(
-        {
-            "binary_or_non_utf8", "grant_content_too_large", "grant_path_mismatch",
-            "recovery_already_exists", "recovery_name_mismatch", "secret_like_content",
-            "snapshot_already_exists", "snapshot_delete_failed",
-        }
-    ),
-    "rollback": _COMMON_REFUSED_ERRORS | _WORKSPACE_REFUSED_ERRORS | frozenset(
-        {"secret_like_snapshot"}
-    ),
-    "status": _COMMON_REFUSED_ERRORS,
-    "revoke": _COMMON_REFUSED_ERRORS | frozenset({"secret_like_revocation"}),
-}
-_CONFLICT_ERRORS_BY_OPERATION = {
-    "workspace.write": frozenset(
-        {"active_mutation_exists", "precondition_mismatch", "request_id_conflict", "target_changed", "workspace_changed"}
-    ),
-    "rollback": frozenset(
-        {
-            "mutation_not_active", "mutation_state_indeterminate", "original_mutation_not_found",
-            "request_id_conflict", "snapshot_mismatch", "snapshot_missing", "target_changed",
-            "workspace_changed",
-        }
-    ),
-    "status": frozenset({"request_id_conflict"}),
-    "revoke": frozenset({"active_mutation_exists", "request_id_conflict"}),
-}
-_FAILED_ERRORS_BY_OPERATION = {
-    "workspace.write": frozenset(
-        """
-        final_target_indeterminate final_target_mismatch internal_error mutation_reconciled_reverted
-        mutation_state_indeterminate target_changed write_cleanup_failed
-        write_durability_indeterminate write_recovery_blocked write_recovery_failed
-        write_revert_cleanup_failed write_revert_durability_indeterminate write_state_indeterminate
-        """.split()
-    ),
-    "rollback": frozenset(
-        """
-        delete_cleanup_failed delete_durability_indeterminate delete_recovery_blocked
-        delete_recovery_failed delete_revert_durability_indeterminate final_target_indeterminate
-        final_target_mismatch internal_error restore_cleanup_failed restore_durability_indeterminate
-        restore_recovery_blocked restore_recovery_failed restore_revert_cleanup_failed
-        restore_revert_durability_indeterminate restore_state_indeterminate target_changed
-        """.split()
-    ),
-    "status": frozenset({"internal_error"}),
-    "revoke": frozenset({"internal_error"}),
-}
+_CORE_ERROR_CODES = PUBLIC_RESULT_ERROR_CODES
 _LOCAL_ERRORS = frozenset(
     {
         "dormant_request_id", "executor_timeout", "executor_output_too_large",
@@ -255,14 +132,42 @@ def _valid_state(value: Any) -> bool:
     )
 
 
-def _valid_error_semantics(operation: str, status: str, error: str) -> bool:
-    if status == "REFUSED":
-        return error in _REFUSED_ERRORS_BY_OPERATION[operation]
-    if status == "CONFLICT":
-        return error in _CONFLICT_ERRORS_BY_OPERATION[operation]
-    if status == "FAILED":
-        return error in _FAILED_ERRORS_BY_OPERATION[operation]
-    return status == "TIMEOUT" and error == "lock_timeout"
+def _matches_contract_rule(result: dict[str, Any], rule: Any) -> bool:
+    has_grant = result.get("authority") is not None and result.get("grant_id") is not None
+    if has_grant is not (rule.grant_context == "present"):
+        return False
+    before, after = result.get("before"), result.get("after")
+    if rule.result_shape == "stateless":
+        return before is None and after is None
+    if rule.result_shape == "same_state":
+        return before is not None and after == before
+    if rule.result_shape == "write_mutation":
+        if before is None:
+            return False
+        if result.get("error") == "final_target_indeterminate":
+            return after is None
+        return result.get("error") != "final_target_mismatch" or after is not None
+    if rule.result_shape == "rollback_mutation":
+        if before is None or before.get("exists") is not True:
+            return False
+        if result.get("error") == "final_target_indeterminate":
+            return after is None
+        return result.get("error") != "final_target_mismatch" or after is not None
+    if rule.result_shape == "reconciled_reverted":
+        return before is not None and after == before
+    if rule.result_shape == "reconciled_indeterminate":
+        return before is not None
+    return rule.result_shape in {"write_success", "rollback_success"}
+
+
+def _valid_contract_semantics(
+    result: dict[str, Any], operation: str, status: str, error: Any
+) -> bool:
+    return any(
+        _matches_contract_rule(result, rule)
+        for rule in PUBLIC_RESULT_CONTRACT
+        if operation in rule.operations and status == rule.status and error in rule.errors
+    )
 
 
 def _expected_request(envelope: dict[str, Any]) -> dict[str, Any] | None:
@@ -396,7 +301,7 @@ def _valid_full_result(result: dict[str, Any], expected: dict[str, Any]) -> bool
     if started is None or finished is None or finished < started:
         return False
     status, error = result.get("status"), result.get("error")
-    if status not in _STATUSES or status not in _STATUSES_BY_OPERATION[expected["operation"]]:
+    if status not in _STATUSES:
         return False
     if status in _SUCCESS_STATUSES:
         if error is not None or authority != "LEANDRO":
@@ -404,10 +309,9 @@ def _valid_full_result(result: dict[str, Any], expected: dict[str, Any]) -> bool
     elif (
         not isinstance(error, str)
         or error not in _CORE_ERROR_CODES
-        or not _valid_error_semantics(expected["operation"], status, error)
     ):
         return False
-    if status == "FAILED" and error != "internal_error" and authority != "LEANDRO":
+    if not _valid_contract_semantics(result, expected["operation"], status, error):
         return False
 
     operation = expected["operation"]

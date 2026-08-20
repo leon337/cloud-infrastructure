@@ -1,6 +1,7 @@
 """Fail-closed transaction coordinator for the bounded G2-B pilot."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -29,6 +30,314 @@ _LOCK_TIMEOUT_SECONDS = 10
 _RECOVERY_PROTOCOL = "MCF_WORKSPACE_RECOVERY_V1"
 _PILOT_PATH = "G2B-PILOT.txt"
 _MAX_RESULT_BYTES = 8192
+
+
+PUBLIC_RESULT_FIELDS = RECEIPT_FIELDS
+PUBLIC_RESULT_STATUSES = frozenset(
+    {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED"}
+)
+PUBLIC_RESULT_ERROR_CODES = frozenset(
+    """
+    absolute_path_refused active_mutation_exists atomic_rename_failed atomic_rename_unsupported
+    atomic_write_failed audit_event_conflict audit_pending_conflict audit_pending_delete_failed
+    audit_pending_identity_mismatch audit_pending_source_mismatch audit_pending_source_missing
+    audit_repair_failed audit_write_failed binary_or_non_utf8 content_too_large
+    delete_durability_indeterminate delete_recovery_blocked delete_recovery_failed
+    delete_revert_durability_indeterminate delete_cleanup_failed execution_uid_mismatch
+    executor_digest_mismatch executor_root_required final_target_indeterminate
+    final_target_mismatch grant_actor_mismatch grant_content_too_large grant_missing
+    grant_mission_mismatch grant_not_active grant_operation_mismatch grant_path_mismatch
+    grant_principal_mismatch grant_project_mismatch grant_revoked internal_error
+    internal_name_collision invalid_arguments invalid_audit_log invalid_audit_pending
+    invalid_content invalid_content_limit invalid_declared_actor invalid_environment
+    invalid_execution_uid invalid_expected_state invalid_grant invalid_grant_duration
+    invalid_lock_timeout invalid_mission_id invalid_now invalid_original_request_id invalid_path
+    invalid_precondition invalid_project invalid_protocol invalid_receipt invalid_receipt_operation
+    invalid_receipt_schema invalid_recovery invalid_recovery_before_state
+    invalid_recovery_expected_state invalid_recovery_name invalid_recovery_name_publisher
+    invalid_recovery_operation invalid_recovery_phase_state invalid_recovery_transition
+    invalid_relative_path invalid_request invalid_request_id invalid_revocation invalid_snapshot
+    invalid_state_identifier invalid_state_value invalid_transport_principal lock_failed
+    lock_timeout mutation_not_active mutation_reconciled_reverted mutation_state_indeterminate
+    nested_path_refused original_mutation_not_found path_escape_refused precondition_mismatch
+    receipt_already_exists receipt_identity_mismatch recovery_already_exists
+    recovery_candidate_changed recovery_cleanup_failed recovery_identity_mismatch
+    recovery_inspection_failed recovery_missing recovery_name_mismatch request_id_conflict
+    request_must_be_object result_too_large root_execution_refused secret_like_content
+    secret_like_receipt secret_like_recovery secret_like_revocation secret_like_snapshot
+    snapshot_already_exists snapshot_delete_failed snapshot_mismatch snapshot_missing
+    state_file_too_large state_read_failed state_temporary_cleanup_failed state_write_failed
+    target_changed target_hardlink_refused target_inspection_failed target_mode_refused
+    target_not_regular target_owner_mismatch target_read_failed target_symlink_refused
+    tilde_path_refused unexpected_arguments_field unexpected_project_field
+    unexpected_request_field unknown_operation unsafe_audit_event unsafe_audit_file
+    unsafe_executor_bundle unsafe_grant_file unsafe_grant_mode unsafe_grant_owner
+    unsafe_lock_file unsafe_state_directory unsafe_state_file unsafe_temporary_file
+    workspace_changed workspace_inspection_failed workspace_mode_refused
+    workspace_not_directory workspace_not_found workspace_open_failed
+    workspace_owner_mismatch workspace_symlink_refused unsafe_state_mode
+    write_cleanup_failed write_durability_indeterminate write_state_indeterminate
+    write_recovery_blocked write_recovery_failed write_revert_cleanup_failed
+    write_revert_durability_indeterminate restore_cleanup_failed
+    restore_durability_indeterminate restore_state_indeterminate restore_recovery_blocked
+    restore_recovery_failed restore_revert_cleanup_failed restore_revert_durability_indeterminate
+    """.split()
+)
+
+
+@dataclass(frozen=True)
+class PublicResultRule:
+    """One immutable executor phase/outcome shape accepted at the public boundary."""
+
+    phase: str
+    operations: frozenset[str]
+    status: str
+    errors: frozenset[str | None]
+    grant_context: str
+    result_shape: str
+
+
+_ALL_OPERATIONS = frozenset({"workspace.write", "rollback", "status", "revoke"})
+_STATE_IO_REFUSED_ERRORS = frozenset(
+    """
+    atomic_rename_unsupported invalid_state_value state_file_too_large state_read_failed
+    state_write_failed unsafe_state_directory unsafe_state_file unsafe_state_mode
+    """.split()
+)
+_AUDIT_REFUSED_ERRORS = frozenset(
+    """
+    audit_event_conflict audit_pending_conflict audit_pending_delete_failed
+    audit_pending_identity_mismatch audit_pending_source_mismatch audit_pending_source_missing
+    audit_repair_failed audit_write_failed invalid_audit_log invalid_audit_pending
+    unsafe_audit_event unsafe_audit_file
+    """.split()
+)
+_RECEIPT_REFUSED_ERRORS = _STATE_IO_REFUSED_ERRORS | _AUDIT_REFUSED_ERRORS | frozenset(
+    {
+        "invalid_receipt", "invalid_receipt_operation", "invalid_receipt_schema",
+        "receipt_already_exists", "receipt_identity_mismatch", "secret_like_receipt",
+    }
+)
+_RECOVERY_REFUSED_ERRORS = _STATE_IO_REFUSED_ERRORS | frozenset(
+    {
+        "invalid_recovery", "invalid_recovery_transition", "recovery_already_exists",
+        "recovery_identity_mismatch", "recovery_missing", "secret_like_recovery",
+    }
+)
+_SNAPSHOT_REFUSED_ERRORS = _STATE_IO_REFUSED_ERRORS | frozenset(
+    {
+        "secret_like_snapshot", "snapshot_already_exists", "snapshot_delete_failed",
+    }
+)
+_REVOCATION_REFUSED_ERRORS = _STATE_IO_REFUSED_ERRORS | _AUDIT_REFUSED_ERRORS | frozenset(
+    {"invalid_revocation", "secret_like_revocation"}
+)
+_STATE_REFUSED_ERRORS = (
+    _RECEIPT_REFUSED_ERRORS
+    | _RECOVERY_REFUSED_ERRORS
+    | _SNAPSHOT_REFUSED_ERRORS
+    | _REVOCATION_REFUSED_ERRORS
+    | frozenset({"state_temporary_cleanup_failed", "unsafe_lock_file"})
+)
+_HISTORICAL_RECONCILIATION_ERRORS = _STATE_REFUSED_ERRORS | frozenset(
+    {"snapshot_delete_failed"}
+)
+_GRANT_REFUSED_ERRORS = frozenset(
+    """
+    executor_digest_mismatch executor_root_required grant_actor_mismatch grant_content_too_large
+    grant_missing grant_mission_mismatch grant_not_active grant_operation_mismatch
+    grant_path_mismatch grant_principal_mismatch grant_project_mismatch invalid_grant
+    invalid_grant_duration invalid_now unsafe_executor_bundle unsafe_grant_file
+    unsafe_grant_mode unsafe_grant_owner
+    """.split()
+)
+_BOOTSTRAP_REFUSED_ERRORS = frozenset(
+    """
+    execution_uid_mismatch invalid_execution_uid invalid_transport_principal
+    root_execution_refused unsafe_lock_file unsafe_state_directory unsafe_state_mode
+    """.split()
+)
+_WORKSPACE_REFUSED_ERRORS = frozenset(
+    """
+    atomic_rename_failed atomic_rename_unsupported atomic_write_failed binary_or_non_utf8
+    content_too_large internal_name_collision target_hardlink_refused target_inspection_failed
+    target_mode_refused target_not_regular target_owner_mismatch target_read_failed
+    target_symlink_refused unsafe_temporary_file workspace_inspection_failed
+    workspace_mode_refused workspace_not_directory workspace_not_found workspace_open_failed
+    workspace_owner_mismatch workspace_symlink_refused
+    """.split()
+)
+_WRITE_MUTATION_ERRORS = frozenset(
+    """
+    final_target_indeterminate final_target_mismatch target_changed write_cleanup_failed
+    write_durability_indeterminate write_recovery_blocked write_recovery_failed
+    write_revert_cleanup_failed write_revert_durability_indeterminate write_state_indeterminate
+    """.split()
+)
+_ROLLBACK_MUTATION_ERRORS = frozenset(
+    """
+    delete_cleanup_failed delete_durability_indeterminate delete_recovery_blocked
+    delete_recovery_failed delete_revert_durability_indeterminate final_target_indeterminate
+    final_target_mismatch restore_cleanup_failed restore_durability_indeterminate
+    restore_recovery_blocked restore_recovery_failed restore_revert_cleanup_failed
+    restore_revert_durability_indeterminate restore_state_indeterminate target_changed
+    """.split()
+)
+
+
+PUBLIC_RESULT_CONTRACT = (
+    PublicResultRule(
+        "bootstrap", _ALL_OPERATIONS, "REFUSED", _BOOTSTRAP_REFUSED_ERRORS,
+        "absent", "stateless",
+    ),
+    PublicResultRule(
+        "state_setup", _ALL_OPERATIONS, "REFUSED",
+        frozenset({"unsafe_lock_file", "unsafe_state_directory", "unsafe_state_mode"}),
+        "absent", "stateless",
+    ),
+    PublicResultRule(
+        "lock", _ALL_OPERATIONS, "REFUSED",
+        frozenset({"lock_failed", "unsafe_lock_file"}), "absent", "stateless",
+    ),
+    PublicResultRule(
+        "lock", _ALL_OPERATIONS, "TIMEOUT", frozenset({"lock_timeout"}),
+        "absent", "stateless",
+    ),
+    PublicResultRule(
+        "historical_reconciliation", _ALL_OPERATIONS, "REFUSED",
+        _HISTORICAL_RECONCILIATION_ERRORS, "absent", "stateless",
+    ),
+    PublicResultRule(
+        "grant", _ALL_OPERATIONS, "REFUSED", _GRANT_REFUSED_ERRORS,
+        "absent", "stateless",
+    ),
+    PublicResultRule(
+        "deduplication", _ALL_OPERATIONS, "CONFLICT", frozenset({"request_id_conflict"}),
+        "absent", "stateless",
+    ),
+    PublicResultRule(
+        "deduplication", _ALL_OPERATIONS, "REFUSED", _RECEIPT_REFUSED_ERRORS,
+        "absent", "stateless",
+    ),
+    PublicResultRule(
+        "revocation_check", _ALL_OPERATIONS, "REFUSED",
+        _REVOCATION_REFUSED_ERRORS | frozenset({"grant_revoked"}), "absent", "stateless",
+    ),
+    PublicResultRule(
+        "operation_escape", _ALL_OPERATIONS, "REFUSED", _RECEIPT_REFUSED_ERRORS,
+        "absent", "stateless",
+    ),
+    PublicResultRule(
+        "operation_escape", frozenset({"workspace.write", "rollback"}), "REFUSED",
+        _RECOVERY_REFUSED_ERRORS, "absent", "stateless",
+    ),
+    PublicResultRule(
+        "transient_internal", _ALL_OPERATIONS, "FAILED", frozenset({"internal_error"}),
+        "absent", "stateless",
+    ),
+    PublicResultRule(
+        "operation_failure", _ALL_OPERATIONS, "REFUSED", _RECEIPT_REFUSED_ERRORS,
+        "present", "stateless",
+    ),
+    PublicResultRule(
+        "operation_failure", _ALL_OPERATIONS, "FAILED", frozenset({"internal_error"}),
+        "present", "stateless",
+    ),
+    PublicResultRule(
+        "operation_failure", frozenset({"workspace.write"}), "REFUSED",
+        _WORKSPACE_REFUSED_ERRORS | _RECOVERY_REFUSED_ERRORS | _SNAPSHOT_REFUSED_ERRORS
+        | frozenset({"recovery_name_mismatch", "secret_like_content"}),
+        "present", "stateless",
+    ),
+    PublicResultRule(
+        "operation_failure", frozenset({"workspace.write"}), "CONFLICT",
+        frozenset({"active_mutation_exists", "target_changed", "workspace_changed"}),
+        "present", "stateless",
+    ),
+    PublicResultRule(
+        "operation_failure", frozenset({"rollback"}), "REFUSED",
+        _WORKSPACE_REFUSED_ERRORS | _RECOVERY_REFUSED_ERRORS | _SNAPSHOT_REFUSED_ERRORS,
+        "present", "stateless",
+    ),
+    PublicResultRule(
+        "operation_failure", frozenset({"rollback"}), "CONFLICT",
+        frozenset(
+            {
+                "mutation_not_active", "mutation_state_indeterminate",
+                "original_mutation_not_found", "snapshot_mismatch", "snapshot_missing",
+                "target_changed", "workspace_changed",
+            }
+        ), "present", "stateless",
+    ),
+    PublicResultRule(
+        "operation_failure", frozenset({"revoke"}), "CONFLICT",
+        frozenset({"active_mutation_exists"}), "present", "stateless",
+    ),
+    PublicResultRule(
+        "operation_failure", frozenset({"revoke"}), "REFUSED",
+        _RECOVERY_REFUSED_ERRORS | _REVOCATION_REFUSED_ERRORS,
+        "present", "stateless",
+    ),
+    PublicResultRule(
+        "write_inspected", frozenset({"workspace.write"}), "REFUSED",
+        _WORKSPACE_REFUSED_ERRORS | frozenset({"secret_like_content"}),
+        "present", "same_state",
+    ),
+    PublicResultRule(
+        "write_inspected", frozenset({"workspace.write"}), "CONFLICT",
+        frozenset({"precondition_mismatch", "target_changed", "workspace_changed"}),
+        "present", "same_state",
+    ),
+    PublicResultRule(
+        "write_mutation", frozenset({"workspace.write"}), "FAILED",
+        _WRITE_MUTATION_ERRORS, "present", "write_mutation",
+    ),
+    PublicResultRule(
+        "rollback_mutation", frozenset({"rollback"}), "FAILED",
+        _ROLLBACK_MUTATION_ERRORS, "present", "rollback_mutation",
+    ),
+    PublicResultRule(
+        "historical_recovery", frozenset({"workspace.write"}), "PASS", frozenset({None}),
+        "present", "write_success",
+    ),
+    PublicResultRule(
+        "historical_recovery", frozenset({"workspace.write"}), "FAILED",
+        frozenset({"mutation_reconciled_reverted"}), "present", "reconciled_reverted",
+    ),
+    PublicResultRule(
+        "historical_recovery", frozenset({"workspace.write"}), "FAILED",
+        frozenset({"mutation_state_indeterminate"}), "present", "reconciled_indeterminate",
+    ),
+    PublicResultRule(
+        "write_success", frozenset({"workspace.write"}), "PASS", frozenset({None}),
+        "present", "write_success",
+    ),
+    PublicResultRule(
+        "rollback_success", frozenset({"rollback"}), "ROLLED_BACK", frozenset({None}),
+        "present", "rollback_success",
+    ),
+    PublicResultRule(
+        "status_success", frozenset({"status"}), "PASS", frozenset({None}),
+        "present", "stateless",
+    ),
+    PublicResultRule(
+        "revoke_success", frozenset({"revoke"}), "REVOKED", frozenset({None}),
+        "present", "stateless",
+    ),
+    PublicResultRule(
+        "bounded_fallback", frozenset(), "FAILED", frozenset({"result_too_large"}),
+        "absent", "uncorrelated",
+    ),
+)
+
+
+def _public_result(*, phase: str, value: dict[str, Any]) -> dict[str, Any]:
+    """Bind each fixed result constructor to a declared canonical phase."""
+    if phase not in {rule.phase for rule in PUBLIC_RESULT_CONTRACT}:
+        raise AssertionError("undeclared_public_result_phase")
+    if set(value) != PUBLIC_RESULT_FIELDS:
+        raise AssertionError("invalid_public_result_constructor")
+    return value
 
 
 def execute_request(
@@ -73,6 +382,7 @@ def _execute_request_impl(
     started_at: datetime | None = None
     request: MutationRequest | None = None
     request_digest: str | None = None
+    phase = "bootstrap"
     try:
         effective_uid = os.geteuid()
         if effective_uid == 0 or expected_uid == 0:
@@ -86,8 +396,11 @@ def _execute_request_impl(
         started_at = _read_clock(now)
         request = parse_request(request_value)
         request_digest = canonical_request_digest(request_value)
+        phase = "state_setup"
         store = StateStore(state_root, lock_path, expected_uid=expected_uid)
+        phase = "lock"
         with store.exclusive_lock(timeout_seconds=_LOCK_TIMEOUT_SECONDS):
+            phase = "historical_reconciliation"
             store.reconcile_abandoned_temporaries()
             _reconcile_prepared_recoveries(
                 store,
@@ -95,9 +408,11 @@ def _execute_request_impl(
                 expected_uid=expected_uid,
                 now=now,
             )
+            phase = "grant"
             grant = load_grant(grant_path, now=started_at, installed_root=installed_root)
             validate_grant_for_request(grant, request, transport_principal)
 
+            phase = "deduplication"
             existing = store.lookup_request(request.request_id)
             if existing is not None:
                 if existing["request_digest"] != request_digest:
@@ -106,9 +421,11 @@ def _execute_request_impl(
                 replay["replayed"] = True
                 return replay
 
+            phase = "revocation_check"
             if store.is_revoked(grant.grant_id):
                 raise RefusedError("grant_revoked")
 
+            phase = "operation_escape"
             return _execute_locked(
                 request,
                 request_digest=request_digest,
@@ -128,6 +445,7 @@ def _execute_request_impl(
             started_at=started_at,
             status=error.status,
             error=error.code,
+            phase=phase,
         )
     except Exception:
         return _transient_result(
@@ -137,6 +455,7 @@ def _execute_request_impl(
             started_at=started_at,
             status="FAILED",
             error="internal_error",
+            phase="transient_internal",
         )
 
 
@@ -178,7 +497,7 @@ def _execute_locked(
         if request.operation == "revoke":
             return _execute_revoke(context, store=store)
         if request.operation == "status":
-            receipt = context.receipt(status="PASS")
+            receipt = context.receipt(phase="status_success", status="PASS")
             _persist_receipt(store, receipt)
             return receipt
         raise RefusedError("unknown_operation")
@@ -212,6 +531,7 @@ class _ReceiptContext:
     def receipt(
         self,
         *,
+        phase: str,
         status: str,
         error: str | None = None,
         before: TargetState | None = None,
@@ -220,7 +540,7 @@ class _ReceiptContext:
         rollback_request_id: str | None = None,
         revocation_request_id: str | None = None,
     ) -> dict[str, Any]:
-        return {
+        return _public_result(phase=phase, value={
             "protocol": RESULT_PROTOCOL,
             "request_id": self.request.request_id,
             "request_digest": self.request_digest,
@@ -249,7 +569,7 @@ class _ReceiptContext:
             "rollback_request_id": rollback_request_id,
             "revocation_request_id": revocation_request_id,
             "error": error,
-        }
+        })
 
 
 def _execute_write(
@@ -353,6 +673,7 @@ def _execute_write(
         )
         store.update_recovery(updated)
         receipt = context.receipt(
+            phase="write_mutation",
             status="FAILED",
             error=error.code,
             before=error.before,
@@ -372,6 +693,7 @@ def _execute_write(
         )
         store.update_recovery(reverted)
         receipt = context.receipt(
+            phase="write_inspected",
             status=error.status,
             error=error.code,
             before=before,
@@ -388,7 +710,9 @@ def _execute_write(
         active=True,
     )
     store.update_recovery(updated)
-    receipt = context.receipt(status="PASS", before=outcome.before, after=outcome.after)
+    receipt = context.receipt(
+        phase="write_success", status="PASS", before=outcome.before, after=outcome.after
+    )
     _persist_receipt(store, receipt)
     return receipt
 
@@ -447,6 +771,7 @@ def _execute_rollback(
         )
         store.update_recovery(updated)
         receipt = context.receipt(
+            phase="rollback_mutation",
             status="FAILED",
             error=error.code,
             before=error.before,
@@ -460,6 +785,7 @@ def _execute_rollback(
     resolved = dict(recovery, resolution="ROLLED_BACK", active=False)
     store.update_recovery(resolved)
     receipt = context.receipt(
+        phase="rollback_success",
         status="ROLLED_BACK",
         before=expected_after,
         after=rolled_back_after,
@@ -482,6 +808,7 @@ def _execute_revoke(context: _ReceiptContext, *, store: StateStore) -> dict[str,
         at=revoked_at,
     )
     receipt = context.receipt(
+        phase="revoke_success",
         status="REVOKED",
         revocation_request_id=context.request.request_id,
     )
@@ -524,6 +851,11 @@ def _record_mutation_state_error(
         )
         store.update_recovery(updated)
     receipt = context.receipt(
+        phase=(
+            "rollback_mutation"
+            if context.request.operation == "rollback"
+            else "write_mutation"
+        ),
         status="FAILED",
         error=error.code,
         before=error.before,
@@ -543,6 +875,7 @@ def _record_failure(
     store: StateStore,
 ) -> dict[str, Any]:
     receipt = context.receipt(
+        phase="operation_failure",
         status=status,
         error=error,
         rollback_request_id=context.request.original_request_id,
@@ -773,7 +1106,7 @@ def _ensure_recovery_receipt(
         status = "FAILED"
         error = "mutation_state_indeterminate"
         after = recovery["observation"]
-    receipt = {
+    receipt = _public_result(phase="historical_recovery", value={
         "protocol": RESULT_PROTOCOL,
         "request_id": recovery["request_id"],
         "request_digest": recovery["request_digest"],
@@ -795,7 +1128,7 @@ def _ensure_recovery_receipt(
         "rollback_request_id": None,
         "revocation_request_id": None,
         "error": error,
-    }
+    })
     _persist_receipt(store, receipt)
 
 
@@ -1018,7 +1351,7 @@ def _bounded_result(
         encoded = b""
     if set(result) == RECEIPT_FIELDS and 0 < len(encoded) <= _MAX_RESULT_BYTES:
         return result
-    return {
+    return _public_result(phase="bounded_fallback", value={
         "protocol": RESULT_PROTOCOL,
         "request_id": None,
         "request_digest": None,
@@ -1040,7 +1373,7 @@ def _bounded_result(
         "rollback_request_id": None,
         "revocation_request_id": None,
         "error": "result_too_large",
-    }
+    })
 
 
 def _transient_result(
@@ -1051,8 +1384,9 @@ def _transient_result(
     started_at: datetime | None,
     status: str,
     error: str,
+    phase: str,
 ) -> dict[str, Any]:
-    return {
+    return _public_result(phase=phase, value={
         "protocol": RESULT_PROTOCOL,
         "request_id": request.request_id if request is not None else None,
         "request_digest": request_digest,
@@ -1086,4 +1420,4 @@ def _transient_result(
         "rollback_request_id": request.original_request_id if request is not None else None,
         "revocation_request_id": None,
         "error": error,
-    }
+    })
