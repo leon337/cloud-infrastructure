@@ -45,6 +45,8 @@ O checkpoint remoto é preservação, não aceitação da Task 7.
 
 ## Fontes canônicas de continuidade
 
+- protocolo obrigatório: `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`;
+- contrato machine-readable do protocolo: `state/startup-recovery-protocol.yaml`;
 - estado estruturado da missão ativa: `state/active-mission.yaml`;
 - porta de entrada: `CONTEXT.md`;
 - checkpoint corrente: `CHECKPOINT.md`;
@@ -56,7 +58,7 @@ O checkpoint remoto é preservação, não aceitação da Task 7.
 - Issue #10: tracker remoto desta missão;
 - PR #11: preservação remota do G2-B recuperado.
 
-Em divergência, nenhuma fonte documental deve ser escolhida silenciosamente. O executor deve reconciliar Git/GitHub, estado estruturado, checkpoint, evidência e instrução humana antes de continuar.
+Em divergência, nenhuma fonte documental deve ser escolhida silenciosamente. O executor deve executar o protocolo e parar em `BLOCKED_RECONCILIATION` até Git/GitHub, estado estruturado, checkpoint, evidência e instrução humana estarem reconciliados.
 
 ## Roadmap oficial
 
@@ -70,17 +72,7 @@ A branch local foi publicada, o checkpoint WIP foi preservado e o PR #11 foi cri
 
 **Status:** COMPLETE.
 
-Foram reconciliados:
-
-- `README.md`;
-- `CONTEXT.md`;
-- `CHECKPOINT.md`;
-- `state/current.yaml`;
-- `state/control-bridge-g2b.yaml`;
-- `state/active-mission.yaml`;
-- este documento de missão;
-- `docs/54-control-bridge-g2b-recovery-checkpoint.md`;
-- teste de continuidade correspondente.
+Foram reconciliados `README.md`, `CONTEXT.md`, `CHECKPOINT.md`, `state/current.yaml`, `state/control-bridge-g2b.yaml`, `state/active-mission.yaml`, este documento, `docs/54-control-bridge-g2b-recovery-checkpoint.md` e o teste de continuidade correspondente.
 
 A trilha principal F1.2c permanece preservada como projeção separada; a missão transversal ativa agora possui estado explícito e próximo passo próprio.
 
@@ -88,13 +80,47 @@ Validação GitHub Actions do HEAD de reconciliação não pôde ser usada como 
 
 ### R3 — Mandatory AI/project startup and recovery protocol
 
-**Status:** NEXT.
+**Status:** COMPLETE.
 
-Definir protocolo obrigatório de identificação de repositório, branch/worktree, divergência local/remota, fontes canônicas, missão ativa, testes, blockers, HUMAN_GATEs e reconciliação fail-closed antes de implementação.
+Foi formalizado `CLOUD_INFRA_AI_STARTUP_RECOVERY_V1` em duas camadas:
+
+- `governance/AI-STARTUP-RECOVERY-PROTOCOL.md` — regra normativa;
+- `state/startup-recovery-protocol.yaml` — contrato machine-readable.
+
+O protocolo exige, antes de implementação:
+
+- identidade do repositório;
+- missão ativa;
+- branch/base/PR/HEAD remoto;
+- worktree/HEAD/upstream/divergência/staged/unstaged/untracked quando houver acesso local;
+- leitura das fontes canônicas;
+- verificação GitHub live e evidência do SHA aplicável;
+- reconstrução de task/test/blocker state;
+- ownership e trabalho paralelo;
+- HUMAN_GATEs;
+- próximo passo exato;
+- relatório obrigatório de recuperação.
+
+Veredictos permitidos:
+
+```text
+PASS
+PASS_READ_ONLY
+BLOCKED_RECONCILIATION
+WAITING_HUMAN_GATE
+```
+
+Regra central:
+
+```text
+NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
+```
+
+`PASS` não abre HUMAN_GATE. Em modo remoto sem acesso local, o estado local deve ser `UNVERIFIED`, nunca inferido como `CLEAN`. Divergência não explicada, trabalho local de ownership desconhecido, inconsistência de fontes, PASS sem evidência, gate ambíguo/fechado ou próximo passo conflitante bloqueiam mutação.
 
 ### R4 — Persistence policy for long-running missions
 
-**Status:** NOT_STARTED.
+**Status:** NEXT.
 
 Definir commits por Task, checkpoints WIP, persistência remota segura, sincronização do ledger e retomada após reboot, rate limit ou perda de sessão.
 
@@ -137,5 +163,5 @@ Não estão autorizados por esta missão:
 ## Próximo passo exato
 
 ```text
-R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
 ```
