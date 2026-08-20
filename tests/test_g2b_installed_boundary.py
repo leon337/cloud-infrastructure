@@ -146,6 +146,7 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
         legacy_scripts: bool = False,
         fd_writes: bool = False,
         core_failure: bool = False,
+        descriptor_fault: str | None = None,
     ) -> tuple[Path, Path]:
         installed = root / "installed"
         shutil.copytree(
@@ -209,6 +210,86 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
             ("/run/lock/mcf-control-bridge-g2b.lock", root / "g2b.lock"),
         ):
             source = source.replace(original, str(replacement))
+        if descriptor_fault is not None:
+            fault_hooks = {
+                "partial_setup": """
+_original_dup2 = os.dup2
+_stderr_dup2_calls = 0
+def _fault_dup2(source, target, *args, **kwargs):
+    global _stderr_dup2_calls
+    if target == 2:
+        _stderr_dup2_calls += 1
+        if _stderr_dup2_calls == 1:
+            raise OSError("injected partial setup failure")
+    return _original_dup2(source, target, *args, **kwargs)
+os.dup2 = _fault_dup2
+""",
+                "stdout_restore": """
+_original_dup2 = os.dup2
+_stdout_dup2_calls = 0
+def _fault_dup2(source, target, *args, **kwargs):
+    global _stdout_dup2_calls
+    if target == 1:
+        _stdout_dup2_calls += 1
+        if _stdout_dup2_calls == 2:
+            raise OSError("injected stdout restoration failure")
+    return _original_dup2(source, target, *args, **kwargs)
+os.dup2 = _fault_dup2
+""",
+                "stderr_restore": """
+_original_dup2 = os.dup2
+_stderr_dup2_calls = 0
+def _fault_dup2(source, target, *args, **kwargs):
+    global _stderr_dup2_calls
+    if target == 2:
+        _stderr_dup2_calls += 1
+        if _stderr_dup2_calls == 2:
+            raise OSError("injected stderr restoration failure")
+    return _original_dup2(source, target, *args, **kwargs)
+os.dup2 = _fault_dup2
+""",
+                "flush": """
+_original_stdout = sys.stdout
+class _FaultingStdout:
+    def __init__(self):
+        self.flush_calls = 0
+    def write(self, value):
+        return _original_stdout.write(value)
+    def flush(self):
+        self.flush_calls += 1
+        if self.flush_calls == 2:
+            raise OSError("injected flush failure")
+        return _original_stdout.flush()
+    def __getattr__(self, name):
+        return getattr(_original_stdout, name)
+sys.stdout = _FaultingStdout()
+""",
+                "close": """
+_original_open = os.open
+_original_close = os.close
+_boundary_null_fd = None
+_close_failed = False
+def _track_open(path, flags, *args, **kwargs):
+    global _boundary_null_fd
+    descriptor = _original_open(path, flags, *args, **kwargs)
+    if path == os.devnull:
+        _boundary_null_fd = descriptor
+    return descriptor
+def _fault_close(descriptor):
+    global _close_failed
+    if descriptor == _boundary_null_fd and not _close_failed:
+        _close_failed = True
+        raise OSError("injected close failure")
+    return _original_close(descriptor)
+os.open = _track_open
+os.close = _fault_close
+""",
+            }
+            hook = fault_hooks[descriptor_fault]
+            source = source.replace(
+                '\nif __name__ == "__main__":\n    raise SystemExit(main())\n',
+                f"\n{hook}\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n",
+            )
         entrypoint.write_text(source, encoding="utf-8")
         entrypoint.chmod(0o755)
         self.assertEqual(source.splitlines()[0], "#!/usr/bin/python3 -I")
@@ -418,6 +499,88 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
         )
         self.assertNotIn(b"installed-", completed.stdout)
         self.assertNotIn(b"raw-staged", completed.stdout)
+
+    def test_descriptor_failures_emit_exactly_one_fixed_bounded_result(self) -> None:
+        for fault in (
+            "partial_setup",
+            "stdout_restore",
+            "stderr_restore",
+            "flush",
+            "close",
+        ):
+            with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temporary:
+                entrypoint, ambient = self.stage_installed_bundle(
+                    Path(temporary),
+                    assert_isolated_path=True,
+                    fd_writes=True,
+                    descriptor_fault=fault,
+                )
+
+                completed = self.run_staged_entrypoint(entrypoint, ambient)
+
+                self.assertEqual(completed.returncode, 2, completed)
+                self.assertEqual(completed.stderr, b"")
+                self.assertEqual(completed.stdout.count(b"\n"), 1)
+                self.assertLessEqual(len(completed.stdout), 8192)
+                self.assertEqual(
+                    json.loads(completed.stdout),
+                    {"error": "bootstrap_failure", "status": "REFUSED"},
+                )
+                self.assertNotIn(b"injected", completed.stdout)
+                self.assertNotIn(b"installed-", completed.stdout)
+
+    def test_descriptor_cleanup_does_not_leak_on_success_or_failure(self) -> None:
+        descriptor_directory = Path("/proc/self/fd")
+        if not descriptor_directory.is_dir():
+            self.skipTest("descriptor accounting requires /proc/self/fd")
+
+        before = set(descriptor_directory.iterdir())
+        for loader_error in (None, SystemExit("raw-loader-request-content")):
+            code, stdout, stderr = self.invoke(
+                [str(ENTRYPOINT), "status"],
+                json.dumps(envelope("status")).encode("utf-8"),
+                loader_error=loader_error,
+            )
+            if loader_error is None:
+                self.assertEqual(code, 0)
+            else:
+                self.assertEqual(code, 2)
+            self.assertEqual(stdout.count("\n"), 1)
+            self.assertEqual(stderr, "")
+
+        original_open = os.open
+        original_close = os.close
+        boundary_null_fd: int | None = None
+        close_failed = False
+
+        def track_open(path, flags, *args, **kwargs):
+            nonlocal boundary_null_fd
+            descriptor = original_open(path, flags, *args, **kwargs)
+            if path == os.devnull:
+                boundary_null_fd = descriptor
+            return descriptor
+
+        def fail_closed_descriptor(descriptor):
+            nonlocal close_failed
+            if descriptor == boundary_null_fd and not close_failed:
+                close_failed = True
+                raise OSError("injected close failure")
+            return original_close(descriptor)
+
+        with (
+            patch.object(self.module.os, "open", side_effect=track_open),
+            patch.object(self.module.os, "close", side_effect=fail_closed_descriptor),
+        ):
+            code, stdout, stderr = self.invoke(
+                [str(ENTRYPOINT), "status"],
+                json.dumps(envelope("status")).encode("utf-8"),
+            )
+        value = self.assert_boundary_failure(code, stdout, stderr)
+        self.assertEqual(value["error"], "bootstrap_failure")
+        self.assertTrue(close_failed)
+
+        after = set(descriptor_directory.iterdir())
+        self.assertEqual(after, before)
 
     def test_application_module_symlink_escape_is_bootstrap_failure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

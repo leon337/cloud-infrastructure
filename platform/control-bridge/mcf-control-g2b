@@ -2,7 +2,7 @@
 """Immutable G2-B installed executor boundary."""
 from __future__ import annotations
 
-from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timezone
 import json
 import os
@@ -45,6 +45,7 @@ _PUBLIC_BOUNDARY_CODES = frozenset(
         "execution_uid_mismatch",
     }
 )
+_BOOTSTRAP_RESULT = b'{"error":"bootstrap_failure","status":"REFUSED"}\n'
 
 
 class _BoundaryError(Exception):
@@ -65,50 +66,88 @@ class _DiscardOutput:
         return None
 
 
-@contextmanager
-def _suppress_untrusted_file_descriptors():
-    saved_stdout: int | None = None
-    saved_stderr: int | None = None
-    null_fd: int | None = None
-    stdout_redirected = False
-    stderr_redirected = False
-    try:
+class _SuppressedDescriptors:
+    def __init__(self) -> None:
+        self.saved_stdout: int | None = None
+        self.saved_stderr: int | None = None
+        self.null_fd: int | None = None
+        self.stdout_redirected = False
+        self.stderr_redirected = False
+        self.stdout_restored = True
+
+    @staticmethod
+    def _close(descriptor: int) -> bool:
+        try:
+            os.close(descriptor)
+            return True
+        except BaseException:
+            try:
+                os.close(descriptor)
+            except BaseException:
+                pass
+            return False
+
+    def suppress(self) -> None:
         sys.stdout.flush()
         sys.stderr.flush()
-        saved_stdout = os.dup(1)
-        saved_stderr = os.dup(2)
-        null_fd = os.open(os.devnull, os.O_WRONLY)
-        os.dup2(null_fd, 1)
-        stdout_redirected = True
-        os.dup2(null_fd, 2)
-        stderr_redirected = True
-        yield
-    finally:
-        pending: BaseException | None = None
+        self.saved_stdout = os.dup(1)
+        self.saved_stderr = os.dup(2)
+        self.null_fd = os.open(os.devnull, os.O_WRONLY)
+        self.stdout_redirected = True
+        self.stdout_restored = False
+        os.dup2(self.null_fd, 1)
+        self.stderr_redirected = True
+        os.dup2(self.null_fd, 2)
+
+    def restore(self) -> bool:
+        clean = True
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.flush()
+            except BaseException:
+                clean = False
+        if self.stdout_redirected and self.saved_stdout is not None:
+            try:
+                os.dup2(self.saved_stdout, 1)
+                self.stdout_restored = True
+            except BaseException:
+                clean = False
+        if self.stderr_redirected and self.saved_stderr is not None:
+            try:
+                os.dup2(self.saved_stderr, 2)
+            except BaseException:
+                clean = False
+        for attribute in ("null_fd", "saved_stderr"):
+            descriptor = getattr(self, attribute)
+            if descriptor is None:
+                continue
+            if not self._close(descriptor):
+                clean = False
+            setattr(self, attribute, None)
+        return clean
+
+    def emit(self, encoded: bytes) -> None:
         try:
-            sys.stdout.flush()
-            sys.stderr.flush()
-        except BaseException as error:
-            pending = error
-        for target, saved, redirected in (
-            (1, saved_stdout, stdout_redirected),
-            (2, saved_stderr, stderr_redirected),
-        ):
-            if saved is not None and redirected:
+            if self.stdout_restored:
                 try:
-                    os.dup2(saved, target)
-                except BaseException as error:
-                    if pending is None:
-                        pending = error
-        for descriptor in (null_fd, saved_stdout, saved_stderr):
-            if descriptor is not None:
-                try:
-                    os.close(descriptor)
-                except BaseException as error:
-                    if pending is None:
-                        pending = error
-        if pending is not None:
-            raise pending
+                    sys.stdout.write(encoded.decode("utf-8"))
+                    return
+                except BaseException:
+                    encoded = _BOOTSTRAP_RESULT
+            if self.saved_stdout is None:
+                return
+            view = memoryview(encoded)
+            while view:
+                written = os.write(self.saved_stdout, view)
+                if not isinstance(written, int) or written <= 0:
+                    return
+                view = view[written:]
+        except BaseException:
+            return
+        finally:
+            if self.saved_stdout is not None:
+                self._close(self.saved_stdout)
+                self.saved_stdout = None
 
 
 def _is_within(candidate: Path, root: Path) -> bool:
@@ -238,7 +277,7 @@ def _parse_principal(value: dict[str, Any], principal_type):
         raise _BootstrapFailure() from None
 
 
-def _write_result(result: dict[str, Any]) -> None:
+def _render_result(result: dict[str, Any]) -> bytes:
     if not isinstance(result, dict):
         raise _BoundaryError("invalid_result")
     try:
@@ -256,10 +295,7 @@ def _write_result(result: dict[str, Any]) -> None:
         raise _BootstrapFailure() from None
     if len(encoded) > _MAX_STDOUT_BYTES:
         raise _BoundaryError("result_too_large")
-    try:
-        sys.stdout.write(rendered + "\n")
-    except BaseException:
-        raise _BootstrapFailure() from None
+    return encoded
 
 
 def _failure(code: str) -> dict[str, str]:
@@ -296,45 +332,66 @@ def _run() -> dict[str, Any]:
         raise _BootstrapFailure() from None
 
 
-def _protected_run() -> tuple[int, dict[str, Any]]:
-    discard = _DiscardOutput()
+def _protected_run() -> tuple[int, bytes]:
     try:
-        with (
-            _suppress_untrusted_file_descriptors(),
-            redirect_stdout(discard),
-            redirect_stderr(discard),
-        ):
-            try:
-                try:
-                    os.environ.clear()
-                except BaseException:
-                    raise _BootstrapFailure() from None
-                return 0, _run()
-            except _BoundaryError as error:
-                code = (
-                    error.code
-                    if error.code in _PUBLIC_BOUNDARY_CODES
-                    else "bootstrap_failure"
-                )
-                return 2, _failure(code)
-            except BaseException:
-                return 2, _failure("bootstrap_failure")
+        try:
+            os.environ.clear()
+        except BaseException:
+            raise _BootstrapFailure() from None
+        try:
+            result = _run()
+            exit_code = 0
+        except _BoundaryError as error:
+            code = (
+                error.code
+                if error.code in _PUBLIC_BOUNDARY_CODES
+                else "bootstrap_failure"
+            )
+            result = _failure(code)
+            exit_code = 2
+        except BaseException:
+            result = _failure("bootstrap_failure")
+            exit_code = 2
+        try:
+            return exit_code, _render_result(result)
+        except _BoundaryError as error:
+            code = (
+                error.code
+                if error.code in _PUBLIC_BOUNDARY_CODES
+                else "bootstrap_failure"
+            )
+            return 2, _render_result(_failure(code))
+        except BaseException:
+            return 2, _BOOTSTRAP_RESULT
     except BaseException:
-        return 2, _failure("bootstrap_failure")
+        return 2, _BOOTSTRAP_RESULT
 
 
 def main() -> int:
-    exit_code, result = _protected_run()
+    descriptors = _SuppressedDescriptors()
+    exit_code = 2
+    encoded = _BOOTSTRAP_RESULT
+    clean = False
     try:
-        _write_result(result)
-        return exit_code
-    except _BoundaryError as error:
-        code = error.code if error.code in _PUBLIC_BOUNDARY_CODES else "bootstrap_failure"
-        _write_result(_failure(code))
-        return 2
+        descriptors.suppress()
+        discard = _DiscardOutput()
+        with redirect_stdout(discard), redirect_stderr(discard):
+            exit_code, encoded = _protected_run()
     except BaseException:
-        _write_result(_failure("bootstrap_failure"))
-        return 2
+        exit_code, encoded = 2, _BOOTSTRAP_RESULT
+    try:
+        clean = descriptors.restore()
+    except BaseException:
+        clean = False
+    if not clean:
+        exit_code, encoded = 2, _BOOTSTRAP_RESULT
+    if not descriptors.stdout_restored:
+        exit_code, encoded = 2, _BOOTSTRAP_RESULT
+    try:
+        descriptors.emit(encoded)
+    except BaseException:
+        pass
+    return exit_code
 
 
 if __name__ == "__main__":
