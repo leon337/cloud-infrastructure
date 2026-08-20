@@ -13,6 +13,7 @@ users:
       - __MCF_KVM_SSH_PUBLIC_KEY__
 packages:
   - docker.io
+  - docker-compose-v2
   - git
   - curl
   - ca-certificates
