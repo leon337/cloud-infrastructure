@@ -73,6 +73,12 @@ _RESULT_PROTOCOL = "MCF_WORKSPACE_MUTATION_RESULT_V1"
 _RESULT_STATUSES = frozenset(
     {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED"}
 )
+_STATUSES_BY_OPERATION = {
+    "workspace.write": frozenset({"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"}),
+    "rollback": frozenset({"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK"}),
+    "status": frozenset({"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"}),
+    "revoke": frozenset({"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "REVOKED"}),
+}
 _SUCCESS_STATUSES = frozenset({"PASS", "ROLLED_BACK", "REVOKED"})
 _REQUEST_ID = re.compile(r"^[A-Z0-9][A-Z0-9-]{0,127}$")
 _GRANT_ID = re.compile(r"^[A-Z0-9][A-Z0-9-]{0,127}$")
@@ -501,7 +507,7 @@ def validate_executor_result(
 
     status = value.get("status")
     error = value.get("error")
-    if status not in _RESULT_STATUSES:
+    if status not in _RESULT_STATUSES or status not in _STATUSES_BY_OPERATION[parsed.operation]:
         raise invalid
     if status in _SUCCESS_STATUSES:
         if error is not None or authority != "LEANDRO":
@@ -550,14 +556,43 @@ def validate_executor_result(
                 "sha256": hashlib.sha256(parsed.content).hexdigest(),
             }:
                 raise invalid
-    elif parsed.operation == "rollback":
-        if value.get("path") not in {None, "G2B-PILOT.txt"}:
+        elif status == "TIMEOUT":
+            if value.get("before") is not None or value.get("after") is not None:
+                raise invalid
+        elif status in {"REFUSED", "CONFLICT"}:
+            before, after = value.get("before"), value.get("after")
+            if (before is None) != (after is None) or (before is not None and before != after):
+                raise invalid
+        elif value.get("before") is None and value.get("after") is not None:
             raise invalid
+    elif parsed.operation == "rollback":
         if rollback_link != parsed.original_request_id or revocation_link is not None:
             raise invalid
-        if status == "ROLLED_BACK" and (value.get("before") is None or value.get("after") is None):
-            raise invalid
-        if status in {"PASS", "REVOKED"}:
+        if status == "ROLLED_BACK":
+            if (
+                value.get("path") != "G2B-PILOT.txt"
+                or value.get("before") is None
+                or value.get("after") is None
+            ):
+                raise invalid
+        elif status in {"REFUSED", "CONFLICT", "TIMEOUT"}:
+            if (
+                value.get("path") is not None
+                or value.get("before") is not None
+                or value.get("after") is not None
+            ):
+                raise invalid
+        elif not (
+            (
+                value.get("path") is None
+                and value.get("before") is None
+                and value.get("after") is None
+            )
+            or (
+                value.get("path") == "G2B-PILOT.txt"
+                and value.get("before") is not None
+            )
+        ):
             raise invalid
     elif parsed.operation == "status":
         if (
@@ -566,7 +601,6 @@ def validate_executor_result(
             or value.get("after") is not None
             or rollback_link is not None
             or revocation_link is not None
-            or status in {"ROLLED_BACK", "REVOKED"}
         ):
             raise invalid
     else:
@@ -577,7 +611,6 @@ def validate_executor_result(
             or rollback_link is not None
             or (status == "REVOKED" and revocation_link != parsed.request_id)
             or (status != "REVOKED" and revocation_link is not None)
-            or status in {"PASS", "ROLLED_BACK"}
         ):
             raise invalid
 

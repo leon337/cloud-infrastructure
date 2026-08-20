@@ -28,6 +28,12 @@ _OPERATIONS = frozenset({"workspace.write", "rollback", "status", "revoke"})
 _STATUSES = frozenset(
     {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED"}
 )
+_STATUSES_BY_OPERATION = {
+    "workspace.write": frozenset({"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"}),
+    "rollback": frozenset({"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK"}),
+    "status": frozenset({"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"}),
+    "revoke": frozenset({"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "REVOKED"}),
+}
 _SUCCESS_STATUSES = frozenset({"PASS", "ROLLED_BACK", "REVOKED"})
 _RESULT_FIELDS = frozenset(
     {
@@ -340,7 +346,7 @@ def _valid_full_result(result: dict[str, Any], expected: dict[str, Any]) -> bool
     if started is None or finished is None or finished < started:
         return False
     status, error = result.get("status"), result.get("error")
-    if status not in _STATUSES:
+    if status not in _STATUSES or status not in _STATUSES_BY_OPERATION[expected["operation"]]:
         return False
     if status in _SUCCESS_STATUSES:
         if error is not None or authority != "LEANDRO":
@@ -358,34 +364,54 @@ def _valid_full_result(result: dict[str, Any], expected: dict[str, Any]) -> bool
     if operation == "workspace.write":
         if result.get("path") != expected["path"] or rollback_link is not None or revocation_link is not None:
             return False
-        if status != "PASS":
-            return True
-        before, after = result.get("before"), result.get("after")
-        if not isinstance(before, dict) or not isinstance(after, dict):
-            return False
-        if expected["precondition"] == {"state": "ABSENT"}:
-            if before != {"exists": False, "size": None, "mode": None, "sha256": None}:
+        if status == "PASS":
+            before, after = result.get("before"), result.get("after")
+            if not isinstance(before, dict) or not isinstance(after, dict):
                 return False
-            expected_mode = 0o644
-        else:
-            if not before["exists"] or before["sha256"] != expected["precondition"]["sha256"]:
-                return False
-            expected_mode = before["mode"]
-        return after == {
-            "exists": True,
-            "size": expected["content_size"],
-            "mode": expected_mode,
-            "sha256": expected["content_sha256"],
-        }
+            if expected["precondition"] == {"state": "ABSENT"}:
+                if before != {"exists": False, "size": None, "mode": None, "sha256": None}:
+                    return False
+                expected_mode = 0o644
+            else:
+                if not before["exists"] or before["sha256"] != expected["precondition"]["sha256"]:
+                    return False
+                expected_mode = before["mode"]
+            return after == {
+                "exists": True,
+                "size": expected["content_size"],
+                "mode": expected_mode,
+                "sha256": expected["content_sha256"],
+            }
+        if status == "TIMEOUT":
+            return result.get("before") is None and result.get("after") is None
+        if status in {"REFUSED", "CONFLICT"}:
+            before, after = result.get("before"), result.get("after")
+            return (before is None) == (after is None) and (before is None or before == after)
+        return result.get("before") is not None or result.get("after") is None
     if operation == "rollback":
+        if rollback_link != expected["rollback_request_id"] or revocation_link is not None:
+            return False
+        if status == "ROLLED_BACK":
+            return (
+                result.get("path") == "G2B-PILOT.txt"
+                and result.get("before") is not None
+                and result.get("after") is not None
+            )
+        if status in {"REFUSED", "CONFLICT", "TIMEOUT"}:
+            return (
+                result.get("path") is None
+                and result.get("before") is None
+                and result.get("after") is None
+            )
         return (
-            result.get("path") in {None, "G2B-PILOT.txt"}
-            and rollback_link == expected["rollback_request_id"]
-            and revocation_link is None
-            and status not in {"PASS", "REVOKED"}
-            and (
-                status != "ROLLED_BACK"
-                or (result.get("before") is not None and result.get("after") is not None)
+            (
+                result.get("path") is None
+                and result.get("before") is None
+                and result.get("after") is None
+            )
+            or (
+                result.get("path") == "G2B-PILOT.txt"
+                and result.get("before") is not None
             )
         )
     if operation == "status":
@@ -395,7 +421,6 @@ def _valid_full_result(result: dict[str, Any], expected: dict[str, Any]) -> bool
             and result.get("after") is None
             and rollback_link is None
             and revocation_link is None
-            and status not in {"ROLLED_BACK", "REVOKED"}
         )
     return (
         result.get("path") is None
@@ -403,7 +428,6 @@ def _valid_full_result(result: dict[str, Any], expected: dict[str, Any]) -> bool
         and result.get("after") is None
         and rollback_link is None
         and (revocation_link == expected["request_id"] if status == "REVOKED" else revocation_link is None)
-        and status not in {"PASS", "ROLLED_BACK"}
     )
 
 

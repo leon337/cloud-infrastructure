@@ -143,6 +143,26 @@ def executor_result(operation: str = "workspace.write") -> dict[str, object]:
     }
 
 
+def executor_result_for_status(operation: str, status: str) -> dict[str, object]:
+    value = executor_result(operation)
+    errors = {
+        "REFUSED": "state_read_failed",
+        "CONFLICT": "active_mutation_exists",
+        "FAILED": "internal_error",
+        "TIMEOUT": "lock_timeout",
+    }
+    value["status"] = status
+    value["error"] = errors.get(status)
+    if status in errors:
+        value["before"] = None
+        value["after"] = None
+        if operation != "workspace.write":
+            value["path"] = None
+    if operation == "revoke" and status != "REVOKED":
+        value["revocation_request_id"] = None
+    return value
+
+
 class G2BGitHubAdapterTests(unittest.TestCase):
     def write_json(self, root: Path, name: str, value: object) -> Path:
         path = root / name
@@ -500,8 +520,10 @@ class G2BGitHubAdapterTests(unittest.TestCase):
         request_value = request()
         parsed = ADAPTER.parse_request(request_value)
         for code in dynamic_codes:
-            candidate = executor_result()
-            candidate["status"] = "REFUSED" if code == "unsafe_state_mode" else "FAILED"
+            status = "REFUSED" if code == "unsafe_state_mode" else "FAILED"
+            candidate = executor_result_for_status("workspace.write", status)
+            if status == "FAILED":
+                candidate["before"] = executor_result()["before"]
             candidate["error"] = code
             with self.subTest(code=code):
                 ADAPTER.validate_executor_result(
@@ -511,6 +533,56 @@ class G2BGitHubAdapterTests(unittest.TestCase):
                     ACTOR_LOGIN,
                     ACTOR_ID,
                 )
+
+    def test_adapter_operation_status_cross_product_is_exact(self) -> None:
+        statuses = ("PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED")
+        allowed = {
+            "workspace.write": {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"},
+            "rollback": {"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK"},
+            "status": {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"},
+            "revoke": {"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "REVOKED"},
+        }
+        for operation, valid_statuses in allowed.items():
+            request_value = request(operation)
+            parsed = ADAPTER.parse_request(request_value)
+            for status in statuses:
+                candidate = executor_result_for_status(operation, status)
+                with self.subTest(operation=operation, status=status):
+                    if status in valid_statuses:
+                        ADAPTER.validate_executor_result(
+                            candidate, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+                        )
+                    else:
+                        with self.assertRaisesRegex(ValueError, "invalid_executor_result"):
+                            ADAPTER.validate_executor_result(
+                                candidate, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+                            )
+
+    def test_workspace_write_forged_terminal_statuses_fail_adapter_closed(self) -> None:
+        for status in ("ROLLED_BACK", "REVOKED"):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                completed = ADAPTER.ProcessOutcome(
+                    returncode=0,
+                    stdout=(json.dumps(executor_result_for_status("workspace.write", status)) + "\n").encode(),
+                    stderr=b"",
+                    error=None,
+                )
+                with patch.object(ADAPTER, "run_bounded_process", return_value=completed):
+                    code = ADAPTER.execute_dispatch(
+                        event_name="push",
+                        event_path=self.write_json(root, "event.json", event()),
+                        dispatch_file=self.write_json(root, "dispatch.json", envelope()),
+                        request_output=root / "request.json",
+                        result_output=root / "result.json",
+                        actor_login=ACTOR_LOGIN,
+                        actor_id=ACTOR_ID,
+                    )
+                self.assertEqual(code, 2)
+                persisted = json.loads((root / "result.json").read_text(encoding="utf-8"))
+                self.assertEqual((persisted["status"], persisted["error"]), (
+                    "FAILED", "invalid_executor_result"
+                ))
 
     def test_cli_starts_from_repository_root_without_pythonpath(self) -> None:
         environment = os.environ.copy()
@@ -618,6 +690,134 @@ class G2BGitHubAdapterTests(unittest.TestCase):
 
 
 class G2BPublisherTests(unittest.TestCase):
+    def test_publisher_operation_status_cross_product_is_exact(self) -> None:
+        statuses = ("PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED")
+        allowed = {
+            "workspace.write": {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"},
+            "rollback": {"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK"},
+            "status": {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT"},
+            "revoke": {"REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "REVOKED"},
+        }
+        for operation, valid_statuses in allowed.items():
+            for status in statuses:
+                body = PUBLISH.markdown(
+                    envelope(operation), executor_result_for_status(operation, status)
+                )
+                with self.subTest(operation=operation, status=status):
+                    if status in valid_statuses:
+                        self.assertNotIn("invalid_publication_result", body)
+                    else:
+                        self.assertIn("invalid_publication_result", body)
+
+    def test_non_success_state_and_linkage_semantics_are_exact_in_both_validators(self) -> None:
+        present = {"exists": True, "size": 14, "mode": 420, "sha256": "b" * 64}
+        absent = {"exists": False, "size": None, "mode": None, "sha256": None}
+        cases = (
+            (
+                "write conflict states differ",
+                "workspace.write",
+                {"status": "CONFLICT", "error": "active_mutation_exists", "before": present, "after": absent},
+            ),
+            (
+                "write timeout has state",
+                "workspace.write",
+                {"status": "TIMEOUT", "error": "lock_timeout", "before": present, "after": present},
+            ),
+            (
+                "write failed after without before",
+                "workspace.write",
+                {"status": "FAILED", "error": "internal_error", "before": None, "after": present},
+            ),
+            (
+                "rollback conflict exposes path",
+                "rollback",
+                {"status": "CONFLICT", "error": "active_mutation_exists", "path": "G2B-PILOT.txt"},
+            ),
+            (
+                "rollback failed after without before",
+                "rollback",
+                {
+                    "status": "FAILED", "error": "internal_error", "path": "G2B-PILOT.txt",
+                    "before": None, "after": present,
+                },
+            ),
+            (
+                "rollback missing original linkage",
+                "rollback",
+                {"status": "FAILED", "error": "internal_error", "rollback_request_id": None},
+            ),
+            (
+                "status failure has state",
+                "status",
+                {"status": "FAILED", "error": "internal_error", "before": present},
+            ),
+            (
+                "revoke failure has revocation linkage",
+                "revoke",
+                {
+                    "status": "FAILED", "error": "internal_error",
+                    "revocation_request_id": "G2B-ADAPTER-0001",
+                },
+            ),
+        )
+        for name, operation, changes in cases:
+            candidate = executor_result_for_status(operation, changes["status"])
+            candidate.update(changes)
+            request_value = request(operation)
+            parsed = ADAPTER.parse_request(request_value)
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(ValueError, "invalid_executor_result"):
+                    ADAPTER.validate_executor_result(
+                        candidate, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+                    )
+                self.assertIn(
+                    "invalid_publication_result",
+                    PUBLISH.markdown(envelope(operation), candidate),
+                )
+
+    def test_core_non_success_state_shapes_remain_accepted_by_both_validators(self) -> None:
+        present = {"exists": True, "size": 14, "mode": 420, "sha256": "b" * 64}
+        absent = {"exists": False, "size": None, "mode": None, "sha256": None}
+        cases = (
+            (
+                "write precondition conflict",
+                "workspace.write",
+                {
+                    "status": "CONFLICT", "error": "precondition_mismatch",
+                    "before": present, "after": present,
+                },
+            ),
+            (
+                "write mutation failure",
+                "workspace.write",
+                {
+                    "status": "FAILED", "error": "write_cleanup_failed",
+                    "before": absent, "after": present,
+                },
+            ),
+            (
+                "rollback mutation failure",
+                "rollback",
+                {
+                    "status": "FAILED", "error": "delete_durability_indeterminate",
+                    "path": "G2B-PILOT.txt", "before": present, "after": absent,
+                },
+            ),
+        )
+        for name, operation, changes in cases:
+            candidate = executor_result_for_status(operation, changes["status"])
+            candidate.update(changes)
+            request_value = request(operation)
+            parsed = ADAPTER.parse_request(request_value)
+            with self.subTest(name=name):
+                ADAPTER.validate_executor_result(
+                    candidate, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+                )
+                self.assertNotIn(
+                    "invalid_publication_result",
+                    PUBLISH.markdown(envelope(operation), candidate),
+                )
+
     def test_dynamic_core_error_code_is_publishable_only_as_a_valid_correlated_receipt(self) -> None:
         candidate = executor_result()
         candidate["status"] = "FAILED"
