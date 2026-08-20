@@ -1,0 +1,141 @@
+protocol_version: CLOUD_INFRA_LONG_RUNNING_MISSION_PERSISTENCE_V1
+updated_at: 2026-08-21
+status: ACTIVE_REQUIRED
+scope:
+  repository: leon337/cloud-infrastructure
+  applies_to:
+    - CHATGPT
+    - CODEX
+    - SUBAGENTS
+    - OTHER_AUTHORIZED_AI
+    - HUMAN_OPERATOR_WHEN_RUNNING_LONG_MISSIONS
+canonical_document: governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
+principles:
+  - NO_LONG_RUNNING_MISSION_WITHOUT_RECOVERABLE_REMOTE_CHECKPOINTS
+  - WIP_CHECKPOINT_DOES_NOT_IMPLY_ACCEPTANCE
+  - SESSION_STATE_IS_NOT_DURABLE_STATE
+limits:
+  max_material_work_without_remote_checkpoint_minutes: 30
+checkpoint_triggers:
+  - TASK_OR_SLICE_COMPLETE
+  - MATERIAL_SUBTASK_COMPLETE
+  - MATERIAL_REVIEW_ROUND_COMPLETE
+  - MATERIAL_CORRECTION_ROUND_COMPLETE
+  - STATE_TRANSITION
+  - BEFORE_PLANNED_PAUSE_REBOOT_OR_HANDOFF
+  - BEFORE_SESSION_OR_RATE_LIMIT_EXHAUSTION_WHEN_FORESEEABLE
+  - TIME_LIMIT_REACHED
+preflight:
+  startup_recovery_protocol_required: true
+  verify_correct_branch_and_worktree: true
+  verify_remote_checkpoint_target: true
+  verify_push_capability_before_long_run: true
+  verify_workflow_scope_if_workflow_files_may_change: true
+  identify_canonical_ledger_or_state: true
+  secret_free_persistence_required: true
+remote_checkpoint:
+  required_when_remote_available: true
+  verify_remote_sha_after_material_publish: true
+  draft_pr_allowed: true
+  draft_pr_implies_acceptance: false
+  wip_commit_implies_acceptance: false
+  required_recovery_fields:
+    - MISSION
+    - TASK_OR_SLICE
+    - BRANCH
+    - REMOTE_HEAD
+    - LIFECYCLE_STATE
+    - TEST_OR_EVIDENCE_STATE
+    - KNOWN_BLOCKERS
+    - WIP_SCOPE
+    - PARALLEL_WORK_DO_NOT_TOUCH
+    - HUMAN_GATES
+    - NEXT_EXACT_STEP
+    - ACCEPTANCE_STATUS
+remote_blocked_policy:
+  stop_unrelated_material_work: true
+  create_durable_local_checkpoint_when_safe: true
+  preserve_untracked_and_staged_work_non_destructively: true
+  record_blocker_and_local_head: true
+  resolve_remote_blocker_before_normal_long_run_resume: true
+  verify_remote_state_before_resume: true
+  prohibited_improvised_recovery:
+    - FORCE_PUSH
+    - RESET
+    - CLEAN
+    - REBASE
+    - STASH
+    - CHECKOUT_OR_SWITCH
+    - DELETION
+  prohibited_unless_separately_reconciled_and_authorized: true
+ledger_sync:
+  same_checkpoint_cycle_required_for:
+    - ACTIVE_TASK_OR_SLICE
+    - TASK_LIFECYCLE_STATE
+    - REVIEW_STATUS
+    - TEST_OR_EVIDENCE_STATUS
+    - BLOCKER
+    - HUMAN_GATE_STATUS
+    - OWNERSHIP_OR_PARALLEL_WORK_BOUNDARY
+    - NEXT_EXACT_STEP
+  stale_ledger_with_material_git_progress_verdict: BLOCKED_RECONCILIATION
+lifecycle_states:
+  NOT_STARTED: NO_IMPLEMENTATION_STARTED
+  IN_PROGRESS: ACTIVE_WORK_NO_COMPLETION_CLAIM
+  PARTIAL: BOUNDED_USEFUL_WORK_PRESERVED_WORK_REMAINS
+  BLOCKED: TECHNICAL_OR_PROJECT_CONDITION_PREVENTS_PROGRESS
+  BLOCKED_EXTERNAL: EXTERNAL_SERVICE_ACCOUNT_OR_ENVIRONMENT_BLOCKER
+  WAITING_HUMAN_GATE: EXPLICIT_HUMAN_AUTHORIZATION_REQUIRED
+  REVIEW_REQUIRED: IMPLEMENTATION_EXISTS_REQUIRED_REVIEW_PENDING
+  PASS: ACCEPTANCE_CRITERIA_EVIDENCED_FOR_APPLICABLE_SCOPE
+  FAILED: APPLICABLE_VERIFICATION_OR_OPERATION_HAS_PROVEN_FAILURE
+acceptance:
+  persistence_implies_acceptance: false
+  pass_requires_applicable_evidence: true
+  checkpoint_may_preserve_incomplete_state: true
+subagents:
+  controlling_agent_owns_durability: true
+  subagent_transcript_is_durable_state: false
+  material_results_must_enter_controlling_branch_ledger_or_checkpoint: true
+  predecessor_result_must_be_recoverable_before_dependent_dispatch: true
+restart_recovery:
+  resume_from_memory_alone: false
+  startup_recovery_protocol_required: true
+  latest_remote_checkpoint_required: true
+  reconcile_newer_local_only_work_before_new_implementation: true
+  next_exact_step_must_be_evidence_backed: true
+fail_closed_conditions:
+  - MATERIAL_WORK_EXCEEDS_30_MINUTES_WITHOUT_RECOVERABLE_REMOTE_CHECKPOINT
+  - REMOTE_PERSISTENCE_BROKEN_AND_NEW_UNRELATED_MATERIAL_WORK_WOULD_ACCUMULATE
+  - BRANCH_OR_WORKTREE_OWNERSHIP_UNCERTAIN
+  - MATERIAL_GIT_PROGRESS_WITH_STALE_LEDGER_STATE
+  - MATERIAL_UNCOMMITTED_OR_UNTRACKED_WORK_WITH_UNKNOWN_OWNERSHIP
+  - CHECKPOINT_MISTAKEN_FOR_ACCEPTANCE
+  - HUMAN_GATE_CLOSED_OR_AMBIGUOUS
+  - LATEST_RECOVERABLE_CHECKPOINT_UNKNOWN
+handoff_report_required:
+  - MISSION
+  - TASK
+  - STATE
+  - BRANCH
+  - REMOTE_HEAD
+  - LOCAL_DELTA
+  - TESTS
+  - BLOCKERS
+  - HUMAN_GATES
+  - PARALLEL_WORK
+  - NEXT_EXACT_STEP
+  - ACCEPTANCE
+relationship:
+  r3: STARTUP_AND_RECOVERY_CONTEXT_GATE
+  r4: ACTIVE_WORK_DURABILITY
+  r5: INSTITUTIONAL_HISTORY
+  r6: AUTOMATED_CONSISTENCY_AND_DRIFT_ENFORCEMENT
+current_mission_binding:
+  mission_id: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+  issue: 10
+  active_branch: codex/control-bridge-g2b
+  pull_request: 11
+  r4_status: COMPLETE
+  next_roadmap_stage: R5
+  next_exact_step: R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
