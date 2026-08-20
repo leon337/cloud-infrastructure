@@ -6,7 +6,22 @@ repository: leon337/cloud-infrastructure
 branch: codex/control-bridge-g2b
 base_branch: mcf/mission-001-control-bridge-g1
 base_sha: 8ee1fd719a50d0c9440a10a11a372dda8af1f457
-status: DESIGN_APPROVED_IMPLEMENTATION_PENDING
+status: TASK_7_PARTIAL_RECOVERED_REMOTE
+recovery_checkpoint:
+  sha: 7205a647f918580d09c87ed44f38b0a433552a51
+  commits_ahead_of_base: 25
+  pull_request: 11
+  pull_request_state: DRAFT_DO_NOT_MERGE
+implementation:
+  tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
+  task_7: PARTIAL
+  task_7_focused_tests:
+    pass: 6
+    fail: 1
+  known_red: EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED
+  known_red_literal: g2b_issue_existing_grant.keys()
+  ansible_syntax: NOT_EXECUTED_CURRENT_LOCAL_ENVIRONMENT_MISSING_ANSIBLE_PLAYBOOK
+  tasks_8_10: NOT_STARTED
 pilot:
   project: leon337/g2a-smoke/dev
   path: G2B-PILOT.txt
@@ -28,4 +43,12 @@ evidence:
   real_rollback: false
   real_revocation: false
   mcf_effective_use: false
-next_exact_step: RECONCILE_DOCUMENTATION_THEN_IMPLEMENT_G2B_REPO_ONLY
+continuity:
+  mission_issue: 10
+  mission_state: state/active-mission.yaml
+  mission_doc: docs/53-repository-continuity-context-recovery-mission.md
+  roadmap_stage: R2_COMPLETE_R3_NEXT
+  f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
+  f1_2c_rule: ISOLATED_DO_NOT_MODIFY
+technical_next_exact_step: FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
+next_exact_step: R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
