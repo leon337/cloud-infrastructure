@@ -2,12 +2,14 @@
 """Immutable G2-B installed executor boundary."""
 from __future__ import annotations
 
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
 import pwd
 import sys
+import sysconfig
 from typing import Any
 
 
@@ -33,13 +35,83 @@ class _BoundaryError(Exception):
         self.code = code
 
 
-def _load_execute_request():
+class _DiscardOutput:
+    def write(self, value: str) -> int:
+        return len(value)
+
+    def flush(self) -> None:
+        return None
+
+
+def _is_within(candidate: Path, root: Path) -> bool:
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def _constrain_application_imports() -> None:
     installed = str(_INSTALLED_ROOT)
-    if installed not in sys.path:
-        sys.path.insert(0, installed)
+    stdlib_roots = {
+        Path(sysconfig.get_path(name)).resolve()
+        for name in ("stdlib", "platstdlib")
+        if sysconfig.get_path(name)
+    }
+    stdlib_archives = {
+        root.parent / f"python{sys.version_info.major}{sys.version_info.minor}.zip"
+        for root in stdlib_roots
+    }
+    retained: list[str] = []
+    for value in sys.path:
+        if not value or value == installed:
+            continue
+        candidate = Path(value).resolve()
+        if {"site-packages", "dist-packages"}.intersection(candidate.parts):
+            continue
+        if candidate in stdlib_archives or any(
+            _is_within(candidate, root) for root in stdlib_roots
+        ):
+            retained.append(value)
+    sys.path[:] = [installed, *retained]
+
+
+def _verify_application_origins() -> None:
+    try:
+        installed = _INSTALLED_ROOT.resolve(strict=True)
+    except OSError:
+        raise _BoundaryError("bootstrap_failure") from None
+    application_modules = {
+        name: module
+        for name, module in sys.modules.items()
+        if name == "control_plane" or name.startswith("control_plane.")
+    }
+    if not application_modules:
+        raise _BoundaryError("bootstrap_failure")
+    for module in application_modules.values():
+        spec = getattr(module, "__spec__", None)
+        origin = getattr(spec, "origin", None)
+        if not isinstance(origin, str) or origin in {"built-in", "frozen"}:
+            raise _BoundaryError("bootstrap_failure")
+        try:
+            resolved = Path(origin).resolve(strict=True)
+        except OSError:
+            raise _BoundaryError("bootstrap_failure") from None
+        if not _is_within(resolved, installed):
+            raise _BoundaryError("bootstrap_failure")
+
+
+def _load_execute_request():
+    _constrain_application_imports()
+    if any(
+        name == "control_plane" or name.startswith("control_plane.")
+        for name in sys.modules
+    ):
+        raise _BoundaryError("bootstrap_failure")
     from control_plane.g2b.executor import execute_request
     from control_plane.g2b.grant import TransportPrincipal
 
+    _verify_application_origins()
     return execute_request, TransportPrincipal
 
 
@@ -129,29 +201,34 @@ def _run() -> dict[str, Any]:
     expected_uid = _resolve_service_uid()
     execute_request, principal_type = _load_execute_request()
     principal = _parse_principal(value["transport_principal"], principal_type)
-    return execute_request(
-        value["request"],
-        transport_principal=principal,
-        grant_path=_GRANT_PATH,
-        installed_root=_INSTALLED_ROOT,
-        workspace_root=_WORKSPACE_ROOT,
-        state_root=_STATE_ROOT,
-        lock_path=_LOCK_PATH,
-        expected_uid=expected_uid,
-        now=lambda: datetime.now(timezone.utc),
-    )
+    try:
+        return execute_request(
+            value["request"],
+            transport_principal=principal,
+            grant_path=_GRANT_PATH,
+            installed_root=_INSTALLED_ROOT,
+            workspace_root=_WORKSPACE_ROOT,
+            state_root=_STATE_ROOT,
+            lock_path=_LOCK_PATH,
+            expected_uid=expected_uid,
+            now=lambda: datetime.now(timezone.utc),
+        )
+    except BaseException:
+        raise _BoundaryError("bootstrap_failure") from None
 
 
 def main() -> int:
-    os.environ.clear()
     try:
-        result = _run()
+        discard = _DiscardOutput()
+        with redirect_stdout(discard), redirect_stderr(discard):
+            os.environ.clear()
+            result = _run()
         _write_result(result)
         return 0
     except _BoundaryError as error:
         _write_result(_failure(error.code))
         return 2
-    except Exception:
+    except BaseException:
         _write_result(_failure("bootstrap_failure"))
         return 2
 

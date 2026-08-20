@@ -15,10 +15,9 @@ import stat
 import time
 from typing import Any, Iterator
 
-from scripts.check_repository_secrets import content_findings
-
 from .errors import RefusedError, TimeoutError
 from .protocol import OPERATIONS, RESULT_PROTOCOL
+from .secret_policy import content_findings
 
 
 RECEIPT_FIELDS = frozenset(

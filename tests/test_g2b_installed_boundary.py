@@ -6,6 +6,9 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
+import subprocess
+import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -74,6 +77,7 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
         effective_uid: int = 4242,
         account_error: Exception | None = None,
         executor=None,
+        loader_error: BaseException | None = None,
     ) -> tuple[int, str, str]:
         stdout = io.StringIO()
         stderr = io.StringIO()
@@ -84,6 +88,21 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
             }
         account_result = SimpleNamespace(pw_uid=account_uid)
         account_lookup = account_error if account_error is not None else account_result
+        if loader_error is None:
+            loader_patch = patch.object(
+                self.module,
+                "_load_execute_request",
+                return_value=(
+                    executor,
+                    lambda *, login, actor_id: SimpleNamespace(login=login, actor_id=actor_id),
+                ),
+            )
+        else:
+            loader_patch = patch.object(
+                self.module,
+                "_load_execute_request",
+                side_effect=loader_error,
+            )
         with (
             patch.object(self.module.sys, "argv", argv),
             patch.object(self.module.sys, "stdin", _BinaryInput(stdin)),
@@ -96,14 +115,7 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
                 return_value=None if isinstance(account_lookup, Exception) else account_lookup,
             ) as lookup,
             patch.object(self.module.os, "geteuid", return_value=effective_uid),
-            patch.object(
-                self.module,
-                "_load_execute_request",
-                return_value=(
-                    executor,
-                    lambda *, login, actor_id: SimpleNamespace(login=login, actor_id=actor_id),
-                ),
-            ),
+            loader_patch,
             patch.dict(self.module.os.environ, {"HOSTILE": "request-content-must-not-leak"}, clear=True),
         ):
             code = self.module.main()
@@ -119,6 +131,88 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
         self.assertLessEqual(len(stdout.encode("utf-8")), 8192)
         self.assertNotIn("request-content-must-not-leak", stdout)
         return value
+
+    def stage_installed_bundle(
+        self,
+        root: Path,
+        *,
+        assert_isolated_path: bool,
+        legacy_scripts: bool = False,
+    ) -> tuple[Path, Path]:
+        installed = root / "installed"
+        shutil.copytree(
+            ROOT / "control_plane",
+            installed / "control_plane",
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
+        if legacy_scripts:
+            scripts = installed / "scripts"
+            scripts.mkdir()
+            (scripts / "__init__.py").write_text("", encoding="utf-8")
+            shutil.copy2(ROOT / "scripts/check_repository_secrets.py", scripts)
+
+        marker = installed / "control_plane/__init__.py"
+        marker_text = marker.read_text(encoding="utf-8")
+        marker_text += (
+            "\nimport sys\n"
+            'print("installed-import-stdout")\n'
+            'print("installed-import-stderr", file=sys.stderr)\n'
+        )
+        if assert_isolated_path:
+            marker_text += (
+                f"assert sys.path[0] == {str(installed)!r}\n"
+                "assert not any('site-packages' in value or 'dist-packages' in value "
+                "for value in sys.path[1:])\n"
+            )
+        marker.write_text(marker_text, encoding="utf-8")
+
+        entrypoint = root / "mcf-control-g2b"
+        source = ENTRYPOINT.read_text(encoding="utf-8")
+        source = source.replace("/usr/local/lib/mcf-control-bridge", str(installed))
+        source = source.replace(
+            "expected_uid = _resolve_service_uid()",
+            "expected_uid = max(os.geteuid(), 1)",
+        )
+        for original, replacement in (
+            ("/etc/mcf-control-bridge/g2b-grant.json", root / "g2b-grant.json"),
+            ("/var/lib/mcf-control-bridge/workspaces", root / "workspaces"),
+            ("/var/lib/mcf-control-bridge/state/g2b", root / "state"),
+            ("/run/lock/mcf-control-bridge-g2b.lock", root / "g2b.lock"),
+        ):
+            source = source.replace(original, str(replacement))
+        entrypoint.write_text(source, encoding="utf-8")
+        entrypoint.chmod(0o755)
+        self.assertEqual(source.splitlines()[0], "#!/usr/bin/python3 -I")
+
+        (root / "workspaces").mkdir(mode=0o700)
+        (root / "state").mkdir(mode=0o700)
+        (root / "g2b.lock").touch(mode=0o600)
+        (root / "g2b.lock").chmod(0o600)
+
+        ambient = root / "ambient"
+        (ambient / "control_plane/g2b").mkdir(parents=True)
+        (ambient / "control_plane/__init__.py").write_text(
+            'print("ambient-control-plane-stdout")\n', encoding="utf-8"
+        )
+        (ambient / "control_plane/g2b/__init__.py").write_text("", encoding="utf-8")
+        (ambient / "control_plane/g2b/executor.py").write_text(
+            'raise SystemExit("ambient-executor-loaded")\n', encoding="utf-8"
+        )
+        return entrypoint, ambient
+
+    def run_staged_entrypoint(self, entrypoint: Path, ambient: Path) -> subprocess.CompletedProcess:
+        child_environment = dict(os.environ)
+        child_environment["PYTHONPATH"] = str(ambient)
+        child_environment["PYTHONINSPECT"] = "1"
+        return subprocess.run(
+            [str(entrypoint), "status"],
+            cwd=ambient,
+            env=child_environment,
+            input=json.dumps(envelope("status")).encode("utf-8"),
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
 
     def test_entrypoint_has_isolated_system_python_shebang_and_fixed_paths(self) -> None:
         text = ENTRYPOINT.read_text(encoding="utf-8")
@@ -256,6 +350,98 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
         value = self.assert_boundary_failure(code, stdout, stderr)
         self.assertEqual(value["error"], "result_too_large")
         self.assertNotIn(" ", stdout)
+
+    def test_isolated_subprocess_uses_only_staged_application_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            entrypoint, ambient = self.stage_installed_bundle(
+                Path(temporary), assert_isolated_path=True
+            )
+
+            completed = self.run_staged_entrypoint(entrypoint, ambient)
+
+        self.assertEqual(completed.returncode, 0, completed)
+        self.assertEqual(completed.stderr, b"")
+        self.assertEqual(completed.stdout.count(b"\n"), 1)
+        result = json.loads(completed.stdout)
+        self.assertIn(result["error"], {"grant_missing", "root_execution_refused"})
+        self.assertNotIn(b"installed-import", completed.stdout)
+        self.assertNotIn(b"ambient-", completed.stdout)
+
+    def test_application_module_symlink_escape_is_bootstrap_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            entrypoint, ambient = self.stage_installed_bundle(
+                root,
+                assert_isolated_path=False,
+                legacy_scripts=True,
+            )
+            escaped = root / "outside-secret-policy.py"
+            escaped.write_text(
+                "def content_findings(content, **kwargs):\n    return iter(())\n",
+                encoding="utf-8",
+            )
+            installed_policy = root / "installed/control_plane/g2b/secret_policy.py"
+            installed_policy.unlink(missing_ok=True)
+            installed_policy.symlink_to(escaped)
+
+            completed = self.run_staged_entrypoint(entrypoint, ambient)
+
+        self.assertEqual(completed.returncode, 2, completed)
+        self.assertEqual(completed.stderr, b"")
+        self.assertEqual(
+            json.loads(completed.stdout),
+            {"error": "bootstrap_failure", "status": "REFUSED"},
+        )
+        self.assertNotIn(b"outside-secret-policy", completed.stdout)
+
+    def test_import_and_core_baseexceptions_are_normalized_without_raw_text(self) -> None:
+        cases = (
+            ("import", SystemExit("raw-import-request-content"), None),
+            ("core", None, KeyboardInterrupt("raw-core-request-content")),
+            (
+                "core-boundary-type",
+                None,
+                self.module._BoundaryError("raw-core-boundary-request-content"),
+            ),
+        )
+        for source, loader_error, core_error in cases:
+            with self.subTest(source=source):
+                def executor(request_value, **kwargs):
+                    raise core_error  # type: ignore[misc]
+
+                try:
+                    code, stdout, stderr = self.invoke(
+                        [str(ENTRYPOINT), "status"],
+                        json.dumps(envelope("status")).encode("utf-8"),
+                        executor=executor,
+                        loader_error=loader_error,
+                    )
+                except BaseException as escaped:
+                    self.fail(f"boundary escaped {type(escaped).__name__}")
+                value = self.assert_boundary_failure(code, stdout, stderr)
+                self.assertEqual(value["error"], "bootstrap_failure")
+                self.assertNotIn("raw-", stdout)
+
+    def test_environment_clear_baseexception_is_normalized(self) -> None:
+        class ExplodingEnvironment(dict):
+            def clear(self) -> None:
+                raise SystemExit("raw-environment-request-content")
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with (
+            patch.object(self.module.sys, "stdout", stdout),
+            patch.object(self.module.sys, "stderr", stderr),
+            patch.object(self.module.os, "environ", ExplodingEnvironment()),
+        ):
+            try:
+                code = self.module.main()
+            except BaseException as escaped:
+                self.fail(f"environment clear escaped {type(escaped).__name__}")
+
+        value = self.assert_boundary_failure(code, stdout.getvalue(), stderr.getvalue())
+        self.assertEqual(value["error"], "bootstrap_failure")
+        self.assertNotIn("raw-environment", stdout.getvalue())
 
     def test_sudoers_allows_only_four_exact_non_root_commands(self) -> None:
         text = SUDOERS.read_text(encoding="utf-8")

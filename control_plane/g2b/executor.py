@@ -9,11 +9,10 @@ from pathlib import Path
 import stat
 from typing import Any, Callable
 
-from scripts.check_repository_secrets import content_findings
-
 from .errors import ConflictError, G2BError, RefusedError
 from .grant import TransportPrincipal, load_grant, validate_grant_for_request
 from .protocol import MutationRequest, Precondition, RESULT_PROTOCOL, parse_request
+from .secret_policy import content_findings
 from .state import RECEIPT_FIELDS, StateStore, canonical_request_digest
 from .workspace import (
     MutationStateError,

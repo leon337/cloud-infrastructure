@@ -12,10 +12,9 @@ import secrets
 import stat
 from typing import Callable, Iterator
 
-from scripts.check_repository_secrets import content_findings
-
 from .errors import ConflictError, G2BError, RefusedError
 from .protocol import MAX_CONTENT_BYTES, Precondition
+from .secret_policy import content_findings
 
 
 _SAFE_TARGET_MODES = frozenset({0o600, 0o640, 0o644})
