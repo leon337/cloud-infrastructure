@@ -153,6 +153,8 @@ def executor_result_for_status(operation: str, status: str) -> dict[str, object]
     }
     value["status"] = status
     value["error"] = errors.get(status)
+    if status in {"CONFLICT", "TIMEOUT"}:
+        value["finished_at"] = value["started_at"]
     if status in errors:
         value["before"] = None
         value["after"] = None
@@ -186,6 +188,8 @@ def executor_result_for_rule(operation: str, rule: object, error: str | None) ->
     value = executor_result(operation)
     value["status"] = rule.status
     value["error"] = error
+    if rule.timestamp_shape == "instant":
+        value["finished_at"] = value["started_at"]
     if rule.grant_context == "absent":
         value["authority"] = None
         value["grant_id"] = None
@@ -723,6 +727,286 @@ class G2BGitHubAdapterTests(unittest.TestCase):
                 rule.phase = "forged"
         self.assertIsNot(ADAPTER.validate_executor_result, PUBLISH._valid_full_result)
 
+    def test_public_result_constructor_enforces_hand_authored_success_phase_invariants(self) -> None:
+        from control_plane.g2b import executor as core_executor
+
+        success_cases = (
+            ("write_success", "workspace.write", "PASS", None),
+            ("historical_recovery", "workspace.write", "PASS", None),
+            ("rollback_success", "rollback", "ROLLED_BACK", None),
+            ("status_success", "status", "PASS", None),
+            ("revoke_success", "revoke", "REVOKED", None),
+        )
+        wrong_terminals = {
+            "workspace.write": ("REVOKED", None),
+            "rollback": ("PASS", None),
+            "status": ("REVOKED", None),
+            "revoke": ("PASS", None),
+        }
+
+        for phase, operation, status, error in success_cases:
+            candidate = executor_result(operation)
+            candidate.update({"status": status, "error": error})
+            with self.subTest(phase=phase, mutation="valid"):
+                self.assertEqual(
+                    core_executor._public_result(phase=phase, value=candidate),
+                    candidate,
+                )
+
+            invalid = copy.deepcopy(candidate)
+            invalid["status"], invalid["error"] = wrong_terminals[operation]
+            with self.subTest(phase=phase, mutation="wrong terminal"):
+                self.assert_invalid_public_constructor_fallback(
+                    core_executor._public_result(phase=phase, value=invalid)
+                )
+
+    def test_public_result_constructor_fails_closed_for_each_canonical_shape_dimension(self) -> None:
+        from control_plane.g2b import executor as core_executor
+
+        valid = executor_result("status")
+        mutations = {
+            "unknown phase": ("undeclared", lambda value: None),
+            "extra field": ("status_success", lambda value: value.update({"raw": "RAW_SECRET"})),
+            "wrong operation": ("status_success", lambda value: value.update({"operation": "revoke"})),
+            "wrong error": ("status_success", lambda value: value.update({"error": "internal_error"})),
+            "missing grant": (
+                "status_success",
+                lambda value: value.update({"authority": None, "grant_id": None}),
+            ),
+            "constructor replay": ("status_success", lambda value: value.update({"replayed": True})),
+            "unexpected path": (
+                "status_success",
+                lambda value: value.update({"path": "G2B-PILOT.txt"}),
+            ),
+            "unexpected state": (
+                "status_success",
+                lambda value: value.update(
+                    {
+                        "before": {
+                            "exists": False,
+                            "size": None,
+                            "mode": None,
+                            "sha256": None,
+                        }
+                    }
+                ),
+            ),
+            "rollback linkage": (
+                "status_success",
+                lambda value: value.update({"rollback_request_id": "RAW-ROLLBACK-LINK"}),
+            ),
+            "revocation linkage": (
+                "status_success",
+                lambda value: value.update({"revocation_request_id": value["request_id"]}),
+            ),
+            "timestamp order": (
+                "status_success",
+                lambda value: value.update(
+                    {
+                        "started_at": "2026-08-20T12:00:02+00:00",
+                        "finished_at": "2026-08-20T12:00:01+00:00",
+                    }
+                ),
+            ),
+        }
+
+        for name, (phase, mutate) in mutations.items():
+            candidate = copy.deepcopy(valid)
+            mutate(candidate)
+            with self.subTest(name=name):
+                self.assert_invalid_public_constructor_fallback(
+                    core_executor._public_result(phase=phase, value=candidate)
+                )
+
+    def test_real_post_grant_invalid_now_results_pass_both_independent_consumers(self) -> None:
+        from control_plane.g2b import executor as core_executor
+        from control_plane.g2b.errors import RefusedError
+        from control_plane.g2b.grant import TransportPrincipal
+        from tests.test_g2b_executor import G2BExecutorTests, NOW, action_request
+
+        for operation in ("status", "revoke"):
+            with self.subTest(operation=operation):
+                core = G2BExecutorTests(
+                    methodName="test_authorized_absent_write_returns_pass_and_content_free_receipt"
+                )
+                core.setUp()
+                try:
+                    core.principal = TransportPrincipal(ACTOR_LOGIN, ACTOR_ID)
+                    core._write_grant(transport_principal_id=ACTOR_ID)
+                    request_value = action_request(
+                        f"G2B-REAL-NOW-{operation.upper()}", operation
+                    )
+                    with patch.object(
+                        core_executor,
+                        "_read_clock",
+                        side_effect=[NOW, RefusedError("invalid_now"), NOW],
+                    ):
+                        result = core.execute(request_value)
+                finally:
+                    core.tearDown()
+
+                self.assertEqual(
+                    (result["status"], result["error"]),
+                    ("REFUSED", "invalid_now"),
+                )
+                self.assertEqual(
+                    (result["authority"], result["grant_id"]),
+                    ("LEANDRO", "G2B-PILOT-20260820"),
+                )
+                parsed = ADAPTER.parse_request(request_value)
+                ADAPTER.validate_executor_result(
+                    result, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+                )
+                self.assertNotIn(
+                    "invalid_publication_result",
+                    PUBLISH.markdown(
+                        {"transport": {"issue_number": None}, "request": request_value},
+                        result,
+                    ),
+                )
+
+    def test_hand_authored_replay_and_snapshot_provenance_invariants(self) -> None:
+        transient_replay = executor_result_for_status("status", "TIMEOUT")
+        transient_replay["replayed"] = True
+        pre_grant_snapshot = executor_result_for_status("status", "REFUSED")
+        pre_grant_snapshot.update(
+            {
+                "error": "snapshot_already_exists",
+                "authority": None,
+                "grant_id": None,
+            }
+        )
+        pre_grant_write_snapshot = executor_result_for_status("workspace.write", "REFUSED")
+        pre_grant_write_snapshot.update(
+            {
+                "error": "snapshot_already_exists",
+                "authority": None,
+                "grant_id": None,
+                "finished_at": pre_grant_write_snapshot["started_at"],
+            }
+        )
+        rollback_snapshot = executor_result_for_status("rollback", "REFUSED")
+        rollback_snapshot["error"] = "snapshot_already_exists"
+
+        for name, operation, candidate in (
+            ("transient lock timeout replay", "status", transient_replay),
+            ("pre-grant status snapshot collision", "status", pre_grant_snapshot),
+            (
+                "pre-grant write snapshot collision",
+                "workspace.write",
+                pre_grant_write_snapshot,
+            ),
+            ("post-grant rollback snapshot collision", "rollback", rollback_snapshot),
+        ):
+            request_value = request(operation)
+            parsed = ADAPTER.parse_request(request_value)
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(ValueError, "invalid_executor_result"):
+                    ADAPTER.validate_executor_result(
+                        candidate, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+                    )
+                self.assertIn(
+                    "invalid_publication_result",
+                    PUBLISH.markdown(envelope(operation), candidate),
+                )
+
+    def test_real_lock_timeout_is_transient_and_never_replayed(self) -> None:
+        from control_plane.g2b.errors import TimeoutError
+        from control_plane.g2b.grant import TransportPrincipal
+        from control_plane.g2b.state import StateStore
+        from tests.test_g2b_executor import G2BExecutorTests, action_request
+
+        core = G2BExecutorTests(
+            methodName="test_authorized_absent_write_returns_pass_and_content_free_receipt"
+        )
+        core.setUp()
+        try:
+            core.principal = TransportPrincipal(ACTOR_LOGIN, ACTOR_ID)
+            core._write_grant(transport_principal_id=ACTOR_ID)
+            request_value = action_request("G2B-REAL-LOCK-TIMEOUT", "status")
+            with patch.object(
+                StateStore,
+                "exclusive_lock",
+                side_effect=TimeoutError("lock_timeout"),
+            ):
+                result = core.execute(request_value)
+        finally:
+            core.tearDown()
+
+        self.assertEqual((result["status"], result["error"]), ("TIMEOUT", "lock_timeout"))
+        self.assertFalse(result["replayed"])
+        self.assertIsNone(result["authority"])
+        parsed = ADAPTER.parse_request(request_value)
+        ADAPTER.validate_executor_result(
+            result, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+        )
+        self.assertNotIn(
+            "invalid_publication_result",
+            PUBLISH.markdown(
+                {"transport": {"issue_number": None}, "request": request_value},
+                result,
+            ),
+        )
+
+    def test_real_stored_replay_and_write_snapshot_collision_pass_both_consumers(self) -> None:
+        from control_plane.g2b.errors import RefusedError
+        from control_plane.g2b.grant import TransportPrincipal
+        from control_plane.g2b.state import StateStore
+        from control_plane.g2b.workspace import inspect_target
+        from tests.test_g2b_executor import G2BExecutorTests, action_request, write_request
+
+        core = G2BExecutorTests(
+            methodName="test_authorized_absent_write_returns_pass_and_content_free_receipt"
+        )
+        core.setUp()
+        try:
+            core.principal = TransportPrincipal(ACTOR_LOGIN, ACTOR_ID)
+            core._write_grant(transport_principal_id=ACTOR_ID)
+
+            status_request = action_request("G2B-REAL-STORED-REPLAY", "status")
+            self.assertFalse(core.execute(status_request)["replayed"])
+            replay = core.execute(status_request)
+
+            target = core.workspace / "G2B-PILOT.txt"
+            target.write_bytes(b"original\n")
+            os.chmod(target, 0o600)
+            before = inspect_target(
+                core.workspace, "G2B-PILOT.txt", expected_uid=core.expected_uid
+            )
+            write = write_request("G2B-REAL-SNAPSHOT-COLLISION", "mutated\n")
+            write["arguments"]["precondition"] = {"sha256": before.sha256}
+            with patch.object(
+                StateStore,
+                "save_snapshot",
+                side_effect=RefusedError("snapshot_already_exists"),
+            ):
+                snapshot_failure = core.execute(write)
+        finally:
+            core.tearDown()
+
+        self.assertTrue(replay["replayed"])
+        self.assertEqual(
+            (snapshot_failure["status"], snapshot_failure["error"]),
+            ("REFUSED", "snapshot_already_exists"),
+        )
+        self.assertEqual(snapshot_failure["authority"], "LEANDRO")
+
+        for request_value, result in (
+            (status_request, replay),
+            (write, snapshot_failure),
+        ):
+            parsed = ADAPTER.parse_request(request_value)
+            ADAPTER.validate_executor_result(
+                result, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+            )
+            self.assertNotIn(
+                "invalid_publication_result",
+                PUBLISH.markdown(
+                    {"transport": {"issue_number": None}, "request": request_value},
+                    result,
+                ),
+            )
+
     def test_every_task4_public_result_constructor_declares_a_contract_phase(self) -> None:
         from control_plane.g2b import executor as core_executor
 
@@ -760,6 +1044,45 @@ class G2BGitHubAdapterTests(unittest.TestCase):
         self.assertGreaterEqual(receipt_calls, 8)
         self.assertGreaterEqual(public_result_builders, 3)
         self.assertEqual(declared, contract_phases)
+
+    def assert_invalid_public_constructor_fallback(self, result: object) -> None:
+        expected_fields = {
+            "protocol",
+            "request_id",
+            "request_digest",
+            "mission_id",
+            "declared_actor",
+            "authority",
+            "transport_principal",
+            "grant_id",
+            "project",
+            "operation",
+            "path",
+            "started_at",
+            "finished_at",
+            "precondition",
+            "before",
+            "after",
+            "status",
+            "replayed",
+            "rollback_request_id",
+            "revocation_request_id",
+            "error",
+        }
+        self.assertIsInstance(result, dict)
+        self.assertEqual(set(result), expected_fields)
+        self.assertEqual(result["protocol"], "MCF_WORKSPACE_MUTATION_RESULT_V1")
+        self.assertEqual(result["status"], "FAILED")
+        self.assertEqual(result["error"], "internal_error")
+        self.assertFalse(result["replayed"])
+        self.assertEqual(result["transport_principal"], {"login": None, "actor_id": None})
+        for field in expected_fields - {
+            "protocol", "status", "error", "replayed", "transport_principal"
+        }:
+            self.assertIsNone(result[field])
+        encoded = json.dumps(result, sort_keys=True, separators=(",", ":"))
+        self.assertLessEqual(len(encoded.encode("utf-8")), 8192)
+        self.assertNotIn("RAW_SECRET", encoded)
 
     def test_real_task4_receipt_persistence_errors_are_accepted_with_grant_context(self) -> None:
         from control_plane.g2b.errors import RefusedError

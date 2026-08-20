@@ -90,14 +90,17 @@ class PublicResultRule:
     """One immutable executor phase/outcome shape accepted at the public boundary."""
 
     phase: str
-    operations: frozenset[str]
+    operations: frozenset[str | None]
     status: str
     errors: frozenset[str | None]
     grant_context: str
     result_shape: str
+    timestamp_shape: str = "instant"
+    replayable: bool = False
 
 
 _ALL_OPERATIONS = frozenset({"workspace.write", "rollback", "status", "revoke"})
+_UNCORRELATED_OPERATION = frozenset({None})
 _STATE_IO_REFUSED_ERRORS = frozenset(
     """
     atomic_rename_unsupported invalid_state_value state_file_too_large state_read_failed
@@ -124,37 +127,55 @@ _RECOVERY_REFUSED_ERRORS = _STATE_IO_REFUSED_ERRORS | frozenset(
         "recovery_identity_mismatch", "recovery_missing", "secret_like_recovery",
     }
 )
-_SNAPSHOT_REFUSED_ERRORS = _STATE_IO_REFUSED_ERRORS | frozenset(
+_WRITE_SNAPSHOT_REFUSED_ERRORS = _STATE_IO_REFUSED_ERRORS | frozenset(
     {
-        "secret_like_snapshot", "snapshot_already_exists", "snapshot_delete_failed",
+        "invalid_snapshot", "secret_like_snapshot", "snapshot_already_exists",
+        "snapshot_delete_failed",
     }
+)
+_ROLLBACK_SNAPSHOT_REFUSED_ERRORS = _STATE_IO_REFUSED_ERRORS | frozenset(
+    {"secret_like_snapshot", "snapshot_delete_failed"}
 )
 _REVOCATION_REFUSED_ERRORS = _STATE_IO_REFUSED_ERRORS | _AUDIT_REFUSED_ERRORS | frozenset(
     {"invalid_revocation", "secret_like_revocation"}
 )
-_STATE_REFUSED_ERRORS = (
-    _RECEIPT_REFUSED_ERRORS
-    | _RECOVERY_REFUSED_ERRORS
-    | _SNAPSHOT_REFUSED_ERRORS
-    | _REVOCATION_REFUSED_ERRORS
-    | frozenset({"state_temporary_cleanup_failed", "unsafe_lock_file"})
+_RECOVERY_READ_UPDATE_ERRORS = _STATE_IO_REFUSED_ERRORS | frozenset(
+    {
+        "invalid_recovery", "invalid_recovery_transition", "recovery_identity_mismatch",
+        "recovery_missing", "secret_like_recovery",
+    }
 )
-_HISTORICAL_RECONCILIATION_ERRORS = _STATE_REFUSED_ERRORS | frozenset(
-    {"snapshot_delete_failed"}
+_HISTORICAL_RECONCILIATION_ERRORS = (
+    _RECEIPT_REFUSED_ERRORS
+    | _RECOVERY_READ_UPDATE_ERRORS
+    | frozenset(
+        {
+            "invalid_now", "snapshot_delete_failed", "state_temporary_cleanup_failed",
+        }
+    )
 )
 _GRANT_REFUSED_ERRORS = frozenset(
     """
     executor_digest_mismatch executor_root_required grant_actor_mismatch grant_content_too_large
     grant_missing grant_mission_mismatch grant_not_active grant_operation_mismatch
     grant_path_mismatch grant_principal_mismatch grant_project_mismatch invalid_grant
-    invalid_grant_duration invalid_now unsafe_executor_bundle unsafe_grant_file
+    invalid_grant_duration unsafe_executor_bundle unsafe_grant_file
     unsafe_grant_mode unsafe_grant_owner
     """.split()
 )
 _BOOTSTRAP_REFUSED_ERRORS = frozenset(
     """
     execution_uid_mismatch invalid_execution_uid invalid_transport_principal
-    root_execution_refused unsafe_lock_file unsafe_state_directory unsafe_state_mode
+    invalid_now root_execution_refused
+    """.split()
+)
+_REQUEST_VALIDATION_REFUSED_ERRORS = frozenset(
+    """
+    content_too_large invalid_arguments invalid_content invalid_declared_actor
+    invalid_environment invalid_mission_id invalid_original_request_id invalid_path
+    invalid_precondition invalid_project invalid_protocol invalid_request invalid_request_id
+    request_must_be_object unexpected_arguments_field unexpected_project_field
+    unexpected_request_field unknown_operation
     """.split()
 )
 _WORKSPACE_REFUSED_ERRORS = frozenset(
@@ -187,8 +208,12 @@ _ROLLBACK_MUTATION_ERRORS = frozenset(
 
 PUBLIC_RESULT_CONTRACT = (
     PublicResultRule(
-        "bootstrap", _ALL_OPERATIONS, "REFUSED", _BOOTSTRAP_REFUSED_ERRORS,
-        "absent", "stateless",
+        "bootstrap", _UNCORRELATED_OPERATION, "REFUSED", _BOOTSTRAP_REFUSED_ERRORS,
+        "absent", "uncorrelated", "optional_instant",
+    ),
+    PublicResultRule(
+        "request_validation", _UNCORRELATED_OPERATION, "REFUSED",
+        _REQUEST_VALIDATION_REFUSED_ERRORS, "absent", "uncorrelated",
     ),
     PublicResultRule(
         "state_setup", _ALL_OPERATIONS, "REFUSED",
@@ -232,32 +257,44 @@ PUBLIC_RESULT_CONTRACT = (
         _RECOVERY_REFUSED_ERRORS, "absent", "stateless",
     ),
     PublicResultRule(
+        "transient_internal", _UNCORRELATED_OPERATION, "FAILED",
+        frozenset({"internal_error"}), "absent", "uncorrelated", "optional_instant",
+    ),
+    PublicResultRule(
         "transient_internal", _ALL_OPERATIONS, "FAILED", frozenset({"internal_error"}),
         "absent", "stateless",
     ),
     PublicResultRule(
         "operation_failure", _ALL_OPERATIONS, "REFUSED", _RECEIPT_REFUSED_ERRORS,
-        "present", "stateless",
+        "present", "stateless", "ordered", True,
+    ),
+    PublicResultRule(
+        "operation_failure", _ALL_OPERATIONS, "REFUSED", frozenset({"invalid_now"}),
+        "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
         "operation_failure", _ALL_OPERATIONS, "FAILED", frozenset({"internal_error"}),
-        "present", "stateless",
+        "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
         "operation_failure", frozenset({"workspace.write"}), "REFUSED",
-        _WORKSPACE_REFUSED_ERRORS | _RECOVERY_REFUSED_ERRORS | _SNAPSHOT_REFUSED_ERRORS
+        _WORKSPACE_REFUSED_ERRORS
+        | _RECOVERY_REFUSED_ERRORS
+        | _WRITE_SNAPSHOT_REFUSED_ERRORS
         | frozenset({"recovery_name_mismatch", "secret_like_content"}),
-        "present", "stateless",
+        "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
         "operation_failure", frozenset({"workspace.write"}), "CONFLICT",
         frozenset({"active_mutation_exists", "target_changed", "workspace_changed"}),
-        "present", "stateless",
+        "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
         "operation_failure", frozenset({"rollback"}), "REFUSED",
-        _WORKSPACE_REFUSED_ERRORS | _RECOVERY_REFUSED_ERRORS | _SNAPSHOT_REFUSED_ERRORS,
-        "present", "stateless",
+        _WORKSPACE_REFUSED_ERRORS
+        | _RECOVERY_REFUSED_ERRORS
+        | _ROLLBACK_SNAPSHOT_REFUSED_ERRORS,
+        "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
         "operation_failure", frozenset({"rollback"}), "CONFLICT",
@@ -267,77 +304,363 @@ PUBLIC_RESULT_CONTRACT = (
                 "original_mutation_not_found", "snapshot_mismatch", "snapshot_missing",
                 "target_changed", "workspace_changed",
             }
-        ), "present", "stateless",
+        ), "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
         "operation_failure", frozenset({"revoke"}), "CONFLICT",
-        frozenset({"active_mutation_exists"}), "present", "stateless",
+        frozenset({"active_mutation_exists"}), "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
         "operation_failure", frozenset({"revoke"}), "REFUSED",
         _RECOVERY_REFUSED_ERRORS | _REVOCATION_REFUSED_ERRORS,
-        "present", "stateless",
+        "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
         "write_inspected", frozenset({"workspace.write"}), "REFUSED",
         _WORKSPACE_REFUSED_ERRORS | frozenset({"secret_like_content"}),
-        "present", "same_state",
+        "present", "same_state", "ordered", True,
     ),
     PublicResultRule(
         "write_inspected", frozenset({"workspace.write"}), "CONFLICT",
         frozenset({"precondition_mismatch", "target_changed", "workspace_changed"}),
-        "present", "same_state",
+        "present", "same_state", "ordered", True,
     ),
     PublicResultRule(
         "write_mutation", frozenset({"workspace.write"}), "FAILED",
-        _WRITE_MUTATION_ERRORS, "present", "write_mutation",
+        _WRITE_MUTATION_ERRORS, "present", "write_mutation", "ordered", True,
     ),
     PublicResultRule(
         "rollback_mutation", frozenset({"rollback"}), "FAILED",
-        _ROLLBACK_MUTATION_ERRORS, "present", "rollback_mutation",
+        _ROLLBACK_MUTATION_ERRORS, "present", "rollback_mutation", "ordered", True,
     ),
     PublicResultRule(
         "historical_recovery", frozenset({"workspace.write"}), "PASS", frozenset({None}),
-        "present", "write_success",
+        "present", "write_success", "ordered", True,
     ),
     PublicResultRule(
         "historical_recovery", frozenset({"workspace.write"}), "FAILED",
         frozenset({"mutation_reconciled_reverted"}), "present", "reconciled_reverted",
+        "ordered", True,
     ),
     PublicResultRule(
         "historical_recovery", frozenset({"workspace.write"}), "FAILED",
         frozenset({"mutation_state_indeterminate"}), "present", "reconciled_indeterminate",
+        "ordered", True,
     ),
     PublicResultRule(
         "write_success", frozenset({"workspace.write"}), "PASS", frozenset({None}),
-        "present", "write_success",
+        "present", "write_success", "ordered", True,
     ),
     PublicResultRule(
         "rollback_success", frozenset({"rollback"}), "ROLLED_BACK", frozenset({None}),
-        "present", "rollback_success",
+        "present", "rollback_success", "ordered", True,
     ),
     PublicResultRule(
         "status_success", frozenset({"status"}), "PASS", frozenset({None}),
-        "present", "stateless",
+        "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
         "revoke_success", frozenset({"revoke"}), "REVOKED", frozenset({None}),
-        "present", "stateless",
+        "present", "stateless", "ordered", True,
     ),
     PublicResultRule(
-        "bounded_fallback", frozenset(), "FAILED", frozenset({"result_too_large"}),
-        "absent", "uncorrelated",
+        "bounded_fallback", _UNCORRELATED_OPERATION, "FAILED",
+        frozenset({"result_too_large"}), "absent", "uncorrelated", "none",
     ),
 )
 
 
 def _public_result(*, phase: str, value: dict[str, Any]) -> dict[str, Any]:
-    """Bind each fixed result constructor to a declared canonical phase."""
-    if phase not in {rule.phase for rule in PUBLIC_RESULT_CONTRACT}:
-        raise AssertionError("undeclared_public_result_phase")
-    if set(value) != PUBLIC_RESULT_FIELDS:
-        raise AssertionError("invalid_public_result_constructor")
+    """Return a phase-valid result or one fixed value-free internal fallback."""
+    try:
+        if not isinstance(value, dict) or set(value) != PUBLIC_RESULT_FIELDS:
+            return _invalid_public_result()
+        if value.get("replayed") is not False:
+            return _invalid_public_result()
+        if not any(
+            _matches_public_result_rule(value, rule)
+            for rule in PUBLIC_RESULT_CONTRACT
+            if rule.phase == phase
+        ):
+            return _invalid_public_result()
+    except Exception:
+        return _invalid_public_result()
     return value
+
+
+def _matches_public_result_rule(value: dict[str, Any], rule: PublicResultRule) -> bool:
+    operation = value.get("operation")
+    if (
+        operation not in rule.operations
+        or value.get("status") != rule.status
+        or value.get("error") not in rule.errors
+        or not _valid_public_identity(value, operation=operation)
+        or not _valid_public_grant_context(value, rule.grant_context)
+        or not _valid_public_timestamp_shape(value, rule.timestamp_shape)
+        or not _matches_public_result_state_shape(value, rule.result_shape)
+    ):
+        return False
+    return _matches_public_result_operation_shape(
+        value, operation, rule.result_shape, rule.grant_context
+    )
+
+
+def _valid_public_identity(value: dict[str, Any], *, operation: Any) -> bool:
+    if value.get("protocol") != RESULT_PROTOCOL:
+        return False
+    principal = value.get("transport_principal")
+    if not _valid_public_principal(principal):
+        return False
+    if operation is None:
+        return all(
+            value.get(field) is None
+            for field in (
+                "request_id", "request_digest", "mission_id", "declared_actor", "project",
+                "path", "precondition", "before", "after", "rollback_request_id",
+                "revocation_request_id",
+            )
+        )
+    if operation not in _ALL_OPERATIONS:
+        return False
+    project = value.get("project")
+    return (
+        _valid_request_id(value.get("request_id"))
+        and _valid_sha256(value.get("request_digest"))
+        and value.get("mission_id") == "CONTROL-BRIDGE-G2B-PILOT"
+        and value.get("declared_actor") == "MESTRE_MCF"
+        and _valid_public_project(project)
+        and _valid_correlated_principal(principal)
+        and _valid_public_precondition(value.get("precondition"), operation=operation)
+        and _valid_public_state(value.get("before"))
+        and _valid_public_state(value.get("after"))
+    )
+
+
+def _valid_public_grant_context(value: dict[str, Any], expected: str) -> bool:
+    authority = value.get("authority")
+    grant_id = value.get("grant_id")
+    if expected == "absent":
+        return authority is None and grant_id is None
+    return expected == "present" and authority == "LEANDRO" and _valid_request_id(grant_id)
+
+
+def _valid_public_timestamp_shape(value: dict[str, Any], shape: str) -> bool:
+    started = _parse_public_timestamp(value.get("started_at"))
+    finished = _parse_public_timestamp(value.get("finished_at"))
+    if shape == "none":
+        return value.get("started_at") is None and value.get("finished_at") is None
+    if shape == "optional_instant":
+        return (
+            value.get("started_at") is None
+            and value.get("finished_at") is None
+        ) or (started is not None and finished == started)
+    if started is None or finished is None:
+        return False
+    if shape == "instant":
+        return finished == started
+    return shape == "ordered" and finished >= started
+
+
+def _matches_public_result_state_shape(value: dict[str, Any], shape: str) -> bool:
+    before = value.get("before")
+    after = value.get("after")
+    error = value.get("error")
+    if shape in {"uncorrelated", "stateless"}:
+        return before is None and after is None
+    if shape == "same_state":
+        return before is not None and after == before
+    if shape == "write_mutation":
+        if before is None:
+            return False
+        if error == "final_target_indeterminate":
+            return after is None
+        return error != "final_target_mismatch" or after is not None
+    if shape == "rollback_mutation":
+        if not isinstance(before, dict) or before.get("exists") is not True:
+            return False
+        if error == "final_target_indeterminate":
+            return after is None
+        return error != "final_target_mismatch" or after is not None
+    if shape == "reconciled_reverted":
+        return before is not None and after == before
+    if shape == "reconciled_indeterminate":
+        return before is not None
+    if shape == "write_success":
+        return before is not None and after is not None
+    if shape == "rollback_success":
+        return isinstance(before, dict) and before.get("exists") is True and after is not None
+    return False
+
+
+def _matches_public_result_operation_shape(
+    value: dict[str, Any],
+    operation: str | None,
+    result_shape: str,
+    grant_context: str,
+) -> bool:
+    rollback_link = value.get("rollback_request_id")
+    revocation_link = value.get("revocation_request_id")
+    if operation is None:
+        return value.get("path") is None and rollback_link is None and revocation_link is None
+    if operation == "workspace.write":
+        return (
+            value.get("path") in (
+                {_PILOT_PATH} if grant_context == "present" else {None, _PILOT_PATH}
+            )
+            and rollback_link is None
+            and revocation_link is None
+        )
+    if operation == "rollback":
+        expected_path = (
+            _PILOT_PATH
+            if result_shape in {"rollback_mutation", "rollback_success"}
+            else None
+        )
+        return (
+            value.get("path") == expected_path
+            and _valid_request_id(rollback_link)
+            and revocation_link is None
+        )
+    if operation == "status":
+        return value.get("path") is None and rollback_link is None and revocation_link is None
+    if operation == "revoke":
+        expected_revocation = value.get("request_id") if value.get("status") == "REVOKED" else None
+        return (
+            value.get("path") is None
+            and rollback_link is None
+            and revocation_link == expected_revocation
+        )
+    return False
+
+
+def _valid_public_principal(value: Any) -> bool:
+    if not isinstance(value, dict) or set(value) != {"login", "actor_id"}:
+        return False
+    if value == {"login": None, "actor_id": None}:
+        return True
+    return _valid_correlated_principal(value)
+
+
+def _valid_correlated_principal(value: dict[str, Any]) -> bool:
+    login = value.get("login")
+    actor_id = value.get("actor_id")
+    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"
+    return (
+        isinstance(login, str)
+        and 1 <= len(login) <= 39
+        and login[0] in allowed[:-1]
+        and login[-1] in allowed[:-1]
+        and all(character in allowed for character in login)
+        and isinstance(actor_id, int)
+        and not isinstance(actor_id, bool)
+        and 0 < actor_id <= 2**63 - 1
+    )
+
+
+def _valid_public_project(value: Any) -> bool:
+    if not isinstance(value, dict) or set(value) != {"tenant", "name", "environment"}:
+        return False
+    tenant = value.get("tenant")
+    name = value.get("name")
+    return (
+        _valid_dns_label(tenant)
+        and _valid_dns_label(name)
+        and value.get("environment") in {"dev", "staging"}
+    )
+
+
+def _valid_dns_label(value: Any) -> bool:
+    allowed = "abcdefghijklmnopqrstuvwxyz0123456789-"
+    return (
+        isinstance(value, str)
+        and 1 <= len(value) <= 63
+        and value[0] in allowed[:-1]
+        and value[-1] in allowed[:-1]
+        and all(character in allowed for character in value)
+    )
+
+
+def _valid_public_precondition(value: Any, *, operation: str) -> bool:
+    if operation != "workspace.write":
+        return value is None
+    if value == {"state": "ABSENT"}:
+        return True
+    return isinstance(value, dict) and set(value) == {"sha256"} and _valid_sha256(
+        value.get("sha256")
+    )
+
+
+def _valid_public_state(value: Any) -> bool:
+    if value is None:
+        return True
+    if not isinstance(value, dict) or set(value) != {"exists", "size", "mode", "sha256"}:
+        return False
+    if value.get("exists") is False:
+        return all(value.get(field) is None for field in ("size", "mode", "sha256"))
+    size = value.get("size")
+    return (
+        value.get("exists") is True
+        and isinstance(size, int)
+        and not isinstance(size, bool)
+        and 0 <= size <= 65_536
+        and value.get("mode") in {384, 416, 420}
+        and _valid_sha256(value.get("sha256"))
+    )
+
+
+def _valid_request_id(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and 1 <= len(value) <= 128
+        and value[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        and all(character in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-" for character in value)
+    )
+
+
+def _valid_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _parse_public_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not 1 <= len(value) <= 40:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
+        return None
+    return parsed
+
+
+def _invalid_public_result() -> dict[str, Any]:
+    return {
+        "protocol": RESULT_PROTOCOL,
+        "request_id": None,
+        "request_digest": None,
+        "mission_id": None,
+        "declared_actor": None,
+        "authority": None,
+        "transport_principal": {"login": None, "actor_id": None},
+        "grant_id": None,
+        "project": None,
+        "operation": None,
+        "path": None,
+        "started_at": None,
+        "finished_at": None,
+        "precondition": None,
+        "before": None,
+        "after": None,
+        "status": "FAILED",
+        "replayed": False,
+        "rollback_request_id": None,
+        "revocation_request_id": None,
+        "error": "internal_error",
+    }
 
 
 def execute_request(
@@ -394,6 +717,7 @@ def _execute_request_impl(
         if effective_uid != expected_uid:
             raise RefusedError("execution_uid_mismatch")
         started_at = _read_clock(now)
+        phase = "request_validation"
         request = parse_request(request_value)
         request_digest = canonical_request_digest(request_value)
         phase = "state_setup"

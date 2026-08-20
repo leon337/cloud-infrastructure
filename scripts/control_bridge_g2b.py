@@ -339,28 +339,66 @@ def _matches_contract_rule(value: dict[str, Any], rule: Any) -> bool:
     has_grant = value.get("authority") is not None and value.get("grant_id") is not None
     if has_grant is not (rule.grant_context == "present"):
         return False
+    if value.get("replayed") is True and rule.replayable is not True:
+        return False
+    started = _utc_timestamp(value.get("started_at"))
+    finished = _utc_timestamp(value.get("finished_at"))
+    if rule.timestamp_shape == "instant" and started != finished:
+        return False
+    if rule.timestamp_shape == "ordered" and (
+        started is None or finished is None or finished < started
+    ):
+        return False
     before, after = value.get("before"), value.get("after")
     if rule.result_shape == "stateless":
-        return before is None and after is None
-    if rule.result_shape == "same_state":
-        return before is not None and after == before
-    if rule.result_shape == "write_mutation":
+        state_matches = before is None and after is None
+    elif rule.result_shape == "same_state":
+        state_matches = before is not None and after == before
+    elif rule.result_shape == "write_mutation":
         if before is None:
             return False
         if value.get("error") == "final_target_indeterminate":
-            return after is None
-        return value.get("error") != "final_target_mismatch" or after is not None
-    if rule.result_shape == "rollback_mutation":
+            state_matches = after is None
+        else:
+            state_matches = value.get("error") != "final_target_mismatch" or after is not None
+    elif rule.result_shape == "rollback_mutation":
         if before is None or before.get("exists") is not True:
             return False
         if value.get("error") == "final_target_indeterminate":
-            return after is None
-        return value.get("error") != "final_target_mismatch" or after is not None
-    if rule.result_shape == "reconciled_reverted":
-        return before is not None and after == before
-    if rule.result_shape == "reconciled_indeterminate":
-        return before is not None
-    return rule.result_shape in {"write_success", "rollback_success"}
+            state_matches = after is None
+        else:
+            state_matches = value.get("error") != "final_target_mismatch" or after is not None
+    elif rule.result_shape == "reconciled_reverted":
+        state_matches = before is not None and after == before
+    elif rule.result_shape == "reconciled_indeterminate":
+        state_matches = before is not None
+    elif rule.result_shape == "write_success":
+        state_matches = before is not None and after is not None
+    elif rule.result_shape == "rollback_success":
+        state_matches = before is not None and before.get("exists") is True and after is not None
+    else:
+        return False
+    if not state_matches:
+        return False
+
+    operation = value.get("operation")
+    rollback_link = value.get("rollback_request_id")
+    revocation_link = value.get("revocation_request_id")
+    if operation == "workspace.write":
+        return value.get("path") == "G2B-PILOT.txt" and rollback_link is None and revocation_link is None
+    if operation == "rollback":
+        expected_path = (
+            "G2B-PILOT.txt"
+            if rule.result_shape in {"rollback_mutation", "rollback_success"}
+            else None
+        )
+        return value.get("path") == expected_path and rollback_link is not None and revocation_link is None
+    if operation == "status":
+        return value.get("path") is None and rollback_link is None and revocation_link is None
+    if operation == "revoke":
+        expected_revocation = value.get("request_id") if value.get("status") == "REVOKED" else None
+        return value.get("path") is None and rollback_link is None and revocation_link == expected_revocation
+    return False
 
 
 def _valid_contract_semantics(value: dict[str, Any], operation: str, status: str, error: Any) -> bool:
