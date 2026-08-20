@@ -22,7 +22,8 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(mission["roadmap"]["R1"], "COMPLETE")
         self.assertEqual(mission["roadmap"]["R2"], "COMPLETE")
         self.assertEqual(mission["roadmap"]["R3"], "COMPLETE")
-        self.assertEqual(mission["roadmap"]["R4"], "NEXT")
+        self.assertEqual(mission["roadmap"]["R4"], "COMPLETE")
+        self.assertEqual(mission["roadmap"]["R5"], "NEXT")
         self.assertEqual(
             state["continuity"]["startup_recovery_protocol"],
             "governance/AI-STARTUP-RECOVERY-PROTOCOL.md",
@@ -30,6 +31,18 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(
             state["continuity"]["startup_recovery_protocol_state"],
             "state/startup-recovery-protocol.yaml",
+        )
+        self.assertEqual(
+            state["continuity"]["mission_persistence_policy"],
+            "governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md",
+        )
+        self.assertEqual(
+            state["continuity"]["mission_persistence_policy_state"],
+            "state/mission-persistence-policy.yaml",
+        )
+        self.assertEqual(
+            state["continuity"]["max_material_work_without_remote_checkpoint_minutes"],
+            30,
         )
         self.assertEqual(
             state["continuity"]["g2b_recovery_checkpoint_doc"],
@@ -54,13 +67,15 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             "ISOLATED_DO_NOT_MODIFY",
         )
 
-    def test_entrypoints_require_protocol_and_point_to_r4(self):
+    def test_entrypoints_require_protocol_persistence_and_point_to_r5(self):
         for relative in ("README.md", "CONTEXT.md", "CHECKPOINT.md"):
             text = (ROOT / relative).read_text()
             self.assertNotIn("Codex está indisponível", text)
             self.assertIn("governance/AI-STARTUP-RECOVERY-PROTOCOL.md", text)
             self.assertIn("state/startup-recovery-protocol.yaml", text)
-            self.assertIn("R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY", text)
+            self.assertIn("governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md", text)
+            self.assertIn("state/mission-persistence-policy.yaml", text)
+            self.assertIn("R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO", text)
             self.assertIn("codex/control-bridge-g2b", text)
             self.assertIn("docs/54-control-bridge-g2b-recovery-checkpoint.md", text)
 
@@ -79,19 +94,29 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(state["pilot"]["project"], "leon337/g2a-smoke/dev")
         self.assertEqual(state["pilot"]["path"], "G2B-PILOT.txt")
         self.assertEqual(state["pilot"]["grant_duration_hours"], 24)
+        self.assertEqual(state["continuity"]["roadmap_stage"], "R4_COMPLETE_R5_NEXT")
+        self.assertEqual(
+            state["continuity"]["mission_persistence_policy_state"],
+            "state/mission-persistence-policy.yaml",
+        )
         self.assertFalse(state["evidence"]["real_write"])
         self.assertFalse(state["evidence"]["real_rollback"])
         self.assertFalse(state["evidence"]["real_revocation"])
 
-    def test_active_mission_state_points_to_r4_and_closed_human_gates(self):
+    def test_active_mission_state_points_to_r5_and_closed_human_gates(self):
         state = yaml.safe_load((ROOT / "state/active-mission.yaml").read_text())
         self.assertEqual(state["continuity_roadmap"]["R1"], "COMPLETE")
         self.assertEqual(state["continuity_roadmap"]["R2"], "COMPLETE")
         self.assertEqual(state["continuity_roadmap"]["R3"], "COMPLETE")
-        self.assertEqual(state["continuity_roadmap"]["R4"], "NEXT")
+        self.assertEqual(state["continuity_roadmap"]["R4"], "COMPLETE")
+        self.assertEqual(state["continuity_roadmap"]["R5"], "NEXT")
         self.assertEqual(
             state["startup_recovery_protocol"]["protocol_version"],
             "CLOUD_INFRA_AI_STARTUP_RECOVERY_V1",
+        )
+        self.assertEqual(
+            state["mission_persistence_policy"]["protocol_version"],
+            "CLOUD_INFRA_LONG_RUNNING_MISSION_PERSISTENCE_V1",
         )
         self.assertEqual(
             state["control_bridge_g2b"]["recovery_checkpoint_doc"],
@@ -99,7 +124,7 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         )
         self.assertEqual(
             state["next_exact_step"],
-            "R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY",
+            "R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO",
         )
         for value in state["human_gates"].values():
             self.assertIn("NOT_AUTHORIZED", value)
@@ -119,3 +144,29 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertFalse(protocol["verdicts"]["WAITING_HUMAN_GATE"]["implementation_allowed"])
         self.assertIn("LOCAL_REMOTE_DIVERGENCE_UNEXPLAINED", protocol["fail_closed_conditions"])
         self.assertIn("UNCOMMITTED_OR_UNTRACKED_WORK_WITH_UNKNOWN_OWNERSHIP", protocol["fail_closed_conditions"])
+
+    def test_long_running_persistence_contract_is_fail_closed(self):
+        policy = yaml.safe_load((ROOT / "state/mission-persistence-policy.yaml").read_text())
+        self.assertEqual(policy["status"], "ACTIVE_REQUIRED")
+        self.assertEqual(
+            policy["limits"]["max_material_work_without_remote_checkpoint_minutes"],
+            30,
+        )
+        self.assertIn(
+            "NO_LONG_RUNNING_MISSION_WITHOUT_RECOVERABLE_REMOTE_CHECKPOINTS",
+            policy["principles"],
+        )
+        self.assertIn("WIP_CHECKPOINT_DOES_NOT_IMPLY_ACCEPTANCE", policy["principles"])
+        self.assertFalse(policy["acceptance"]["persistence_implies_acceptance"])
+        self.assertTrue(policy["acceptance"]["pass_requires_applicable_evidence"])
+        self.assertTrue(policy["subagents"]["controlling_agent_owns_durability"])
+        self.assertFalse(policy["subagents"]["subagent_transcript_is_durable_state"])
+        self.assertTrue(policy["restart_recovery"]["startup_recovery_protocol_required"])
+        self.assertIn(
+            "REMOTE_PERSISTENCE_BROKEN_AND_NEW_UNRELATED_MATERIAL_WORK_WOULD_ACCUMULATE",
+            policy["fail_closed_conditions"],
+        )
+        self.assertIn(
+            "MATERIAL_GIT_PROGRESS_WITH_STALE_LEDGER_STATE",
+            policy["fail_closed_conditions"],
+        )
