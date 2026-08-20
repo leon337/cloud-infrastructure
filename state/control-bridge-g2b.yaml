@@ -9,6 +9,7 @@ base_sha: 8ee1fd719a50d0c9440a10a11a372dda8af1f457
 status: TASK_7_PARTIAL_RECOVERED_REMOTE
 recovery_checkpoint:
   sha: 7205a647f918580d09c87ed44f38b0a433552a51
+  document: docs/54-control-bridge-g2b-recovery-checkpoint.md
   commits_ahead_of_base: 25
   pull_request: 11
   pull_request_state: DRAFT_DO_NOT_MERGE
