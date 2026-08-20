@@ -72,6 +72,7 @@ validation:
   structural_reconciliation: PASS
   r3_protocol_contract: PERSISTED
   r4_persistence_contract: PERSISTED
+  historical_evidence_preservation_check: PASS_AFTER_TARGETED_REVERT_OF_TWO_ACCIDENTAL_LINES
   github_actions_head_validation: INCONCLUSIVE_VALIDATE_JOBS_FAILED_WITH_NO_EXPOSED_STEPS
   github_actions_logs: UNAVAILABLE_BLOB_NOT_FOUND
 next_exact_step: R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
