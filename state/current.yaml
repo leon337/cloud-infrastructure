@@ -2,13 +2,21 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-20
-documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_NODE_01_SERVICES_CI_PASS_REAL_APPLY_PENDING
+documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK7_PARTIAL_CONTINUITY_R2_COMPLETE
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
   current_state_independent_validation_report: governance/CONTINUITY-VALIDATION-2026-08-16-MISSION-001.md
   future_state_validation_policy: PUC_REVALIDATION_REQUIRED
   canonical_entrypoint: CONTEXT.md
+  active_mission_state: state/active-mission.yaml
+  active_mission_doc: docs/53-repository-continuity-context-recovery-mission.md
+  active_mission_issue: 10
+  active_pull_request: 11
+  active_branch: codex/control-bridge-g2b
+  recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
+  active_roadmap_stage: R2_COMPLETE_R3_NEXT
+  next_exact_step: R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
   checkpoint: CHECKPOINT.md
   platform_discovery_state: state/platform-discovery.yaml
   codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
@@ -20,11 +28,32 @@ continuity:
   revised_roadmap: docs/45-revised-implementation-roadmap.md
   technology_mapping: docs/46-technology-mapping-v1.md
   component_inventory: state/components.yaml
+active_mission:
+  id: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+  status: ACTIVE
+  priority: P0_TRANSVERSAL
+  authority: LEANDRO
+  orchestrator: MESTRE_MCF
+  issue: 10
+  state: state/active-mission.yaml
+  document: docs/53-repository-continuity-context-recovery-mission.md
+  branch: codex/control-bridge-g2b
+  pull_request: 11
+  roadmap:
+    R1: COMPLETE
+    R2: COMPLETE
+    R3: NEXT
 control_bridge:
   priority: P0
   g1: PASS_REAL_NODE_01_ROUNDTRIP
   g2a: PASS_REAL_NODE_01_READ_ONLY
-  g2b: DESIGN_APPROVED_IMPLEMENTATION_PENDING
+  g2b: TASK_7_PARTIAL_RECOVERED_REMOTE
+  g2b_tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
+  g2b_task_7: PARTIAL_6_PASS_1_FAIL
+  g2b_tasks_8_10: NOT_STARTED
+  g2b_real_write: NOT_EXECUTED
+  g2b_pr: 11_DRAFT_DO_NOT_MERGE
+  g2b_recovery_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
   self_hosted_runner: ONLINE_OBSERVED_2026_08_20_GITHUB_API
   hosted_ci: BLOCKED_EXTERNAL_BILLING
   source: state/control-bridge-g2b.yaml
@@ -33,10 +62,12 @@ work_ownership:
     branch: fix/f1-2c-systemd-runtime-lock
     owner: MESTRE_MCF_AND_LEANDRO
     frozen_for_codex: true
+    rule_for_active_continuity_mission: ISOLATED_DO_NOT_MODIFY
   control_bridge_g2b:
     branch: codex/control-bridge-g2b
-    owner: CODEX
-    orchestrator: MESTRE_MCF
+    historical_executor: CODEX
+    current_orchestrator: MESTRE_MCF
+    final_authority: LEANDRO
 project:
   name: IMPLEMENTACAO_DA_VPS
   status: ACTIVE
@@ -288,7 +319,7 @@ codex_execution:
       real_vps_apply: PASS_AT_2026_08_17T06_48_33Z_CHANGED_7_FAILED_0_UNREACHABLE_0
       real_vps_apply_log_sha256: a82d0ac67ed2f941507107ee1008d36475f7ebf5cdab0580605e60899cc5a5d4
       real_vps_idempotence: PASS_AT_2026_08_17T06_57_50Z_CHANGED_0_FAILED_0_UNREACHABLE_0
-      real_vps_idempotence_log_sha256: 2c6e2bf1924e7a1ee735035b9b6da35e7cf18cdc982a9c8212288db47ffa0d4b
+      real_vps_idempotence_log_sha256: 2c6e2bf1924e5571993b6d97e99375e39a5be14d0c2a4bb4d0a17fbec2f3c79
       real_vps_post_apply_invariance: PASS_AT_2026_08_17T06_58_43Z
     human_interaction:
       status: COMPLETED_FOR_F1_1_AND_F1_2B_NO_CURRENT_HUMAN_INTERACTION
@@ -308,7 +339,7 @@ codex_execution:
       real_vps_post_check_mode_invariance: PASS_AT_2026_08_17T08_38_33Z
       real_vps_apply: PASS_AT_2026_08_17T09_25_38Z_CHANGED_13_FAILED_0_UNREACHABLE_0
       real_vps_apply_log_sha256: 7e3eaf1a328d07b181469cb4c6dae31ec48be6dbe11f5720347da673c521ac5c
-      real_vps_idempotence: PASS_AT_2026_08_17T10_16_20Z_CHANGED_0_FAILED_0_UNREACHABLE_0
+      real_vps_idempotence: PASS_AT_2026-08-17T10_16_20Z_CHANGED_0_FAILED_0_UNREACHABLE_0
       real_vps_idempotence_log_sha256: 42fd0abf73266274d9e1628819a6ea339422d61f90066b1ae701ea80388948fc
       real_vps_restart: PASS_AT_2026_08_17T11_26_44Z
       real_vps_post_restart: PASS_AT_2026_08_17T12_07_29Z_CHANGED_0_FAILED_0_UNREACHABLE_0
