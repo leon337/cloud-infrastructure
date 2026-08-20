@@ -1,5 +1,30 @@
 # Cloud Infrastructure
 
+## MISSÃO ATIVA DE CONTINUIDADE
+
+A missão transversal ativa é **Repository Continuity & Context Recovery Hardening**.
+
+```text
+MISSION_ISSUE=10
+MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
+MISSION_STATE=state/active-mission.yaml
+ACTIVE_BRANCH=codex/control-bridge-g2b
+ACTIVE_PR=11_DRAFT_DO_NOT_MERGE
+RECOVERY_CHECKPOINT_SHA=7205a647f918580d09c87ed44f38b0a433552a51
+TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
+TASK_7=PARTIAL_6_PASS_1_FAIL
+TASKS_8_10=NOT_STARTED
+NODE01_G2B_GATE=CLOSED
+F1_2C=PARALLEL_ISOLATED_DO_NOT_MODIFY
+ROADMAP_R1=COMPLETE
+ROADMAP_R2=COMPLETE
+NEXT_EXACT_STEP=R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+```
+
+> Nova IA/agente: leia primeiro [`state/active-mission.yaml`](state/active-mission.yaml), depois [`CONTEXT.md`](CONTEXT.md) e [`CHECKPOINT.md`](CHECKPOINT.md). Não assuma que `main` ou a trilha F1.2c é o trabalho ativo. Verifique branch/PR/GitHub real antes de executar qualquer mudança.
+
+> A seção `PROJECT_STATUS` abaixo é uma projeção gerada da **trilha principal da plataforma**. Ela não substitui o estado da missão transversal ativa acima.
+
 <!-- PROJECT_STATUS:START -->
 ## STATUS ATUAL
 
@@ -23,37 +48,36 @@
 
 Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 
-> Nova IA/agente? Comece por [`CONTEXT.md`](CONTEXT.md). Para a capability transversal MCF VPS Control Plane, leia também [`docs/52-control-bridge-g2a-implementation-checkpoint.md`](docs/52-control-bridge-g2a-implementation-checkpoint.md), [`state/control-bridge-g2a.yaml`](state/control-bridge-g2a.yaml) e [`state/control-bridge-g2b.yaml`](state/control-bridge-g2b.yaml).
-
 ## Finalidade
 
 Configurar, proteger, documentar e tornar reproduzível a VPS enquanto LEANDRO aprende a administrar, diagnosticar, recuperar e reconstruir o ambiente com mínima dependência de IA. O projeto é separado do MCF; a VPS poderá hospedar o framework e outros sistemas, mas a infraestrutura não pertence estruturalmente a ele.
 
 ## Continuidade
 
-O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada da trilha principal da plataforma; `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; o GitHub é a memória canônica após validação e publicação.
+O repositório implementa o PUC v1.0. `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada de continuidade. `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; Git/GitHub devem conter o estado recuperável antes de uma missão depender deles.
 
-A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever o estado da trilha F1.2c. O estado atual dessa capability está em `docs/52-control-bridge-g2a-implementation-checkpoint.md`, `state/control-bridge-g2a.yaml` e `state/control-bridge-g2b.yaml`. GitHub live, código, testes e CI do SHA aplicável prevalecem sobre status históricos em documentos anteriores.
+A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever a trilha principal F1.2c. O estado específico está em `state/control-bridge-g2b.yaml`; o estado da missão de recuperação está em `state/active-mission.yaml` e `docs/53-repository-continuity-context-recovery-mission.md`.
+
+GitHub live, branch/PR aplicável, código, testes e evidência do SHA aplicável prevalecem sobre afirmações históricas. Em divergência entre fontes, o agente deve reconciliar antes de agir; não deve escolher silenciosamente a versão mais conveniente.
 
 ## Control Bridge — estado transversal reconciliado
 
 ```text
-CONTROL_BRIDGE_G2B=P0_DESIGN_APPROVED_IMPLEMENTATION_PENDING
+CONTROL_BRIDGE_G2B=TASK_7_PARTIAL_RECOVERED_REMOTE
 G1=PASS_REAL_NODE_01_ROUNDTRIP
 G2A=PASS_REAL_NODE_01_READ_ONLY
+G2B_TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
+G2B_TASK_7=PARTIAL_6_PASS_1_FAIL
+G2B_TASKS_8_10=NOT_STARTED
 G2B_REAL_WRITE=NOT_EXECUTED
-CODEX=AVAILABLE_PARALLEL_EXECUTOR
-MESTRE_MCF=ORCHESTRATOR
+G2B_PR=11_DRAFT_DO_NOT_MERGE
+MESTRE_MCF=CURRENT_ORCHESTRATOR
 LEANDRO=FINAL_HUMAN_AUTHORITY
-F1_2C_SYSTEMD_RUNTIME_LOCK=FROZEN_FOR_CODEX_OWNED_BY_MESTRE_MCF_AND_LEANDRO
-GITHUB_HOSTED_CI=BLOCKED_EXTERNAL_BILLING
-SELF_HOSTED_NODE_01_RUNNER=ONLINE_OBSERVED_2026_08_20
+F1_2C_SYSTEMD_RUNTIME_LOCK=PARALLEL_ISOLATED_DO_NOT_MODIFY
+NODE01_G2B_GATE=CLOSED
 ```
 
-O estado do runner é uma observação GitHub API em 2026-08-20; não substitui
-uma observação nova da VPS. F1.2c preserva seus fatos operacionais e timestamps
-próprios, mas sua branch está congelada para Codex. G2-B não executou escrita
-real; `state/control-bridge-g2b.yaml` é o estado fail-closed do próximo slice.
+O checkpoint remoto `7205a647f918580d09c87ed44f38b0a433552a51` preserva o WIP recuperado e **não** significa aceitação da Task 7. O RED conhecido é a ausência da validação exata de chaves do grant existente (`g2b_issue_existing_grant.keys()`); a sintaxe Ansible da Task 7 ainda não foi executada no ambiente local recuperado.
 
 ## Estado operacional — baseline reconciliada em 16/08/2026
 
@@ -69,24 +93,12 @@ real; `state/control-bridge-g2b.yaml` é o estado fail-closed do próximo slice.
 
 A Cloud Workstation está **FUNCTIONAL_AND_VALIDATED**: XFCE + LightDM, XRDP restrito a `127.0.0.1:3389` e acesso somente por túnel SSH. Firefox oficial em pacote DEB, VS Code, terminal, Thunar, múltiplas janelas, clipboard bidirecional, resolução dinâmica, logout/login, desconexão/reconexão, persistência e reboot foram testados.
 
-Recursos são fatos voláteis. A recuperação da missão observou 8 CPUs, 23 GiB de
-RAM total, sem swap e raiz de 290 GiB; uso atual deve ser medido antes de cada
-slice. Os números de ~2,2 GiB RAM/~7,5 GiB disco pertencem ao snapshot histórico
-da validação final da Workstation.
+Recursos são fatos voláteis. A recuperação da missão observou 8 CPUs, 23 GiB de RAM total, sem swap e raiz de 290 GiB; uso atual deve ser medido antes de cada slice. Os números de ~2,2 GiB RAM/~7,5 GiB disco pertencem ao snapshot histórico da validação final da Workstation.
 
 ## Implementação atual
 
-Q1–Q39 definem a arquitetura vinculante e Q40-D autoriza o Codex a selecionar as
-tecnologias e implementar incrementalmente a plataforma DEV/lab. A missão está em
-[`docs/CODEX-EXECUTION-MISSION-001.md`](docs/CODEX-EXECUTION-MISSION-001.md) e o
-roadmap corrente em
-[`docs/45-revised-implementation-roadmap.md`](docs/45-revised-implementation-roadmap.md).
-A camada de acompanhamento está documentada em
-[`docs/48-status-layer-v1.md`](docs/48-status-layer-v1.md).
+Q1–Q39 definem a arquitetura vinculante e Q40-D autoriza o Codex a selecionar as tecnologias e implementar incrementalmente a plataforma DEV/lab. A missão está em [`docs/CODEX-EXECUTION-MISSION-001.md`](docs/CODEX-EXECUTION-MISSION-001.md) e o roadmap da trilha principal em [`docs/45-revised-implementation-roadmap.md`](docs/45-revised-implementation-roadmap.md). A camada de acompanhamento está documentada em [`docs/48-status-layer-v1.md`](docs/48-status-layer-v1.md).
 
-F1.1 e F1.2b estão concluídos no NODE-01. A base F1.2c também está ativa no host,
-e a matriz de redes/DNS/proxy/grants passou em VM descartável. O estado e o
-próximo passo exatos da trilha principal são projetados automaticamente na seção `STATUS ATUAL`.
+F1.1 e F1.2b estão concluídos no NODE-01. A trilha F1.2c mantém seu próprio estado e evidência, mas está isolada desta missão de continuidade. O `PROJECT_STATUS` continua representando essa trilha principal e não autoriza sua execução enquanto a missão ativa de continuidade estiver sendo trabalhada.
+
 Produção não está autorizada e a rotação permanece adiada por decisão humana.
-
-A trilha transversal Control Bridge não altera o próximo passo F1.2c. Seu estado é recuperado separadamente pelos checkpoints G1/G2-A e por `state/control-bridge-g2a.yaml` e `state/control-bridge-g2b.yaml`.
