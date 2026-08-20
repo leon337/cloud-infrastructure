@@ -248,7 +248,9 @@ PR=11_DRAFT_DO_NOT_MERGE
 R1=COMPLETE
 R2=COMPLETE
 R3=COMPLETE
-NEXT=R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
+R4=COMPLETE
+PERSISTENCE_POLICY=governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
+NEXT=R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
 ```
 
 The G2-B Task 7 technical RED remains deliberately deferred to R8. F1.2c remains a parallel isolated workstream for this mission. NODE-01 G2-B bootstrap, real grant issuance, real bounded write, production and merge remain unauthorized.
