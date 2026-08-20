@@ -19,6 +19,7 @@ repository:
   recovered_commits_ahead_of_base: 25
 control_bridge_g2b:
   status: TASK_7_PARTIAL_RECOVERED_REMOTE
+  recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
   task_7: PARTIAL
   task_7_focused_tests:
@@ -52,5 +53,9 @@ continuity_roadmap:
   R6: NOT_STARTED
   R7: NOT_STARTED
   R8: NOT_STARTED
+validation:
+  structural_reconciliation: PASS
+  github_actions_head_validation: INCONCLUSIVE_VALIDATE_JOBS_FAILED_WITH_NO_EXPOSED_STEPS
+  github_actions_logs: UNAVAILABLE_BLOB_NOT_FOUND
 next_exact_step: R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
 recovery_rule: NEW_AGENT_MUST_RECONSTRUCT_STATE_FROM_REPOSITORY_AND_GITHUB_BEFORE_IMPLEMENTATION
