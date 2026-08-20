@@ -50,6 +50,7 @@ O checkpoint remoto é preservação, não aceitação da Task 7.
 - checkpoint corrente: `CHECKPOINT.md`;
 - estado geral estruturado: `state/current.yaml`;
 - estado específico G2-B: `state/control-bridge-g2b.yaml`;
+- checkpoint técnico G2-B recuperado: `docs/54-control-bridge-g2b-recovery-checkpoint.md`;
 - especificação G2-B: `docs/superpowers/specs/2026-08-20-control-bridge-g2b-bounded-write-design.md`;
 - plano G2-B: `docs/superpowers/plans/2026-08-20-control-bridge-g2b-bounded-write.md`;
 - Issue #10: tracker remoto desta missão;
@@ -67,9 +68,23 @@ A branch local foi publicada, o checkpoint WIP foi preservado e o PR #11 foi cri
 
 ### R2 — Reconcile canonical project entrypoints
 
-**Status:** COMPLETE nesta revisão documental.
+**Status:** COMPLETE.
 
-Reconciliar `README.md`, `CONTEXT.md`, `CHECKPOINT.md`, `state/current.yaml`, estado G2-B e documentos de continuidade para distinguir a missão ativa da trilha principal F1.2c.
+Foram reconciliados:
+
+- `README.md`;
+- `CONTEXT.md`;
+- `CHECKPOINT.md`;
+- `state/current.yaml`;
+- `state/control-bridge-g2b.yaml`;
+- `state/active-mission.yaml`;
+- este documento de missão;
+- `docs/54-control-bridge-g2b-recovery-checkpoint.md`;
+- teste de continuidade correspondente.
+
+A trilha principal F1.2c permanece preservada como projeção separada; a missão transversal ativa agora possui estado explícito e próximo passo próprio.
+
+Validação GitHub Actions do HEAD de reconciliação não pôde ser usada como prova de conteúdo: os jobs `validate` de Foundation e Docker Boundary concluíram `failure` sem expor steps; integrações foram `skipped` e o endpoint de logs retornou `BlobNotFound`. Portanto, o estado correto é **CI INCONCLUSIVE / causa não confirmada**, não `PASS` e não uma falha de conteúdo presumida.
 
 ### R3 — Mandatory AI/project startup and recovery protocol
 
