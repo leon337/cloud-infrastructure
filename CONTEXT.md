@@ -2,23 +2,35 @@
 
 Este arquivo é a entrada obrigatória para qualquer IA, agente ou humano que assuma `cloud-infrastructure`.
 
-## Regra zero — não implemente antes de reconstruir o estado
+## Regra zero — execute o protocolo antes de implementar
 
 Não assuma que `main`, o último chat ou a última missão conhecida ainda representam o trabalho ativo.
+
+O protocolo obrigatório está em:
+
+- `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`;
+- `state/startup-recovery-protocol.yaml`.
+
+Regra vinculante:
+
+```text
+NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
+```
 
 Antes de qualquer mudança:
 
 1. confirmar o repositório `leon337/cloud-infrastructure`;
-2. identificar branch/worktree/HEAD reais e divergência local x remoto quando houver acesso local;
-3. ler `state/active-mission.yaml`;
-4. ler este `CONTEXT.md` e `CHECKPOINT.md`;
-5. ler `state/current.yaml` e o estado específico da missão/capability;
-6. verificar Issue/PR/evidência indicados pelo estado ativo;
-7. identificar testes verdes/vermelhos, blockers e HUMAN_GATEs;
-8. se as fontes divergirem, **parar e reconciliar fail-closed antes de implementar**;
-9. nunca pedir, registrar ou versionar secrets.
+2. identificar missão ativa, branch/base/PR e HEAD remoto reais;
+3. quando houver acesso local, identificar worktree, HEAD, upstream, divergência local/remota, staged, unstaged e untracked;
+4. ler `state/active-mission.yaml`, este `CONTEXT.md`, `CHECKPOINT.md`, `state/current.yaml` e o estado específico da missão/capability;
+5. verificar Issue/PR/commits/CI/evidência indicados pelo estado ativo;
+6. identificar tarefas completas/parciais/bloqueadas, testes, blockers, ownership paralelo e HUMAN_GATEs;
+7. produzir o recovery report definido pelo protocolo;
+8. se as fontes divergirem, parar em `BLOCKED_RECONCILIATION`;
+9. se a ação depender de autorização humana fechada, parar em `WAITING_HUMAN_GATE`;
+10. nunca pedir, registrar ou versionar secrets.
 
-O protocolo permanente e automatizável dessa inicialização será formalizado na etapa R3 da missão ativa.
+Em modo remoto sem acesso ao computador, `LOCAL_STATE=UNVERIFIED`; isso não significa `CLEAN`.
 
 ## Precedência de verdade
 
@@ -44,6 +56,8 @@ MISSION=REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
 MISSION_ISSUE=10
 MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 MISSION_STATE=state/active-mission.yaml
+STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+STARTUP_PROTOCOL_STATE=state/startup-recovery-protocol.yaml
 STATUS=ACTIVE
 PRIORITY=P0_TRANSVERSAL
 AUTHORITY=LEANDRO
@@ -53,8 +67,9 @@ ACTIVE_PR=11_DRAFT_DO_NOT_MERGE
 RECOVERY_CHECKPOINT_SHA=7205a647f918580d09c87ed44f38b0a433552a51
 ROADMAP_R1=COMPLETE
 ROADMAP_R2=COMPLETE
-ROADMAP_R3=NEXT
-NEXT_EXACT_STEP=R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+ROADMAP_R3=COMPLETE
+ROADMAP_R4=NEXT
+NEXT_EXACT_STEP=R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
 ```
 
 Objetivo: fazer o repositório explicar a si próprio e permitir recuperação de contexto sem depender de memória de chat ou de uma única máquina.
@@ -98,6 +113,8 @@ Não use o `next_exact_step` da trilha principal F1.2c como autorização para t
 
 | Pergunta | Fonte |
 |---|---|
+| Protocolo obrigatório de inicialização/recuperação | `governance/AI-STARTUP-RECOVERY-PROTOCOL.md` |
+| Contrato machine-readable do protocolo | `state/startup-recovery-protocol.yaml` |
 | Qual missão está ativa? | `state/active-mission.yaml` |
 | Documento da missão ativa | `docs/53-repository-continuity-context-recovery-mission.md` |
 | Estado exato de continuidade | `CHECKPOINT.md` |
@@ -133,6 +150,7 @@ Fatos voláteis devem ser medidos novamente antes de qualquer operação real.
 - LEANDRO é a autoridade humana final.
 - HUMAN_GATE sempre exige autorização explícita de LEANDRO.
 - MESTRE/MCF orquestra a missão ativa.
+- `RECOVERY_VERDICT=PASS` não abre automaticamente nenhum HUMAN_GATE.
 - Capabilities devem ser escopadas e auditáveis; não existe autorização administrativa genérica implícita.
 - Secrets continuam proibidos no Git.
 - Mudanças críticas exigem impacto, rollback e evidência.
@@ -141,10 +159,10 @@ Fatos voláteis devem ser medidos novamente antes de qualquer operação real.
 
 ## Ponto exato
 
-A missão de continuidade concluiu R1 e R2. O próximo passo é exclusivamente:
+A missão de continuidade concluiu R1, R2 e R3. O próximo passo é exclusivamente:
 
 ```text
-R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
 ```
 
 A retomada técnica da Task 7 do G2-B pertence ao R8. Até lá, não corrigir o RED da Task 7, não iniciar Task 8 e não executar bootstrap/grant/write no NODE-01.
