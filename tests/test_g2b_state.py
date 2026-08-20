@@ -8,6 +8,7 @@ from pathlib import Path
 import stat
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from control_plane.g2b.errors import RefusedError, TimeoutError
 from control_plane.g2b.state import RECEIPT_FIELDS, StateStore, canonical_request_digest
@@ -149,6 +150,87 @@ class G2BStateStoreTests(unittest.TestCase):
         store.record_rollback(rollback)
         self.assertEqual(store.lookup_request("G2B-ROLLBACK-0001"), rollback)
 
+    def test_create_only_receipt_commit_never_uses_a_hardlink_window(self) -> None:
+        store = self.store()
+
+        with patch("control_plane.g2b.state.os.link", side_effect=AssertionError("hardlink forbidden")):
+            store.record_write(receipt("G2B-STATE-NOREPLACE-0001"))
+
+        self.assertIsNotNone(store.lookup_request("G2B-STATE-NOREPLACE-0001"))
+
+    def test_identical_receipt_repairs_missing_audit_idempotently(self) -> None:
+        store = self.store()
+        value = receipt("G2B-STATE-AUDIT-REPAIR-0001")
+        original_append = store._append_audit
+        failed = False
+
+        def fail_once(event):
+            nonlocal failed
+            if not failed:
+                failed = True
+                raise RefusedError("synthetic_audit_failure")
+            return original_append(event)
+
+        with patch.object(store, "_append_audit", side_effect=fail_once):
+            with self.assertRaises(RefusedError):
+                store.record_write(value)
+            store.record_write(value)
+
+        self.assertEqual(store.lookup_request(value["request_id"]), value)
+        events = (self.state_root / "audit.jsonl").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(events), 1)
+
+    def test_recovery_baselines_and_committed_after_are_immutable(self) -> None:
+        store = self.store()
+        value = self._recovery("G2B-STATE-MONOTONIC-0001")
+        value["before"] = {
+            "exists": True,
+            "size": 8,
+            "mode": 420,
+            "uid": self.expected_uid,
+            "device": 11,
+            "inode": 22,
+            "sha256": "b" * 64,
+        }
+        store.prepare_recovery(value)
+        committed = dict(
+            value,
+            after={
+                "exists": True,
+                "size": 6,
+                "mode": 420,
+                "uid": self.expected_uid,
+                "device": 11,
+                "inode": 33,
+                "sha256": "c" * 64,
+            },
+            resolution="APPLIED",
+        )
+        store.update_recovery(committed)
+
+        changed_before = dict(committed)
+        changed_before["before"] = dict(committed["before"], inode=44)
+        with self.assertRaises(RefusedError) as before_error:
+            store.update_recovery(changed_before)
+        self.assertEqual(before_error.exception.code, "invalid_recovery_transition")
+
+        changed_after = dict(committed)
+        changed_after["after"] = dict(committed["after"], sha256="e" * 64)
+        with self.assertRaises(RefusedError) as after_error:
+            store.update_recovery(changed_after)
+        self.assertEqual(after_error.exception.code, "invalid_recovery_transition")
+
+    def test_recognized_abandoned_state_temporary_is_removed_under_lock(self) -> None:
+        store = self.store()
+        abandoned = self.state_root / "recovery" / (".g2b-state-" + "a" * 32 + ".tmp")
+        abandoned.write_bytes(b"incomplete")
+        os.chmod(abandoned, 0o600)
+
+        with store.exclusive_lock(timeout_seconds=1):
+            store.reconcile_abandoned_temporaries()
+
+        self.assertFalse(abandoned.exists())
+
     def test_receipts_reject_schema_expansion_and_secret_like_material(self) -> None:
         store = self.store()
         expanded = receipt()
@@ -210,7 +292,55 @@ class G2BStateStoreTests(unittest.TestCase):
         store = self.store()
         request_id = "G2B-STATE-RECOVERY-0001"
         store.save_snapshot(request_id, b"safe prior bytes\n")
-        recovery = {
+        recovery = self._recovery(request_id)
+        recovery.update(
+            before={
+                "exists": True,
+                "size": 17,
+                "mode": 420,
+                "uid": self.expected_uid,
+                "device": 11,
+                "inode": 22,
+                "sha256": "b" * 64,
+            },
+            snapshot=True,
+        )
+        store.prepare_recovery(recovery)
+
+        snapshot_files = list((self.state_root / "snapshots").iterdir())
+        recovery_files = list((self.state_root / "recovery").iterdir())
+        self.assertEqual(len(snapshot_files), 1)
+        self.assertEqual(len(recovery_files), 1)
+        self.assertEqual(stat.S_IMODE(snapshot_files[0].stat().st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(recovery_files[0].stat().st_mode), 0o600)
+        self.assertEqual(store.load_snapshot(request_id), b"safe prior bytes\n")
+        self.assertEqual(store.lookup_recovery(request_id), recovery)
+        self.assertEqual(store.active_recoveries("G2B-PILOT-20260820"), [recovery])
+        self.assertEqual(list((self.state_root / "receipts").iterdir()), [])
+
+        applied = dict(
+            recovery,
+            after={
+                "exists": True,
+                "size": 6,
+                "mode": 420,
+                "uid": self.expected_uid,
+                "device": 11,
+                "inode": 33,
+                "sha256": "c" * 64,
+            },
+            resolution="APPLIED",
+        )
+        store.update_recovery(applied)
+        resolved = dict(applied, active=False, resolution="ROLLED_BACK")
+        store.update_recovery(resolved)
+        store.delete_snapshot(request_id)
+        self.assertEqual(store.lookup_recovery(request_id), resolved)
+        self.assertEqual(store.active_recoveries("G2B-PILOT-20260820"), [])
+        self.assertIsNone(store.load_snapshot(request_id))
+
+    def _recovery(self, request_id: str) -> dict[str, object]:
+        return {
             "protocol": "MCF_WORKSPACE_RECOVERY_V1",
             "request_id": request_id,
             "request_digest": "a" * 64,
@@ -237,26 +367,19 @@ class G2BStateStoreTests(unittest.TestCase):
             "active": True,
             "snapshot": True,
             "workspace_recovery_name": None,
+            "observation": None,
+            "rollback_observation": None,
+            "receipt_context": {
+                "mission_id": "CONTROL-BRIDGE-G2B-PILOT",
+                "declared_actor": "MESTRE_MCF",
+                "authority": "LEANDRO",
+                "transport_principal": {"login": "leon337", "actor_id": 337},
+                "project": {"tenant": "leon337", "name": "g2a-smoke", "environment": "dev"},
+                "operation": "workspace.write",
+                "precondition": {"state": "ABSENT"},
+                "started_at": "2026-08-20T12:00:00+00:00",
+            },
         }
-        store.prepare_recovery(recovery)
-
-        snapshot_files = list((self.state_root / "snapshots").iterdir())
-        recovery_files = list((self.state_root / "recovery").iterdir())
-        self.assertEqual(len(snapshot_files), 1)
-        self.assertEqual(len(recovery_files), 1)
-        self.assertEqual(stat.S_IMODE(snapshot_files[0].stat().st_mode), 0o600)
-        self.assertEqual(stat.S_IMODE(recovery_files[0].stat().st_mode), 0o600)
-        self.assertEqual(store.load_snapshot(request_id), b"safe prior bytes\n")
-        self.assertEqual(store.lookup_recovery(request_id), recovery)
-        self.assertEqual(store.active_recoveries("G2B-PILOT-20260820"), [recovery])
-        self.assertEqual(list((self.state_root / "receipts").iterdir()), [])
-
-        resolved = dict(recovery, active=False, resolution="ROLLED_BACK")
-        store.update_recovery(resolved)
-        store.delete_snapshot(request_id)
-        self.assertEqual(store.lookup_recovery(request_id), resolved)
-        self.assertEqual(store.active_recoveries("G2B-PILOT-20260820"), [])
-        self.assertIsNone(store.load_snapshot(request_id))
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import hashlib
+import json
 import os
 from pathlib import Path
 import stat
@@ -13,7 +14,7 @@ from scripts.check_repository_secrets import content_findings
 from .errors import ConflictError, G2BError, RefusedError
 from .grant import TransportPrincipal, load_grant, validate_grant_for_request
 from .protocol import MutationRequest, Precondition, RESULT_PROTOCOL, parse_request
-from .state import StateStore, canonical_request_digest
+from .state import RECEIPT_FIELDS, StateStore, canonical_request_digest
 from .workspace import (
     MutationStateError,
     TargetState,
@@ -27,6 +28,7 @@ from .workspace import (
 _LOCK_TIMEOUT_SECONDS = 10
 _RECOVERY_PROTOCOL = "MCF_WORKSPACE_RECOVERY_V1"
 _PILOT_PATH = "G2B-PILOT.txt"
+_MAX_RESULT_BYTES = 8192
 
 
 def execute_request(
@@ -42,17 +44,57 @@ def execute_request(
     now: Callable[[], datetime],
 ) -> dict[str, Any]:
     """Validate and execute one bounded request, returning only safe fields."""
+    result = _execute_request_impl(
+        request_value,
+        transport_principal=transport_principal,
+        grant_path=grant_path,
+        installed_root=installed_root,
+        workspace_root=workspace_root,
+        state_root=state_root,
+        lock_path=lock_path,
+        expected_uid=expected_uid,
+        now=now,
+    )
+    return _bounded_result(result, transport_principal=transport_principal)
+
+
+def _execute_request_impl(
+    request_value: dict[str, Any],
+    *,
+    transport_principal: TransportPrincipal,
+    grant_path: Path,
+    installed_root: Path,
+    workspace_root: Path,
+    state_root: Path,
+    lock_path: Path,
+    expected_uid: int,
+    now: Callable[[], datetime],
+) -> dict[str, Any]:
     started_at: datetime | None = None
     request: MutationRequest | None = None
     request_digest: str | None = None
     try:
-        if os.geteuid() != expected_uid:
+        effective_uid = os.geteuid()
+        if effective_uid == 0 or expected_uid == 0:
+            raise RefusedError("root_execution_refused")
+        if not isinstance(expected_uid, int) or isinstance(expected_uid, bool) or expected_uid < 1:
+            raise RefusedError("invalid_execution_uid")
+        if not _valid_transport_principal(transport_principal):
+            raise RefusedError("invalid_transport_principal")
+        if effective_uid != expected_uid:
             raise RefusedError("execution_uid_mismatch")
         started_at = _read_clock(now)
         request = parse_request(request_value)
         request_digest = canonical_request_digest(request_value)
         store = StateStore(state_root, lock_path, expected_uid=expected_uid)
         with store.exclusive_lock(timeout_seconds=_LOCK_TIMEOUT_SECONDS):
+            store.reconcile_abandoned_temporaries()
+            _reconcile_prepared_recoveries(
+                store,
+                workspace_root=workspace_root,
+                expected_uid=expected_uid,
+                now=now,
+            )
             grant = load_grant(grant_path, now=started_at, installed_root=installed_root)
             validate_grant_for_request(grant, request, transport_principal)
 
@@ -137,7 +179,7 @@ def _execute_locked(
             return _execute_revoke(context, store=store)
         if request.operation == "status":
             receipt = context.receipt(status="PASS")
-            store.record_write(receipt)
+            _persist_receipt(store, receipt)
             return receipt
         raise RefusedError("unknown_operation")
     except MutationStateError as error:
@@ -221,11 +263,12 @@ def _execute_write(
     assert request.path is not None
     assert request.content is not None
     assert request.precondition is not None
-    if store.active_recoveries(context.grant.grant_id):
+    if store.active_recoveries():
         raise ConflictError("active_mutation_exists")
 
     before = inspect_target(workspace_root, request.path, expected_uid=expected_uid)
-    snapshot = False
+    snapshot = before.exists
+    prior: bytes | None = None
     if before.exists:
         prior = _read_exact_target(
             workspace_root,
@@ -233,8 +276,6 @@ def _execute_write(
             expected=before,
             expected_uid=expected_uid,
         )
-        store.save_snapshot(request.request_id, prior)
-        snapshot = True
     recovery = _recovery_value(
         context,
         before=before,
@@ -246,12 +287,24 @@ def _execute_write(
     )
     try:
         store.prepare_recovery(recovery)
+        if prior is not None:
+            store.save_snapshot(request.request_id, prior)
     except Exception:
-        if snapshot:
+        if prior is not None:
             try:
                 store.delete_snapshot(request.request_id)
             except G2BError:
                 pass
+        existing = store.lookup_recovery(request.request_id)
+        if existing is not None and existing["resolution"] == "PREPARED":
+            store.update_recovery(
+                dict(
+                    existing,
+                    observation=_exact_state(before),
+                    resolution="REVERTED",
+                    active=False,
+                )
+            )
         raise
 
     try:
@@ -264,11 +317,29 @@ def _execute_write(
             max_content_bytes=context.grant.max_content_bytes,
         )
     except MutationStateError as error:
-        active = error.resolution != "REVERTED"
+        observed = _exact_state(error.observed_after)
+        if error.resolution == "APPLIED" and _matches_expected_target(
+            error.observed_after,
+            recovery["expected_after"],
+        ):
+            resolution = "APPLIED"
+            committed_after = observed
+            active = True
+        elif error.resolution == "REVERTED":
+            if snapshot:
+                store.delete_snapshot(request.request_id)
+            resolution = "REVERTED"
+            committed_after = None
+            active = False
+        else:
+            resolution = "INDETERMINATE"
+            committed_after = None
+            active = True
         updated = dict(
             recovery,
-            after=_exact_state(error.observed_after),
-            resolution=error.resolution,
+            after=committed_after,
+            observation=observed,
+            resolution=resolution,
             active=active,
             workspace_recovery_name=error.recovery_name,
         )
@@ -280,20 +351,37 @@ def _execute_write(
             after=error.observed_after,
             path=error.path,
         )
-        store.record_write(receipt)
-        if not active and snapshot:
+        _persist_receipt(store, receipt)
+        return receipt
+    except G2BError as error:
+        if snapshot:
             store.delete_snapshot(request.request_id)
+        reverted = dict(
+            recovery,
+            observation=_exact_state(before),
+            resolution="REVERTED",
+            active=False,
+        )
+        store.update_recovery(reverted)
+        receipt = context.receipt(
+            status=error.status,
+            error=error.code,
+            before=before,
+            after=before,
+        )
+        _persist_receipt(store, receipt)
         return receipt
 
     updated = dict(
         recovery,
         after=_exact_state(outcome.after),
+        observation=_exact_state(outcome.after),
         resolution="APPLIED",
         active=True,
     )
     store.update_recovery(updated)
     receipt = context.receipt(status="PASS", before=outcome.before, after=outcome.after)
-    store.record_write(receipt)
+    _persist_receipt(store, receipt)
     return receipt
 
 
@@ -321,6 +409,8 @@ def _execute_rollback(
             snapshot = store.load_snapshot(request.original_request_id)
             if snapshot is None:
                 raise ConflictError("snapshot_missing")
+            if not _snapshot_matches_before(snapshot, recovery["before"]):
+                raise ConflictError("snapshot_mismatch")
             outcome = atomic_restore(
                 workspace_root,
                 recovery["path"],
@@ -342,10 +432,12 @@ def _execute_rollback(
         resolution = "INDETERMINATE" if error.resolution == "INDETERMINATE" else recovery["resolution"]
         updated = dict(
             recovery,
-            after=_exact_state(error.observed_after),
+            rollback_observation=_exact_state(error.observed_after),
             resolution=resolution,
             active=True,
-            workspace_recovery_name=error.recovery_name,
+            workspace_recovery_name=(
+                error.recovery_name or recovery["workspace_recovery_name"]
+            ),
         )
         store.update_recovery(updated)
         receipt = context.receipt(
@@ -356,7 +448,7 @@ def _execute_rollback(
             path=recovery["path"],
             rollback_request_id=request.original_request_id,
         )
-        store.record_rollback(receipt)
+        _persist_receipt(store, receipt)
         return receipt
 
     resolved = dict(recovery, resolution="ROLLED_BACK", active=False)
@@ -368,14 +460,14 @@ def _execute_rollback(
         path=recovery["path"],
         rollback_request_id=request.original_request_id,
     )
-    store.record_rollback(receipt)
+    _persist_receipt(store, receipt)
     if recovery["snapshot"]:
         store.delete_snapshot(request.original_request_id)
     return receipt
 
 
 def _execute_revoke(context: _ReceiptContext, *, store: StateStore) -> dict[str, Any]:
-    if store.active_recoveries(context.grant.grant_id):
+    if store.active_recoveries():
         raise ConflictError("active_mutation_exists")
     revoked_at = _read_clock(context.now)
     store.revoke(
@@ -387,7 +479,7 @@ def _execute_revoke(context: _ReceiptContext, *, store: StateStore) -> dict[str,
         status="REVOKED",
         revocation_request_id=context.request.request_id,
     )
-    store.record_write(receipt)
+    _persist_receipt(store, receipt)
     return receipt
 
 
@@ -399,11 +491,27 @@ def _record_mutation_state_error(
 ) -> dict[str, Any]:
     recovery = store.lookup_recovery(context.request.request_id)
     if recovery is not None:
+        if error.resolution == "APPLIED" and _matches_expected_target(
+            error.observed_after,
+            recovery["expected_after"],
+        ):
+            resolution = "APPLIED"
+            after = _exact_state(error.observed_after)
+            active = True
+        elif error.resolution == "REVERTED":
+            resolution = "REVERTED"
+            after = recovery["after"]
+            active = False
+        else:
+            resolution = "INDETERMINATE"
+            after = recovery["after"]
+            active = True
         updated = dict(
             recovery,
-            after=_exact_state(error.observed_after),
-            resolution=error.resolution,
-            active=error.resolution != "REVERTED",
+            after=after,
+            observation=_exact_state(error.observed_after),
+            resolution=resolution,
+            active=active,
             workspace_recovery_name=error.recovery_name,
         )
         store.update_recovery(updated)
@@ -415,7 +523,7 @@ def _record_mutation_state_error(
         path=error.path,
         rollback_request_id=context.request.original_request_id,
     )
-    _store_receipt(store, receipt)
+    _persist_receipt(store, receipt)
     return receipt
 
 
@@ -431,7 +539,7 @@ def _record_failure(
         error=error,
         rollback_request_id=context.request.original_request_id,
     )
-    _store_receipt(store, receipt)
+    _persist_receipt(store, receipt)
     return receipt
 
 
@@ -440,6 +548,16 @@ def _store_receipt(store: StateStore, receipt: dict[str, Any]) -> None:
         store.record_rollback(receipt)
     else:
         store.record_write(receipt)
+
+
+def _persist_receipt(store: StateStore, receipt: dict[str, Any]) -> None:
+    try:
+        _store_receipt(store, receipt)
+    except G2BError:
+        existing = store.lookup_request(receipt["request_id"])
+        if existing == receipt:
+            return
+        raise
 
 
 def _mark_recovery_indeterminate(store: StateStore, request_id: str) -> None:
@@ -483,7 +601,120 @@ def _recovery_value(
         "active": active,
         "snapshot": snapshot,
         "workspace_recovery_name": None,
+        "observation": None,
+        "rollback_observation": None,
+        "receipt_context": {
+            "mission_id": context.request.mission_id,
+            "declared_actor": context.request.declared_actor,
+            "authority": context.grant.authority,
+            "transport_principal": {
+                "login": context.transport_principal.login,
+                "actor_id": context.transport_principal.actor_id,
+            },
+            "project": {
+                "tenant": context.request.project.tenant,
+                "name": context.request.project.name,
+                "environment": context.request.project.environment,
+            },
+            "operation": context.request.operation,
+            "precondition": _public_precondition(context.request.precondition),
+            "started_at": context.started_at.isoformat(),
+        },
     }
+
+
+def _reconcile_prepared_recoveries(
+    store: StateStore,
+    *,
+    workspace_root: Path,
+    expected_uid: int,
+    now: Callable[[], datetime],
+) -> None:
+    for recovery in store.recoveries():
+        if recovery["resolution"] == "PREPARED":
+            try:
+                observed = inspect_target(
+                    workspace_root,
+                    recovery["path"],
+                    expected_uid=expected_uid,
+                )
+            except G2BError:
+                observed = None
+            if observed is not None and _exact_state(observed) == recovery["before"]:
+                if recovery["snapshot"]:
+                    store.delete_snapshot(recovery["request_id"])
+                recovery = dict(
+                    recovery,
+                    observation=_exact_state(observed),
+                    resolution="REVERTED",
+                    active=False,
+                )
+            elif _matches_expected_target(observed, recovery["expected_after"]):
+                recovery = dict(
+                    recovery,
+                    after=_exact_state(observed),
+                    observation=_exact_state(observed),
+                    resolution="APPLIED",
+                    active=True,
+                )
+            else:
+                recovery = dict(
+                    recovery,
+                    observation=_exact_state(observed),
+                    resolution="INDETERMINATE",
+                    active=True,
+                )
+            store.update_recovery(recovery)
+        if recovery["resolution"] in {"APPLIED", "REVERTED", "INDETERMINATE"}:
+            _ensure_recovery_receipt(store, recovery, now=now)
+
+
+def _ensure_recovery_receipt(
+    store: StateStore,
+    recovery: dict[str, Any],
+    *,
+    now: Callable[[], datetime],
+) -> None:
+    existing = store.lookup_request(recovery["request_id"])
+    if existing is not None:
+        return
+    context = recovery["receipt_context"]
+    if recovery["resolution"] == "APPLIED":
+        status = "PASS"
+        error = None
+        after = recovery["after"]
+    elif recovery["resolution"] == "REVERTED":
+        status = "FAILED"
+        error = "mutation_reconciled_reverted"
+        after = recovery["before"]
+    else:
+        status = "FAILED"
+        error = "mutation_state_indeterminate"
+        after = recovery["observation"]
+    receipt = {
+        "protocol": RESULT_PROTOCOL,
+        "request_id": recovery["request_id"],
+        "request_digest": recovery["request_digest"],
+        "mission_id": context["mission_id"],
+        "declared_actor": context["declared_actor"],
+        "authority": context["authority"],
+        "transport_principal": context["transport_principal"],
+        "grant_id": recovery["grant_id"],
+        "project": context["project"],
+        "operation": context["operation"],
+        "path": recovery["path"],
+        "started_at": context["started_at"],
+        "finished_at": _read_clock(now).isoformat(),
+        "precondition": context["precondition"],
+        "before": _public_state_dict(recovery["before"]),
+        "after": _public_state_dict(after),
+        "status": status,
+        "replayed": False,
+        "rollback_request_id": None,
+        "revocation_request_id": None,
+        "error": error,
+    }
+    _persist_receipt(store, receipt)
 
 
 def _public_precondition(value: Precondition | None) -> dict[str, str] | None:
@@ -503,6 +734,17 @@ def _public_state(value: TargetState | None) -> dict[str, Any] | None:
         "size": value.size,
         "mode": value.mode,
         "sha256": value.sha256,
+    }
+
+
+def _public_state_dict(value: dict[str, Any] | None) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    return {
+        "exists": value["exists"],
+        "size": value["size"],
+        "mode": value["mode"],
+        "sha256": value["sha256"],
     }
 
 
@@ -529,6 +771,26 @@ def _target_state(value: dict[str, Any]) -> TargetState:
         device=value["device"],
         inode=value["inode"],
         sha256=value["sha256"],
+    )
+
+
+def _matches_expected_target(value: TargetState | None, expected: dict[str, Any]) -> bool:
+    if value is None:
+        return False
+    return (
+        value.exists is True
+        and value.size == expected["size"]
+        and value.mode == expected["mode"]
+        and value.uid == expected["uid"]
+        and value.sha256 == expected["sha256"]
+    )
+
+
+def _snapshot_matches_before(snapshot: bytes, before: dict[str, Any]) -> bool:
+    return (
+        before["exists"] is True
+        and len(snapshot) == before["size"]
+        and hashlib.sha256(snapshot).hexdigest() == before["sha256"]
     )
 
 
@@ -634,6 +896,71 @@ def _read_clock(clock: Callable[[], datetime]) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _valid_transport_principal(value: Any) -> bool:
+    if not isinstance(value, TransportPrincipal):
+        return False
+    login = value.login
+    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"
+    return (
+        isinstance(login, str)
+        and 1 <= len(login) <= 39
+        and login[0] in allowed[:-1]
+        and login[-1] in allowed[:-1]
+        and all(character in allowed for character in login)
+        and isinstance(value.actor_id, int)
+        and not isinstance(value.actor_id, bool)
+        and 0 < value.actor_id <= 2**63 - 1
+    )
+
+
+def _safe_principal(value: Any) -> dict[str, Any]:
+    if not _valid_transport_principal(value):
+        return {"login": None, "actor_id": None}
+    return {"login": value.login, "actor_id": value.actor_id}
+
+
+def _bounded_result(
+    result: dict[str, Any],
+    *,
+    transport_principal: TransportPrincipal,
+) -> dict[str, Any]:
+    try:
+        encoded = json.dumps(
+            result,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError):
+        encoded = b""
+    if set(result) == RECEIPT_FIELDS and 0 < len(encoded) <= _MAX_RESULT_BYTES:
+        return result
+    return {
+        "protocol": RESULT_PROTOCOL,
+        "request_id": None,
+        "request_digest": None,
+        "mission_id": None,
+        "declared_actor": None,
+        "authority": None,
+        "transport_principal": _safe_principal(transport_principal),
+        "grant_id": None,
+        "project": None,
+        "operation": None,
+        "path": None,
+        "started_at": None,
+        "finished_at": None,
+        "precondition": None,
+        "before": None,
+        "after": None,
+        "status": "FAILED",
+        "replayed": False,
+        "rollback_request_id": None,
+        "revocation_request_id": None,
+        "error": "result_too_large",
+    }
+
+
 def _transient_result(
     request: MutationRequest | None,
     *,
@@ -650,10 +977,7 @@ def _transient_result(
         "mission_id": request.mission_id if request is not None else None,
         "declared_actor": request.declared_actor if request is not None else None,
         "authority": None,
-        "transport_principal": {
-            "login": transport_principal.login,
-            "actor_id": transport_principal.actor_id,
-        },
+        "transport_principal": _safe_principal(transport_principal),
         "grant_id": None,
         "project": (
             {

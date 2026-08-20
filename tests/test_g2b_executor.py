@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import patch
 
 from control_plane.g2b import executor as executor_module
+from control_plane.g2b.errors import ConflictError, RefusedError
 from control_plane.g2b.executor import execute_request
 from control_plane.g2b.grant import TransportPrincipal, canonical_bundle_sha256
 from control_plane.g2b.protocol import MUTATION_PROTOCOL
@@ -259,6 +260,178 @@ class G2BExecutorTests(unittest.TestCase):
         self.assertEqual(len(active), 1)
         self.assertEqual(active[0]["resolution"], "INDETERMINATE")
 
+    def test_abrupt_exit_after_namespace_commit_is_reconciled_and_receipted(self) -> None:
+        request = write_request("G2B-EXEC-CRASH-COMMIT-0001")
+        real_atomic_write = executor_module.atomic_write
+
+        def commit_then_exit(*args, **kwargs):
+            real_atomic_write(*args, **kwargs)
+            raise SystemExit("synthetic process death")
+
+        with patch.object(executor_module, "atomic_write", side_effect=commit_then_exit):
+            with self.assertRaises(SystemExit):
+                self.execute(request)
+
+        self.assertTrue((self.workspace / PILOT_PATH).exists())
+        store = StateStore(self.state_root, self.lock_path, expected_uid=self.expected_uid)
+        self.assertEqual(store.lookup_recovery(request["request_id"])["resolution"], "PREPARED")
+        self.assertIsNone(store.lookup_request(request["request_id"]))
+
+        replay = self.execute(request)
+
+        self.assertEqual(replay["status"], "PASS")
+        self.assertTrue(replay["replayed"])
+        recovery = store.lookup_recovery(request["request_id"])
+        self.assertEqual(recovery["resolution"], "APPLIED")
+        self.assertEqual(
+            recovery["after"]["sha256"],
+            hashlib.sha256(b"pilot\n").hexdigest(),
+        )
+        self.assertIsNotNone(store.lookup_request(request["request_id"]))
+
+    def test_precommit_refusal_resolves_journal_and_releases_global_slot(self) -> None:
+        with patch.object(
+            executor_module,
+            "atomic_write",
+            side_effect=ConflictError("precondition_mismatch"),
+        ):
+            refused = self.execute(write_request("G2B-EXEC-PRECOMMIT-0001"))
+
+        self.assertEqual(refused["status"], "CONFLICT")
+        store = StateStore(self.state_root, self.lock_path, expected_uid=self.expected_uid)
+        recovery = store.lookup_recovery("G2B-EXEC-PRECOMMIT-0001")
+        self.assertEqual(recovery["resolution"], "REVERTED")
+        self.assertFalse(recovery["active"])
+        self.assertEqual(store.active_recoveries(), [])
+
+        passed = self.execute(write_request("G2B-EXEC-PRECOMMIT-0002"))
+        self.assertEqual(passed["status"], "PASS")
+
+    def test_active_mutation_blocks_write_under_a_reissued_grant(self) -> None:
+        self.assertEqual(self.execute(write_request("G2B-EXEC-GLOBAL-WRITE-0001"))["status"], "PASS")
+        self._write_grant(grant_id="G2B-PILOT-REISSUED")
+
+        conflict = self.execute(write_request("G2B-EXEC-GLOBAL-WRITE-0002", "other\n"))
+
+        self.assertEqual(conflict["status"], "CONFLICT")
+        self.assertEqual(conflict["error"], "active_mutation_exists")
+        store = StateStore(self.state_root, self.lock_path, expected_uid=self.expected_uid)
+        self.assertEqual(len(store.active_recoveries()), 1)
+
+    def test_active_mutation_blocks_revocation_under_a_reissued_grant(self) -> None:
+        self.assertEqual(self.execute(write_request("G2B-EXEC-GLOBAL-REVOKE-WRITE"))["status"], "PASS")
+        self._write_grant(grant_id="G2B-PILOT-REISSUED")
+
+        conflict = self.execute(action_request("G2B-EXEC-GLOBAL-REVOKE", "revoke"))
+
+        self.assertEqual(conflict["status"], "CONFLICT")
+        self.assertEqual(conflict["error"], "active_mutation_exists")
+
+    def test_corrupt_snapshot_cannot_be_restored_or_resolve_mutation(self) -> None:
+        target = self.workspace / PILOT_PATH
+        target.write_bytes(b"original\n")
+        os.chmod(target, 0o600)
+        original = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+        request = write_request("G2B-EXEC-CORRUPT-SNAPSHOT", "mutated!\n")
+        request["arguments"]["precondition"] = {"sha256": original.sha256}
+        self.assertEqual(self.execute(request)["status"], "PASS")
+        snapshot = next((self.state_root / "snapshots").iterdir())
+        snapshot.write_bytes(b"corrupt!\n")
+        os.chmod(snapshot, 0o600)
+
+        rollback = self.execute(
+            action_request(
+                "G2B-EXEC-CORRUPT-ROLLBACK",
+                "rollback",
+                original_request_id=request["request_id"],
+            )
+        )
+
+        self.assertEqual(rollback["status"], "CONFLICT")
+        self.assertEqual(rollback["error"], "snapshot_mismatch")
+        self.assertEqual(target.read_bytes(), b"mutated!\n")
+        store = StateStore(self.state_root, self.lock_path, expected_uid=self.expected_uid)
+        self.assertEqual(len(store.active_recoveries()), 1)
+
+    def test_indeterminate_rollback_drift_never_replaces_committed_baseline(self) -> None:
+        original_id = "G2B-EXEC-ROLLBACK-BASELINE-WRITE"
+        self.assertEqual(self.execute(write_request(original_id))["status"], "PASS")
+        target = self.workspace / PILOT_PATH
+        original_recovery = StateStore(
+            self.state_root,
+            self.lock_path,
+            expected_uid=self.expected_uid,
+        ).lookup_recovery(original_id)
+
+        def drift_then_fail(*args, **kwargs):
+            expected_current = kwargs["expected_current"]
+            target.write_bytes(b"unrelated drift\n")
+            os.chmod(target, 0o644)
+            observed = inspect_target(self.workspace, PILOT_PATH, expected_uid=self.expected_uid)
+            raise MutationStateError(
+                "delete_durability_indeterminate",
+                operation="delete",
+                path=PILOT_PATH,
+                before=expected_current,
+                observed_after=observed,
+                resolution="INDETERMINATE",
+            )
+
+        with patch.object(executor_module, "atomic_delete", side_effect=drift_then_fail):
+            first = self.execute(
+                action_request(
+                    "G2B-EXEC-ROLLBACK-BASELINE-TRY1",
+                    "rollback",
+                    original_request_id=original_id,
+                )
+            )
+        self.assertEqual(first["status"], "FAILED")
+
+        recovery = StateStore(
+            self.state_root,
+            self.lock_path,
+            expected_uid=self.expected_uid,
+        ).lookup_recovery(original_id)
+        self.assertEqual(recovery["after"], original_recovery["after"])
+
+        second = self.execute(
+            action_request(
+                "G2B-EXEC-ROLLBACK-BASELINE-TRY2",
+                "rollback",
+                original_request_id=original_id,
+            )
+        )
+        self.assertEqual(second["status"], "CONFLICT")
+        self.assertEqual(second["error"], "target_changed")
+        self.assertEqual(target.read_bytes(), b"unrelated drift\n")
+
+    def test_receipt_audit_failure_is_repaired_without_contradicting_pass(self) -> None:
+        original_append = StateStore._append_audit
+        failed = False
+
+        def fail_once(store, event):
+            nonlocal failed
+            if event["event"] == "write" and not failed:
+                failed = True
+                raise RefusedError("synthetic_audit_failure")
+            return original_append(store, event)
+
+        with patch.object(StateStore, "_append_audit", new=fail_once):
+            result = self.execute(write_request("G2B-EXEC-AUDIT-REPAIR"))
+
+        self.assertEqual(result["status"], "PASS")
+        self.assertIsNone(result["error"])
+        events = [
+            json.loads(line)
+            for line in (self.state_root / "audit.jsonl").read_text(encoding="utf-8").splitlines()
+        ]
+        matching = [event for event in events if event["request_id"] == result["request_id"]]
+        self.assertEqual(len(matching), 1)
+
+        replay = self.execute(write_request("G2B-EXEC-AUDIT-REPAIR"))
+        self.assertEqual(replay["status"], "PASS")
+        self.assertTrue(replay["replayed"])
+
     def test_execution_requires_the_configured_service_uid(self) -> None:
         with patch("control_plane.g2b.executor.os.geteuid", return_value=self.expected_uid + 1):
             with patch.object(executor_module, "atomic_write") as mutation:
@@ -267,6 +440,17 @@ class G2BExecutorTests(unittest.TestCase):
         self.assertEqual(result["status"], "REFUSED")
         self.assertEqual(result["error"], "execution_uid_mismatch")
         mutation.assert_not_called()
+
+    def test_root_execution_is_explicitly_refused_before_state_access(self) -> None:
+        with patch("control_plane.g2b.executor.os.geteuid", return_value=0):
+            result = self.execute(
+                write_request("G2B-EXEC-ROOT-REFUSED"),
+                expected_uid=0,
+            )
+
+        self.assertEqual(result["status"], "REFUSED")
+        self.assertEqual(result["error"], "root_execution_refused")
+        self.assertFalse((self.state_root / "receipts").exists())
 
     def test_rejected_unapproved_path_is_not_reflected_in_bounded_result(self) -> None:
         request = write_request("G2B-EXEC-BOUNDED-0001")
@@ -278,6 +462,19 @@ class G2BExecutorTests(unittest.TestCase):
         self.assertEqual(result["error"], "grant_path_mismatch")
         self.assertIsNone(result["path"])
         self.assertLess(len(json.dumps(result)), 4096)
+
+    def test_hostile_transport_principal_is_sanitized_and_result_is_bounded(self) -> None:
+        hostile = TransportPrincipal("x" * 1_000_000, 337)
+
+        result = self.execute(
+            write_request("G2B-EXEC-HOSTILE-PRINCIPAL"),
+            principal=hostile,
+        )
+
+        self.assertEqual(result["status"], "REFUSED")
+        self.assertEqual(result["error"], "invalid_transport_principal")
+        self.assertIsNone(result["transport_principal"]["login"])
+        self.assertLessEqual(len(json.dumps(result, separators=(",", ":"))), 8192)
 
     def test_applied_mutation_error_is_receipted_active_and_rollbackable(self) -> None:
         request_id = "G2B-EXEC-APPLIED-0001"
@@ -378,7 +575,13 @@ class G2BExecutorTests(unittest.TestCase):
         self.assertEqual(rollback["status"], "CONFLICT")
         self.assertEqual(rollback["error"], "mutation_state_indeterminate")
 
-    def execute(self, request: dict[str, object]) -> dict[str, object]:
+    def execute(
+        self,
+        request: dict[str, object],
+        *,
+        expected_uid: int | None = None,
+        principal: TransportPrincipal | None = None,
+    ) -> dict[str, object]:
         original_stat = os.stat
 
         def root_owned_grant(path, *args, **kwargs):
@@ -403,13 +606,13 @@ class G2BExecutorTests(unittest.TestCase):
         with patch("control_plane.g2b.grant.os.stat", side_effect=root_owned_grant):
             return execute_request(
                 request,
-                transport_principal=self.principal,
+                transport_principal=self.principal if principal is None else principal,
                 grant_path=self.grant_path,
                 installed_root=self.bundle,
                 workspace_root=self.workspace,
                 state_root=self.state_root,
                 lock_path=self.lock_path,
-                expected_uid=self.expected_uid,
+                expected_uid=self.expected_uid if expected_uid is None else expected_uid,
                 now=lambda: NOW,
             )
 

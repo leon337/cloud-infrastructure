@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import ctypes
 from datetime import datetime
 import errno
 import fcntl
@@ -69,9 +70,24 @@ _RECOVERY_FIELDS = frozenset(
         "active",
         "snapshot",
         "workspace_recovery_name",
+        "observation",
+        "rollback_observation",
+        "receipt_context",
     }
 )
 _EXPECTED_STATE_FIELDS = frozenset({"exists", "size", "mode", "uid", "sha256"})
+_RECEIPT_CONTEXT_FIELDS = frozenset(
+    {
+        "mission_id",
+        "declared_actor",
+        "authority",
+        "transport_principal",
+        "project",
+        "operation",
+        "precondition",
+        "started_at",
+    }
+)
 _RECOVERY_RESOLUTIONS = frozenset(
     {"PREPARED", "APPLIED", "REVERTED", "INDETERMINATE", "ROLLED_BACK"}
 )
@@ -81,6 +97,10 @@ _STATUSES = frozenset(
     {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED"}
 )
 _SAFE_CODE_CHARACTERS = frozenset("abcdefghijklmnopqrstuvwxyz0123456789_")
+_RENAME_NOREPLACE = 1
+_RENAME_UNSUPPORTED_ERRNOS = frozenset(
+    {errno.ENOSYS, errno.EOPNOTSUPP, errno.EINVAL, errno.EXDEV}
+)
 
 
 def canonical_request_digest(value: dict[str, Any]) -> str:
@@ -112,6 +132,8 @@ class StateStore:
     ) -> None:
         if not isinstance(expected_uid, int) or isinstance(expected_uid, bool) or expected_uid < 0:
             raise RefusedError("invalid_execution_uid")
+        if expected_uid == 0:
+            raise RefusedError("root_execution_refused")
         self.state_root = Path(state_root)
         self.lock_path = Path(lock_path)
         self.expected_uid = expected_uid
@@ -165,6 +187,7 @@ class StateStore:
         _validate_receipt(value, serialized=raw)
         if value["request_id"] != request_id:
             raise RefusedError("receipt_identity_mismatch")
+        self._ensure_audit(_receipt_audit_event(value))
         return value
 
     def record_write(self, receipt: dict[str, Any]) -> None:
@@ -215,7 +238,8 @@ class StateStore:
 
     def update_recovery(self, recovery: dict[str, Any]) -> None:
         serialized = _encode_json(recovery)
-        _validate_recovery(recovery, serialized=serialized)
+        if not isinstance(recovery, dict) or set(recovery) != _RECOVERY_FIELDS:
+            raise RefusedError("invalid_recovery")
         name = _hashed_name(recovery["request_id"])
         with self._child_fd("recovery") as recovery_fd:
             existing = self._read_optional(recovery_fd, name)
@@ -225,6 +249,8 @@ class StateStore:
             _validate_recovery(current, serialized=existing)
             if current["request_id"] != recovery["request_id"]:
                 raise RefusedError("recovery_identity_mismatch")
+            _validate_recovery_transition(current, recovery)
+            _validate_recovery(recovery, serialized=serialized)
             self._atomic_replace(recovery_fd, name, serialized)
 
     def lookup_recovery(self, request_id: str) -> dict[str, Any] | None:
@@ -239,9 +265,16 @@ class StateStore:
             raise RefusedError("recovery_identity_mismatch")
         return value
 
-    def active_recoveries(self, grant_id: str) -> list[dict[str, Any]]:
-        if not _safe_identifier(grant_id):
+    def active_recoveries(self, grant_id: str | None = None) -> list[dict[str, Any]]:
+        if grant_id is not None and not _safe_identifier(grant_id):
             raise RefusedError("invalid_state_identifier")
+        return [
+            value
+            for value in self.recoveries()
+            if (grant_id is None or value["grant_id"] == grant_id) and value["active"] is True
+        ]
+
+    def recoveries(self) -> list[dict[str, Any]]:
         result: list[dict[str, Any]] = []
         with self._child_fd("recovery") as recovery_fd:
             try:
@@ -256,9 +289,35 @@ class StateStore:
                     raise RefusedError("unsafe_state_file")
                 value = _decode_json_object(raw, "invalid_recovery")
                 _validate_recovery(value, serialized=raw)
-                if value["grant_id"] == grant_id and value["active"] is True:
-                    result.append(value)
+                result.append(value)
         return result
+
+    def reconcile_abandoned_temporaries(self) -> None:
+        for directory in _STATE_DIRECTORIES:
+            with self._child_fd(directory) as directory_fd:
+                try:
+                    names = os.listdir(directory_fd)
+                except OSError:
+                    raise RefusedError("state_read_failed") from None
+                changed = False
+                for name in names:
+                    if not name.startswith(".g2b-state-"):
+                        continue
+                    if not _state_temporary_name(name):
+                        raise RefusedError("unsafe_state_file")
+                    raw = self._read_optional(directory_fd, name)
+                    if raw is None:
+                        continue
+                    try:
+                        os.unlink(name, dir_fd=directory_fd)
+                    except OSError:
+                        raise RefusedError("state_temporary_cleanup_failed") from None
+                    changed = True
+                if changed:
+                    try:
+                        os.fsync(directory_fd)
+                    except OSError:
+                        raise RefusedError("state_temporary_cleanup_failed") from None
 
     def revoke(self, grant_id: str, *, actor: str, at: datetime) -> None:
         if not _safe_identifier(grant_id) or actor != "MESTRE_MCF" or not _aware_datetime(at):
@@ -275,26 +334,48 @@ class StateStore:
         name = _hashed_name(grant_id)
         with self._child_fd("revocations") as revocations_fd:
             created = self._atomic_create(revocations_fd, name, serialized)
+        event = {
+            "event": "revoke",
+            "request_id": None,
+            "request_digest": None,
+            "grant_id": grant_id,
+            "operation": "revoke",
+            "status": "REVOKED",
+            "error": None,
+            "at": at.isoformat(),
+        }
         if created:
-            self._append_audit(
-                {
-                    "event": "revoke",
-                    "request_id": None,
-                    "request_digest": None,
-                    "grant_id": grant_id,
-                    "operation": "revoke",
-                    "status": "REVOKED",
-                    "error": None,
-                    "at": at.isoformat(),
-                }
+            self._ensure_audit(event)
+        else:
+            existing = self._read_revocation(grant_id)
+            self._ensure_audit(
+                dict(event, at=existing["revoked_at"])
             )
 
     def is_revoked(self, grant_id: str) -> bool:
+        value = self._read_revocation(grant_id)
+        if value is None:
+            return False
+        self._ensure_audit(
+            {
+                "event": "revoke",
+                "request_id": None,
+                "request_digest": None,
+                "grant_id": grant_id,
+                "operation": "revoke",
+                "status": "REVOKED",
+                "error": None,
+                "at": value["revoked_at"],
+            }
+        )
+        return True
+
+    def _read_revocation(self, grant_id: str) -> dict[str, Any] | None:
         name = _hashed_name(grant_id)
         with self._child_fd("revocations") as revocations_fd:
             raw = self._read_optional(revocations_fd, name)
         if raw is None:
-            return False
+            return None
         value = _decode_json_object(raw, "invalid_revocation")
         if set(value) != {"protocol", "grant_id", "actor", "revoked_at"}:
             raise RefusedError("invalid_revocation")
@@ -305,7 +386,7 @@ class StateStore:
             or not _timestamp(value.get("revoked_at"))
         ):
             raise RefusedError("invalid_revocation")
-        return True
+        return value
 
     def _record_receipt(
         self,
@@ -320,20 +401,12 @@ class StateStore:
             raise RefusedError("invalid_receipt_operation")
         name = _hashed_name(receipt["request_id"])
         with self._child_fd("receipts") as receipts_fd:
-            if not self._atomic_create(receipts_fd, name, serialized):
-                raise RefusedError("receipt_already_exists")
-        self._append_audit(
-            {
-                "event": audit_event,
-                "request_id": receipt["request_id"],
-                "request_digest": receipt["request_digest"],
-                "grant_id": receipt["grant_id"],
-                "operation": receipt["operation"],
-                "status": receipt["status"],
-                "error": receipt["error"],
-                "at": receipt["finished_at"],
-            }
-        )
+            created = self._atomic_create(receipts_fd, name, serialized)
+            if not created:
+                existing = self._read_optional(receipts_fd, name)
+                if existing != serialized:
+                    raise RefusedError("receipt_already_exists")
+        self._ensure_audit(_receipt_audit_event(receipt, event=audit_event))
 
     @contextmanager
     def _root_fd(self) -> Iterator[int]:
@@ -485,6 +558,17 @@ class StateStore:
                 finished.st_ctime_ns,
             ):
                 raise RefusedError("unsafe_state_file")
+            try:
+                final_path = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+            except OSError:
+                raise RefusedError("unsafe_state_file") from None
+            _validate_file_metadata(
+                final_path,
+                expected_uid=self.expected_uid,
+                error_code="unsafe_state_file",
+            )
+            if (finished.st_dev, finished.st_ino) != (final_path.st_dev, final_path.st_ino):
+                raise RefusedError("unsafe_state_file")
             return raw
         except OSError:
             raise RefusedError("state_read_failed") from None
@@ -492,7 +576,7 @@ class StateStore:
             os.close(fd)
 
     def _atomic_create(self, directory_fd: int, name: str, content: bytes) -> bool:
-        temporary = f".{secrets.token_hex(16)}.tmp"
+        temporary = f".g2b-state-{secrets.token_hex(16)}.tmp"
         temporary_fd: int | None = None
         try:
             temporary_fd = os.open(
@@ -507,16 +591,9 @@ class StateStore:
             metadata = os.fstat(temporary_fd)
             _validate_file_metadata(metadata, expected_uid=self.expected_uid, error_code="unsafe_state_file")
             try:
-                os.link(
-                    temporary,
-                    name,
-                    src_dir_fd=directory_fd,
-                    dst_dir_fd=directory_fd,
-                    follow_symlinks=False,
-                )
+                _rename_noreplace_state(directory_fd, temporary, name)
             except FileExistsError:
                 return False
-            os.unlink(temporary, dir_fd=directory_fd)
             temporary = ""
             os.fsync(directory_fd)
             return True
@@ -534,7 +611,7 @@ class StateStore:
                     pass
 
     def _atomic_replace(self, directory_fd: int, name: str, content: bytes) -> None:
-        temporary = f".{secrets.token_hex(16)}.tmp"
+        temporary = f".g2b-state-{secrets.token_hex(16)}.tmp"
         temporary_fd: int | None = None
         try:
             temporary_fd = os.open(
@@ -608,6 +685,48 @@ class StateStore:
                 raise RefusedError("audit_write_failed") from None
             finally:
                 os.close(fd)
+
+    def _ensure_audit(self, event: dict[str, Any]) -> None:
+        events = self._read_audit_events()
+        if event in events:
+            return
+        for existing in events:
+            same_receipt = (
+                event["request_id"] is not None
+                and existing["request_id"] == event["request_id"]
+            )
+            same_revocation = (
+                event["event"] == "revoke"
+                and existing["event"] == "revoke"
+                and existing["grant_id"] == event["grant_id"]
+            )
+            if same_receipt or same_revocation:
+                raise RefusedError("audit_event_conflict")
+        self._append_audit(event)
+
+    def _read_audit_events(self) -> list[dict[str, Any]]:
+        with self._root_fd() as root_fd:
+            raw = self._read_optional(root_fd, "audit.jsonl")
+        if raw is None or raw == b"":
+            return []
+        if not raw.endswith(b"\n"):
+            raise RefusedError("invalid_audit_log")
+        events: list[dict[str, Any]] = []
+        for line in raw.splitlines():
+            value = _decode_json_object(line, "invalid_audit_log")
+            if set(value) != {
+                "event",
+                "request_id",
+                "request_digest",
+                "grant_id",
+                "operation",
+                "status",
+                "error",
+                "at",
+            }:
+                raise RefusedError("invalid_audit_log")
+            events.append(value)
+        return events
 
 
 def _open_validated_directory(
@@ -777,12 +896,100 @@ def _validate_recovery(value: Any, *, serialized: bytes) -> None:
     _validate_exact_state(value.get("before"))
     if value.get("after") is not None:
         _validate_exact_state(value.get("after"))
+    if value.get("observation") is not None:
+        _validate_exact_state(value.get("observation"))
+    if value.get("rollback_observation") is not None:
+        _validate_exact_state(value.get("rollback_observation"))
+    _validate_receipt_context(value.get("receipt_context"))
     if value["resolution"] == "PREPARED" and value.get("after") is not None:
         raise RefusedError("invalid_recovery")
     if value["resolution"] == "ROLLED_BACK" and value["active"] is not False:
         raise RefusedError("invalid_recovery")
+    expected_active = value["resolution"] not in {"REVERTED", "ROLLED_BACK"}
+    if value["active"] is not expected_active:
+        raise RefusedError("invalid_recovery")
+    if value["resolution"] == "APPLIED":
+        if value["after"] is None or not _matches_expected_state(
+            value["after"], value["expected_after"]
+        ):
+            raise RefusedError("invalid_recovery")
+    if value["resolution"] in {"PREPARED", "REVERTED"} and value["after"] is not None:
+        raise RefusedError("invalid_recovery")
+    if value["snapshot"] is not value["before"]["exists"]:
+        raise RefusedError("invalid_recovery")
     if not _workspace_recovery_name(value.get("workspace_recovery_name")):
         raise RefusedError("invalid_recovery")
+
+
+def _validate_recovery_transition(current: dict[str, Any], updated: dict[str, Any]) -> None:
+    immutable_fields = {
+        "protocol",
+        "request_id",
+        "request_digest",
+        "grant_id",
+        "path",
+        "expected_after",
+        "before",
+        "snapshot",
+        "receipt_context",
+    }
+    if any(current[field] != updated[field] for field in immutable_fields):
+        raise RefusedError("invalid_recovery_transition")
+    if current["after"] is not None and updated["after"] != current["after"]:
+        raise RefusedError("invalid_recovery_transition")
+    if current["after"] is None and updated["after"] is not None:
+        if updated["resolution"] != "APPLIED":
+            raise RefusedError("invalid_recovery_transition")
+        if not _matches_expected_state(updated["after"], current["expected_after"]):
+            raise RefusedError("invalid_recovery_transition")
+    if current["workspace_recovery_name"] is not None and updated["workspace_recovery_name"] not in {
+        current["workspace_recovery_name"],
+        None,
+    }:
+        raise RefusedError("invalid_recovery_transition")
+    transitions = {
+        "PREPARED": {"PREPARED", "APPLIED", "REVERTED", "INDETERMINATE"},
+        "APPLIED": {"APPLIED", "INDETERMINATE", "ROLLED_BACK"},
+        "INDETERMINATE": {"INDETERMINATE", "ROLLED_BACK"},
+        "REVERTED": {"REVERTED"},
+        "ROLLED_BACK": {"ROLLED_BACK"},
+    }
+    if updated["resolution"] not in transitions[current["resolution"]]:
+        raise RefusedError("invalid_recovery_transition")
+    expected_active = updated["resolution"] not in {"REVERTED", "ROLLED_BACK"}
+    if updated["active"] is not expected_active:
+        raise RefusedError("invalid_recovery_transition")
+
+
+def _matches_expected_state(actual: dict[str, Any], expected: dict[str, Any]) -> bool:
+    return all(actual.get(field) == expected.get(field) for field in _EXPECTED_STATE_FIELDS)
+
+
+def _validate_receipt_context(value: Any) -> None:
+    if not isinstance(value, dict) or set(value) != _RECEIPT_CONTEXT_FIELDS:
+        raise RefusedError("invalid_recovery")
+    if (
+        value.get("mission_id") != "CONTROL-BRIDGE-G2B-PILOT"
+        or value.get("declared_actor") != "MESTRE_MCF"
+        or value.get("authority") != "LEANDRO"
+        or value.get("operation") != "workspace.write"
+        or not _timestamp(value.get("started_at"))
+    ):
+        raise RefusedError("invalid_recovery")
+    principal = value.get("transport_principal")
+    if not isinstance(principal, dict) or set(principal) != _PRINCIPAL_FIELDS:
+        raise RefusedError("invalid_recovery")
+    if (
+        not _safe_identifier(principal.get("login"))
+        or not isinstance(principal.get("actor_id"), int)
+        or isinstance(principal.get("actor_id"), bool)
+        or principal["actor_id"] < 1
+    ):
+        raise RefusedError("invalid_recovery")
+    project = value.get("project")
+    if project != {"tenant": "leon337", "name": "g2a-smoke", "environment": "dev"}:
+        raise RefusedError("invalid_recovery")
+    _validate_precondition(value.get("precondition"))
 
 
 def _validate_expected_state(value: Any) -> None:
@@ -865,10 +1072,19 @@ def _hashed_state_filename(value: str) -> bool:
     )
 
 
+def _state_temporary_name(value: str) -> bool:
+    prefix = ".g2b-state-"
+    suffix = ".tmp"
+    if not value.startswith(prefix) or not value.endswith(suffix):
+        return False
+    token = value[len(prefix) : -len(suffix)]
+    return len(token) == 32 and all(character in "0123456789abcdef" for character in token)
+
+
 def _workspace_recovery_name(value: Any) -> bool:
     if value is None:
         return True
-    prefixes = (".g2b-write-", ".g2b-delete-")
+    prefixes = (".g2b-write-", ".g2b-restore-", ".g2b-delete-")
     for prefix in prefixes:
         if value.startswith(prefix) and value.endswith(".tmp"):
             token = value[len(prefix) : -4]
@@ -916,3 +1132,46 @@ def _write_all(fd: int, content: bytes) -> None:
         if written <= 0:
             raise RefusedError("state_write_failed")
         remaining = remaining[written:]
+
+
+def _receipt_audit_event(receipt: dict[str, Any], *, event: str | None = None) -> dict[str, Any]:
+    return {
+        "event": event or ("rollback" if receipt["operation"] == "rollback" else "write"),
+        "request_id": receipt["request_id"],
+        "request_digest": receipt["request_digest"],
+        "grant_id": receipt["grant_id"],
+        "operation": receipt["operation"],
+        "status": receipt["status"],
+        "error": receipt["error"],
+        "at": receipt["finished_at"],
+    }
+
+
+def _rename_noreplace_state(directory_fd: int, source: str, destination: str) -> None:
+    libc = ctypes.CDLL(None, use_errno=True)
+    renameat2 = getattr(libc, "renameat2", None)
+    if renameat2 is None:
+        raise RefusedError("atomic_rename_unsupported")
+    renameat2.argtypes = [
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    ]
+    renameat2.restype = ctypes.c_int
+    result = renameat2(
+        directory_fd,
+        os.fsencode(source),
+        directory_fd,
+        os.fsencode(destination),
+        _RENAME_NOREPLACE,
+    )
+    if result == 0:
+        return
+    error_number = ctypes.get_errno()
+    if error_number == errno.EEXIST:
+        raise FileExistsError(error_number, os.strerror(error_number))
+    if error_number in _RENAME_UNSUPPORTED_ERRNOS:
+        raise RefusedError("atomic_rename_unsupported")
+    raise RefusedError("state_write_failed")
