@@ -78,7 +78,7 @@ NODE01_G2B_GATE=CLOSED
 MERGE_G2B=NO
 ```
 
-Fontes: `state/control-bridge-g2b.yaml`, PR #11, especificação e plano G2-B.
+Fontes: `state/control-bridge-g2b.yaml`, `docs/54-control-bridge-g2b-recovery-checkpoint.md`, PR #11, especificação e plano G2-B.
 
 O checkpoint WIP remoto preserva o trabalho incompleto; ele não transforma a Task 7 em `PASS`.
 
@@ -103,6 +103,7 @@ Não use o `next_exact_step` da trilha principal F1.2c como autorização para t
 | Estado exato de continuidade | `CHECKPOINT.md` |
 | Estado operacional estruturado | `state/current.yaml` |
 | Estado específico G2-B | `state/control-bridge-g2b.yaml` |
+| Checkpoint técnico recuperado G2-B | `docs/54-control-bridge-g2b-recovery-checkpoint.md` |
 | Spec G2-B | `docs/superpowers/specs/2026-08-20-control-bridge-g2b-bounded-write-design.md` |
 | Plano G2-B Tasks 1–10 | `docs/superpowers/plans/2026-08-20-control-bridge-g2b-bounded-write.md` |
 | Checkpoint G2-A | `docs/52-control-bridge-g2a-implementation-checkpoint.md` |
