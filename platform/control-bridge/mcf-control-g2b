@@ -2,7 +2,7 @@
 """Immutable G2-B installed executor boundary."""
 from __future__ import annotations
 
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from datetime import datetime, timezone
 import json
 import os
@@ -27,6 +27,24 @@ _COMMAND_OPERATIONS = {
     "status": "status",
     "revoke": "revoke",
 }
+_PUBLIC_BOUNDARY_CODES = frozenset(
+    {
+        "invalid_input_envelope",
+        "invalid_invocation",
+        "invalid_json",
+        "invalid_result",
+        "invalid_service_account_uid",
+        "invalid_transport_principal",
+        "input_must_be_object",
+        "operation_mismatch",
+        "result_too_large",
+        "root_execution_refused",
+        "service_account_missing",
+        "service_account_resolution_failed",
+        "stdin_too_large",
+        "execution_uid_mismatch",
+    }
+)
 
 
 class _BoundaryError(Exception):
@@ -35,12 +53,62 @@ class _BoundaryError(Exception):
         self.code = code
 
 
+class _BootstrapFailure(BaseException):
+    pass
+
+
 class _DiscardOutput:
     def write(self, value: str) -> int:
         return len(value)
 
     def flush(self) -> None:
         return None
+
+
+@contextmanager
+def _suppress_untrusted_file_descriptors():
+    saved_stdout: int | None = None
+    saved_stderr: int | None = None
+    null_fd: int | None = None
+    stdout_redirected = False
+    stderr_redirected = False
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        saved_stdout = os.dup(1)
+        saved_stderr = os.dup(2)
+        null_fd = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(null_fd, 1)
+        stdout_redirected = True
+        os.dup2(null_fd, 2)
+        stderr_redirected = True
+        yield
+    finally:
+        pending: BaseException | None = None
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        except BaseException as error:
+            pending = error
+        for target, saved, redirected in (
+            (1, saved_stdout, stdout_redirected),
+            (2, saved_stderr, stderr_redirected),
+        ):
+            if saved is not None and redirected:
+                try:
+                    os.dup2(saved, target)
+                except BaseException as error:
+                    if pending is None:
+                        pending = error
+        for descriptor in (null_fd, saved_stdout, saved_stderr):
+            if descriptor is not None:
+                try:
+                    os.close(descriptor)
+                except BaseException as error:
+                    if pending is None:
+                        pending = error
+        if pending is not None:
+            raise pending
 
 
 def _is_within(candidate: Path, root: Path) -> bool:
@@ -80,25 +148,25 @@ def _verify_application_origins() -> None:
     try:
         installed = _INSTALLED_ROOT.resolve(strict=True)
     except OSError:
-        raise _BoundaryError("bootstrap_failure") from None
+        raise _BootstrapFailure() from None
     application_modules = {
         name: module
         for name, module in sys.modules.items()
         if name == "control_plane" or name.startswith("control_plane.")
     }
     if not application_modules:
-        raise _BoundaryError("bootstrap_failure")
+        raise _BootstrapFailure()
     for module in application_modules.values():
         spec = getattr(module, "__spec__", None)
         origin = getattr(spec, "origin", None)
         if not isinstance(origin, str) or origin in {"built-in", "frozen"}:
-            raise _BoundaryError("bootstrap_failure")
+            raise _BootstrapFailure()
         try:
             resolved = Path(origin).resolve(strict=True)
         except OSError:
-            raise _BoundaryError("bootstrap_failure") from None
+            raise _BootstrapFailure() from None
         if not _is_within(resolved, installed):
-            raise _BoundaryError("bootstrap_failure")
+            raise _BootstrapFailure()
 
 
 def _load_execute_request():
@@ -107,7 +175,7 @@ def _load_execute_request():
         name == "control_plane" or name.startswith("control_plane.")
         for name in sys.modules
     ):
-        raise _BoundaryError("bootstrap_failure")
+        raise _BootstrapFailure()
     from control_plane.g2b.executor import execute_request
     from control_plane.g2b.grant import TransportPrincipal
 
@@ -164,7 +232,10 @@ def _parse_principal(value: dict[str, Any], principal_type):
         or not 0 < actor_id <= 2**63 - 1
     ):
         raise _BoundaryError("invalid_transport_principal")
-    return principal_type(login=login, actor_id=actor_id)
+    try:
+        return principal_type(login=login, actor_id=actor_id)
+    except BaseException:
+        raise _BootstrapFailure() from None
 
 
 def _write_result(result: dict[str, Any]) -> None:
@@ -181,9 +252,14 @@ def _write_result(result: dict[str, Any]) -> None:
         encoded = (rendered + "\n").encode("utf-8")
     except (TypeError, ValueError, UnicodeEncodeError):
         raise _BoundaryError("invalid_result") from None
+    except BaseException:
+        raise _BootstrapFailure() from None
     if len(encoded) > _MAX_STDOUT_BYTES:
         raise _BoundaryError("result_too_large")
-    sys.stdout.write(rendered + "\n")
+    try:
+        sys.stdout.write(rendered + "\n")
+    except BaseException:
+        raise _BootstrapFailure() from None
 
 
 def _failure(code: str) -> dict[str, str]:
@@ -199,7 +275,10 @@ def _run() -> dict[str, Any]:
     if operation != _COMMAND_OPERATIONS[command]:
         raise _BoundaryError("operation_mismatch")
     expected_uid = _resolve_service_uid()
-    execute_request, principal_type = _load_execute_request()
+    try:
+        execute_request, principal_type = _load_execute_request()
+    except BaseException:
+        raise _BootstrapFailure() from None
     principal = _parse_principal(value["transport_principal"], principal_type)
     try:
         return execute_request(
@@ -214,19 +293,44 @@ def _run() -> dict[str, Any]:
             now=lambda: datetime.now(timezone.utc),
         )
     except BaseException:
-        raise _BoundaryError("bootstrap_failure") from None
+        raise _BootstrapFailure() from None
+
+
+def _protected_run() -> tuple[int, dict[str, Any]]:
+    discard = _DiscardOutput()
+    try:
+        with (
+            _suppress_untrusted_file_descriptors(),
+            redirect_stdout(discard),
+            redirect_stderr(discard),
+        ):
+            try:
+                try:
+                    os.environ.clear()
+                except BaseException:
+                    raise _BootstrapFailure() from None
+                return 0, _run()
+            except _BoundaryError as error:
+                code = (
+                    error.code
+                    if error.code in _PUBLIC_BOUNDARY_CODES
+                    else "bootstrap_failure"
+                )
+                return 2, _failure(code)
+            except BaseException:
+                return 2, _failure("bootstrap_failure")
+    except BaseException:
+        return 2, _failure("bootstrap_failure")
 
 
 def main() -> int:
+    exit_code, result = _protected_run()
     try:
-        discard = _DiscardOutput()
-        with redirect_stdout(discard), redirect_stderr(discard):
-            os.environ.clear()
-            result = _run()
         _write_result(result)
-        return 0
+        return exit_code
     except _BoundaryError as error:
-        _write_result(_failure(error.code))
+        code = error.code if error.code in _PUBLIC_BOUNDARY_CODES else "bootstrap_failure"
+        _write_result(_failure(code))
         return 2
     except BaseException:
         _write_result(_failure("bootstrap_failure"))

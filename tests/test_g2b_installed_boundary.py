@@ -78,6 +78,7 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
         account_error: Exception | None = None,
         executor=None,
         loader_error: BaseException | None = None,
+        principal_error: BaseException | None = None,
     ) -> tuple[int, str, str]:
         stdout = io.StringIO()
         stderr = io.StringIO()
@@ -88,14 +89,19 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
             }
         account_result = SimpleNamespace(pw_uid=account_uid)
         account_lookup = account_error if account_error is not None else account_result
+        if principal_error is None:
+            principal_type = lambda *, login, actor_id: SimpleNamespace(
+                login=login, actor_id=actor_id
+            )
+        else:
+            def principal_type(*, login, actor_id):
+                raise principal_error
+
         if loader_error is None:
             loader_patch = patch.object(
                 self.module,
                 "_load_execute_request",
-                return_value=(
-                    executor,
-                    lambda *, login, actor_id: SimpleNamespace(login=login, actor_id=actor_id),
-                ),
+                return_value=(executor, principal_type),
             )
         else:
             loader_patch = patch.object(
@@ -138,6 +144,8 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
         *,
         assert_isolated_path: bool,
         legacy_scripts: bool = False,
+        fd_writes: bool = False,
+        core_failure: bool = False,
     ) -> tuple[Path, Path]:
         installed = root / "installed"
         shutil.copytree(
@@ -154,10 +162,16 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
         marker = installed / "control_plane/__init__.py"
         marker_text = marker.read_text(encoding="utf-8")
         marker_text += (
-            "\nimport sys\n"
+            "\nimport os\n"
+            "import sys\n"
             'print("installed-import-stdout")\n'
             'print("installed-import-stderr", file=sys.stderr)\n'
         )
+        if fd_writes:
+            marker_text += (
+                'os.write(1, b"installed-import-fd-stdout\\n")\n'
+                'os.write(2, b"installed-import-fd-stderr\\n")\n'
+            )
         if assert_isolated_path:
             marker_text += (
                 f"assert sys.path[0] == {str(installed)!r}\n"
@@ -165,6 +179,21 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
                 "for value in sys.path[1:])\n"
             )
         marker.write_text(marker_text, encoding="utf-8")
+
+        if fd_writes:
+            executor_path = installed / "control_plane/g2b/executor.py"
+            executor_text = executor_path.read_text(encoding="utf-8")
+            executor_text += (
+                "\n_original_execute_request = execute_request\n"
+                "def execute_request(*args, **kwargs):\n"
+                '    os.write(1, b"installed-core-fd-stdout\\n")\n'
+                '    os.write(2, b"installed-core-fd-stderr\\n")\n'
+            )
+            if core_failure:
+                executor_text += '    raise SystemExit("raw-staged-core-request-content")\n'
+            else:
+                executor_text += "    return _original_execute_request(*args, **kwargs)\n"
+            executor_path.write_text(executor_text, encoding="utf-8")
 
         entrypoint = root / "mcf-control-g2b"
         source = ENTRYPOINT.read_text(encoding="utf-8")
@@ -354,7 +383,9 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
     def test_isolated_subprocess_uses_only_staged_application_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             entrypoint, ambient = self.stage_installed_bundle(
-                Path(temporary), assert_isolated_path=True
+                Path(temporary),
+                assert_isolated_path=True,
+                fd_writes=True,
             )
 
             completed = self.run_staged_entrypoint(entrypoint, ambient)
@@ -366,6 +397,27 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
         self.assertIn(result["error"], {"grant_missing", "root_execution_refused"})
         self.assertNotIn(b"installed-import", completed.stdout)
         self.assertNotIn(b"ambient-", completed.stdout)
+
+    def test_staged_core_fd_writes_and_baseexception_are_one_fixed_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            entrypoint, ambient = self.stage_installed_bundle(
+                Path(temporary),
+                assert_isolated_path=True,
+                fd_writes=True,
+                core_failure=True,
+            )
+
+            completed = self.run_staged_entrypoint(entrypoint, ambient)
+
+        self.assertEqual(completed.returncode, 2, completed)
+        self.assertEqual(completed.stderr, b"")
+        self.assertEqual(completed.stdout.count(b"\n"), 1)
+        self.assertEqual(
+            json.loads(completed.stdout),
+            {"error": "bootstrap_failure", "status": "REFUSED"},
+        )
+        self.assertNotIn(b"installed-", completed.stdout)
+        self.assertNotIn(b"raw-staged", completed.stdout)
 
     def test_application_module_symlink_escape_is_bootstrap_failure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -396,15 +448,28 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
 
     def test_import_and_core_baseexceptions_are_normalized_without_raw_text(self) -> None:
         cases = (
-            ("import", SystemExit("raw-import-request-content"), None),
-            ("core", None, KeyboardInterrupt("raw-core-request-content")),
+            ("import", SystemExit("raw-import-request-content"), None, None),
+            (
+                "loader-boundary-type",
+                self.module._BoundaryError("raw-loader-boundary-request-content"),
+                None,
+                None,
+            ),
+            (
+                "principal-boundary-type",
+                None,
+                self.module._BoundaryError("raw-principal-boundary-request-content"),
+                None,
+            ),
+            ("core", None, None, KeyboardInterrupt("raw-core-request-content")),
             (
                 "core-boundary-type",
+                None,
                 None,
                 self.module._BoundaryError("raw-core-boundary-request-content"),
             ),
         )
-        for source, loader_error, core_error in cases:
+        for source, loader_error, principal_error, core_error in cases:
             with self.subTest(source=source):
                 def executor(request_value, **kwargs):
                     raise core_error  # type: ignore[misc]
@@ -415,6 +480,7 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
                         json.dumps(envelope("status")).encode("utf-8"),
                         executor=executor,
                         loader_error=loader_error,
+                        principal_error=principal_error,
                     )
                 except BaseException as escaped:
                     self.fail(f"boundary escaped {type(escaped).__name__}")
@@ -424,24 +490,35 @@ class G2BInstalledBoundaryTests(unittest.TestCase):
 
     def test_environment_clear_baseexception_is_normalized(self) -> None:
         class ExplodingEnvironment(dict):
+            error: BaseException
+
             def clear(self) -> None:
-                raise SystemExit("raw-environment-request-content")
+                raise self.error
 
-        stdout = io.StringIO()
-        stderr = io.StringIO()
-        with (
-            patch.object(self.module.sys, "stdout", stdout),
-            patch.object(self.module.sys, "stderr", stderr),
-            patch.object(self.module.os, "environ", ExplodingEnvironment()),
+        for source_error in (
+            SystemExit("raw-environment-request-content"),
+            self.module._BoundaryError("raw-environment-boundary-request-content"),
         ):
-            try:
-                code = self.module.main()
-            except BaseException as escaped:
-                self.fail(f"environment clear escaped {type(escaped).__name__}")
+            with self.subTest(error_type=type(source_error).__name__):
+                environment = ExplodingEnvironment()
+                environment.error = source_error
+                stdout = io.StringIO()
+                stderr = io.StringIO()
+                with (
+                    patch.object(self.module.sys, "stdout", stdout),
+                    patch.object(self.module.sys, "stderr", stderr),
+                    patch.object(self.module.os, "environ", environment),
+                ):
+                    try:
+                        code = self.module.main()
+                    except BaseException as escaped:
+                        self.fail(f"environment clear escaped {type(escaped).__name__}")
 
-        value = self.assert_boundary_failure(code, stdout.getvalue(), stderr.getvalue())
-        self.assertEqual(value["error"], "bootstrap_failure")
-        self.assertNotIn("raw-environment", stdout.getvalue())
+                value = self.assert_boundary_failure(
+                    code, stdout.getvalue(), stderr.getvalue()
+                )
+                self.assertEqual(value["error"], "bootstrap_failure")
+                self.assertNotIn("raw-environment", stdout.getvalue())
 
     def test_sudoers_allows_only_four_exact_non_root_commands(self) -> None:
         text = SUDOERS.read_text(encoding="utf-8")
