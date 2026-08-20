@@ -47,6 +47,8 @@ O checkpoint remoto é preservação, não aceitação da Task 7.
 
 - protocolo obrigatório: `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`;
 - contrato machine-readable do protocolo: `state/startup-recovery-protocol.yaml`;
+- política de persistência para missões longas: `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`;
+- contrato machine-readable de persistência: `state/mission-persistence-policy.yaml`;
 - estado estruturado da missão ativa: `state/active-mission.yaml`;
 - porta de entrada: `CONTEXT.md`;
 - checkpoint corrente: `CHECKPOINT.md`;
@@ -87,19 +89,7 @@ Foi formalizado `CLOUD_INFRA_AI_STARTUP_RECOVERY_V1` em duas camadas:
 - `governance/AI-STARTUP-RECOVERY-PROTOCOL.md` — regra normativa;
 - `state/startup-recovery-protocol.yaml` — contrato machine-readable.
 
-O protocolo exige, antes de implementação:
-
-- identidade do repositório;
-- missão ativa;
-- branch/base/PR/HEAD remoto;
-- worktree/HEAD/upstream/divergência/staged/unstaged/untracked quando houver acesso local;
-- leitura das fontes canônicas;
-- verificação GitHub live e evidência do SHA aplicável;
-- reconstrução de task/test/blocker state;
-- ownership e trabalho paralelo;
-- HUMAN_GATEs;
-- próximo passo exato;
-- relatório obrigatório de recuperação.
+O protocolo exige, antes de implementação, reconstrução da identidade do repositório, missão, branch/base/PR/HEAD, estado local quando disponível, fontes canônicas, evidência GitHub, tarefas/testes/blockers, ownership, HUMAN_GATEs e próximo passo exato.
 
 Veredictos permitidos:
 
@@ -116,19 +106,45 @@ Regra central:
 NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
 ```
 
-`PASS` não abre HUMAN_GATE. Em modo remoto sem acesso local, o estado local deve ser `UNVERIFIED`, nunca inferido como `CLEAN`. Divergência não explicada, trabalho local de ownership desconhecido, inconsistência de fontes, PASS sem evidência, gate ambíguo/fechado ou próximo passo conflitante bloqueiam mutação.
+`PASS` não abre HUMAN_GATE. Em modo remoto sem acesso local, o estado local deve ser `UNVERIFIED`, nunca inferido como `CLEAN`.
 
 ### R4 — Persistence policy for long-running missions
 
-**Status:** NEXT.
+**Status:** COMPLETE.
 
-Definir commits por Task, checkpoints WIP, persistência remota segura, sincronização do ledger e retomada após reboot, rate limit ou perda de sessão.
+Foi formalizado `CLOUD_INFRA_LONG_RUNNING_MISSION_PERSISTENCE_V1` em duas camadas:
+
+- `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md` — política normativa;
+- `state/mission-persistence-policy.yaml` — contrato machine-readable.
+
+Regras centrais:
+
+```text
+NO_LONG_RUNNING_MISSION_WITHOUT_RECOVERABLE_REMOTE_CHECKPOINTS
+MAX_MATERIAL_WORK_WITHOUT_REMOTE_CHECKPOINT=30_MINUTES
+WIP_CHECKPOINT_DOES_NOT_IMPLY_ACCEPTANCE
+SESSION_STATE_IS_NOT_DURABLE_STATE
+```
+
+A política determina:
+
+- checkpoint por Task/slice, revisão/correção material, mudança de estado, HUMAN_GATE, pausa/handoff e limite temporal;
+- limite máximo de 30 minutos de trabalho material sem checkpoint remoto recuperável quando o remoto estiver disponível;
+- preflight de capacidade de push/autenticação antes de missões longas, incluindo permissão de workflow quando `.github/workflows/` puder ser alterado;
+- WIP remoto explicitamente permitido sem significar `PASS` ou aceitação;
+- Git e ledger/estado sincronizados no mesmo ciclo de persistência quando o significado da Task muda;
+- agente controlador responsável pela durabilidade de resultados de subagentes;
+- após reboot/rate limit/perda de sessão, execução obrigatória do R3 antes de retomar;
+- se persistência remota falhar, checkpoint local imediato quando seguro, blocker registrado e suspensão de novo trabalho material não relacionado até reconciliar/publicar;
+- handoff obrigatório com missão, Task, estado, branch, HEAD, delta local, testes, blockers, gates, trabalho paralelo e próximo passo exato.
+
+A política não substitui a memória histórica. Checkpoints respondem onde retomar; o R5 registrará o que aconteceu, por que importou e o que mudou.
 
 ### R5 — Institutional project memory
 
-**Status:** NOT_STARTED.
+**Status:** NEXT.
 
-Criar mecanismo permanente de memorandos para incidentes, mudanças de objetivo, decisões, descobertas e recuperações. O primeiro memorando registrará o incidente de 2026-08-20.
+Criar mecanismo permanente de memorandos para incidentes, mudanças de objetivo, decisões, descobertas e recuperações. O primeiro memorando registrará o incidente de 2026-08-20 e suas consequências corretivas/preventivas.
 
 ### R6 — Consistency and drift controls
 
@@ -163,5 +179,5 @@ Não estão autorizados por esta missão:
 ## Próximo passo exato
 
 ```text
-R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
+R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
 ```
