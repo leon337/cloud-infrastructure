@@ -78,7 +78,7 @@ class G2BGrantTests(unittest.TestCase):
 
     def test_missing_future_expired_overlong_and_overly_writable_grants_are_refused(self):
         with self.assertRaises(RefusedError) as missing:
-            load_grant(self.root / "missing.json", now=NOW)
+            load_grant(self.root / "missing.json", now=NOW, installed_root=self.bundle)
         self.assertEqual(missing.exception.code, "grant_missing")
 
         cases = (
@@ -93,29 +93,29 @@ class G2BGrantTests(unittest.TestCase):
                 self._write_grant(value)
                 with self._root_owned_grant_stat():
                     with self.assertRaises(RefusedError) as caught:
-                        load_grant(self.grant_path, now=NOW)
+                        load_grant(self.grant_path, now=NOW, installed_root=self.bundle)
                 self.assertEqual(caught.exception.code, expected)
 
         self._write_grant(valid_grant(self.digest))
         with patch("control_plane.g2b.grant.os.stat", return_value=_stat_result(0o664, 0)):
             with self.assertRaises(RefusedError) as writable:
-                load_grant(self.grant_path, now=NOW)
+                load_grant(self.grant_path, now=NOW, installed_root=self.bundle)
         self.assertEqual(writable.exception.code, "unsafe_grant_mode")
 
     def test_non_root_or_nonregular_grant_is_refused(self):
         with patch("control_plane.g2b.grant.os.stat", return_value=_stat_result(0o644, 1000)):
             with self.assertRaises(RefusedError) as owner:
-                load_grant(self.grant_path, now=NOW)
+                load_grant(self.grant_path, now=NOW, installed_root=self.bundle)
         self.assertEqual(owner.exception.code, "unsafe_grant_owner")
 
         with patch("control_plane.g2b.grant.os.stat", return_value=_stat_result(0o644, 0, file_type=stat.S_IFLNK)):
             with self.assertRaises(RefusedError) as symlink:
-                load_grant(self.grant_path, now=NOW)
+                load_grant(self.grant_path, now=NOW, installed_root=self.bundle)
         self.assertEqual(symlink.exception.code, "unsafe_grant_file")
 
     def test_changed_project_path_and_bundle_digest_are_refused(self):
         with self._root_owned_grant_stat():
-            grant = load_grant(self.grant_path, now=NOW)
+            grant = load_grant(self.grant_path, now=NOW, installed_root=self.bundle)
 
         request = parse_request({
             "protocol": MUTATION_PROTOCOL,
@@ -143,10 +143,46 @@ class G2BGrantTests(unittest.TestCase):
             validate_grant_for_request(grant, path_request, TransportPrincipal("leon337", 337))
         self.assertEqual(path.exception.code, "grant_path_mismatch")
 
+        alternate_bundle = self.root / "alternate-bundle"
+        alternate_bundle.mkdir(mode=0o755)
+        (alternate_bundle / "executor.py").write_bytes(b"different executor\n")
         with self._root_owned_grant_stat():
             with self.assertRaises(RefusedError) as digest:
-                load_grant(self.grant_path, now=NOW, installed_root=self.root)
+                load_grant(self.grant_path, now=NOW, installed_root=alternate_bundle)
         self.assertEqual(digest.exception.code, "executor_digest_mismatch")
+
+    def test_executor_root_is_mandatory_and_missing_or_invalid_roots_are_refused(self):
+        with self._root_owned_grant_stat():
+            with self.assertRaises(RefusedError) as missing_argument:
+                load_grant(self.grant_path, now=NOW)
+        self.assertEqual(missing_argument.exception.code, "executor_root_required")
+
+        for root in (self.root / "missing-bundle", self.bundle / "executor.py"):
+            with self.subTest(root=root):
+                with self._root_owned_grant_stat():
+                    with self.assertRaises(RefusedError) as caught:
+                        load_grant(self.grant_path, now=NOW, installed_root=root)
+                self.assertEqual(caught.exception.code, "unsafe_executor_bundle")
+
+    def test_malformed_disabled_and_non_pilot_grants_are_refused(self):
+        cases = (
+            ("unknown_field", {"unrecognized": True}),
+            ("disabled", {"enabled": False}),
+            ("wrong_protocol", {"protocol": "OTHER"}),
+            ("changed_actor", {"declared_actor": "OTHER"}),
+            ("changed_mission", {"mission_id": "OTHER"}),
+            ("changed_operations", {"allowed_operations": ["workspace.write"]}),
+            ("changed_active_mutations", {"max_active_mutations": 2}),
+        )
+        for name, changes in cases:
+            with self.subTest(name=name):
+                value = valid_grant(self.digest)
+                value.update(changes)
+                self._write_grant(value)
+                with self._root_owned_grant_stat():
+                    with self.assertRaises(RefusedError) as caught:
+                        load_grant(self.grant_path, now=NOW, installed_root=self.bundle)
+                self.assertEqual(caught.exception.code, "invalid_grant")
 
     def test_bundle_digest_is_canonical_and_refuses_symlinks(self):
         (self.bundle / "a.txt").write_bytes(b"a")
@@ -162,6 +198,19 @@ class G2BGrantTests(unittest.TestCase):
         (self.bundle / "link").symlink_to("a.txt")
         with self.assertRaises(RefusedError) as caught:
             canonical_bundle_sha256(self.bundle)
+        self.assertEqual(caught.exception.code, "unsafe_executor_bundle")
+
+    def test_bundle_digest_refuses_unreadable_directory_with_hidden_material(self):
+        restricted = self.bundle / "restricted"
+        restricted.mkdir()
+        hidden = restricted / "must-not-evade-digest.txt"
+        hidden.write_bytes(b"known material")
+        os.chmod(restricted, 0o111)
+        try:
+            with self.assertRaises(RefusedError) as caught:
+                canonical_bundle_sha256(self.bundle)
+        finally:
+            os.chmod(restricted, 0o755)
         self.assertEqual(caught.exception.code, "unsafe_executor_bundle")
 
     def _write_grant(self, value: dict[str, object]) -> None:

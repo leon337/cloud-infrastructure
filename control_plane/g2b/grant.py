@@ -73,6 +73,8 @@ def load_grant(
     now: datetime | None = None,
     installed_root: str | Path | None = None,
 ) -> Grant:
+    if installed_root is None:
+        raise RefusedError("executor_root_required")
     grant_path = Path(path)
     _validate_grant_file(grant_path)
     try:
@@ -83,7 +85,7 @@ def load_grant(
     effective_now = _utc_now() if now is None else _normalize_now(now)
     if not grant.not_before <= effective_now < grant.not_after:
         raise RefusedError("grant_not_active")
-    if installed_root is not None and canonical_bundle_sha256(installed_root) != grant.executor_sha256:
+    if canonical_bundle_sha256(installed_root) != grant.executor_sha256:
         raise RefusedError("executor_digest_mismatch")
     return grant
 
@@ -111,28 +113,12 @@ def validate_grant_for_request(
 
 def canonical_bundle_sha256(installed_root: str | Path) -> str:
     root = Path(installed_root)
-    if root.is_symlink() or not root.is_dir():
-        raise RefusedError("unsafe_executor_bundle")
-    root = root.resolve()
-    records: list[tuple[str, Path]] = []
-    for candidate in root.rglob("*"):
-        if candidate.is_symlink():
-            raise RefusedError("unsafe_executor_bundle")
-        try:
-            metadata = os.stat(candidate, follow_symlinks=False)
-        except OSError:
-            raise RefusedError("unsafe_executor_bundle") from None
-        if stat.S_ISDIR(metadata.st_mode):
-            continue
-        if not stat.S_ISREG(metadata.st_mode):
-            raise RefusedError("unsafe_executor_bundle")
-        try:
-            relative = candidate.relative_to(root).as_posix()
-        except ValueError:
-            raise RefusedError("unsafe_executor_bundle") from None
-        if not relative or relative.startswith("../"):
-            raise RefusedError("unsafe_executor_bundle")
-        records.append((relative, candidate))
+    _validate_bundle_directory(root)
+    try:
+        root = root.resolve(strict=True)
+    except OSError:
+        raise RefusedError("unsafe_executor_bundle") from None
+    records = _enumerate_bundle_files(root, "")
 
     digest = hashlib.sha256()
     for relative, candidate in sorted(records):
@@ -142,6 +128,44 @@ def canonical_bundle_sha256(installed_root: str | Path) -> str:
             raise RefusedError("unsafe_executor_bundle") from None
         digest.update(f"{content_digest}  {relative}\n".encode("utf-8"))
     return digest.hexdigest()
+
+
+def _enumerate_bundle_files(directory: Path, prefix: str) -> list[tuple[str, Path]]:
+    _validate_bundle_directory(directory)
+    try:
+        with os.scandir(directory) as scan:
+            entries = sorted(scan, key=lambda entry: entry.name)
+    except OSError:
+        raise RefusedError("unsafe_executor_bundle") from None
+
+    records: list[tuple[str, Path]] = []
+    for entry in entries:
+        if not entry.name or entry.name in {".", ".."} or "/" in entry.name:
+            raise RefusedError("unsafe_executor_bundle")
+        relative = f"{prefix}/{entry.name}" if prefix else entry.name
+        candidate = directory / entry.name
+        try:
+            metadata = entry.stat(follow_symlinks=False)
+        except OSError:
+            raise RefusedError("unsafe_executor_bundle") from None
+        if stat.S_ISLNK(metadata.st_mode):
+            raise RefusedError("unsafe_executor_bundle")
+        if stat.S_ISDIR(metadata.st_mode):
+            records.extend(_enumerate_bundle_files(candidate, relative))
+        elif stat.S_ISREG(metadata.st_mode):
+            records.append((relative, candidate))
+        else:
+            raise RefusedError("unsafe_executor_bundle")
+    return records
+
+
+def _validate_bundle_directory(directory: Path) -> None:
+    try:
+        metadata = os.stat(directory, follow_symlinks=False)
+    except OSError:
+        raise RefusedError("unsafe_executor_bundle") from None
+    if not stat.S_ISDIR(metadata.st_mode) or stat.S_IMODE(metadata.st_mode) & 0o555 != 0o555:
+        raise RefusedError("unsafe_executor_bundle")
 
 
 def _validate_grant_file(path: Path) -> None:

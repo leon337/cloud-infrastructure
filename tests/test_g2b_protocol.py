@@ -108,6 +108,35 @@ class G2BProtocolTests(unittest.TestCase):
         }
         self.assertEqual(parse_request(sha_request).precondition, Precondition(sha256="a" * 64))
 
+    def test_staging_and_exact_utf8_byte_boundaries_are_accepted(self):
+        staging = valid_request()
+        staging["project"] = {"tenant": "leon337", "name": "g2a-smoke", "environment": "staging"}
+        self.assertEqual(parse_request(staging).project.environment, "staging")
+
+        exact_ascii = valid_request()
+        exact_ascii["arguments"] = {
+            "path": "G2B-PILOT.txt",
+            "content": "x" * MAX_CONTENT_BYTES,
+            "precondition": {"state": "ABSENT"},
+        }
+        self.assertEqual(len(parse_request(exact_ascii).content), MAX_CONTENT_BYTES)
+
+        exact_multibyte = valid_request()
+        exact_multibyte["arguments"] = {
+            "path": "G2B-PILOT.txt",
+            "content": "é" * (MAX_CONTENT_BYTES // 2),
+            "precondition": {"state": "ABSENT"},
+        }
+        self.assertEqual(len(parse_request(exact_multibyte).content), MAX_CONTENT_BYTES)
+
+        over_multibyte = valid_request()
+        over_multibyte["arguments"] = {
+            "path": "G2B-PILOT.txt",
+            "content": "é" * ((MAX_CONTENT_BYTES // 2) + 1),
+            "precondition": {"state": "ABSENT"},
+        }
+        self._assert_refused(over_multibyte, "content_too_large")
+
     def test_execution_escape_fields_and_unknown_fields_are_refused(self):
         for forbidden in ("cwd", "argv", "environment", "shell", "command", "sudo_flags"):
             with self.subTest(forbidden=forbidden):
