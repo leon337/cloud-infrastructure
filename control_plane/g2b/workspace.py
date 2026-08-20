@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import ctypes
 from dataclasses import dataclass
 import errno
 import hashlib
@@ -13,12 +14,14 @@ from typing import Iterator
 
 from scripts.check_repository_secrets import content_findings
 
-from .errors import ConflictError, RefusedError
+from .errors import ConflictError, G2BError, RefusedError
 from .protocol import MAX_CONTENT_BYTES, Precondition
 
 
 _SAFE_TARGET_MODES = frozenset({0o600, 0o640, 0o644})
 _ABSENT = None
+_RENAME_NOREPLACE = 1
+_RENAME_EXCHANGE = 2
 
 
 @dataclass(frozen=True)
@@ -37,6 +40,31 @@ class WriteOutcome:
     path: str
     before: TargetState
     after: TargetState
+
+
+class MutationStateError(G2BError):
+    """Safe post-mutation failure state for transaction-layer resolution."""
+
+    status = "FAILED"
+
+    def __init__(
+        self,
+        code: str,
+        *,
+        operation: str,
+        path: str,
+        before: TargetState,
+        observed_after: TargetState | None,
+        resolution: str,
+        recovery_name: str | None = None,
+    ):
+        super().__init__(code)
+        self.operation = operation
+        self.path = path
+        self.before = before
+        self.observed_after = observed_after
+        self.resolution = resolution
+        self.recovery_name = recovery_name
 
 
 def inspect_target(
@@ -74,6 +102,7 @@ def atomic_write(
             workspace_fd,
             name,
             content,
+            operation="write",
             target_mode=target_mode,
             expected_current=before,
             expected_uid=expected_uid,
@@ -107,6 +136,7 @@ def atomic_restore(
             workspace_fd,
             name,
             content,
+            operation="restore",
             target_mode=restore_mode,
             expected_current=before,
             expected_uid=expected_uid,
@@ -136,31 +166,82 @@ def atomic_delete(
 
         tombstone = _internal_name("delete")
         try:
-            os.rename(
-                name,
-                tombstone,
-                src_dir_fd=workspace_fd,
-                dst_dir_fd=workspace_fd,
-            )
+            _rename_noreplace(workspace_fd, name, workspace_fd, tombstone)
+        except FileExistsError:
+            raise RefusedError("internal_name_collision") from None
         except OSError:
             raise ConflictError("target_changed") from None
 
         try:
             moved = _inspect_target_fd(workspace_fd, tombstone, expected_uid)
-            if moved != before:
-                _restore_tombstone(workspace_fd, tombstone, name)
-                raise ConflictError("target_changed")
+        except G2BError:
+            _revert_delete(
+                workspace_fd,
+                tombstone,
+                name,
+                before,
+                expected_uid,
+                code="target_changed",
+            )
+            raise AssertionError("unreachable")
+        if moved != before:
+            _revert_delete(
+                workspace_fd,
+                tombstone,
+                name,
+                before,
+                expected_uid,
+                code="target_changed",
+            )
+            raise AssertionError("unreachable")
+
+        visible = _observe_target_fd(workspace_fd, name, expected_uid)
+        if visible is None or visible.exists:
+            raise MutationStateError(
+                "delete_recovery_blocked",
+                operation="delete",
+                path=name,
+                before=before,
+                observed_after=visible,
+                resolution="INDETERMINATE",
+                recovery_name=tombstone,
+            )
+
+        try:
             os.unlink(tombstone, dir_fd=workspace_fd)
-            os.fsync(workspace_fd)
-        except (ConflictError, RefusedError):
-            raise
         except OSError:
-            _restore_tombstone(workspace_fd, tombstone, name)
-            raise RefusedError("atomic_delete_failed") from None
+            _revert_delete(
+                workspace_fd,
+                tombstone,
+                name,
+                before,
+                expected_uid,
+                code="delete_cleanup_failed",
+            )
+            raise AssertionError("unreachable")
+
+        try:
+            os.fsync(workspace_fd)
+        except OSError:
+            raise MutationStateError(
+                "delete_durability_indeterminate",
+                operation="delete",
+                path=name,
+                before=before,
+                observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+                resolution="INDETERMINATE",
+            ) from None
 
         after = _inspect_target_fd(workspace_fd, name, expected_uid)
         if after.exists:
-            raise ConflictError("final_target_mismatch")
+            raise MutationStateError(
+                "final_target_mismatch",
+                operation="delete",
+                path=name,
+                before=before,
+                observed_after=after,
+                resolution="INDETERMINATE",
+            )
         return after
 
 
@@ -378,13 +459,15 @@ def _atomic_replace_fd(
     name: str,
     content: bytes,
     *,
+    operation: str,
     target_mode: int,
     expected_current: TargetState,
     expected_uid: int,
 ) -> TargetState:
     temporary = _internal_name("write")
     temporary_fd: int | None = None
-    renamed = False
+    cleanup_temporary = True
+    namespace_applied = False
     try:
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC | os.O_NOFOLLOW
         temporary_fd = os.open(temporary, flags, 0o600, dir_fd=workspace_fd)
@@ -399,6 +482,7 @@ def _atomic_replace_fd(
         os.fsync(temporary_fd)
         os.fchmod(temporary_fd, target_mode)
         os.fsync(temporary_fd)
+        prepared = _inspect_target_fd(workspace_fd, temporary, expected_uid)
 
         try:
             current = _inspect_target_fd(workspace_fd, name, expected_uid)
@@ -406,22 +490,84 @@ def _atomic_replace_fd(
             raise ConflictError("target_changed") from None
         if current != expected_current:
             raise ConflictError("target_changed")
-        os.rename(
-            temporary,
-            name,
-            src_dir_fd=workspace_fd,
-            dst_dir_fd=workspace_fd,
-        )
-        renamed = True
-        os.fsync(workspace_fd)
-    except (ConflictError, RefusedError):
+
+        if expected_current.exists:
+            _rename_exchange(workspace_fd, temporary, workspace_fd, name)
+            namespace_applied = True
+            cleanup_temporary = False
+            try:
+                displaced = _inspect_target_fd(workspace_fd, temporary, expected_uid)
+            except G2BError:
+                _revert_exchange(
+                    workspace_fd,
+                    temporary,
+                    name,
+                    expected_current,
+                    prepared,
+                    expected_uid,
+                    operation=operation,
+                )
+                raise AssertionError("unreachable")
+            if displaced != expected_current:
+                _revert_exchange(
+                    workspace_fd,
+                    temporary,
+                    name,
+                    expected_current,
+                    prepared,
+                    expected_uid,
+                    operation=operation,
+                )
+                raise AssertionError("unreachable")
+            try:
+                os.unlink(temporary, dir_fd=workspace_fd)
+            except OSError:
+                raise MutationStateError(
+                    f"{operation}_cleanup_failed",
+                    operation=operation,
+                    path=name,
+                    before=expected_current,
+                    observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+                    resolution="APPLIED",
+                    recovery_name=temporary,
+                ) from None
+        else:
+            try:
+                _rename_noreplace(workspace_fd, temporary, workspace_fd, name)
+            except FileExistsError:
+                raise ConflictError("target_changed") from None
+            namespace_applied = True
+            cleanup_temporary = False
+
+        try:
+            os.fsync(workspace_fd)
+        except OSError:
+            raise MutationStateError(
+                f"{operation}_durability_indeterminate",
+                operation=operation,
+                path=name,
+                before=expected_current,
+                observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+                resolution="INDETERMINATE",
+            ) from None
+    except (ConflictError, MutationStateError, RefusedError):
         raise
     except OSError:
+        if namespace_applied:
+            raise MutationStateError(
+                f"{operation}_state_indeterminate",
+                operation=operation,
+                path=name,
+                before=expected_current,
+                observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+                resolution="INDETERMINATE",
+                recovery_name=temporary if not cleanup_temporary else None,
+            ) from None
         raise RefusedError("atomic_write_failed") from None
     finally:
         if temporary_fd is not None:
             os.close(temporary_fd)
-        if not renamed:
+        if cleanup_temporary:
             try:
                 os.unlink(temporary, dir_fd=workspace_fd)
             except FileNotFoundError:
@@ -429,7 +575,17 @@ def _atomic_replace_fd(
             except OSError:
                 pass
 
-    after = _inspect_target_fd(workspace_fd, name, expected_uid)
+    try:
+        after = _inspect_target_fd(workspace_fd, name, expected_uid)
+    except G2BError:
+        raise MutationStateError(
+            "final_target_indeterminate",
+            operation=operation,
+            path=name,
+            before=expected_current,
+            observed_after=None,
+            resolution="INDETERMINATE",
+        ) from None
     expected_digest = hashlib.sha256(content).hexdigest()
     if (
         not after.exists
@@ -438,8 +594,26 @@ def _atomic_replace_fd(
         or after.uid != expected_uid
         or after.sha256 != expected_digest
     ):
-        raise ConflictError("final_target_mismatch")
+        raise MutationStateError(
+            "final_target_mismatch",
+            operation=operation,
+            path=name,
+            before=expected_current,
+            observed_after=after,
+            resolution="INDETERMINATE",
+        )
     return after
+
+
+def _observe_target_fd(
+    workspace_fd: int,
+    name: str,
+    expected_uid: int,
+) -> TargetState | None:
+    try:
+        return _inspect_target_fd(workspace_fd, name, expected_uid)
+    except (G2BError, OSError):
+        return None
 
 
 def _write_all(target_fd: int, content: bytes) -> None:
@@ -458,14 +632,172 @@ def _internal_name(purpose: str) -> str:
     return f".g2b-{purpose}-{secrets.token_hex(16)}.tmp"
 
 
-def _restore_tombstone(workspace_fd: int, tombstone: str, name: str) -> None:
-    try:
-        os.rename(
-            tombstone,
-            name,
-            src_dir_fd=workspace_fd,
-            dst_dir_fd=workspace_fd,
+def _revert_exchange(
+    workspace_fd: int,
+    temporary: str,
+    name: str,
+    before: TargetState,
+    prepared: TargetState,
+    expected_uid: int,
+    *,
+    operation: str,
+) -> None:
+    if _observe_target_fd(workspace_fd, name, expected_uid) != prepared:
+        raise MutationStateError(
+            f"{operation}_recovery_blocked",
+            operation=operation,
+            path=name,
+            before=before,
+            observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+            resolution="INDETERMINATE",
+            recovery_name=temporary,
         )
+    try:
+        _rename_exchange(workspace_fd, temporary, workspace_fd, name)
+    except OSError:
+        raise MutationStateError(
+            f"{operation}_recovery_failed",
+            operation=operation,
+            path=name,
+            before=before,
+            observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+            resolution="INDETERMINATE",
+            recovery_name=temporary,
+        ) from None
+
+    try:
+        os.unlink(temporary, dir_fd=workspace_fd)
+    except OSError:
+        raise MutationStateError(
+            f"{operation}_revert_cleanup_failed",
+            operation=operation,
+            path=name,
+            before=before,
+            observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+            resolution="REVERTED",
+            recovery_name=temporary,
+        ) from None
+    try:
         os.fsync(workspace_fd)
     except OSError:
-        raise RefusedError("atomic_delete_failed") from None
+        raise MutationStateError(
+            f"{operation}_revert_durability_indeterminate",
+            operation=operation,
+            path=name,
+            before=before,
+            observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+            resolution="INDETERMINATE",
+        ) from None
+    raise MutationStateError(
+        "target_changed",
+        operation=operation,
+        path=name,
+        before=before,
+        observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+        resolution="REVERTED",
+    )
+
+
+def _revert_delete(
+    workspace_fd: int,
+    tombstone: str,
+    name: str,
+    before: TargetState,
+    expected_uid: int,
+    *,
+    code: str,
+) -> None:
+    try:
+        _rename_noreplace(workspace_fd, tombstone, workspace_fd, name)
+    except FileExistsError:
+        raise MutationStateError(
+            "delete_recovery_blocked",
+            operation="delete",
+            path=name,
+            before=before,
+            observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+            resolution="INDETERMINATE",
+            recovery_name=tombstone,
+        ) from None
+    except OSError:
+        raise MutationStateError(
+            "delete_recovery_failed",
+            operation="delete",
+            path=name,
+            before=before,
+            observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+            resolution="INDETERMINATE",
+            recovery_name=tombstone,
+        ) from None
+
+    try:
+        os.fsync(workspace_fd)
+    except OSError:
+        raise MutationStateError(
+            "delete_revert_durability_indeterminate",
+            operation="delete",
+            path=name,
+            before=before,
+            observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+            resolution="INDETERMINATE",
+        ) from None
+    raise MutationStateError(
+        code,
+        operation="delete",
+        path=name,
+        before=before,
+        observed_after=_observe_target_fd(workspace_fd, name, expected_uid),
+        resolution="REVERTED",
+    )
+
+
+def _rename_noreplace(
+    source_fd: int,
+    source: str,
+    destination_fd: int,
+    destination: str,
+) -> None:
+    """Linux descriptor-relative rename that never replaces the destination."""
+    _renameat2(source_fd, source, destination_fd, destination, _RENAME_NOREPLACE)
+
+
+def _rename_exchange(
+    source_fd: int,
+    source: str,
+    destination_fd: int,
+    destination: str,
+) -> None:
+    """Linux descriptor-relative atomic exchange used for verified replacement."""
+    _renameat2(source_fd, source, destination_fd, destination, _RENAME_EXCHANGE)
+
+
+def _renameat2(
+    source_fd: int,
+    source: str,
+    destination_fd: int,
+    destination: str,
+    flags: int,
+) -> None:
+    libc = ctypes.CDLL(None, use_errno=True)
+    try:
+        renameat2 = libc.renameat2
+    except AttributeError:
+        raise OSError(errno.ENOSYS, "renameat2 unavailable") from None
+    renameat2.argtypes = (
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    )
+    renameat2.restype = ctypes.c_int
+    result = renameat2(
+        source_fd,
+        os.fsencode(source),
+        destination_fd,
+        os.fsencode(destination),
+        flags,
+    )
+    if result != 0:
+        error_number = ctypes.get_errno()
+        raise OSError(error_number, os.strerror(error_number))
