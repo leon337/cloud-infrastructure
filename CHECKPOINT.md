@@ -1,219 +1,129 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-18 após provar em CI o desired state NODE-01 dos serviços F1.2c.
+Atualizado em 2026-08-20 após recuperação, publicação remota do G2-B e reconciliação das entradas canônicas de contexto.
 
-## Control Bridge — continuidade reconciliada em 2026-08-20
+## Missão ativa
 
 ```text
-CONTROL_BRIDGE_G2B=P0_DESIGN_APPROVED_IMPLEMENTATION_PENDING
-G1=PASS_REAL_NODE_01_ROUNDTRIP
-G2A=PASS_REAL_NODE_01_READ_ONLY
-G2B_REAL_WRITE=NOT_EXECUTED
-CODEX=AVAILABLE_PARALLEL_EXECUTOR
-MESTRE_MCF=ORCHESTRATOR
-LEANDRO=FINAL_HUMAN_AUTHORITY
-F1_2C_SYSTEMD_RUNTIME_LOCK=FROZEN_FOR_CODEX_OWNED_BY_MESTRE_MCF_AND_LEANDRO
-GITHUB_HOSTED_CI=BLOCKED_EXTERNAL_BILLING
-SELF_HOSTED_NODE_01_RUNNER=ONLINE_OBSERVED_2026_08_20
+MISSION=REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+MISSION_ISSUE=10
+MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
+MISSION_STATE=state/active-mission.yaml
+STATUS=ACTIVE
+AUTHORITY=LEANDRO
+ORCHESTRATOR=MESTRE_MCF
+ROADMAP_R1=COMPLETE
+ROADMAP_R2=COMPLETE
+ROADMAP_R3=NEXT
+NEXT_EXACT_STEP=R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
 ```
 
-O status online é observação da GitHub API, não prova VPS fresca. F1.2c mantém
-seus fatos operacionais/timestamps já registrados e sua branch está congelada
-para Codex; G2-B permanece fail-closed em `state/control-bridge-g2b.yaml`.
+Esta missão é transversal. Ela não reabre o desenho G2-B nem autoriza mutação do NODE-01.
 
-## Estado durável
+## Checkpoint remoto recuperado do G2-B
 
-- Repositório canônico: `leon337/cloud-infrastructure`, branch `main`.
-- Base recuperada: `987c5359ea948d1903355e98177ae1eb2f1849d5`.
-- Branch do slice: `codex/mission-001-foundations-f1-2b-preparation`.
-- F0, F1 e F2 Cloud Workstation: `DONE`.
-- Mission Acceptance + Recovery: `DONE`.
-- Q1–Q39: requisitos arquitetônicos vinculantes.
-- Q40-D: Technology Mapping + implementação incremental DEV/lab autorizados.
-- Produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
-- Rotação: `DEFERRED_BY_HUMAN_DECISION`.
-- F1.1: commit de implementação
-  `edd2497d657cc9bc35952f5dfc71090a18dade53` aprovado no GitHub Actions run
-  `31972460567`, inclusive VM descartável privilegiada; slice `DONE`; check
-  mode, backup off-host, apply `changed=7`, idempotência
-  `changed=0` e invariância real passaram em `2026-08-17`.
-- F1.2b: apply/rollback, pin APT, preflight, helper de árvore e harness
-  concluídos a partir do desired-state commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`;
-  commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` e GitHub run
-  `31996516019` `PASS`; correções passaram nos runs `32004951916` e
-  `32007871491`; preview NODE-01 sem mutação, backup off-host, apply
-  `changed=13`, idempotência e pós-restart `changed=0` e invariância `PASS`.
+```text
+BRANCH=codex/control-bridge-g2b
+BASE=mcf/mission-001-control-bridge-g1
+RECOVERY_CHECKPOINT_SHA=7205a647f918580d09c87ed44f38b0a433552a51
+PR=11_DRAFT_DO_NOT_MERGE
+COMMITS_AHEAD_OF_BASE_AT_RECOVERY=25
+TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
+TASK_7=PARTIAL
+TASK_7_TESTS=6_PASS_1_FAIL
+KNOWN_RED=EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED
+KNOWN_RED_LITERAL=g2b_issue_existing_grant.keys()
+ANSIBLE_SYNTAX=NOT_EXECUTED_CURRENT_LOCAL_ENVIRONMENT
+TASKS_8_10=NOT_STARTED
+G2B_REAL_WRITE=NOT_EXECUTED
+G2B_REAL_ROLLBACK=NOT_EXECUTED
+G2B_REAL_REVOCATION=NOT_EXECUTED
+MCF_EFFECTIVE_USE=NOT_EXECUTED
+```
 
-## Artefatos canônicos criados
+O commit `7205a647...` é um **checkpoint de preservação WIP**, não uma aceitação da Task 7.
 
-- `docs/40-mission-acceptance-recovery-report.md`;
-- `docs/41-consolidated-requirements.md`;
-- `docs/42-target-architecture.md`;
-- `docs/43-threat-model-and-autonomy-boundaries.md`;
-- `docs/44-infrastructure-blueprint-v1.md`;
-- `docs/45-revised-implementation-roadmap.md`;
-- `docs/46-technology-mapping-v1.md`;
-- `decisions/DEC-005-*`, `decisions/DEC-006-*`;
-- `state/components.yaml`;
-- `automation/ansible/`, `platform/`, `scripts/`, `tests/`;
-- `runbooks/platform-foundation.md`;
-- `evidence/SLICE-001/`.
+## HUMAN_GATEs e limites fechados
 
-## SLICE-001 — estado de evidência
+```text
+NODE01_G2B_BOOTSTRAP=NOT_AUTHORIZED
+REAL_GRANT_ISSUE_OR_REISSUE=NOT_AUTHORIZED
+REAL_BOUNDED_WRITE=NOT_AUTHORIZED
+PRODUCTION_MUTATION=NOT_AUTHORIZED
+MERGE_G2B=NO
+TASK_8=DO_NOT_START_WHILE_TASK_7_PARTIAL
+```
 
-- Ansible Core 2.21.3 e dependências estão fixados em ambiente local isolado;
-- manifests `ExecutionNode`/`Project` validados por JSON Schema 2020-12;
-- produção `false`, ingress público arbitrário e secret literal rejeitados;
-- secret/path policy passou;
-- suíte estática endurecida, 37 testes unitários/negativos, três syntax-checks
-  Ansible e ShellCheck nos quatro scripts passaram no job `validate` vinculado ao
-  commit `edd2497d`;
-- os resultados anteriores da fixture (`changed=7`, depois `changed=0` e cleanup)
-  permanecem históricos e não são a prova usada para o delta revisado;
-- a revisão encontrou gaps de provenance/TOCTOU no rollback, adoção de objetos,
-  check mode e proteção do target; eles foram corrigidos no desired state e
-  passaram revisão, suíte estática e integração na VM descartável;
-- o preflight sem sudo passou no NODE-01 com `changed=0`, e o inventário de teste
-  foi recusado corretamente na Workstation física;
-- o job `disposable-integration` passou em 1m59: check mode sem mutação real da
-  fixture, partial-marker check, primeiro apply `changed=7`, segunda reconciliação
-  `changed=0`, postconditions, quatro recusas de rollback fail-closed, rollback
-  limpo e cleanup de container/imagem de teste nomeada/bundle;
-- o run [`31972460567`](https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567)
-  valida o commit `edd2497d`; esta atualização posterior de evidência/state não é
-  apresentada como CI do commit final.
-- o checkpoint `da7df70` passou novamente no run
-  [`31973125852`](https://github.com/leon337/cloud-infrastructure/actions/runs/31973125852):
-  job estático em 22 s e integração descartável em 2m25;
-- o baseline read-only de `2026-08-16T21:23:21Z` confirmou identidade, mesmo boot,
-  zero units falhas, mesmos listeners/serviços, LXD inativo, Docker ausente, zero
-  concorrência e todos os objetos/lock F1.1 ausentes, sem sudo ou mutação;
-- timer de backup ativo e último serviço `success`; checksum/archive e cópia
-  off-host devem ser revalidados antes do apply, não deste preview sem mutação.
+Nenhuma dessas condições pode ser inferida como autorizada a partir de commits, PR, issue, testes ou documentação.
 
-A prova na fixture não substituiu a VPS real. Depois dela, check mode, backup,
-apply, idempotência, restart e invariância também passaram no NODE-01.
+## Trabalho paralelo isolado
 
-## Baseline real da VPS antes do apply
+```text
+F1_2C_BRANCH=fix/f1-2c-systemd-runtime-lock
+F1_2C_FOR_THIS_MISSION=ISOLATED_DO_NOT_MODIFY
+F1_2C_OWNER=MESTRE_MCF_AND_LEANDRO
+```
 
-Snapshot read-only: `2026-08-16T19:46:14Z`.
+A trilha F1.2c mantém sua própria evidência e seu próximo passo histórico/técnico. Ela não é o próximo passo da missão ativa de continuidade.
 
-- Ubuntu 24.04.4, kernel `6.8.0-137-generic`, KVM, 8 CPUs;
-- ~23,5 GiB RAM, ~17,2 GiB disponível; sem swap;
-- raiz ~289,6 GiB, ~279 GiB disponível;
-- cgroup v2, AppArmor ativo, Python 3.12.3;
-- zero units falhas;
-- público somente SSH TCP 22;
-- XRDP `127.0.0.1:3389`, sesman `[::1]:3350`;
-- SSH/UFW/fail2ban/XRDP/LightDM ativos;
-- `ubuntu` fora de `lxd`; LXD daemon/socket inativos;
-- Docker/containerd ausentes;
-- conta/grupo/paths/units F1.1 aplicados e validados;
-- múltiplas sessões Firefox/VS Code/Codex ativas;
-- `sudo -n` negado conforme política.
+## Trilhas já comprovadas
 
-O preview F1.2b revalidou o host sem mutação. Docker/containerd, marker, lock e
-listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
+### F1.1
 
-## SLICE-002B — estado concluído
+`DONE` no NODE-01 com check mode, backup off-host, apply, idempotência e invariância comprovados. Evidência detalhada permanece nos documentos e estados históricos da trilha principal.
 
-- branch recuperado limpo em `d849caa0eafdc231d2782be602be1a2263758b7b`;
-- role/playbooks de apply e rollback versionados com target/allowlist imutáveis;
-- chave/source/pin/config/drop-ins versionados e verificados por SHA-256;
-- install exige versão/path/digest do índice APT autenticado e suprime autostart;
-- helper de rollback compara baseline, usa `find -xdev` nos dois roots literais,
-  congela device/inode e recusa symlink, hardlink, mount, open path e drift;
-- harness GitHub-hosted executou check sem mutação, apply `changed=13`,
-  reconciliação/restart `changed=0`, invariância, sete recusas, rollback e cleanup
-  no run `31996516019` para o commit `fa66f10`;
-- suíte local/CI: 66 unitários/negativos, 34 YAML, dois manifests, seis scripts com
-  sintaxe/ShellCheck e seis syntax-checks Ansible, todos `PASS`;
-- CI GitHub, lifecycle descartável, check mode, backup, apply, idempotência,
-  restart e invariância real estão `PASS`; o runtime está vazio e o primeiro
-  workload permanece `BLOCKED` por F1.2c.
+### F1.2b
 
-## SLICE-002C — base de enforcement ativa
+`DONE` com runtime Docker vazio, lifecycle controlado e invariância real comprovada. Primeiro workload continua condicionado à network enforcement.
 
-- contrato machine-readable versionado em
-  `platform/network/f1-2c-contract.yaml`, commit
-  `b4cbeb066605754d538ff5abe2d294f0759d6f59`;
-- preserva Q20/Q34, TM-02/TM-03/TM-10, IPv4/IPv6, deny de
-  host/Management/metadata/control/lateral, sharing por grant e egress por
-  profile;
-- DEC-008 seleciona `DOCKER-USER`, bridges internas, DNS por escopo e egress
-  proxy-only; a base fail-closed IPv4/IPv6 foi implementada em chains próprias;
-- o run GitHub `32073151044`, commit `d1da488`, passou apply, idempotência,
-  restart, recusa insegura e rollback em VM descartável;
-- no NODE-01, apply `changed=1`, reconciliação `changed=0`, check e 98 testes
-  passaram entre `2026-08-17T21:58:36Z` e `21:59:04Z`;
-- runtime continua vazio; bridges internas, DNS, proxy de egress, grants e a
-  matriz de conectividade ainda não foram aplicados no NODE-01;
-- o run `32100527131`, commit `8d5963b`, passou em jobs separados: runtime vazio
-  idempotente/reversível e serviços com DNS por escopo, proxy allowlist, deny de
-  egress direto, grant/revogação, falha fechada e cleanup;
-- o desired state NODE-01 foi preparado com CoreDNS 1.14.6 e Squid 7.2 por
-  digest, quatro containers sem portas publicadas, três redes internas/escopadas,
-  egress de infraestrutura separado, chains próprias, systemd e rollback por
-  camada;
-- o commit `f771cfd09f1824562ddfdaea507fb3cb0781f6ac` passou nos runs
-  [`32131461110`](https://github.com/leon337/cloud-infrastructure/actions/runs/32131461110)
-  e [`32131461088`](https://github.com/leon337/cloud-infrastructure/actions/runs/32131461088):
-  123 testes, ShellCheck dos 15 scripts, base/runtime/policy, serviços com apply
-  `1`, idempotência `0`, DNS, proxy, egress direto negado, restart e rollback
-  limpo; o apply real dos serviços continua pendente;
-- evidência sanitizada: `evidence/SLICE-002C/`.
+### F1.2c
 
-## Backup/recovery
+A base de enforcement foi aplicada e testada historicamente; o trabalho posterior da branch `fix/f1-2c-systemd-runtime-lock` permanece paralelo e fora de escopo desta missão. Não executar ações nessa branch a partir deste checkpoint.
 
-- timer sanitizado ativo e último resultado de serviço `success`;
-- dois archives remotos passaram checksum e leitura do tar;
-- primeira cópia off-host observada confere; a mais recente não foi observada
-  off-host;
-- houve extração histórica, não restore/rebuild funcional;
-- archives atuais normalizam modes para `0640` e não são restore drop-in;
-- VNC/Rescue/provedor não foram reabertos nesta coleta guest-only;
-- `FND-BACKUP-001` permanece `MITIGATED — OPEN`.
+### Control Bridge G1/G2-A
 
-## Guardrails do próximo passo
+```text
+G1=PASS_REAL_NODE_01_ROUNDTRIP
+G2A=PASS_REAL_NODE_01_READ_ONLY
+SHELL=NOT_IMPLEMENTED
+SUDO=NOT_GRANTED
+DOCKER_SOCKET=NOT_GRANTED
+PRODUCTION=NOT_AUTHORIZED
+```
 
-- F1.1 real está concluído com apply, idempotência e invariância comprovados;
-- LEANDRO digita sudo diretamente nas operações humanas; senha nunca é
-  enviada/registrada;
-- manter segunda sessão SSH e revalidar concorrência antes de futuras mutações;
-- usar `runbooks/platform-foundation.md`;
-- F1.1 não instala pacote/runtime, não cria listener e não toca
-  SSH/UFW/XRDP/Workstation/credenciais;
-- abortar diante de objeto preexistente sem marker ou estado concorrente;
-- depois do apply exigir segunda execução `changed=0`, negações, modes e
-  invariância de listeners/SSH/UFW/fail2ban/XRDP/LXD/units;
-- rollback só quando os namespaces persistentes estiverem vazios.
-- F1.2b está concluído; não repetir o apply fora de reconciliação controlada e
-  nenhum workload é permitido antes de F1.2c.
-- a base F1.2c não autoriza workload: o desired state dos serviços passou CI
-  commit-bound, mas ainda exige apply controlado no NODE-01.
-- o lifecycle declarativo de três bridges internas vazias passou somente na VM
-  descartável (`1c0d698`, run `32075348131`): apply 3, idempotência 0, recusa de
-  rede estranha e rollback 3; nenhuma bridge foi criada no NODE-01.
+Fonte detalhada: `docs/52-control-bridge-g2a-implementation-checkpoint.md`.
 
-## Próximo passo exato
+## Fontes canônicas para retomada
 
-**SLICE_002C_VERIFY_RUNNER_AND_APPLY_NODE_01_NETWORK_SERVICES**
+1. `state/active-mission.yaml`
+2. `CONTEXT.md`
+3. `CHECKPOINT.md`
+4. `state/current.yaml`
+5. `state/control-bridge-g2b.yaml`
+6. `docs/53-repository-continuity-context-recovery-mission.md`
+7. Issue #10
+8. PR #11
+9. spec e plano G2-B
+10. evidência Git/CI aplicável
 
-Verificar por leitura o runner temporário e o NODE-01. Se o runner estiver
-expirado ou incompatível, reativá-lo pelo bootstrap assinado em HUMAN_GATE;
-depois executar apply/reconcile/check dos serviços. Nenhum workload de usuário
-está autorizado. Management Network, produção e rotação permanecem fora.
+Em caso de divergência, reconciliar antes de agir. Chats não são fonte canônica.
 
-## Architecture/Technology Mapping — gaps condicionais
+## Próximo passo exato da missão ativa
 
-- worker não chama Node Agent diretamente; toda capability privilegiada volta ao
-  Core e é revalidada localmente;
-- PostgreSQL foundation precede Keycloak;
-- o contrato de network/egress/service discovery existe, mas ADR/prova dinâmica
-  e quota de disco ainda bloqueiam o primeiro workload;
-- dados Critical/Important dependem de backup off-host e restore por classe;
-- Loki/Grafana dependem de review AGPL; runner, cache OCI local, audit ledger,
-  mensageria Q38, DNS, object storage e Model Gateway final continuam
-  `CONDITIONAL`;
-- previews DEV no namespace/grant aprovado são autônomos após bootstrap DNS;
-- produção continua não autorizada e rotação continua adiada.
+```text
+R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+```
+
+## Próximo passo técnico G2-B — BLOQUEADO ATÉ R8
+
+```text
+FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
+```
+
+Não executar esse passo agora. Ele existe apenas para permitir recuperação precisa do ponto técnico quando o roadmap chegar ao R8.
+
+## Estado da trilha principal da plataforma
+
+O status executivo F1.2c ainda é projetado pela região `PROJECT_STATUS` do README a partir de `state/current.yaml` e `docs/45-revised-implementation-roadmap.md`. Essa projeção representa a trilha principal e não substitui a missão transversal ativa.
+
+Produção continua `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` e rotação de credenciais continua `DEFERRED_BY_HUMAN_DECISION`.
