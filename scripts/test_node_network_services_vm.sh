@@ -32,6 +32,25 @@ diagnose_network_services_failure() {
   sudo docker version >&2 || true
 }
 
+diagnose_post_restart_failure() {
+  printf '%s\n' '=== POST_RESTART_DOCKER_STATUS ===' >&2
+  sudo systemctl status docker.service --no-pager --full >&2 || true
+  printf '%s\n' '=== POST_RESTART_DOCKER_JOURNAL ===' >&2
+  sudo journalctl -u docker.service -n 120 --no-pager >&2 || true
+  printf '%s\n' '=== POST_RESTART_BASE_STATUS ===' >&2
+  sudo systemctl status cloud-platform-network-enforcement.service --no-pager --full >&2 || true
+  printf '%s\n' '=== POST_RESTART_BASE_JOURNAL ===' >&2
+  sudo journalctl -u cloud-platform-network-enforcement.service -n 160 --no-pager >&2 || true
+  printf '%s\n' '=== POST_RESTART_BASE_CHECK ===' >&2
+  sudo "$BASE" check >&2 || true
+  printf '%s\n' '=== POST_RESTART_SERVICES_STATUS ===' >&2
+  sudo systemctl status cloud-platform-network-services.service --no-pager --full >&2 || true
+  printf '%s\n' '=== POST_RESTART_SERVICES_JOURNAL ===' >&2
+  sudo journalctl -u cloud-platform-network-services.service -n 200 --no-pager >&2 || true
+  printf '%s\n' '=== POST_RESTART_SERVICES_CHECK ===' >&2
+  sudo "$SERVICE" check >&2 || true
+}
+
 verify_github_hosted_identity() {
   [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]] || return 1
   [[ ${ImageOS:-} == ubuntu24 && $(id -un) == runner ]] || return 1
@@ -147,11 +166,23 @@ fi
 sudo docker image rm "$BUSYBOX" >/dev/null
 
 sudo systemctl restart docker.service
-sudo systemctl is-active --quiet cloud-platform-network-enforcement.service || fail base_inactive_after_docker_restart
-sudo systemctl is-active --quiet cloud-platform-network-services.service || fail services_inactive_after_docker_restart
-sudo "$SERVICE" check >/dev/null || fail post_restart_check_failed
-sudo journalctl -u cloud-platform-network-services.service -n 160 --no-pager | \
-  grep -q 'NETWORK_SERVICES_APPLY=PASS changed=1' || fail post_restart_reconcile_evidence_missing
+if ! sudo systemctl is-active --quiet cloud-platform-network-enforcement.service; then
+  diagnose_post_restart_failure
+  fail base_inactive_after_docker_restart
+fi
+if ! sudo systemctl is-active --quiet cloud-platform-network-services.service; then
+  diagnose_post_restart_failure
+  fail services_inactive_after_docker_restart
+fi
+if ! sudo "$SERVICE" check >/dev/null; then
+  diagnose_post_restart_failure
+  fail post_restart_check_failed
+fi
+if ! sudo journalctl -u cloud-platform-network-services.service -n 160 --no-pager | \
+  grep -q 'NETWORK_SERVICES_APPLY=PASS changed=1'; then
+  diagnose_post_restart_failure
+  fail post_restart_reconcile_evidence_missing
+fi
 
 sudo systemctl disable --now cloud-platform-network-services.service
 sudo "$SERVICE" rollback | grep -q 'NETWORK_SERVICES_ROLLBACK=PASS' || fail rollback_failed
