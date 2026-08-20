@@ -246,7 +246,7 @@ remote_vps:
       extraction_test_historical: PASS_24_FILES
       functional_restore_test: NOT_EXECUTED
       metadata_preserving_restore: NOT_PROVEN_CURRENT_ARCHIVES_NORMALIZE_MODE_0640
-      latest_remote_archive_offhost_copy: PASS_AT_2026_08_17T06_35_55Z_REMOTE_INTEGRITY_OFFHOST_HASH_MATCH
+      latest_remote_archive_offhost_copy: PASS_AT_2026_08_17T06_35_55Z
       latest_archive_basename: cloud-infrastructure-config-20260816T221340Z.tar.gz
       latest_archive_sha256: c05c02ef781740c9ab12cc301ec4a98617996e0020fe78777b3b08040d70c5d7
     full_data_backup: PENDING
@@ -326,7 +326,7 @@ codex_execution:
       previous_disposable_fixture_results: HISTORICAL_ONLY_CHANGED_7_THEN_0_AND_CLEANUP_NOT_CURRENT_PROOF
       real_vps_privileged_check_mode: PASS_AT_2026_08_17T05_48_16Z_CHANGED_SIMULATED_4_FAILED_0_UNREACHABLE_0_NO_MUTATION
       real_vps_privileged_check_mode_log_sha256: 370d53f6dd1c9138cc0bab7ce852edb32f05d4f8c0b7359d7fb372f8edd479d6
-      real_vps_post_check_mode_readonly_invariance: PASS_AT_2026_08_16T21_23_21Z_NO_DRIFT_NO_MUTATION
+      real_vps_post_check_mode_readonly_invariance: PASS_AT_2026_08_17T05_52_15Z
       real_vps_apply: PASS_AT_2026_08_17T06_48_33Z_CHANGED_7_FAILED_0_UNREACHABLE_0
       real_vps_apply_log_sha256: a82d0ac67ed2f941507107ee1008d36475f7ebf5cdab0580605e60899cc5a5d4
       real_vps_idempotence: PASS_AT_2026_08_17T06_57_50Z_CHANGED_0_FAILED_0_UNREACHABLE_0
