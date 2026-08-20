@@ -38,6 +38,100 @@ ACTOR_LOGIN = "leon337"
 ACTOR_ID = 25_374_535
 BRANCH_REF = "refs/heads/codex/control-bridge-g2b"
 
+CORE_COMMON_REFUSED_ERRORS = frozenset(
+    """
+    audit_event_conflict audit_pending_conflict audit_pending_delete_failed
+    audit_pending_identity_mismatch audit_pending_source_mismatch
+    audit_pending_source_missing audit_repair_failed audit_write_failed executor_digest_mismatch
+    grant_actor_mismatch grant_missing grant_mission_mismatch grant_not_active
+    grant_operation_mismatch grant_principal_mismatch grant_project_mismatch grant_revoked
+    invalid_audit_log invalid_audit_pending invalid_grant invalid_grant_duration invalid_now
+    invalid_receipt invalid_receipt_schema invalid_recovery invalid_recovery_before_state
+    invalid_recovery_expected_state invalid_recovery_name invalid_recovery_operation
+    invalid_recovery_phase_state invalid_recovery_transition invalid_revocation lock_failed
+    receipt_already_exists receipt_identity_mismatch recovery_identity_mismatch recovery_missing
+    secret_like_receipt secret_like_recovery state_file_too_large state_read_failed
+    state_temporary_cleanup_failed state_write_failed unsafe_audit_event unsafe_audit_file
+    unsafe_executor_bundle unsafe_grant_file unsafe_grant_mode unsafe_grant_owner unsafe_lock_file
+    unsafe_state_directory unsafe_state_file unsafe_state_mode
+    """.split()
+)
+CORE_WORKSPACE_REFUSED_ERRORS = frozenset(
+    """
+    atomic_rename_failed atomic_rename_unsupported atomic_write_failed content_too_large internal_name_collision
+    target_hardlink_refused target_inspection_failed target_mode_refused target_not_regular
+    target_owner_mismatch target_read_failed target_symlink_refused unsafe_temporary_file
+    workspace_inspection_failed workspace_mode_refused workspace_not_directory workspace_not_found
+    workspace_open_failed workspace_owner_mismatch workspace_symlink_refused
+    """.split()
+)
+CORE_WRITE_REFUSED_ERRORS = CORE_COMMON_REFUSED_ERRORS | CORE_WORKSPACE_REFUSED_ERRORS | frozenset(
+    {
+        "binary_or_non_utf8", "grant_content_too_large", "grant_path_mismatch",
+        "recovery_already_exists", "recovery_name_mismatch", "secret_like_content",
+        "snapshot_already_exists", "snapshot_delete_failed",
+    }
+)
+CORE_ROLLBACK_REFUSED_ERRORS = CORE_COMMON_REFUSED_ERRORS | CORE_WORKSPACE_REFUSED_ERRORS | frozenset(
+    {"secret_like_snapshot"}
+)
+CORE_REVOKE_REFUSED_ERRORS = CORE_COMMON_REFUSED_ERRORS | frozenset({"secret_like_revocation"})
+CORE_FAILED_BY_OPERATION = {
+    "workspace.write": frozenset(
+        """
+        final_target_indeterminate final_target_mismatch internal_error mutation_reconciled_reverted
+        mutation_state_indeterminate target_changed write_cleanup_failed
+        write_durability_indeterminate write_recovery_blocked write_recovery_failed
+        write_revert_cleanup_failed write_revert_durability_indeterminate write_state_indeterminate
+        """.split()
+    ),
+    "rollback": frozenset(
+        """
+        delete_cleanup_failed delete_durability_indeterminate delete_recovery_blocked
+        delete_recovery_failed delete_revert_durability_indeterminate final_target_indeterminate
+        final_target_mismatch internal_error restore_cleanup_failed restore_durability_indeterminate
+        restore_recovery_blocked restore_recovery_failed restore_revert_cleanup_failed
+        restore_revert_durability_indeterminate restore_state_indeterminate target_changed
+        """.split()
+    ),
+    "status": frozenset({"internal_error"}),
+    "revoke": frozenset({"internal_error"}),
+}
+CORE_CONFLICT_BY_OPERATION = {
+    "workspace.write": frozenset(
+        {"active_mutation_exists", "precondition_mismatch", "request_id_conflict", "target_changed", "workspace_changed"}
+    ),
+    "rollback": frozenset(
+        {
+            "mutation_not_active", "mutation_state_indeterminate", "original_mutation_not_found",
+            "request_id_conflict", "snapshot_mismatch", "snapshot_missing", "target_changed",
+            "workspace_changed",
+        }
+    ),
+    "status": frozenset({"request_id_conflict"}),
+    "revoke": frozenset({"active_mutation_exists", "request_id_conflict"}),
+}
+CORE_REFUSED_BY_OPERATION = {
+    "workspace.write": CORE_WRITE_REFUSED_ERRORS,
+    "rollback": CORE_ROLLBACK_REFUSED_ERRORS,
+    "status": CORE_COMMON_REFUSED_ERRORS,
+    "revoke": CORE_REVOKE_REFUSED_ERRORS,
+}
+CORE_REJECTED_CORRELATED_ERRORS = frozenset(
+    """
+    absolute_path_refused execution_uid_mismatch executor_root_required invalid_arguments
+    invalid_content invalid_content_limit invalid_declared_actor invalid_environment
+    invalid_execution_uid invalid_expected_state invalid_lock_timeout invalid_mission_id
+    invalid_original_request_id invalid_path invalid_precondition invalid_project invalid_protocol
+    invalid_receipt_operation invalid_recovery_name_publisher invalid_relative_path invalid_request
+    invalid_request_id invalid_snapshot invalid_state_identifier invalid_state_value
+    invalid_transport_principal nested_path_refused path_escape_refused recovery_candidate_changed
+    recovery_cleanup_failed recovery_inspection_failed request_must_be_object result_too_large
+    root_execution_refused tilde_path_refused unexpected_arguments_field unexpected_project_field
+    unexpected_request_field unknown_operation
+    """.split()
+)
+
 
 def request(operation: str = "workspace.write", request_id: str = "G2B-ADAPTER-0001") -> dict[str, object]:
     if operation == "workspace.write":
@@ -147,7 +241,7 @@ def executor_result_for_status(operation: str, status: str) -> dict[str, object]
     value = executor_result(operation)
     errors = {
         "REFUSED": "state_read_failed",
-        "CONFLICT": "active_mutation_exists",
+        "CONFLICT": "request_id_conflict",
         "FAILED": "internal_error",
         "TIMEOUT": "lock_timeout",
     }
@@ -160,6 +254,22 @@ def executor_result_for_status(operation: str, status: str) -> dict[str, object]
             value["path"] = None
     if operation == "revoke" and status != "REVOKED":
         value["revocation_request_id"] = None
+    return value
+
+
+def executor_result_for_error(operation: str, status: str, error: str) -> dict[str, object]:
+    value = executor_result_for_status(operation, status)
+    value["error"] = error
+    if status == "FAILED" and error != "internal_error":
+        if operation == "workspace.write":
+            value["before"] = executor_result()["before"]
+        elif operation == "rollback":
+            value["path"] = "G2B-PILOT.txt"
+            value["before"] = executor_result("rollback")["before"]
+        if error == "mutation_reconciled_reverted":
+            value["after"] = value["before"]
+        elif error == "final_target_mismatch":
+            value["after"] = executor_result()["after"]
     return value
 
 
@@ -497,35 +607,31 @@ class G2BGitHubAdapterTests(unittest.TestCase):
                     self.assertEqual(result["error"], "invalid_executor_result")
 
     def test_dynamic_core_error_codes_remain_part_of_the_exact_result_contract(self) -> None:
-        dynamic_codes = (
-            "unsafe_state_mode",
-            "write_cleanup_failed",
-            "write_durability_indeterminate",
-            "write_state_indeterminate",
-            "write_recovery_blocked",
-            "write_recovery_failed",
-            "write_revert_cleanup_failed",
-            "write_revert_durability_indeterminate",
-            "restore_cleanup_failed",
-            "restore_durability_indeterminate",
-            "restore_state_indeterminate",
-            "restore_recovery_blocked",
-            "restore_recovery_failed",
-            "restore_revert_cleanup_failed",
-            "restore_revert_durability_indeterminate",
-            "delete_cleanup_failed",
-            "delete_durability_indeterminate",
-            "delete_recovery_failed",
+        dynamic_cases = (
+            ("workspace.write", "REFUSED", "unsafe_state_mode"),
+            ("workspace.write", "FAILED", "write_cleanup_failed"),
+            ("workspace.write", "FAILED", "write_durability_indeterminate"),
+            ("workspace.write", "FAILED", "write_state_indeterminate"),
+            ("workspace.write", "FAILED", "write_recovery_blocked"),
+            ("workspace.write", "FAILED", "write_recovery_failed"),
+            ("workspace.write", "FAILED", "write_revert_cleanup_failed"),
+            ("workspace.write", "FAILED", "write_revert_durability_indeterminate"),
+            ("rollback", "FAILED", "restore_cleanup_failed"),
+            ("rollback", "FAILED", "restore_durability_indeterminate"),
+            ("rollback", "FAILED", "restore_state_indeterminate"),
+            ("rollback", "FAILED", "restore_recovery_blocked"),
+            ("rollback", "FAILED", "restore_recovery_failed"),
+            ("rollback", "FAILED", "restore_revert_cleanup_failed"),
+            ("rollback", "FAILED", "restore_revert_durability_indeterminate"),
+            ("rollback", "FAILED", "delete_cleanup_failed"),
+            ("rollback", "FAILED", "delete_durability_indeterminate"),
+            ("rollback", "FAILED", "delete_recovery_failed"),
         )
-        request_value = request()
-        parsed = ADAPTER.parse_request(request_value)
-        for code in dynamic_codes:
-            status = "REFUSED" if code == "unsafe_state_mode" else "FAILED"
-            candidate = executor_result_for_status("workspace.write", status)
-            if status == "FAILED":
-                candidate["before"] = executor_result()["before"]
-            candidate["error"] = code
-            with self.subTest(code=code):
+        for operation, status, code in dynamic_cases:
+            request_value = request(operation)
+            parsed = ADAPTER.parse_request(request_value)
+            candidate = executor_result_for_error(operation, status, code)
+            with self.subTest(operation=operation, code=code):
                 ADAPTER.validate_executor_result(
                     candidate,
                     request_value,
@@ -533,6 +639,116 @@ class G2BGitHubAdapterTests(unittest.TestCase):
                     ACTOR_LOGIN,
                     ACTOR_ID,
                 )
+
+    def test_impossible_operation_error_reproductions_fail_both_validators(self) -> None:
+        cases = (
+            ("workspace.write", "delete_cleanup_failed"),
+            ("workspace.write", "restore_cleanup_failed"),
+            ("status", "write_cleanup_failed"),
+            ("status", "atomic_rename_unsupported", "REFUSED"),
+            ("revoke", "atomic_rename_unsupported", "REFUSED"),
+        )
+        for case in cases:
+            operation, error, *explicit_status = case
+            status = explicit_status[0] if explicit_status else "FAILED"
+            candidate = executor_result_for_error(operation, status, error)
+            request_value = request(operation)
+            parsed = ADAPTER.parse_request(request_value)
+            with self.subTest(operation=operation, error=error):
+                with self.assertRaisesRegex(ValueError, "invalid_executor_result"):
+                    ADAPTER.validate_executor_result(
+                        candidate, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+                    )
+                self.assertIn(
+                    "invalid_publication_result",
+                    PUBLISH.markdown(envelope(operation), candidate),
+                )
+
+    def test_task4_error_surface_is_exhaustively_classified(self) -> None:
+        classified = set(CORE_REJECTED_CORRELATED_ERRORS) | {"lock_timeout"}
+        for table in (
+            CORE_REFUSED_BY_OPERATION,
+            CORE_CONFLICT_BY_OPERATION,
+            CORE_FAILED_BY_OPERATION,
+        ):
+            for errors in table.values():
+                classified.update(errors)
+        self.assertEqual(classified, ADAPTER._RESULT_ERROR_CODES)
+        self.assertEqual(classified, PUBLISH._CORE_ERROR_CODES)
+
+    def test_adapter_task4_operation_status_error_cross_product_is_exact(self) -> None:
+        expected = {
+            operation: {
+                "REFUSED": CORE_REFUSED_BY_OPERATION[operation],
+                "CONFLICT": CORE_CONFLICT_BY_OPERATION[operation],
+                "FAILED": CORE_FAILED_BY_OPERATION[operation],
+                "TIMEOUT": frozenset({"lock_timeout"}),
+            }
+            for operation in ("workspace.write", "rollback", "status", "revoke")
+        }
+        unexpected_accepts: list[tuple[str, str, str]] = []
+        unexpected_rejections: list[tuple[str, str, str]] = []
+        for operation, statuses in expected.items():
+            request_value = request(operation)
+            parsed = ADAPTER.parse_request(request_value)
+            for status, allowed_errors in statuses.items():
+                for error in ADAPTER._RESULT_ERROR_CODES:
+                    candidate = executor_result_for_error(operation, status, error)
+                    try:
+                        ADAPTER.validate_executor_result(
+                            candidate, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+                        )
+                    except ValueError:
+                        accepted = False
+                    else:
+                        accepted = True
+                    if accepted and error not in allowed_errors:
+                        unexpected_accepts.append((operation, status, error))
+                    if not accepted and error in allowed_errors:
+                        unexpected_rejections.append((operation, status, error))
+        self.assertEqual(unexpected_accepts, [])
+        self.assertEqual(unexpected_rejections, [])
+
+    def test_actual_task4_success_and_refusal_results_pass_both_independent_validators(self) -> None:
+        from control_plane.g2b.grant import TransportPrincipal
+        from tests.test_g2b_executor import G2BExecutorTests
+
+        core = G2BExecutorTests(methodName="test_authorized_absent_write_returns_pass_and_content_free_receipt")
+        core.setUp()
+        try:
+            core.principal = TransportPrincipal(ACTOR_LOGIN, ACTOR_ID)
+            core._write_grant(transport_principal_id=ACTOR_ID)
+            requests = (
+                request("status", "G2B-ACTUAL-STATUS-0001"),
+                request("workspace.write", "G2B-ADAPTER-ORIGINAL-0001"),
+                request("rollback", "G2B-ACTUAL-ROLLBACK-0001"),
+                request("revoke", "G2B-ACTUAL-REVOKE-0001"),
+                request("status", "G2B-ACTUAL-REFUSED-0001"),
+            )
+            observed = [core.execute(value) for value in requests]
+        finally:
+            core.tearDown()
+
+        self.assertEqual(
+            [(value["status"], value["error"]) for value in observed],
+            [
+                ("PASS", None),
+                ("PASS", None),
+                ("ROLLED_BACK", None),
+                ("REVOKED", None),
+                ("REFUSED", "grant_revoked"),
+            ],
+        )
+        for request_value, result in zip(requests, observed, strict=True):
+            parsed = ADAPTER.parse_request(request_value)
+            ADAPTER.validate_executor_result(
+                result, request_value, parsed, ACTOR_LOGIN, ACTOR_ID
+            )
+            dispatch = {"transport": {"issue_number": None}, "request": request_value}
+            self.assertNotIn(
+                "invalid_publication_result",
+                PUBLISH.markdown(dispatch, result),
+            )
 
     def test_adapter_operation_status_cross_product_is_exact(self) -> None:
         statuses = ("PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED")
@@ -690,6 +906,32 @@ class G2BGitHubAdapterTests(unittest.TestCase):
 
 
 class G2BPublisherTests(unittest.TestCase):
+    def test_publisher_task4_operation_status_error_cross_product_is_exact(self) -> None:
+        expected = {
+            operation: {
+                "REFUSED": CORE_REFUSED_BY_OPERATION[operation],
+                "CONFLICT": CORE_CONFLICT_BY_OPERATION[operation],
+                "FAILED": CORE_FAILED_BY_OPERATION[operation],
+                "TIMEOUT": frozenset({"lock_timeout"}),
+            }
+            for operation in ("workspace.write", "rollback", "status", "revoke")
+        }
+        unexpected_accepts: list[tuple[str, str, str]] = []
+        unexpected_rejections: list[tuple[str, str, str]] = []
+        for operation, statuses in expected.items():
+            for status, allowed_errors in statuses.items():
+                for error in PUBLISH._CORE_ERROR_CODES:
+                    candidate = executor_result_for_error(operation, status, error)
+                    accepted = "invalid_publication_result" not in PUBLISH.markdown(
+                        envelope(operation), candidate
+                    )
+                    if accepted and error not in allowed_errors:
+                        unexpected_accepts.append((operation, status, error))
+                    if not accepted and error in allowed_errors:
+                        unexpected_rejections.append((operation, status, error))
+        self.assertEqual(unexpected_accepts, [])
+        self.assertEqual(unexpected_rejections, [])
+
     def test_publisher_operation_status_cross_product_is_exact(self) -> None:
         statuses = ("PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED")
         allowed = {
@@ -729,6 +971,39 @@ class G2BPublisherTests(unittest.TestCase):
                 {"status": "FAILED", "error": "internal_error", "before": None, "after": present},
             ),
             (
+                "write internal failure has mutation state",
+                "workspace.write",
+                {"status": "FAILED", "error": "internal_error", "before": absent, "after": None},
+            ),
+            (
+                "write mutation failure lacks before state",
+                "workspace.write",
+                {"status": "FAILED", "error": "write_cleanup_failed", "before": None, "after": None},
+            ),
+            (
+                "write reconciled revert does not return to before state",
+                "workspace.write",
+                {"status": "FAILED", "error": "mutation_reconciled_reverted", "before": absent, "after": present},
+            ),
+            (
+                "write final target indeterminate exposes after state",
+                "workspace.write",
+                {"status": "FAILED", "error": "final_target_indeterminate", "before": absent, "after": present},
+            ),
+            (
+                "write final target mismatch omits observed after state",
+                "workspace.write",
+                {"status": "FAILED", "error": "final_target_mismatch", "before": absent, "after": None},
+            ),
+            (
+                "write mutation failure omits validated grant context",
+                "workspace.write",
+                {
+                    "status": "FAILED", "error": "write_cleanup_failed",
+                    "authority": None, "grant_id": None, "before": absent, "after": present,
+                },
+            ),
+            (
                 "rollback conflict exposes path",
                 "rollback",
                 {"status": "CONFLICT", "error": "active_mutation_exists", "path": "G2B-PILOT.txt"},
@@ -740,6 +1015,51 @@ class G2BPublisherTests(unittest.TestCase):
                     "status": "FAILED", "error": "internal_error", "path": "G2B-PILOT.txt",
                     "before": None, "after": present,
                 },
+            ),
+            (
+                "rollback internal failure has mutation state",
+                "rollback",
+                {
+                    "status": "FAILED", "error": "internal_error", "path": "G2B-PILOT.txt",
+                    "before": present, "after": None,
+                },
+            ),
+            (
+                "rollback mutation failure lacks before state",
+                "rollback",
+                {
+                    "status": "FAILED", "error": "restore_cleanup_failed", "path": None,
+                    "before": None, "after": None,
+                },
+            ),
+            (
+                "rollback mutation before state is absent",
+                "rollback",
+                {
+                    "status": "FAILED", "error": "delete_cleanup_failed", "path": "G2B-PILOT.txt",
+                    "before": absent,
+                },
+            ),
+            (
+                "rollback final target indeterminate exposes after state",
+                "rollback",
+                {
+                    "status": "FAILED", "error": "final_target_indeterminate", "path": "G2B-PILOT.txt",
+                    "before": present, "after": absent,
+                },
+            ),
+            (
+                "rollback final target mismatch omits observed after state",
+                "rollback",
+                {
+                    "status": "FAILED", "error": "final_target_mismatch", "path": "G2B-PILOT.txt",
+                    "before": present, "after": None,
+                },
+            ),
+            (
+                "rollback success before state is absent",
+                "rollback",
+                {"status": "ROLLED_BACK", "error": None, "before": absent, "after": absent},
             ),
             (
                 "rollback missing original linkage",

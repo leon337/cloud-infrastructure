@@ -144,29 +144,82 @@ _RESULT_ERROR_CODES = frozenset(
         "restore_revert_durability_indeterminate",
     }
 )
-_CONFLICT_ERRORS = frozenset(
-    {
-        "active_mutation_exists", "mutation_not_active", "mutation_state_indeterminate",
-        "original_mutation_not_found", "precondition_mismatch", "recovery_candidate_changed",
-        "request_id_conflict", "snapshot_mismatch", "snapshot_missing", "target_changed",
-        "workspace_changed",
-    }
+_COMMON_REFUSED_ERRORS = frozenset(
+    """
+    audit_event_conflict audit_pending_conflict audit_pending_delete_failed
+    audit_pending_identity_mismatch audit_pending_source_mismatch
+    audit_pending_source_missing audit_repair_failed audit_write_failed executor_digest_mismatch
+    grant_actor_mismatch grant_missing grant_mission_mismatch grant_not_active
+    grant_operation_mismatch grant_principal_mismatch grant_project_mismatch grant_revoked
+    invalid_audit_log invalid_audit_pending invalid_grant invalid_grant_duration invalid_now
+    invalid_receipt invalid_receipt_schema invalid_recovery invalid_recovery_before_state
+    invalid_recovery_expected_state invalid_recovery_name invalid_recovery_operation
+    invalid_recovery_phase_state invalid_recovery_transition invalid_revocation lock_failed
+    receipt_already_exists receipt_identity_mismatch recovery_identity_mismatch recovery_missing
+    secret_like_receipt secret_like_recovery state_file_too_large state_read_failed
+    state_temporary_cleanup_failed state_write_failed unsafe_audit_event unsafe_audit_file
+    unsafe_executor_bundle unsafe_grant_file unsafe_grant_mode unsafe_grant_owner unsafe_lock_file
+    unsafe_state_directory unsafe_state_file unsafe_state_mode
+    """.split()
 )
-_FAILED_ERRORS = frozenset(
-    {
-        "delete_cleanup_failed", "delete_durability_indeterminate",
-        "delete_recovery_blocked", "delete_recovery_failed",
-        "delete_revert_durability_indeterminate", "final_target_indeterminate",
-        "final_target_mismatch", "internal_error", "mutation_reconciled_reverted",
-        "mutation_state_indeterminate", "restore_cleanup_failed",
-        "restore_durability_indeterminate", "restore_recovery_blocked",
-        "restore_recovery_failed", "restore_revert_cleanup_failed",
-        "restore_revert_durability_indeterminate", "restore_state_indeterminate",
-        "target_changed", "write_cleanup_failed", "write_durability_indeterminate",
-        "write_recovery_blocked", "write_recovery_failed", "write_revert_cleanup_failed",
-        "write_revert_durability_indeterminate", "write_state_indeterminate",
-    }
+_WORKSPACE_REFUSED_ERRORS = frozenset(
+    """
+    atomic_rename_failed atomic_rename_unsupported atomic_write_failed content_too_large internal_name_collision
+    target_hardlink_refused target_inspection_failed target_mode_refused target_not_regular
+    target_owner_mismatch target_read_failed target_symlink_refused unsafe_temporary_file
+    workspace_inspection_failed workspace_mode_refused workspace_not_directory workspace_not_found
+    workspace_open_failed workspace_owner_mismatch workspace_symlink_refused
+    """.split()
 )
+_REFUSED_ERRORS_BY_OPERATION = {
+    "workspace.write": _COMMON_REFUSED_ERRORS | _WORKSPACE_REFUSED_ERRORS | frozenset(
+        {
+            "binary_or_non_utf8", "grant_content_too_large", "grant_path_mismatch",
+            "recovery_already_exists", "recovery_name_mismatch", "secret_like_content",
+            "snapshot_already_exists", "snapshot_delete_failed",
+        }
+    ),
+    "rollback": _COMMON_REFUSED_ERRORS | _WORKSPACE_REFUSED_ERRORS | frozenset(
+        {"secret_like_snapshot"}
+    ),
+    "status": _COMMON_REFUSED_ERRORS,
+    "revoke": _COMMON_REFUSED_ERRORS | frozenset({"secret_like_revocation"}),
+}
+_CONFLICT_ERRORS_BY_OPERATION = {
+    "workspace.write": frozenset(
+        {"active_mutation_exists", "precondition_mismatch", "request_id_conflict", "target_changed", "workspace_changed"}
+    ),
+    "rollback": frozenset(
+        {
+            "mutation_not_active", "mutation_state_indeterminate", "original_mutation_not_found",
+            "request_id_conflict", "snapshot_mismatch", "snapshot_missing", "target_changed",
+            "workspace_changed",
+        }
+    ),
+    "status": frozenset({"request_id_conflict"}),
+    "revoke": frozenset({"active_mutation_exists", "request_id_conflict"}),
+}
+_FAILED_ERRORS_BY_OPERATION = {
+    "workspace.write": frozenset(
+        """
+        final_target_indeterminate final_target_mismatch internal_error mutation_reconciled_reverted
+        mutation_state_indeterminate target_changed write_cleanup_failed
+        write_durability_indeterminate write_recovery_blocked write_recovery_failed
+        write_revert_cleanup_failed write_revert_durability_indeterminate write_state_indeterminate
+        """.split()
+    ),
+    "rollback": frozenset(
+        """
+        delete_cleanup_failed delete_durability_indeterminate delete_recovery_blocked
+        delete_recovery_failed delete_revert_durability_indeterminate final_target_indeterminate
+        final_target_mismatch internal_error restore_cleanup_failed restore_durability_indeterminate
+        restore_recovery_blocked restore_recovery_failed restore_revert_cleanup_failed
+        restore_revert_durability_indeterminate restore_state_indeterminate target_changed
+        """.split()
+    ),
+    "status": frozenset({"internal_error"}),
+    "revoke": frozenset({"internal_error"}),
+}
 _TERMINATE_GRACE_SECONDS = 0.25
 _WAIT_SLICE_SECONDS = 0.02
 
@@ -444,17 +497,14 @@ def _valid_public_state(value: Any) -> bool:
     )
 
 
-def _valid_error_semantics(status: str, error: str) -> bool:
-    if error == "lock_timeout":
-        return status == "TIMEOUT"
-    allowed: set[str] = set()
-    if error in _CONFLICT_ERRORS:
-        allowed.add("CONFLICT")
-    if error in _FAILED_ERRORS:
-        allowed.add("FAILED")
-    if not allowed:
-        allowed.add("REFUSED")
-    return status in allowed
+def _valid_error_semantics(operation: str, status: str, error: str) -> bool:
+    if status == "REFUSED":
+        return error in _REFUSED_ERRORS_BY_OPERATION[operation]
+    if status == "CONFLICT":
+        return error in _CONFLICT_ERRORS_BY_OPERATION[operation]
+    if status == "FAILED":
+        return error in _FAILED_ERRORS_BY_OPERATION[operation]
+    return status == "TIMEOUT" and error == "lock_timeout"
 
 
 def validate_executor_result(
@@ -515,8 +565,10 @@ def validate_executor_result(
     elif (
         not isinstance(error, str)
         or error not in _RESULT_ERROR_CODES
-        or not _valid_error_semantics(status, error)
+        or not _valid_error_semantics(parsed.operation, status, error)
     ):
+        raise invalid
+    if status == "FAILED" and error != "internal_error" and authority != "LEANDRO":
         raise invalid
 
     expected_precondition: dict[str, str] | None
@@ -563,8 +615,19 @@ def validate_executor_result(
             before, after = value.get("before"), value.get("after")
             if (before is None) != (after is None) or (before is not None and before != after):
                 raise invalid
-        elif value.get("before") is None and value.get("after") is not None:
-            raise invalid
+        elif error == "internal_error":
+            if value.get("before") is not None or value.get("after") is not None:
+                raise invalid
+        else:
+            before, after = value.get("before"), value.get("after")
+            if before is None:
+                raise invalid
+            if error == "mutation_reconciled_reverted" and after != before:
+                raise invalid
+            if error == "final_target_indeterminate" and after is not None:
+                raise invalid
+            if error == "final_target_mismatch" and after is None:
+                raise invalid
     elif parsed.operation == "rollback":
         if rollback_link != parsed.original_request_id or revocation_link is not None:
             raise invalid
@@ -572,6 +635,7 @@ def validate_executor_result(
             if (
                 value.get("path") != "G2B-PILOT.txt"
                 or value.get("before") is None
+                or value["before"]["exists"] is not True
                 or value.get("after") is None
             ):
                 raise invalid
@@ -582,17 +646,22 @@ def validate_executor_result(
                 or value.get("after") is not None
             ):
                 raise invalid
+        elif error == "internal_error":
+            if (
+                value.get("path") is not None
+                or value.get("before") is not None
+                or value.get("after") is not None
+            ):
+                raise invalid
         elif not (
-            (
-                value.get("path") is None
-                and value.get("before") is None
-                and value.get("after") is None
-            )
-            or (
-                value.get("path") == "G2B-PILOT.txt"
-                and value.get("before") is not None
-            )
+            value.get("path") == "G2B-PILOT.txt"
+            and value.get("before") is not None
+            and value["before"]["exists"] is True
         ):
+            raise invalid
+        elif error == "final_target_indeterminate" and value.get("after") is not None:
+            raise invalid
+        elif error == "final_target_mismatch" and value.get("after") is None:
             raise invalid
     elif parsed.operation == "status":
         if (
