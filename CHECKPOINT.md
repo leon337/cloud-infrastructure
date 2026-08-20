@@ -1,6 +1,6 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-20 após recuperação, publicação remota do G2-B e reconciliação das entradas canônicas de contexto.
+Atualizado em 2026-08-21 após concluir o protocolo obrigatório de inicialização e recuperação de contexto do R3.
 
 ## Missão ativa
 
@@ -9,17 +9,44 @@ MISSION=REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
 MISSION_ISSUE=10
 MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 MISSION_STATE=state/active-mission.yaml
+STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+STARTUP_PROTOCOL_STATE=state/startup-recovery-protocol.yaml
 G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
 STATUS=ACTIVE
 AUTHORITY=LEANDRO
 ORCHESTRATOR=MESTRE_MCF
 ROADMAP_R1=COMPLETE
 ROADMAP_R2=COMPLETE
-ROADMAP_R3=NEXT
-NEXT_EXACT_STEP=R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+ROADMAP_R3=COMPLETE
+ROADMAP_R4=NEXT
+NEXT_EXACT_STEP=R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
 ```
 
 Esta missão é transversal. Ela não reabre o desenho G2-B nem autoriza mutação do NODE-01.
+
+## Regra obrigatória de retomada
+
+Qualquer nova IA/agente ou operador recuperando o projeto deve executar `CLOUD_INFRA_AI_STARTUP_RECOVERY_V1` antes de implementar.
+
+```text
+NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
+```
+
+Fontes:
+
+- `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`;
+- `state/startup-recovery-protocol.yaml`.
+
+Veredictos válidos:
+
+```text
+PASS
+PASS_READ_ONLY
+BLOCKED_RECONCILIATION
+WAITING_HUMAN_GATE
+```
+
+Somente `PASS` permite considerar mutação dentro do escopo recuperado, e mesmo assim nenhum HUMAN_GATE é aberto automaticamente. Em modo remoto sem acesso ao computador, o estado local deve ser declarado `UNVERIFIED`, nunca presumido `CLEAN`.
 
 ## Checkpoint remoto recuperado do G2-B
 
@@ -55,7 +82,7 @@ MERGE_G2B=NO
 TASK_8=DO_NOT_START_WHILE_TASK_7_PARTIAL
 ```
 
-Nenhuma dessas condições pode ser inferida como autorizada a partir de commits, PR, issue, testes ou documentação.
+Nenhuma dessas condições pode ser inferida como autorizada a partir de commits, PR, issue, testes, documentação ou `RECOVERY_VERDICT=PASS`.
 
 ## Trabalho paralelo isolado
 
@@ -96,24 +123,26 @@ Fonte detalhada: `docs/52-control-bridge-g2a-implementation-checkpoint.md`.
 
 ## Fontes canônicas para retomada
 
-1. `state/active-mission.yaml`
-2. `CONTEXT.md`
-3. `CHECKPOINT.md`
-4. `state/current.yaml`
-5. `state/control-bridge-g2b.yaml`
-6. `docs/53-repository-continuity-context-recovery-mission.md`
-7. `docs/54-control-bridge-g2b-recovery-checkpoint.md`
-8. Issue #10
-9. PR #11
-10. spec e plano G2-B
-11. evidência Git/CI aplicável
+1. `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`
+2. `state/startup-recovery-protocol.yaml`
+3. `state/active-mission.yaml`
+4. `CONTEXT.md`
+5. `CHECKPOINT.md`
+6. `state/current.yaml`
+7. `state/control-bridge-g2b.yaml`
+8. `docs/53-repository-continuity-context-recovery-mission.md`
+9. `docs/54-control-bridge-g2b-recovery-checkpoint.md`
+10. Issue #10
+11. PR #11
+12. spec e plano G2-B
+13. evidência Git/CI aplicável
 
-Em caso de divergência, reconciliar antes de agir. Chats não são fonte canônica.
+Em caso de divergência, aplicar o protocolo e parar em `BLOCKED_RECONCILIATION`. Chats não são fonte canônica.
 
 ## Próximo passo exato da missão ativa
 
 ```text
-R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
 ```
 
 ## Próximo passo técnico G2-B — BLOQUEADO ATÉ R8
