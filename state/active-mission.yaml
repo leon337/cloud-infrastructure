@@ -1,0 +1,56 @@
+protocol_version: CLOUD_INFRA_ACTIVE_MISSION_V1
+updated_at: 2026-08-20
+mission:
+  id: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+  title: Repository Continuity & Context Recovery Hardening
+  status: ACTIVE
+  priority: P0_TRANSVERSAL
+  authority: LEANDRO
+  orchestrator: MESTRE_MCF
+  github_issue: 10
+  repository_doc: docs/53-repository-continuity-context-recovery-mission.md
+repository:
+  name: leon337/cloud-infrastructure
+  active_branch: codex/control-bridge-g2b
+  base_branch: mcf/mission-001-control-bridge-g1
+  pull_request: 11
+  pull_request_state: DRAFT_DO_NOT_MERGE
+  recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
+  recovered_commits_ahead_of_base: 25
+control_bridge_g2b:
+  status: TASK_7_PARTIAL_RECOVERED_REMOTE
+  tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
+  task_7: PARTIAL
+  task_7_focused_tests:
+    pass: 6
+    fail: 1
+  known_red: EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED
+  known_red_literal: g2b_issue_existing_grant.keys()
+  ansible_syntax: NOT_EXECUTED_CURRENT_LOCAL_ENVIRONMENT_MISSING_ANSIBLE_PLAYBOOK
+  tasks_8_10: NOT_STARTED
+  real_write: NOT_EXECUTED
+  real_rollback: NOT_EXECUTED
+  real_revocation: NOT_EXECUTED
+  mcf_effective_use: NOT_EXECUTED
+parallel_work:
+  f1_2c_systemd_runtime_lock:
+    branch: fix/f1-2c-systemd-runtime-lock
+    status_for_this_mission: ISOLATED_DO_NOT_MODIFY
+    ownership: MESTRE_MCF_AND_LEANDRO
+human_gates:
+  node_01_g2b_bootstrap: CLOSED_NOT_AUTHORIZED
+  real_grant_issue_or_reissue: CLOSED_NOT_AUTHORIZED
+  real_bounded_write: CLOSED_NOT_AUTHORIZED
+  production_mutation: CLOSED_NOT_AUTHORIZED
+  merge_g2b: CLOSED_NOT_AUTHORIZED
+continuity_roadmap:
+  R1: COMPLETE
+  R2: COMPLETE
+  R3: NEXT
+  R4: NOT_STARTED
+  R5: NOT_STARTED
+  R6: NOT_STARTED
+  R7: NOT_STARTED
+  R8: NOT_STARTED
+next_exact_step: R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
+recovery_rule: NEW_AGENT_MUST_RECONSTRUCT_STATE_FROM_REPOSITORY_AND_GITHUB_BEFORE_IMPLEMENTATION
