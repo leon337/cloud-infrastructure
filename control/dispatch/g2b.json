@@ -1,0 +1,24 @@
+{
+  "transport": {
+    "issue_number": null
+  },
+  "request": {
+    "protocol": "MCF_WORKSPACE_MUTATION_V1",
+    "request_id": "G2B-DORMANT-REPLACE-BEFORE-LIVE",
+    "mission_id": "CONTROL-BRIDGE-G2B-PILOT",
+    "declared_actor": "MESTRE_MCF",
+    "project": {
+      "tenant": "leon337",
+      "name": "g2a-smoke",
+      "environment": "dev"
+    },
+    "operation": "workspace.write",
+    "arguments": {
+      "path": "G2B-PILOT.txt",
+      "content": "G2-B bounded pilot\n",
+      "precondition": {
+        "state": "ABSENT"
+      }
+    }
+  }
+}
