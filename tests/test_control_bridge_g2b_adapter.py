@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import io
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -9,6 +11,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -70,10 +73,55 @@ def event() -> dict[str, object]:
 
 
 def executor_result(operation: str = "workspace.write") -> dict[str, object]:
+    request_value = request(operation)
+    digest = hashlib.sha256(
+        json.dumps(
+            request_value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    if operation == "workspace.write":
+        content = request_value["arguments"]["content"]
+        assert isinstance(content, str)
+        path = "G2B-PILOT.txt"
+        precondition: dict[str, object] | None = {"state": "ABSENT"}
+        before: dict[str, object] | None = {
+            "exists": False,
+            "size": None,
+            "mode": None,
+            "sha256": None,
+        }
+        after: dict[str, object] | None = {
+            "exists": True,
+            "size": 14,
+            "mode": 420,
+            "sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+        }
+        status = "PASS"
+        rollback_request_id = None
+        revocation_request_id = None
+    elif operation == "rollback":
+        path = "G2B-PILOT.txt"
+        precondition = None
+        before = {"exists": True, "size": 14, "mode": 384, "sha256": "b" * 64}
+        after = {"exists": False, "size": None, "mode": None, "sha256": None}
+        status = "ROLLED_BACK"
+        rollback_request_id = "G2B-ADAPTER-ORIGINAL-0001"
+        revocation_request_id = None
+    else:
+        path = None
+        precondition = None
+        before = None
+        after = None
+        status = "REVOKED" if operation == "revoke" else "PASS"
+        rollback_request_id = None
+        revocation_request_id = "G2B-ADAPTER-0001" if operation == "revoke" else None
     return {
         "protocol": "MCF_WORKSPACE_MUTATION_RESULT_V1",
         "request_id": "G2B-ADAPTER-0001",
-        "request_digest": "a" * 64,
+        "request_digest": digest,
         "mission_id": "CONTROL-BRIDGE-G2B-PILOT",
         "declared_actor": "MESTRE_MCF",
         "authority": "LEANDRO",
@@ -81,16 +129,16 @@ def executor_result(operation: str = "workspace.write") -> dict[str, object]:
         "grant_id": "G2B-PILOT-20260820",
         "project": {"tenant": "leon337", "name": "g2a-smoke", "environment": "dev"},
         "operation": operation,
-        "path": "G2B-PILOT.txt" if operation == "workspace.write" else None,
+        "path": path,
         "started_at": "2026-08-20T12:00:00+00:00",
         "finished_at": "2026-08-20T12:00:01+00:00",
-        "precondition": {"state": "ABSENT"} if operation == "workspace.write" else None,
-        "before": {"exists": False, "size": None, "mode": None, "sha256": None},
-        "after": {"exists": True, "size": 14, "mode": 384, "sha256": "b" * 64},
-        "status": "PASS",
+        "precondition": precondition,
+        "before": before,
+        "after": after,
+        "status": status,
         "replayed": False,
-        "rollback_request_id": None,
-        "revocation_request_id": None,
+        "rollback_request_id": rollback_request_id,
+        "revocation_request_id": revocation_request_id,
         "error": None,
     }
 
@@ -100,6 +148,17 @@ class G2BGitHubAdapterTests(unittest.TestCase):
         path = root / name
         path.write_text(json.dumps(value), encoding="utf-8")
         return path
+
+    def bounded_runner(self):
+        runner = getattr(ADAPTER, "run_bounded_process", None)
+        self.assertIsNotNone(runner, "bounded concurrent process runner is missing")
+        return runner
+
+    def assert_process_gone(self, pid: int) -> None:
+        deadline = time.monotonic() + 1.0
+        while Path(f"/proc/{pid}").exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertFalse(Path(f"/proc/{pid}").exists(), f"child {pid} still exists")
 
     def test_envelope_is_exact_and_transport_metadata_never_enters_core_request(self) -> None:
         value = envelope()
@@ -159,14 +218,14 @@ class G2BGitHubAdapterTests(unittest.TestCase):
                 dispatch_path = self.write_json(root, "dispatch.json", envelope(operation))
                 request_output = root / "request.json"
                 result_output = root / "result.json"
-                completed = subprocess.CompletedProcess(
-                    args=[],
+                completed = ADAPTER.ProcessOutcome(
                     returncode=0,
                     stdout=(json.dumps(executor_result(operation), separators=(",", ":")) + "\n").encode(),
                     stderr=b"",
+                    error=None,
                 )
 
-                with patch.object(ADAPTER.subprocess, "run", return_value=completed) as invoked:
+                with patch.object(ADAPTER, "run_bounded_process", return_value=completed) as invoked:
                     code = ADAPTER.execute_dispatch(
                         event_name="push",
                         event_path=event_path,
@@ -195,15 +254,14 @@ class G2BGitHubAdapterTests(unittest.TestCase):
                         "/usr/local/libexec/mcf-control-g2b",
                         command,
                     ],
-                    input=invoked.call_args.kwargs["input"],
-                    capture_output=True,
-                    check=False,
-                    timeout=60,
-                    shell=False,
-                    env={"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8"},
+                    invoked.call_args.args[1],
+                    timeout_seconds=60,
                 )
-                self.assertEqual(json.loads(invoked.call_args.kwargs["input"]), normalized)
-                self.assertEqual(json.loads(result_output.read_text(encoding="utf-8"))["status"], "PASS")
+                self.assertEqual(json.loads(invoked.call_args.args[1]), normalized)
+                self.assertEqual(
+                    json.loads(result_output.read_text(encoding="utf-8"))["status"],
+                    executor_result(operation)["status"],
+                )
 
     def test_unknown_operation_is_refused_before_subprocess_selection(self) -> None:
         invalid = envelope()
@@ -212,7 +270,7 @@ class G2BGitHubAdapterTests(unittest.TestCase):
             root = Path(temporary)
             event_path = self.write_json(root, "event.json", event())
             dispatch_path = self.write_json(root, "dispatch.json", invalid)
-            with patch.object(ADAPTER.subprocess, "run") as invoked, self.assertRaisesRegex(
+            with patch.object(ADAPTER, "run_bounded_process") as invoked, self.assertRaisesRegex(
                 ValueError, "unknown_operation"
             ):
                 ADAPTER.execute_dispatch(
@@ -238,7 +296,7 @@ class G2BGitHubAdapterTests(unittest.TestCase):
             request_output = root / "request.json"
             result_output = root / "result.json"
 
-            with patch.object(ADAPTER.subprocess, "run") as invoked:
+            with patch.object(ADAPTER, "run_bounded_process") as invoked:
                 code = ADAPTER.execute_dispatch(
                     event_name="push",
                     event_path=event_path,
@@ -270,17 +328,22 @@ class G2BGitHubAdapterTests(unittest.TestCase):
             self.assertEqual(protected.read_text(encoding="utf-8"), "unchanged")
 
     def test_executor_timeout_and_oversized_streams_are_bounded_safe_results(self) -> None:
-        for side_effect, completed, expected_error in (
-            (subprocess.TimeoutExpired(cmd="fixed", timeout=60), None, "executor_timeout"),
-            (None, subprocess.CompletedProcess([], 2, b"x" * 8193, b""), "executor_output_too_large"),
-            (None, subprocess.CompletedProcess([], 2, b"{}\n", b"x" * 8193), "executor_output_too_large"),
+        for completed, expected_error in (
+            (ADAPTER.ProcessOutcome(-15, b"", b"", "executor_timeout"), "executor_timeout"),
+            (
+                ADAPTER.ProcessOutcome(-15, b"x" * 8192, b"", "executor_output_too_large"),
+                "executor_output_too_large",
+            ),
+            (
+                ADAPTER.ProcessOutcome(-15, b"{}\n", b"x" * 8192, "executor_output_too_large"),
+                "executor_output_too_large",
+            ),
         ):
             with self.subTest(expected_error=expected_error), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 event_path = self.write_json(root, "event.json", event())
                 dispatch_path = self.write_json(root, "dispatch.json", envelope("status"))
-                kwargs = {"side_effect": side_effect} if side_effect is not None else {"return_value": completed}
-                with patch.object(ADAPTER.subprocess, "run", **kwargs):
+                with patch.object(ADAPTER, "run_bounded_process", return_value=completed):
                     code = ADAPTER.execute_dispatch(
                         event_name="push",
                         event_path=event_path,
@@ -297,6 +360,158 @@ class G2BGitHubAdapterTests(unittest.TestCase):
                 self.assertNotIn("fixed", json.dumps(value))
                 self.assertLessEqual((root / "result.json").stat().st_size, 8192)
 
+    def test_exit_zero_empty_or_request_mismatched_result_fails_closed(self) -> None:
+        invalid_results = [
+            {},
+            {**executor_result(), "request_id": "G2B-DIFFERENT-0001"},
+            {**executor_result(), "operation": "status"},
+            {
+                **executor_result(),
+                "transport_principal": {"login": ACTOR_LOGIN, "actor_id": ACTOR_ID + 1},
+            },
+        ]
+        for invalid_result in invalid_results:
+            with self.subTest(keys=sorted(invalid_result)), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                event_path = self.write_json(root, "event.json", event())
+                dispatch_path = self.write_json(root, "dispatch.json", envelope())
+                completed = ADAPTER.ProcessOutcome(
+                    returncode=0,
+                    stdout=(json.dumps(invalid_result, separators=(",", ":")) + "\n").encode(),
+                    stderr=b"",
+                    error=None,
+                )
+                with patch.object(ADAPTER, "run_bounded_process", return_value=completed):
+                    code = ADAPTER.execute_dispatch(
+                        event_name="push",
+                        event_path=event_path,
+                        dispatch_file=dispatch_path,
+                        request_output=root / "request.json",
+                        result_output=root / "result.json",
+                        actor_login=ACTOR_LOGIN,
+                        actor_id=ACTOR_ID,
+                    )
+
+                self.assertEqual(code, 2)
+                result = json.loads((root / "result.json").read_text(encoding="utf-8"))
+                self.assertEqual(result["status"], "FAILED")
+                self.assertEqual(result["error"], "invalid_executor_result")
+
+    def test_executor_result_schema_types_semantics_and_correlations_are_exact(self) -> None:
+        valid = executor_result()
+        mutations = {
+            "extra field": lambda value: value.update({"content": "SECRET"}),
+            "protocol": lambda value: value.update({"protocol": "WRONG"}),
+            "request digest": lambda value: value.update({"request_digest": "a" * 64}),
+            "mission": lambda value: value.update({"mission_id": "OTHER"}),
+            "declared actor": lambda value: value.update({"declared_actor": "OTHER"}),
+            "authority": lambda value: value.update({"authority": "ROOT"}),
+            "grant id type": lambda value: value.update({"grant_id": 1}),
+            "project": lambda value: value.update(
+                {"project": {"tenant": "other", "name": "g2a-smoke", "environment": "dev"}}
+            ),
+            "path": lambda value: value.update({"path": "../../secret"}),
+            "started timestamp": lambda value: value.update({"started_at": "yesterday"}),
+            "timestamp order": lambda value: value.update(
+                {
+                    "started_at": "2026-08-20T12:00:02+00:00",
+                    "finished_at": "2026-08-20T12:00:01+00:00",
+                }
+            ),
+            "precondition": lambda value: value.update({"precondition": {"state": "PRESENT"}}),
+            "state fields": lambda value: value.update(
+                {"after": {"exists": True, "size": 14, "mode": 384, "sha256": "b" * 64, "content": "x"}}
+            ),
+            "state hash": lambda value: value.update(
+                {"after": {"exists": True, "size": 14, "mode": 384, "sha256": "B" * 64}}
+            ),
+            "after content correlation": lambda value: value.update(
+                {"after": {"exists": True, "size": 14, "mode": 384, "sha256": "b" * 64}}
+            ),
+            "state size": lambda value: value.update(
+                {"after": {"exists": True, "size": 65_537, "mode": 384, "sha256": "b" * 64}}
+            ),
+            "status": lambda value: value.update({"status": "SUCCESS"}),
+            "success error": lambda value: value.update({"error": "raw exception payload"}),
+            "status error semantics": lambda value: value.update(
+                {"status": "FAILED", "error": "grant_missing"}
+            ),
+            "replayed type": lambda value: value.update({"replayed": "false"}),
+            "rollback linkage": lambda value: value.update(
+                {"rollback_request_id": "CONTENT-TUNNEL-UNRELATED"}
+            ),
+            "revocation linkage": lambda value: value.update(
+                {"revocation_request_id": "CONTENT-TUNNEL-UNRELATED"}
+            ),
+        }
+        candidates = [("valid", valid, 0)]
+        for name, mutate in mutations.items():
+            candidate = copy.deepcopy(valid)
+            mutate(candidate)
+            candidates.append((name, candidate, 2))
+
+        for name, candidate, expected_code in candidates:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                event_path = self.write_json(root, "event.json", event())
+                dispatch_path = self.write_json(root, "dispatch.json", envelope())
+                completed = ADAPTER.ProcessOutcome(
+                    returncode=0,
+                    stdout=(json.dumps(candidate, separators=(",", ":")) + "\n").encode(),
+                    stderr=b"",
+                    error=None,
+                )
+                with patch.object(ADAPTER, "run_bounded_process", return_value=completed):
+                    code = ADAPTER.execute_dispatch(
+                        event_name="push",
+                        event_path=event_path,
+                        dispatch_file=dispatch_path,
+                        request_output=root / "request.json",
+                        result_output=root / "result.json",
+                        actor_login=ACTOR_LOGIN,
+                        actor_id=ACTOR_ID,
+                    )
+                self.assertEqual(code, expected_code)
+                if expected_code:
+                    result = json.loads((root / "result.json").read_text(encoding="utf-8"))
+                    self.assertEqual(result["error"], "invalid_executor_result")
+
+    def test_dynamic_core_error_codes_remain_part_of_the_exact_result_contract(self) -> None:
+        dynamic_codes = (
+            "unsafe_state_mode",
+            "write_cleanup_failed",
+            "write_durability_indeterminate",
+            "write_state_indeterminate",
+            "write_recovery_blocked",
+            "write_recovery_failed",
+            "write_revert_cleanup_failed",
+            "write_revert_durability_indeterminate",
+            "restore_cleanup_failed",
+            "restore_durability_indeterminate",
+            "restore_state_indeterminate",
+            "restore_recovery_blocked",
+            "restore_recovery_failed",
+            "restore_revert_cleanup_failed",
+            "restore_revert_durability_indeterminate",
+            "delete_cleanup_failed",
+            "delete_durability_indeterminate",
+            "delete_recovery_failed",
+        )
+        request_value = request()
+        parsed = ADAPTER.parse_request(request_value)
+        for code in dynamic_codes:
+            candidate = executor_result()
+            candidate["status"] = "REFUSED" if code == "unsafe_state_mode" else "FAILED"
+            candidate["error"] = code
+            with self.subTest(code=code):
+                ADAPTER.validate_executor_result(
+                    candidate,
+                    request_value,
+                    parsed,
+                    ACTOR_LOGIN,
+                    ACTOR_ID,
+                )
+
     def test_cli_starts_from_repository_root_without_pythonpath(self) -> None:
         environment = os.environ.copy()
         environment.pop("PYTHONPATH", None)
@@ -311,8 +526,151 @@ class G2BGitHubAdapterTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
 
+    def test_bounded_process_enforces_stdout_and_stderr_hard_limits(self) -> None:
+        runner = self.bounded_runner()
+        cases = (
+            ("import os,time; os.write(1,b'x'*100000); time.sleep(10)", "stdout"),
+            ("import os,time; os.write(2,b'x'*100000); time.sleep(10)", "stderr"),
+        )
+        for program, stream in cases:
+            with self.subTest(stream=stream):
+                outcome = runner([sys.executable, "-c", program], b"", timeout_seconds=2)
+                self.assertEqual(outcome.error, "executor_output_too_large")
+                self.assertLessEqual(len(outcome.stdout), 8192)
+                self.assertLessEqual(len(outcome.stderr), 8192)
+                self.assertIsNotNone(outcome.returncode)
+
+    def test_bounded_process_drains_stdout_and_stderr_concurrently(self) -> None:
+        runner = self.bounded_runner()
+        program = (
+            "import os,threading; "
+            "a=threading.Thread(target=lambda:os.write(1,b'a'*8000)); "
+            "b=threading.Thread(target=lambda:os.write(2,b'b'*8000)); "
+            "a.start();b.start();a.join();b.join()"
+        )
+        outcome = runner([sys.executable, "-c", program], b"", timeout_seconds=2)
+        self.assertIsNone(outcome.error)
+        self.assertEqual(outcome.returncode, 0)
+        self.assertEqual(outcome.stdout, b"a" * 8000)
+        self.assertEqual(outcome.stderr, b"b" * 8000)
+
+    def test_bounded_process_timeout_terminates_and_reaps_child(self) -> None:
+        runner = self.bounded_runner()
+        program = "import os,time; print(os.getpid(),flush=True); time.sleep(10)"
+        outcome = runner([sys.executable, "-c", program], b"", timeout_seconds=0.1)
+        self.assertEqual(outcome.error, "executor_timeout")
+        pid = int(outcome.stdout.decode("ascii").strip())
+        self.assert_process_gone(pid)
+
+    def test_bounded_process_escalates_to_kill_when_termination_is_ignored(self) -> None:
+        runner = self.bounded_runner()
+        program = (
+            "import os,signal,time; "
+            "signal.signal(signal.SIGTERM,signal.SIG_IGN); "
+            "print(os.getpid(),flush=True); time.sleep(10)"
+        )
+        started = time.monotonic()
+        outcome = runner([sys.executable, "-c", program], b"", timeout_seconds=0.1)
+        elapsed = time.monotonic() - started
+        self.assertEqual(outcome.error, "executor_timeout")
+        self.assertLess(elapsed, 2.0)
+        pid = int(outcome.stdout.decode("ascii").strip())
+        self.assert_process_gone(pid)
+
+    def test_bounded_process_timeout_covers_inherited_pipes_and_process_group(self) -> None:
+        runner = self.bounded_runner()
+        grandchild = (
+            "import signal,time; "
+            "signal.signal(signal.SIGTERM,signal.SIG_IGN); time.sleep(2)"
+        )
+        program = (
+            "import subprocess,sys; "
+            f"child=subprocess.Popen([sys.executable,'-c',{grandchild!r}]); "
+            "print(child.pid,flush=True)"
+        )
+        started = time.monotonic()
+        outcome = runner([sys.executable, "-c", program], b"", timeout_seconds=0.1)
+        elapsed = time.monotonic() - started
+        self.assertEqual(outcome.error, "executor_timeout")
+        self.assertLess(elapsed, 1.0)
+        pid = int(outcome.stdout.decode("ascii").strip())
+        self.assert_process_gone(pid)
+
+    def test_bounded_process_uses_exact_environment_and_never_a_shell(self) -> None:
+        runner = self.bounded_runner()
+        literal = "$(printf SHELL_INTERPOLATED)"
+        program = (
+            "import json,os,sys; "
+            "print(json.dumps({'environment':dict(os.environ),'argument':sys.argv[1]},sort_keys=True))"
+        )
+        outcome = runner(
+            [sys.executable, "-c", program, literal],
+            b"",
+            timeout_seconds=2,
+        )
+        self.assertIsNone(outcome.error)
+        observed = json.loads(outcome.stdout)
+        self.assertEqual(
+            observed["environment"],
+            {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8"},
+        )
+        self.assertEqual(observed["argument"], literal)
+
 
 class G2BPublisherTests(unittest.TestCase):
+    def test_dynamic_core_error_code_is_publishable_only_as_a_valid_correlated_receipt(self) -> None:
+        candidate = executor_result()
+        candidate["status"] = "FAILED"
+        candidate["error"] = "write_cleanup_failed"
+        body = PUBLISH.markdown(envelope(), candidate)
+        self.assertNotIn("invalid_publication_result", body)
+        self.assertIn("write\\_cleanup\\_failed", body)
+
+        mismatched = executor_result()
+        mismatched["status"] = "FAILED"
+        mismatched["error"] = "grant_missing"
+        self.assertIn("invalid_publication_result", PUBLISH.markdown(envelope(), mismatched))
+
+        oversized = executor_result()
+        oversized["after"]["size"] = 65_537
+        self.assertIn("invalid_publication_result", PUBLISH.markdown(envelope(), oversized))
+
+        mismatched_hash = executor_result()
+        mismatched_hash["after"]["sha256"] = "b" * 64
+        self.assertIn("invalid_publication_result", PUBLISH.markdown(envelope(), mismatched_hash))
+
+    def test_every_allowlisted_value_slot_rejects_arbitrary_payload_tunneling(self) -> None:
+        canary = "RAW_EXCEPTION_PAYLOAD_SECRET"
+        mutations = {
+            "request id": lambda value: value.update({"request_id": canary}),
+            "operation": lambda value: value.update({"operation": canary}),
+            "project tenant": lambda value: value["project"].update({"tenant": canary}),
+            "project name": lambda value: value["project"].update({"name": canary}),
+            "project environment": lambda value: value["project"].update({"environment": canary}),
+            "path": lambda value: value.update({"path": canary}),
+            "status": lambda value: value.update({"status": canary}),
+            "error": lambda value: value.update({"status": "FAILED", "error": canary}),
+            "grant id": lambda value: value.update({"grant_id": canary}),
+            "started timestamp": lambda value: value.update({"started_at": canary}),
+            "finished timestamp": lambda value: value.update({"finished_at": canary}),
+            "before hash": lambda value: value.update(
+                {"before": {"exists": True, "size": 14, "mode": 384, "sha256": canary}}
+            ),
+            "after hash": lambda value: value.update(
+                {"after": {"exists": True, "size": 14, "mode": 384, "sha256": canary}}
+            ),
+            "replay": lambda value: value.update({"replayed": canary}),
+            "receipt id": lambda value: value.update({"receipt_id": canary}),
+        }
+
+        for name, mutate in mutations.items():
+            candidate = copy.deepcopy(executor_result())
+            mutate(candidate)
+            with self.subTest(name=name):
+                body = PUBLISH.markdown(envelope(), candidate)
+                self.assertNotIn(canary, body.replace("\\", ""))
+                self.assertIn("invalid_publication_result", body)
+
     def test_markdown_escapes_all_safe_fields_and_never_serializes_forbidden_payloads(self) -> None:
         hostile = "<tag>`*_[]()#!|>\nnext"
         result = executor_result()
@@ -335,12 +693,11 @@ class G2BPublisherTests(unittest.TestCase):
         result["snapshot"] = "TOP_LEVEL_SNAPSHOT_BYTES"
         result["exception"] = "RAW_EXCEPTION_SECRET"
 
-        body = PUBLISH.markdown(result)
+        body = PUBLISH.markdown(envelope(), result)
 
         self.assertLess(len(body), 60_000)
-        self.assertIn("&lt;tag&gt;", body)
+        self.assertIn("invalid_publication_result", body)
         self.assertNotIn("<tag>", body)
-        self.assertNotIn("\nnext", body)
         for forbidden in (
             "BEFORE_SECRET_BYTES",
             "AFTER_SECRET_BYTES",
@@ -353,9 +710,16 @@ class G2BPublisherTests(unittest.TestCase):
     def test_markdown_is_strictly_capped_below_sixty_thousand_characters(self) -> None:
         result = executor_result()
         result["request_id"] = "🙂" * 100_000
-        body = PUBLISH.markdown(result)
+        body = PUBLISH.markdown(envelope(), result)
         self.assertLess(len(body), 60_000)
         self.assertLess(len(body.encode("utf-8")), 60_000)
+
+        invalid_dispatch = envelope()
+        invalid_dispatch["request"]["arguments"]["content"] = "\ud800"
+        self.assertIn(
+            "invalid_publication_result",
+            PUBLISH.markdown(invalid_dispatch, executor_result()),
+        )
 
     def test_issue_number_is_read_only_from_exact_transport_and_null_skips_publication(self) -> None:
         self.assertEqual(PUBLISH.issue_number({"transport": {"issue_number": 6}, "request": request()}), 6)
