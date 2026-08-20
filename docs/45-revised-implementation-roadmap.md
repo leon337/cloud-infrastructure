@@ -100,3 +100,22 @@ desired state NODE-01 agora está preparado com quatro serviços privados por
 digest, quatro redes exatas, forwarding fail-closed, lifecycle systemd e
 rollback por camada. CI commit-bound passou no run `32131461110`; apply/rollback real e gates de workload
 permanecem necessários.
+
+## Control Bridge — continuidade reconciliada em 2026-08-20
+
+```text
+CONTROL_BRIDGE_G2B=P0_DESIGN_APPROVED_IMPLEMENTATION_PENDING
+G1=PASS_REAL_NODE_01_ROUNDTRIP
+G2A=PASS_REAL_NODE_01_READ_ONLY
+G2B_REAL_WRITE=NOT_EXECUTED
+CODEX=AVAILABLE_PARALLEL_EXECUTOR
+MESTRE_MCF=ORCHESTRATOR
+LEANDRO=FINAL_HUMAN_AUTHORITY
+F1_2C_SYSTEMD_RUNTIME_LOCK=FROZEN_FOR_CODEX_OWNED_BY_MESTRE_MCF_AND_LEANDRO
+GITHUB_HOSTED_CI=BLOCKED_EXTERNAL_BILLING
+SELF_HOSTED_NODE_01_RUNNER=ONLINE_OBSERVED_2026_08_20
+```
+
+O status do runner é observado na GitHub API, não uma observação nova da VPS.
+F1.2c preserva seus fatos/timestamps e a branch paralela permanece congelada
+para Codex. O estado fail-closed de G2-B é `state/control-bridge-g2b.yaml`.

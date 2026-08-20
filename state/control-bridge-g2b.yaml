@@ -1,0 +1,31 @@
+protocol_version: MCF_CONTROL_BRIDGE_G2B_STATE_V1
+updated_at: 2026-08-20
+scope: TRANSVERSAL_CONTROL_PLANE
+priority: P0
+repository: leon337/cloud-infrastructure
+branch: codex/control-bridge-g2b
+base_branch: mcf/mission-001-control-bridge-g1
+base_sha: 8ee1fd719a50d0c9440a10a11a372dda8af1f457
+status: DESIGN_APPROVED_IMPLEMENTATION_PENDING
+pilot:
+  project: leon337/g2a-smoke/dev
+  path: G2B-PILOT.txt
+  grant_duration_hours: 24
+  active_mutations_max: 1
+  production: false
+boundaries:
+  transport_user: ubuntu
+  execution_user: mcf-workspace
+  normal_execution_root: false
+  arbitrary_shell: false
+  docker_socket: false
+  git_mutation: false
+  host_administration: false
+evidence:
+  g1_real_roundtrip: true
+  g2a_real_read: true
+  real_write: false
+  real_rollback: false
+  real_revocation: false
+  mcf_effective_use: false
+next_exact_step: RECONCILE_DOCUMENTATION_THEN_IMPLEMENT_G2B_REPO_ONLY

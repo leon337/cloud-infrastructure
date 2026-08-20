@@ -1,7 +1,7 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-18
+updated_at: 2026-08-20
 documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_NODE_01_SERVICES_CI_PASS_REAL_APPLY_PENDING
 continuity:
   historical_validations_preserved: true
@@ -20,6 +20,23 @@ continuity:
   revised_roadmap: docs/45-revised-implementation-roadmap.md
   technology_mapping: docs/46-technology-mapping-v1.md
   component_inventory: state/components.yaml
+control_bridge:
+  priority: P0
+  g1: PASS_REAL_NODE_01_ROUNDTRIP
+  g2a: PASS_REAL_NODE_01_READ_ONLY
+  g2b: DESIGN_APPROVED_IMPLEMENTATION_PENDING
+  self_hosted_runner: ONLINE_OBSERVED_2026_08_20_GITHUB_API
+  hosted_ci: BLOCKED_EXTERNAL_BILLING
+  source: state/control-bridge-g2b.yaml
+work_ownership:
+  f1_2c_systemd_runtime_lock:
+    branch: fix/f1-2c-systemd-runtime-lock
+    owner: MESTRE_MCF_AND_LEANDRO
+    frozen_for_codex: true
+  control_bridge_g2b:
+    branch: codex/control-bridge-g2b
+    owner: CODEX
+    orchestrator: MESTRE_MCF
 project:
   name: IMPLEMENTACAO_DA_VPS
   status: ACTIVE

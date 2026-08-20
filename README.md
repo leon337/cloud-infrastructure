@@ -16,14 +16,14 @@
 - **GitHub Project:** `BLOCKED_EXTERNAL_MISSING_READ_PROJECT_AND_PROJECT_SCOPES`
 - **Produção:** `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`
 - **Rotação de credenciais:** `DEFERRED_BY_HUMAN_DECISION`
-- **Atualizado em:** `2026-08-18`
+- **Atualizado em:** `2026-08-20`
 
 > Esta seção é gerada das fontes canônicas; não edite manualmente.
 <!-- PROJECT_STATUS:END -->
 
 Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 
-> Nova IA/agente? Comece por [`CONTEXT.md`](CONTEXT.md). Para a capability transversal MCF VPS Control Plane, leia também [`docs/52-control-bridge-g2a-implementation-checkpoint.md`](docs/52-control-bridge-g2a-implementation-checkpoint.md) e [`state/control-bridge-g2a.yaml`](state/control-bridge-g2a.yaml).
+> Nova IA/agente? Comece por [`CONTEXT.md`](CONTEXT.md). Para a capability transversal MCF VPS Control Plane, leia também [`docs/52-control-bridge-g2a-implementation-checkpoint.md`](docs/52-control-bridge-g2a-implementation-checkpoint.md), [`state/control-bridge-g2a.yaml`](state/control-bridge-g2a.yaml) e [`state/control-bridge-g2b.yaml`](state/control-bridge-g2b.yaml).
 
 ## Finalidade
 
@@ -33,21 +33,27 @@ Configurar, proteger, documentar e tornar reproduzível a VPS enquanto LEANDRO a
 
 O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada da trilha principal da plataforma; `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; o GitHub é a memória canônica após validação e publicação.
 
-A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever o estado da trilha F1.2c. O estado atual dessa capability está em `docs/52-control-bridge-g2a-implementation-checkpoint.md` e `state/control-bridge-g2a.yaml`. GitHub live, código, testes e CI do SHA aplicável prevalecem sobre status históricos em documentos anteriores.
+A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever o estado da trilha F1.2c. O estado atual dessa capability está em `docs/52-control-bridge-g2a-implementation-checkpoint.md`, `state/control-bridge-g2a.yaml` e `state/control-bridge-g2b.yaml`. GitHub live, código, testes e CI do SHA aplicável prevalecem sobre status históricos em documentos anteriores.
 
 ## Control Bridge — estado transversal reconciliado
 
-- **G1:** handshake real `ChatGPT -> GitHub -> Actions -> self-hosted runner -> VPS -> GitHub -> ChatGPT` comprovado.
-- **G2-A:** Tasks 1–9 concluídas; implementação read-only multi-project validada no HEAD material `e36065268f609cbbfc64c6644d4c943f169756c9`.
-- **CI desse HEAD:** `foundation-ci #145` (`32198917421`) `SUCCESS`; `docker-boundary-ci #140` (`32198917456`) `SUCCESS`.
-- **Task 10:** `WAITING_HUMAN_GATE` — primeiro roundtrip G2-A real no NODE-01 ainda não autorizado.
-- **Live dispatch:** `control/dispatch/g2a.json` deve permanecer ausente até autorização explícita de LEANDRO.
-- **Mutação real de workspace pelo G2-A:** não executada.
-- **Produção / sudo automático / root direto / Docker socket:** não autorizados pelo G2-A.
-- **Checkpoint canônico do G2-A:** `docs/52-control-bridge-g2a-implementation-checkpoint.md`.
-- **Estado machine-readable do G2-A:** `state/control-bridge-g2a.yaml`.
+```text
+CONTROL_BRIDGE_G2B=P0_DESIGN_APPROVED_IMPLEMENTATION_PENDING
+G1=PASS_REAL_NODE_01_ROUNDTRIP
+G2A=PASS_REAL_NODE_01_READ_ONLY
+G2B_REAL_WRITE=NOT_EXECUTED
+CODEX=AVAILABLE_PARALLEL_EXECUTOR
+MESTRE_MCF=ORCHESTRATOR
+LEANDRO=FINAL_HUMAN_AUTHORITY
+F1_2C_SYSTEMD_RUNTIME_LOCK=FROZEN_FOR_CODEX_OWNED_BY_MESTRE_MCF_AND_LEANDRO
+GITHUB_HOSTED_CI=BLOCKED_EXTERNAL_BILLING
+SELF_HOSTED_NODE_01_RUNNER=ONLINE_OBSERVED_2026_08_20
+```
 
-Os cabeçalhos pré-implementação em `docs/51-control-bridge-g2a-design.md` e no plano TDD permanecem como registro histórico do gate anterior; para estado executivo atual do G2-A, o checkpoint 52 + estado live prevalecem.
+O estado do runner é uma observação GitHub API em 2026-08-20; não substitui
+uma observação nova da VPS. F1.2c preserva seus fatos operacionais e timestamps
+próprios, mas sua branch está congelada para Codex. G2-B não executou escrita
+real; `state/control-bridge-g2b.yaml` é o estado fail-closed do próximo slice.
 
 ## Estado operacional — baseline reconciliada em 16/08/2026
 
@@ -83,4 +89,4 @@ e a matriz de redes/DNS/proxy/grants passou em VM descartável. O estado e o
 próximo passo exatos da trilha principal são projetados automaticamente na seção `STATUS ATUAL`.
 Produção não está autorizada e a rotação permanece adiada por decisão humana.
 
-A trilha transversal Control Bridge não altera o próximo passo F1.2c. Seu estado é recuperado separadamente pelo checkpoint 52 e por `state/control-bridge-g2a.yaml`.
+A trilha transversal Control Bridge não altera o próximo passo F1.2c. Seu estado é recuperado separadamente pelos checkpoints G1/G2-A e por `state/control-bridge-g2a.yaml` e `state/control-bridge-g2b.yaml`.

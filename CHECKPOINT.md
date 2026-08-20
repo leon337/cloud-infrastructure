@@ -2,6 +2,25 @@
 
 Atualizado em 2026-08-18 após provar em CI o desired state NODE-01 dos serviços F1.2c.
 
+## Control Bridge — continuidade reconciliada em 2026-08-20
+
+```text
+CONTROL_BRIDGE_G2B=P0_DESIGN_APPROVED_IMPLEMENTATION_PENDING
+G1=PASS_REAL_NODE_01_ROUNDTRIP
+G2A=PASS_REAL_NODE_01_READ_ONLY
+G2B_REAL_WRITE=NOT_EXECUTED
+CODEX=AVAILABLE_PARALLEL_EXECUTOR
+MESTRE_MCF=ORCHESTRATOR
+LEANDRO=FINAL_HUMAN_AUTHORITY
+F1_2C_SYSTEMD_RUNTIME_LOCK=FROZEN_FOR_CODEX_OWNED_BY_MESTRE_MCF_AND_LEANDRO
+GITHUB_HOSTED_CI=BLOCKED_EXTERNAL_BILLING
+SELF_HOSTED_NODE_01_RUNNER=ONLINE_OBSERVED_2026_08_20
+```
+
+O status online é observação da GitHub API, não prova VPS fresca. F1.2c mantém
+seus fatos operacionais/timestamps já registrados e sua branch está congelada
+para Codex; G2-B permanece fail-closed em `state/control-bridge-g2b.yaml`.
+
 ## Estado durável
 
 - Repositório canônico: `leon337/cloud-infrastructure`, branch `main`.
