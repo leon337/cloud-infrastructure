@@ -103,5 +103,7 @@ current_mission_binding:
   active_branch: codex/control-bridge-g2b
   pull_request: 11
   r3_status: COMPLETE
-  next_roadmap_stage: R4
-  next_exact_step: R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
+  r4_status: COMPLETE
+  persistence_policy: state/mission-persistence-policy.yaml
+  next_roadmap_stage: R5
+  next_exact_step: R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
