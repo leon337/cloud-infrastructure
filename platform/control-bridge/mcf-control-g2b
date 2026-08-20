@@ -1,0 +1,160 @@
+#!/usr/bin/python3 -I
+"""Immutable G2-B installed executor boundary."""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import pwd
+import sys
+from typing import Any
+
+
+_SERVICE_ACCOUNT = "mcf-workspace"
+_INSTALLED_ROOT = Path("/usr/local/lib/mcf-control-bridge")
+_GRANT_PATH = Path("/etc/mcf-control-bridge/g2b-grant.json")
+_WORKSPACE_ROOT = Path("/var/lib/mcf-control-bridge/workspaces")
+_STATE_ROOT = Path("/var/lib/mcf-control-bridge/state/g2b")
+_LOCK_PATH = Path("/run/lock/mcf-control-bridge-g2b.lock")
+_MAX_STDIN_BYTES = 131_072
+_MAX_STDOUT_BYTES = 8192
+_COMMAND_OPERATIONS = {
+    "execute": "workspace.write",
+    "rollback": "rollback",
+    "status": "status",
+    "revoke": "revoke",
+}
+
+
+class _BoundaryError(Exception):
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+def _load_execute_request():
+    installed = str(_INSTALLED_ROOT)
+    if installed not in sys.path:
+        sys.path.insert(0, installed)
+    from control_plane.g2b.executor import execute_request
+    from control_plane.g2b.grant import TransportPrincipal
+
+    return execute_request, TransportPrincipal
+
+
+def _read_input() -> dict[str, Any]:
+    raw = sys.stdin.buffer.read(_MAX_STDIN_BYTES + 1)
+    if len(raw) > _MAX_STDIN_BYTES:
+        raise _BoundaryError("stdin_too_large")
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise _BoundaryError("invalid_json") from None
+    if not isinstance(value, dict):
+        raise _BoundaryError("input_must_be_object")
+    if set(value) != {"transport_principal", "request"}:
+        raise _BoundaryError("invalid_input_envelope")
+    if not isinstance(value["transport_principal"], dict) or not isinstance(value["request"], dict):
+        raise _BoundaryError("invalid_input_envelope")
+    return value
+
+
+def _resolve_service_uid() -> int:
+    try:
+        account = pwd.getpwnam(_SERVICE_ACCOUNT)
+    except KeyError:
+        raise _BoundaryError("service_account_missing") from None
+    except Exception:
+        raise _BoundaryError("service_account_resolution_failed") from None
+    expected_uid = account.pw_uid
+    effective_uid = os.geteuid()
+    if expected_uid == 0 or effective_uid == 0:
+        raise _BoundaryError("root_execution_refused")
+    if not isinstance(expected_uid, int) or isinstance(expected_uid, bool) or expected_uid < 1:
+        raise _BoundaryError("invalid_service_account_uid")
+    if effective_uid != expected_uid:
+        raise _BoundaryError("execution_uid_mismatch")
+    return expected_uid
+
+
+def _parse_principal(value: dict[str, Any], principal_type):
+    if set(value) != {"login", "actor_id"}:
+        raise _BoundaryError("invalid_transport_principal")
+    login = value["login"]
+    actor_id = value["actor_id"]
+    if (
+        not isinstance(login, str)
+        or not login
+        or len(login) > 128
+        or not isinstance(actor_id, int)
+        or isinstance(actor_id, bool)
+        or not 0 < actor_id <= 2**63 - 1
+    ):
+        raise _BoundaryError("invalid_transport_principal")
+    return principal_type(login=login, actor_id=actor_id)
+
+
+def _write_result(result: dict[str, Any]) -> None:
+    if not isinstance(result, dict):
+        raise _BoundaryError("invalid_result")
+    try:
+        rendered = json.dumps(
+            result,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        encoded = (rendered + "\n").encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError):
+        raise _BoundaryError("invalid_result") from None
+    if len(encoded) > _MAX_STDOUT_BYTES:
+        raise _BoundaryError("result_too_large")
+    sys.stdout.write(rendered + "\n")
+
+
+def _failure(code: str) -> dict[str, str]:
+    return {"error": code, "status": "REFUSED"}
+
+
+def _run() -> dict[str, Any]:
+    if len(sys.argv) != 2 or sys.argv[1] not in _COMMAND_OPERATIONS:
+        raise _BoundaryError("invalid_invocation")
+    command = sys.argv[1]
+    value = _read_input()
+    operation = value["request"].get("operation")
+    if operation != _COMMAND_OPERATIONS[command]:
+        raise _BoundaryError("operation_mismatch")
+    expected_uid = _resolve_service_uid()
+    execute_request, principal_type = _load_execute_request()
+    principal = _parse_principal(value["transport_principal"], principal_type)
+    return execute_request(
+        value["request"],
+        transport_principal=principal,
+        grant_path=_GRANT_PATH,
+        installed_root=_INSTALLED_ROOT,
+        workspace_root=_WORKSPACE_ROOT,
+        state_root=_STATE_ROOT,
+        lock_path=_LOCK_PATH,
+        expected_uid=expected_uid,
+        now=lambda: datetime.now(timezone.utc),
+    )
+
+
+def main() -> int:
+    os.environ.clear()
+    try:
+        result = _run()
+        _write_result(result)
+        return 0
+    except _BoundaryError as error:
+        _write_result(_failure(error.code))
+        return 2
+    except Exception:
+        _write_result(_failure("bootstrap_failure"))
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

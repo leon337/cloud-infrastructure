@@ -1,0 +1,5 @@
+Cmnd_Alias MCF_G2B = /usr/local/libexec/mcf-control-g2b execute, \
+                     /usr/local/libexec/mcf-control-g2b rollback, \
+                     /usr/local/libexec/mcf-control-g2b status, \
+                     /usr/local/libexec/mcf-control-g2b revoke
+ubuntu ALL=(mcf-workspace) NOPASSWD: MCF_G2B
