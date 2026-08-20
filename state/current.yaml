@@ -14,6 +14,7 @@ continuity:
   active_mission_issue: 10
   active_pull_request: 11
   active_branch: codex/control-bridge-g2b
+  g2b_recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
   active_roadmap_stage: R2_COMPLETE_R3_NEXT
   next_exact_step: R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
