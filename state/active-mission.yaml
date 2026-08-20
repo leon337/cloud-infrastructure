@@ -1,5 +1,5 @@
 protocol_version: CLOUD_INFRA_ACTIVE_MISSION_V1
-updated_at: 2026-08-20
+updated_at: 2026-08-21
 mission:
   id: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
   title: Repository Continuity & Context Recovery Hardening
@@ -17,6 +17,13 @@ repository:
   pull_request_state: DRAFT_DO_NOT_MERGE
   recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
   recovered_commits_ahead_of_base: 25
+startup_recovery_protocol:
+  status: ACTIVE_REQUIRED
+  protocol_version: CLOUD_INFRA_AI_STARTUP_RECOVERY_V1
+  document: governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+  machine_state: state/startup-recovery-protocol.yaml
+  mutation_rule: NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
+  remote_only_local_state: UNVERIFIED_UNLESS_RECONCILED
 control_bridge_g2b:
   status: TASK_7_PARTIAL_RECOVERED_REMOTE
   recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
@@ -47,15 +54,16 @@ human_gates:
 continuity_roadmap:
   R1: COMPLETE
   R2: COMPLETE
-  R3: NEXT
-  R4: NOT_STARTED
+  R3: COMPLETE
+  R4: NEXT
   R5: NOT_STARTED
   R6: NOT_STARTED
   R7: NOT_STARTED
   R8: NOT_STARTED
 validation:
   structural_reconciliation: PASS
+  r3_protocol_contract: PERSISTED
   github_actions_head_validation: INCONCLUSIVE_VALIDATE_JOBS_FAILED_WITH_NO_EXPOSED_STEPS
   github_actions_logs: UNAVAILABLE_BLOB_NOT_FOUND
-next_exact_step: R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL
-recovery_rule: NEW_AGENT_MUST_RECONSTRUCT_STATE_FROM_REPOSITORY_AND_GITHUB_BEFORE_IMPLEMENTATION
+next_exact_step: R4_DEFINE_LONG_RUNNING_MISSION_PERSISTENCE_POLICY
+recovery_rule: NEW_AGENT_MUST_EXECUTE_STARTUP_RECOVERY_PROTOCOL_BEFORE_IMPLEMENTATION
