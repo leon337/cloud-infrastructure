@@ -66,7 +66,14 @@ A missão de continuidade está em:
 - `docs/53-repository-continuity-context-recovery-mission.md`
 - Issue #10
 
-R1 e R2 estão concluídos. A retomada técnica desta Task 7 ocorrerá somente no R8.
+R1, R2, R3 e R4 estão concluídos. O R5 é o próximo estágio da missão de continuidade. A retomada técnica desta Task 7 ocorrerá somente no R8.
+
+As regras de recuperação/persistência estão em:
+
+- `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`;
+- `state/startup-recovery-protocol.yaml`;
+- `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`;
+- `state/mission-persistence-policy.yaml`.
 
 ## Próximo passo técnico preservado — não executar antes do R8
 
