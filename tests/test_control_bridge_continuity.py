@@ -22,6 +22,10 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(mission["roadmap"]["R1"], "COMPLETE")
         self.assertEqual(mission["roadmap"]["R2"], "COMPLETE")
         self.assertEqual(mission["roadmap"]["R3"], "NEXT")
+        self.assertEqual(
+            state["continuity"]["g2b_recovery_checkpoint_doc"],
+            "docs/54-control-bridge-g2b-recovery-checkpoint.md",
+        )
 
         self.assertEqual(bridge["priority"], "P0")
         self.assertEqual(bridge["g1"], "PASS_REAL_NODE_01_ROUNDTRIP")
@@ -48,10 +52,15 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             self.assertIn("CONTROL_BRIDGE_G2B", text)
             self.assertIn("R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL", text)
             self.assertIn("codex/control-bridge-g2b", text)
+            self.assertIn("docs/54-control-bridge-g2b-recovery-checkpoint.md", text)
 
     def test_g2b_state_preserves_partial_status_and_fail_closed_boundaries(self):
         state = yaml.safe_load((ROOT / "state/control-bridge-g2b.yaml").read_text())
         self.assertEqual(state["status"], "TASK_7_PARTIAL_RECOVERED_REMOTE")
+        self.assertEqual(
+            state["recovery_checkpoint"]["document"],
+            "docs/54-control-bridge-g2b-recovery-checkpoint.md",
+        )
         self.assertEqual(state["implementation"]["tasks_1_6"], "COMPLETE_MATERIALLY_REVIEWED")
         self.assertEqual(state["implementation"]["task_7"], "PARTIAL")
         self.assertEqual(state["implementation"]["task_7_focused_tests"]["pass"], 6)
@@ -69,6 +78,10 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(state["continuity_roadmap"]["R1"], "COMPLETE")
         self.assertEqual(state["continuity_roadmap"]["R2"], "COMPLETE")
         self.assertEqual(state["continuity_roadmap"]["R3"], "NEXT")
+        self.assertEqual(
+            state["control_bridge_g2b"]["recovery_checkpoint_doc"],
+            "docs/54-control-bridge-g2b-recovery-checkpoint.md",
+        )
         self.assertEqual(
             state["next_exact_step"],
             "R3_DEFINE_MANDATORY_AI_PROJECT_STARTUP_AND_RECOVERY_PROTOCOL",
