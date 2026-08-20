@@ -8,6 +8,7 @@ A missão transversal ativa é **Repository Continuity & Context Recovery Harden
 MISSION_ISSUE=10
 MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 MISSION_STATE=state/active-mission.yaml
+G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
 ACTIVE_BRANCH=codex/control-bridge-g2b
 ACTIVE_PR=11_DRAFT_DO_NOT_MERGE
 RECOVERY_CHECKPOINT_SHA=7205a647f918580d09c87ed44f38b0a433552a51
@@ -56,7 +57,7 @@ Configurar, proteger, documentar e tornar reproduzível a VPS enquanto LEANDRO a
 
 O repositório implementa o PUC v1.0. `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada de continuidade. `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; Git/GitHub devem conter o estado recuperável antes de uma missão depender deles.
 
-A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever a trilha principal F1.2c. O estado específico está em `state/control-bridge-g2b.yaml`; o estado da missão de recuperação está em `state/active-mission.yaml` e `docs/53-repository-continuity-context-recovery-mission.md`.
+A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever a trilha principal F1.2c. O estado específico está em `state/control-bridge-g2b.yaml`; o checkpoint técnico recuperado está em `docs/54-control-bridge-g2b-recovery-checkpoint.md`; o estado da missão de recuperação está em `state/active-mission.yaml` e `docs/53-repository-continuity-context-recovery-mission.md`.
 
 GitHub live, branch/PR aplicável, código, testes e evidência do SHA aplicável prevalecem sobre afirmações históricas. Em divergência entre fontes, o agente deve reconciliar antes de agir; não deve escolher silenciosamente a versão mais conveniente.
 
