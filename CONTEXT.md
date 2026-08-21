@@ -11,7 +11,10 @@ Os controles obrigatórios estão em:
 - `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`;
 - `state/startup-recovery-protocol.yaml`;
 - `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`;
-- `state/mission-persistence-policy.yaml`.
+- `state/mission-persistence-policy.yaml`;
+- `state/institutional-memory.yaml`;
+- `governance/CONTINUITY-DRIFT-CONTROLS.md`;
+- `state/continuity-drift-controls.yaml`.
 
 Regras vinculantes:
 
@@ -20,6 +23,7 @@ NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
 NO_LONG_RUNNING_MISSION_WITHOUT_RECOVERABLE_REMOTE_CHECKPOINTS
 MAX_MATERIAL_WORK_WITHOUT_REMOTE_CHECKPOINT=30_MINUTES
 WIP_CHECKPOINT_DOES_NOT_IMPLY_ACCEPTANCE
+NO_CONTINUITY_ADVANCE_WITH_UNEXPLAINED_CANONICAL_DRIFT
 ```
 
 Antes de qualquer mudança:
@@ -31,10 +35,11 @@ Antes de qualquer mudança:
 5. verificar Issue/PR/commits/CI/evidência indicados pelo estado ativo;
 6. identificar tarefas completas/parciais/bloqueadas, testes, blockers, ownership paralelo e HUMAN_GATEs;
 7. produzir o recovery report definido pelo protocolo;
-8. se as fontes divergirem, parar em `BLOCKED_RECONCILIATION`;
-9. se a ação depender de autorização humana fechada, parar em `WAITING_HUMAN_GATE`;
-10. para missão longa, verificar capacidade de persistência remota antes de acumular trabalho material e obedecer ao limite de 30 minutos;
-11. nunca pedir, registrar ou versionar secrets.
+8. executar `scripts/check_continuity_drift.py` quando o ambiente do repositório estiver disponível;
+9. se as fontes divergirem, parar em `BLOCKED_RECONCILIATION`;
+10. se a ação depender de autorização humana fechada, parar em `WAITING_HUMAN_GATE`;
+11. para missão longa, verificar capacidade de persistência remota antes de acumular trabalho material e obedecer ao limite de 30 minutos;
+12. nunca pedir, registrar ou versionar secrets.
 
 Em modo remoto sem acesso ao computador, `LOCAL_STATE=UNVERIFIED`; isso não significa `CLEAN`.
 
@@ -66,6 +71,10 @@ STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
 STARTUP_PROTOCOL_STATE=state/startup-recovery-protocol.yaml
 PERSISTENCE_POLICY=governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
 PERSISTENCE_POLICY_STATE=state/mission-persistence-policy.yaml
+INSTITUTIONAL_MEMORY_STATE=state/institutional-memory.yaml
+FIRST_INCIDENT_MEMO=history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
+DRIFT_CONTROLS_STATE=state/continuity-drift-controls.yaml
 STATUS=ACTIVE
 PRIORITY=P0_TRANSVERSAL
 AUTHORITY=LEANDRO
@@ -77,8 +86,11 @@ ROADMAP_R1=COMPLETE
 ROADMAP_R2=COMPLETE
 ROADMAP_R3=COMPLETE
 ROADMAP_R4=COMPLETE
-ROADMAP_R5=NEXT
-NEXT_EXACT_STEP=R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
+ROADMAP_R5=COMPLETE
+ROADMAP_R6=COMPLETE
+ROADMAP_R7=NEXT
+ROADMAP_R8=NOT_STARTED
+NEXT_EXACT_STEP=R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
 ```
 
 Objetivo: fazer o repositório explicar a si próprio e permitir recuperação de contexto sem depender de memória de chat ou de uma única máquina.
@@ -118,6 +130,28 @@ F1_2C_OWNER=MESTRE_MCF_AND_LEANDRO
 
 Não use o `next_exact_step` da trilha principal F1.2c como autorização para tocar nessa branch durante a missão de continuidade.
 
+## Memória institucional
+
+Eventos históricos materiais são preservados separadamente do estado corrente:
+
+- contrato: `state/institutional-memory.yaml`;
+- memos: `history/memos/`;
+- primeiro memo: `history/memos/2026-08-20-g2b-local-work-recovery-incident.md`.
+
+Memos são append-oriented e não devem ser silenciosamente reescritos para parecer entendimento posterior. Correções materiais exigem novo registro ou adendo explícito.
+
+## Controles de drift
+
+A coerência entre as fontes canônicas é validada por:
+
+- `governance/CONTINUITY-DRIFT-CONTROLS.md`;
+- `state/continuity-drift-controls.yaml`;
+- `scripts/check_continuity_drift.py`;
+- `tests/test_continuity_drift_controls.py`;
+- `scripts/test.sh` / Foundation CI.
+
+Um drift inexplicado bloqueia avanço de continuidade; não deve ser mascarado por escolha silenciosa de uma fonte.
+
 ## Mapa canônico
 
 | Pergunta | Fonte |
@@ -126,6 +160,8 @@ Não use o `next_exact_step` da trilha principal F1.2c como autorização para t
 | Contrato machine-readable do protocolo | `state/startup-recovery-protocol.yaml` |
 | Política de persistência para missões longas | `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md` |
 | Contrato machine-readable de persistência | `state/mission-persistence-policy.yaml` |
+| Memória institucional | `state/institutional-memory.yaml`, `history/memos/` |
+| Controles de drift | `governance/CONTINUITY-DRIFT-CONTROLS.md`, `state/continuity-drift-controls.yaml` |
 | Qual missão está ativa? | `state/active-mission.yaml` |
 | Documento da missão ativa | `docs/53-repository-continuity-context-recovery-mission.md` |
 | Estado exato de continuidade | `CHECKPOINT.md` |
@@ -173,10 +209,10 @@ Fatos voláteis devem ser medidos novamente antes de qualquer operação real.
 
 ## Ponto exato
 
-A missão de continuidade concluiu R1, R2, R3 e R4. O próximo passo é exclusivamente:
+A missão de continuidade concluiu R1–R6. O próximo passo é exclusivamente:
 
 ```text
-R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
+R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
 ```
 
 A retomada técnica da Task 7 do G2-B pertence ao R8. Até lá, não corrigir o RED da Task 7, não iniciar Task 8 e não executar bootstrap/grant/write no NODE-01.
