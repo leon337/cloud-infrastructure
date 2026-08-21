@@ -1,0 +1,60 @@
+protocol_version: CLOUD_INFRA_CONTINUITY_DRIFT_CONTROLS_V1
+updated_at: 2026-08-21
+status: ACTIVE_REQUIRED
+principle: NO_CONTINUITY_ADVANCE_WITH_UNEXPLAINED_CANONICAL_DRIFT
+normative_document: governance/CONTINUITY-DRIFT-CONTROLS.md
+executable_check: scripts/check_continuity_drift.py
+unit_contract: tests/test_continuity_drift_controls.py
+integrated_test_entrypoint: scripts/test.sh
+canonical_sources:
+  - state/active-mission.yaml
+  - state/current.yaml
+  - state/control-bridge-g2b.yaml
+  - README.md
+  - CONTEXT.md
+  - CHECKPOINT.md
+  - docs/53-repository-continuity-context-recovery-mission.md
+checks:
+  mission_identity: REQUIRED
+  branch_and_pr_alignment: REQUIRED
+  roadmap_lifecycle: REQUIRED
+  next_exact_step: REQUIRED
+  entrypoint_next_step_alignment: REQUIRED
+  g2b_task_state_preservation: REQUIRED
+  human_gates_fail_closed: REQUIRED
+  parallel_ownership_isolation: REQUIRED
+  institutional_memory_presence: REQUIRED
+  current_state_alignment: REQUIRED
+  pass_requires_evidence: REQUIRED
+  cold_start_evidence_required_for_r7_complete: REQUIRED
+allowed_roadmap_states:
+  - NOT_STARTED
+  - NEXT
+  - IN_PROGRESS
+  - PARTIAL
+  - BLOCKED
+  - BLOCKED_EXTERNAL
+  - WAITING_HUMAN_GATE
+  - REVIEW_REQUIRED
+  - PASS
+  - FAILED
+  - COMPLETE
+fail_closed_classes:
+  - STALE_ACTIVE_MISSION_REFERENCE
+  - MISSION_BRANCH_OR_PR_MISMATCH
+  - ROADMAP_STATE_REGRESSION_OR_INVALID_TRANSITION
+  - MISSING_NEXT_EXACT_STEP
+  - ENTRYPOINT_NEXT_STEP_DRIFT
+  - G2B_TASK_STATE_DRIFT
+  - HUMAN_GATE_BYPASS_OR_AMBIGUITY
+  - PARALLEL_OWNERSHIP_DRIFT
+  - INSTITUTIONAL_MEMORY_MISSING
+  - CURRENT_STATE_DRIFT
+  - PASS_WITHOUT_EVIDENCE
+  - COLD_START_EVIDENCE_MISSING
+non_proofs:
+  - LOCAL_WORKTREE_CLEAN
+  - NODE01_RUNTIME_CURRENT
+  - HUMAN_GATE_OPEN
+  - G2B_TASK7_COMPLETE
+  - REAL_WRITE_SAFE_OR_AUTHORIZED
