@@ -1,6 +1,6 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-21 após concluir a política obrigatória de persistência para missões longas do R4.
+Atualizado em 2026-08-21 após concluir R5 (memória institucional) e R6 (controles de consistência/drift).
 
 ## Missão ativa
 
@@ -13,6 +13,11 @@ STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
 STARTUP_PROTOCOL_STATE=state/startup-recovery-protocol.yaml
 PERSISTENCE_POLICY=governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
 PERSISTENCE_POLICY_STATE=state/mission-persistence-policy.yaml
+INSTITUTIONAL_MEMORY=state/institutional-memory.yaml
+FIRST_INCIDENT_MEMO=history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
+DRIFT_CONTROLS_STATE=state/continuity-drift-controls.yaml
+DRIFT_CHECKER=scripts/check_continuity_drift.py
 G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
 STATUS=ACTIVE
 AUTHORITY=LEANDRO
@@ -21,13 +26,16 @@ ROADMAP_R1=COMPLETE
 ROADMAP_R2=COMPLETE
 ROADMAP_R3=COMPLETE
 ROADMAP_R4=COMPLETE
-ROADMAP_R5=NEXT
-NEXT_EXACT_STEP=R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
+ROADMAP_R5=COMPLETE
+ROADMAP_R6=COMPLETE
+ROADMAP_R7=NEXT
+ROADMAP_R8=NOT_STARTED
+NEXT_EXACT_STEP=R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
 ```
 
 Esta missão é transversal. Ela não reabre o desenho G2-B nem autoriza mutação do NODE-01.
 
-## Regras obrigatórias de retomada e persistência
+## Regras obrigatórias de retomada, persistência, memória e drift
 
 Qualquer nova IA/agente ou operador recuperando o projeto deve executar `CLOUD_INFRA_AI_STARTUP_RECOVERY_V1` antes de implementar.
 
@@ -44,12 +52,30 @@ WIP_CHECKPOINT_DOES_NOT_IMPLY_ACCEPTANCE
 SESSION_STATE_IS_NOT_DURABLE_STATE
 ```
 
+Memória institucional:
+
+```text
+HISTORICAL_MEMORY_IS_APPEND_ORIENTED
+NO_SILENT_RETROACTIVE_REWRITE
+```
+
+Drift de continuidade:
+
+```text
+NO_CONTINUITY_ADVANCE_WITH_UNEXPLAINED_CANONICAL_DRIFT
+```
+
 Fontes:
 
 - `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`;
 - `state/startup-recovery-protocol.yaml`;
 - `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`;
-- `state/mission-persistence-policy.yaml`.
+- `state/mission-persistence-policy.yaml`;
+- `state/institutional-memory.yaml`;
+- `history/memos/`;
+- `governance/CONTINUITY-DRIFT-CONTROLS.md`;
+- `state/continuity-drift-controls.yaml`;
+- `scripts/check_continuity_drift.py`.
 
 Veredictos válidos do protocolo de recuperação:
 
@@ -86,6 +112,28 @@ MCF_EFFECTIVE_USE=NOT_EXECUTED
 ```
 
 O commit `7205a647...` é um **checkpoint de preservação WIP**, não uma aceitação da Task 7.
+
+## R5 — memória institucional
+
+R5 criou:
+
+- `history/memos/README.md`;
+- `history/memos/2026-08-20-g2b-local-work-recovery-incident.md`;
+- `state/institutional-memory.yaml`.
+
+O incidente de 20/08/2026 agora possui memo permanente separado do estado corrente. Memos são append-oriented e correções materiais exigem novo registro/adendo explícito.
+
+## R6 — consistência e drift
+
+R6 criou:
+
+- `governance/CONTINUITY-DRIFT-CONTROLS.md`;
+- `state/continuity-drift-controls.yaml`;
+- `scripts/check_continuity_drift.py`;
+- `tests/test_continuity_drift_controls.py`;
+- integração do checker em `scripts/test.sh`.
+
+O checker cobre identidade da missão, branch/PR, roadmap, próximo passo, preservação da Task 7, HUMAN_GATEs, ownership paralelo, memória institucional, coerência de `state/current.yaml` e exigência de evidência para R7.
 
 ## HUMAN_GATEs e limites fechados
 
@@ -143,24 +191,27 @@ Fonte detalhada: `docs/52-control-bridge-g2a-implementation-checkpoint.md`.
 2. `state/startup-recovery-protocol.yaml`
 3. `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`
 4. `state/mission-persistence-policy.yaml`
-5. `state/active-mission.yaml`
-6. `CONTEXT.md`
-7. `CHECKPOINT.md`
-8. `state/current.yaml`
-9. `state/control-bridge-g2b.yaml`
-10. `docs/53-repository-continuity-context-recovery-mission.md`
-11. `docs/54-control-bridge-g2b-recovery-checkpoint.md`
-12. Issue #10
-13. PR #11
-14. spec e plano G2-B
-15. evidência Git/CI aplicável
+5. `state/institutional-memory.yaml`
+6. `governance/CONTINUITY-DRIFT-CONTROLS.md`
+7. `state/continuity-drift-controls.yaml`
+8. `state/active-mission.yaml`
+9. `CONTEXT.md`
+10. `CHECKPOINT.md`
+11. `state/current.yaml`
+12. `state/control-bridge-g2b.yaml`
+13. `docs/53-repository-continuity-context-recovery-mission.md`
+14. `docs/54-control-bridge-g2b-recovery-checkpoint.md`
+15. Issue #10
+16. PR #11
+17. spec e plano G2-B
+18. evidência Git/CI aplicável
 
 Em caso de divergência, aplicar o protocolo e parar em `BLOCKED_RECONCILIATION`. Chats não são fonte canônica.
 
 ## Próximo passo exato da missão ativa
 
 ```text
-R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
+R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
 ```
 
 ## Próximo passo técnico G2-B — BLOQUEADO ATÉ R8
