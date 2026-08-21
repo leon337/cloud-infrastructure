@@ -14,7 +14,8 @@ Os controles obrigatórios estão em:
 - `state/mission-persistence-policy.yaml`;
 - `state/institutional-memory.yaml`;
 - `governance/CONTINUITY-DRIFT-CONTROLS.md`;
-- `state/continuity-drift-controls.yaml`.
+- `state/continuity-drift-controls.yaml`;
+- `state/cold-start-validation.yaml`.
 
 Regras vinculantes:
 
@@ -75,6 +76,8 @@ INSTITUTIONAL_MEMORY_STATE=state/institutional-memory.yaml
 FIRST_INCIDENT_MEMO=history/memos/2026-08-20-g2b-local-work-recovery-incident.md
 DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
 DRIFT_CONTROLS_STATE=state/continuity-drift-controls.yaml
+COLD_START_VALIDATION=state/cold-start-validation.yaml
+COLD_START_REPORT=docs/55-cold-start-recovery-validation-2026-08-21.md
 STATUS=ACTIVE
 PRIORITY=P0_TRANSVERSAL
 AUTHORITY=LEANDRO
@@ -88,12 +91,15 @@ ROADMAP_R3=COMPLETE
 ROADMAP_R4=COMPLETE
 ROADMAP_R5=COMPLETE
 ROADMAP_R6=COMPLETE
-ROADMAP_R7=NEXT
-ROADMAP_R8=NOT_STARTED
-NEXT_EXACT_STEP=R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+ROADMAP_R7=COMPLETE
+ROADMAP_R8=NEXT
+R7_VERDICT=PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+NEXT_EXACT_STEP=R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
 ```
 
 Objetivo: fazer o repositório explicar a si próprio e permitir recuperação de contexto sem depender de memória de chat ou de uma única máquina.
+
+O R7 provou suficiência/coerência das fontes para reconstrução repository-only. A execução foi por papel na mesma sessão e não comprova uma instância cognitiva independente.
 
 ## G2-B — estado exato recuperado
 
@@ -152,6 +158,17 @@ A coerência entre as fontes canônicas é validada por:
 
 Um drift inexplicado bloqueia avanço de continuidade; não deve ser mascarado por escolha silenciosa de uma fonte.
 
+## Validação de cold start
+
+R7 está registrado em:
+
+- `docs/55-cold-start-recovery-validation-2026-08-21.md`;
+- `state/cold-start-validation.yaml`;
+- `scripts/reconstruct_cold_start.py`;
+- `tests/test_cold_start_recovery.py`.
+
+Veredicto: `PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION`. GitHub Actions permaneceu inconclusiva como evidência de conteúdo quando os jobs falharam antes de expor steps/logs.
+
 ## Mapa canônico
 
 | Pergunta | Fonte |
@@ -162,6 +179,7 @@ Um drift inexplicado bloqueia avanço de continuidade; não deve ser mascarado p
 | Contrato machine-readable de persistência | `state/mission-persistence-policy.yaml` |
 | Memória institucional | `state/institutional-memory.yaml`, `history/memos/` |
 | Controles de drift | `governance/CONTINUITY-DRIFT-CONTROLS.md`, `state/continuity-drift-controls.yaml` |
+| Evidência R7 cold start | `state/cold-start-validation.yaml`, `docs/55-cold-start-recovery-validation-2026-08-21.md` |
 | Qual missão está ativa? | `state/active-mission.yaml` |
 | Documento da missão ativa | `docs/53-repository-continuity-context-recovery-mission.md` |
 | Estado exato de continuidade | `CHECKPOINT.md` |
@@ -198,6 +216,8 @@ Fatos voláteis devem ser medidos novamente antes de qualquer operação real.
 - HUMAN_GATE sempre exige autorização explícita de LEANDRO.
 - MESTRE/MCF orquestra a missão ativa.
 - `RECOVERY_VERDICT=PASS` não abre automaticamente nenhum HUMAN_GATE.
+- R8 estar `NEXT` não equivale a autorização de bootstrap, grant, escrita, produção ou merge.
+- Antes de qualquer mutação técnica em R8, executar novamente o protocolo de startup/recovery e reconciliar estado local/remoto aplicável.
 - Missões longas devem persistir trabalho material remotamente no máximo a cada 30 minutos, ou antes quando ocorrer um trigger obrigatório.
 - WIP remoto preserva continuidade; não prova aceitação.
 - Se persistência remota falhar, preservar localmente, registrar o blocker e não continuar acumulando horas de trabalho material.
@@ -209,10 +229,10 @@ Fatos voláteis devem ser medidos novamente antes de qualquer operação real.
 
 ## Ponto exato
 
-A missão de continuidade concluiu R1–R6. O próximo passo é exclusivamente:
+A missão de continuidade concluiu R1–R7. O próximo passo é:
 
 ```text
-R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
 ```
 
-A retomada técnica da Task 7 do G2-B pertence ao R8. Até lá, não corrigir o RED da Task 7, não iniciar Task 8 e não executar bootstrap/grant/write no NODE-01.
+Esse marcador apenas identifica o ponto de retomada. Nenhum trabalho técnico de R8 foi iniciado nesta etapa e nenhum HUMAN_GATE foi aberto.
