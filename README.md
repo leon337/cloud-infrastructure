@@ -17,6 +17,9 @@ FIRST_INCIDENT_MEMO=history/memos/2026-08-20-g2b-local-work-recovery-incident.md
 DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
 DRIFT_CONTROLS_STATE=state/continuity-drift-controls.yaml
 DRIFT_CHECKER=scripts/check_continuity_drift.py
+COLD_START_VALIDATION=state/cold-start-validation.yaml
+COLD_START_REPORT=docs/55-cold-start-recovery-validation-2026-08-21.md
+COLD_START_RECONSTRUCTOR=scripts/reconstruct_cold_start.py
 G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
 ACTIVE_BRANCH=codex/control-bridge-g2b
 ACTIVE_PR=11_DRAFT_DO_NOT_MERGE
@@ -32,11 +35,12 @@ ROADMAP_R3=COMPLETE
 ROADMAP_R4=COMPLETE
 ROADMAP_R5=COMPLETE
 ROADMAP_R6=COMPLETE
-ROADMAP_R7=NEXT
-ROADMAP_R8=NOT_STARTED
-R2_STRUCTURAL_RECONCILIATION=PASS
-GITHUB_ACTIONS_CONTENT_VALIDATION=PENDING_CURRENT_HEAD
-NEXT_EXACT_STEP=R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+ROADMAP_R7=COMPLETE
+ROADMAP_R8=NEXT
+R7_VERDICT=PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+R7_INDEPENDENT_FRESH_MODEL_PROCESS=NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
+GITHUB_ACTIONS_CONTENT_VALIDATION=INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
+NEXT_EXACT_STEP=R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
 ```
 
 > Nova IA/agente: execute primeiro [`governance/AI-STARTUP-RECOVERY-PROTOCOL.md`](governance/AI-STARTUP-RECOVERY-PROTOCOL.md), usando o contrato [`state/startup-recovery-protocol.yaml`](state/startup-recovery-protocol.yaml). Depois leia [`state/active-mission.yaml`](state/active-mission.yaml), [`CONTEXT.md`](CONTEXT.md) e [`CHECKPOINT.md`](CHECKPOINT.md). Não implemente antes de `RECOVERY_VERDICT=PASS` e não assuma estado local `CLEAN` quando ele não puder ser verificado.
@@ -44,6 +48,10 @@ NEXT_EXACT_STEP=R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
 > Missões longas também devem obedecer [`governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`](governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md) e [`state/mission-persistence-policy.yaml`](state/mission-persistence-policy.yaml). Trabalho material não deve ficar mais de 30 minutos sem checkpoint remoto recuperável quando o remoto estiver disponível; WIP publicado não significa aceitação.
 
 > Eventos materiais devem ser preservados pela memória institucional em [`history/memos/`](history/memos/) e [`state/institutional-memory.yaml`](state/institutional-memory.yaml). Drift entre fontes canônicas deve falhar fechado conforme [`governance/CONTINUITY-DRIFT-CONTROLS.md`](governance/CONTINUITY-DRIFT-CONTROLS.md) e `scripts/check_continuity_drift.py`.
+
+> R7 foi concluído com `PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION`. O relatório está em [`docs/55-cold-start-recovery-validation-2026-08-21.md`](docs/55-cold-start-recovery-validation-2026-08-21.md) e o estado em [`state/cold-start-validation.yaml`](state/cold-start-validation.yaml). A execução por papel ocorreu na mesma sessão e não comprova independência cognitiva de uma instância externa.
+
+> **R8 ser `NEXT` não abre nenhum HUMAN_GATE.** Antes de qualquer correção técnica da Task 7, uma nova execução do protocolo de startup/recovery deve produzir o veredicto aplicável. NODE-01, grant real, escrita real, produção e merge continuam fechados.
 
 > A seção `PROJECT_STATUS` abaixo é uma projeção gerada da **trilha principal da plataforma**. Ela não substitui o estado da missão transversal ativa acima.
 
@@ -76,7 +84,7 @@ Configurar, proteger, documentar e tornar reproduzível a VPS enquanto LEANDRO a
 
 ## Continuidade
 
-O repositório implementa o PUC v1.0. `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`, `state/startup-recovery-protocol.yaml`, `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`, `state/mission-persistence-policy.yaml`, `state/institutional-memory.yaml`, `governance/CONTINUITY-DRIFT-CONTROLS.md`, `state/continuity-drift-controls.yaml`, `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` formam a entrada de continuidade. `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats e sessões de subagentes são temporários; Git/GitHub devem conter o estado recuperável antes de uma missão depender deles.
+O repositório implementa o PUC v1.0. `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`, `state/startup-recovery-protocol.yaml`, `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`, `state/mission-persistence-policy.yaml`, `state/institutional-memory.yaml`, `governance/CONTINUITY-DRIFT-CONTROLS.md`, `state/continuity-drift-controls.yaml`, `state/cold-start-validation.yaml`, `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` formam a entrada de continuidade. `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats e sessões de subagentes são temporários; Git/GitHub devem conter o estado recuperável antes de uma missão depender deles.
 
 A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever a trilha principal F1.2c. O estado específico está em `state/control-bridge-g2b.yaml`; o checkpoint técnico recuperado está em `docs/54-control-bridge-g2b-recovery-checkpoint.md`; o estado da missão de recuperação está em `state/active-mission.yaml` e `docs/53-repository-continuity-context-recovery-mission.md`.
 
