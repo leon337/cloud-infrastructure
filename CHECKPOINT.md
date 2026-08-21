@@ -1,6 +1,6 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-21 após concluir R5 (memória institucional) e R6 (controles de consistência/drift).
+Atualizado em 2026-08-21 após concluir R5 (memória institucional), R6 (controles de consistência/drift) e R7 (validação de recuperação por cold start repository-only).
 
 ## Missão ativa
 
@@ -18,6 +18,9 @@ FIRST_INCIDENT_MEMO=history/memos/2026-08-20-g2b-local-work-recovery-incident.md
 DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
 DRIFT_CONTROLS_STATE=state/continuity-drift-controls.yaml
 DRIFT_CHECKER=scripts/check_continuity_drift.py
+COLD_START_VALIDATION=state/cold-start-validation.yaml
+COLD_START_REPORT=docs/55-cold-start-recovery-validation-2026-08-21.md
+COLD_START_RECONSTRUCTOR=scripts/reconstruct_cold_start.py
 G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
 STATUS=ACTIVE
 AUTHORITY=LEANDRO
@@ -28,12 +31,13 @@ ROADMAP_R3=COMPLETE
 ROADMAP_R4=COMPLETE
 ROADMAP_R5=COMPLETE
 ROADMAP_R6=COMPLETE
-ROADMAP_R7=NEXT
-ROADMAP_R8=NOT_STARTED
-NEXT_EXACT_STEP=R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+ROADMAP_R7=COMPLETE
+ROADMAP_R8=NEXT
+R7_VERDICT=PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+NEXT_EXACT_STEP=R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
 ```
 
-Esta missão é transversal. Ela não reabre o desenho G2-B nem autoriza mutação do NODE-01.
+Esta missão é transversal. R8 ser `NEXT` não abre nenhum HUMAN_GATE nem autoriza mutação do NODE-01.
 
 ## Regras obrigatórias de retomada, persistência, memória e drift
 
@@ -75,7 +79,9 @@ Fontes:
 - `history/memos/`;
 - `governance/CONTINUITY-DRIFT-CONTROLS.md`;
 - `state/continuity-drift-controls.yaml`;
-- `scripts/check_continuity_drift.py`.
+- `scripts/check_continuity_drift.py`;
+- `state/cold-start-validation.yaml`;
+- `docs/55-cold-start-recovery-validation-2026-08-21.md`.
 
 Veredictos válidos do protocolo de recuperação:
 
@@ -87,8 +93,6 @@ WAITING_HUMAN_GATE
 ```
 
 Somente `PASS` permite considerar mutação dentro do escopo recuperado, e mesmo assim nenhum HUMAN_GATE é aberto automaticamente. Em modo remoto sem acesso ao computador, o estado local deve ser declarado `UNVERIFIED`, nunca presumido `CLEAN`.
-
-Se persistência remota falhar durante missão longa, preservar localmente quando seguro, registrar o blocker e não continuar acumulando horas de trabalho material até reconciliar/publicar o checkpoint.
 
 ## Checkpoint remoto recuperado do G2-B
 
@@ -135,6 +139,25 @@ R6 criou:
 
 O checker cobre identidade da missão, branch/PR, roadmap, próximo passo, preservação da Task 7, HUMAN_GATEs, ownership paralelo, memória institucional, coerência de `state/current.yaml` e exigência de evidência para R7.
 
+## R7 — cold-start recovery validation
+
+R7 criou:
+
+- `scripts/reconstruct_cold_start.py`;
+- `tests/test_cold_start_recovery.py`;
+- `docs/55-cold-start-recovery-validation-2026-08-21.md`;
+- `state/cold-start-validation.yaml`.
+
+A reconstrução repository-only recuperou corretamente missão, branch, PR draft, Tasks 1–6, Task 7 `PARTIAL_6_PASS_1_FAIL`, RED conhecido, Tasks 8–10, isolamento F1.2c, gates fechados e próximo passo. O veredicto é:
+
+```text
+PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+```
+
+Limitação: o papel de validação foi executado na mesma sessão do MCF; isto prova suficiência/coerência das fontes, não independência cognitiva de uma instância externa.
+
+GitHub Actions permaneceu `INCONCLUSIVE` como evidência de conteúdo quando jobs `validate` falharam sem steps e logs utilizáveis; nenhuma causa de conteúdo foi inferida.
+
 ## HUMAN_GATEs e limites fechados
 
 ```text
@@ -146,7 +169,7 @@ MERGE_G2B=NO
 TASK_8=DO_NOT_START_WHILE_TASK_7_PARTIAL
 ```
 
-Nenhuma dessas condições pode ser inferida como autorizada a partir de commits, PR, issue, testes, documentação, checkpoint remoto ou `RECOVERY_VERDICT=PASS`.
+Nenhuma dessas condições pode ser inferida como autorizada a partir de R7, commits, PR, issue, testes, documentação, checkpoint remoto ou `RECOVERY_VERDICT=PASS`.
 
 ## Trabalho paralelo isolado
 
@@ -194,33 +217,37 @@ Fonte detalhada: `docs/52-control-bridge-g2a-implementation-checkpoint.md`.
 5. `state/institutional-memory.yaml`
 6. `governance/CONTINUITY-DRIFT-CONTROLS.md`
 7. `state/continuity-drift-controls.yaml`
-8. `state/active-mission.yaml`
-9. `CONTEXT.md`
-10. `CHECKPOINT.md`
-11. `state/current.yaml`
-12. `state/control-bridge-g2b.yaml`
-13. `docs/53-repository-continuity-context-recovery-mission.md`
-14. `docs/54-control-bridge-g2b-recovery-checkpoint.md`
-15. Issue #10
-16. PR #11
-17. spec e plano G2-B
-18. evidência Git/CI aplicável
+8. `state/cold-start-validation.yaml`
+9. `state/active-mission.yaml`
+10. `CONTEXT.md`
+11. `CHECKPOINT.md`
+12. `state/current.yaml`
+13. `state/control-bridge-g2b.yaml`
+14. `docs/53-repository-continuity-context-recovery-mission.md`
+15. `docs/54-control-bridge-g2b-recovery-checkpoint.md`
+16. `docs/55-cold-start-recovery-validation-2026-08-21.md`
+17. Issue #10
+18. PR #11
+19. spec e plano G2-B
+20. evidência Git/CI aplicável
 
 Em caso de divergência, aplicar o protocolo e parar em `BLOCKED_RECONCILIATION`. Chats não são fonte canônica.
 
 ## Próximo passo exato da missão ativa
 
 ```text
-R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
 ```
 
-## Próximo passo técnico G2-B — BLOQUEADO ATÉ R8
+## R8 — ainda não iniciado tecnicamente
+
+O próximo passo técnico preservado continua:
 
 ```text
 FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
 ```
 
-Não executar esse passo agora. Ele existe apenas para permitir recuperação precisa do ponto técnico quando o roadmap chegar ao R8.
+Antes de executá-lo, a sessão que assumir R8 deve executar novamente o protocolo de startup/recovery. R8 `NEXT` não abre NODE-01, grant, real write, produção ou merge.
 
 ## Estado da trilha principal da plataforma
 
