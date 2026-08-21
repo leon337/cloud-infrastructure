@@ -47,6 +47,15 @@ continuity_drift_controls:
   executable_check: scripts/check_continuity_drift.py
   integrated_test_entrypoint: scripts/test.sh
   fail_closed_rule: NO_CONTINUITY_ADVANCE_WITH_UNEXPLAINED_CANONICAL_DRIFT
+cold_start_validation:
+  status: PASS
+  protocol_version: CLOUD_INFRA_COLD_START_VALIDATION_V1
+  machine_state: state/cold-start-validation.yaml
+  report: docs/55-cold-start-recovery-validation-2026-08-21.md
+  reconstructor: scripts/reconstruct_cold_start.py
+  contract_test: tests/test_cold_start_recovery.py
+  verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+  independent_fresh_model_process: NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
 control_bridge_g2b:
   status: TASK_7_PARTIAL_RECOVERED_REMOTE
   recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
@@ -81,8 +90,8 @@ continuity_roadmap:
   R4: COMPLETE
   R5: COMPLETE
   R6: COMPLETE
-  R7: NEXT
-  R8: NOT_STARTED
+  R7: COMPLETE
+  R8: NEXT
 validation:
   structural_reconciliation: PASS
   r3_protocol_contract: PERSISTED
@@ -91,10 +100,13 @@ validation:
   r5_first_incident_memo: PERSISTED
   r6_drift_control_contract: PERSISTED
   r6_executable_checker: INTEGRATED_IN_SCRIPTS_TEST_SH
+  r7_cold_start_validation: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+  r7_independent_fresh_model_process: NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
   historical_evidence_preservation_check: PASS_AFTER_TARGETED_REVERT_OF_TWO_ACCIDENTAL_LINES
-  github_actions_head_validation: PENDING_CURRENT_HEAD
-next_exact_step: R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+  github_actions_head_validation: INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
+next_exact_step: R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
 recovery_rule: NEW_AGENT_MUST_EXECUTE_STARTUP_RECOVERY_PROTOCOL_BEFORE_IMPLEMENTATION
 persistence_rule: LONG_RUNNING_WORK_MUST_FOLLOW_MISSION_PERSISTENCE_POLICY
 memory_rule: MATERIAL_PROJECT_HISTORY_MUST_USE_APPEND_ORIENTED_INSTITUTIONAL_MEMOS
 drift_rule: CANONICAL_DRIFT_MUST_FAIL_CLOSED_UNTIL_RECONCILED
+r8_rule: R8_NEXT_DOES_NOT_OPEN_ANY_HUMAN_GATE_AND_REQUIRES_FRESH_RECOVERY_VERDICT_BEFORE_TECHNICAL_MUTATION
