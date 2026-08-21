@@ -58,9 +58,19 @@ continuity:
   drift_controls_document: governance/CONTINUITY-DRIFT-CONTROLS.md
   drift_controls_state: state/continuity-drift-controls.yaml
   drift_checker: scripts/check_continuity_drift.py
-  roadmap_stage: R6_COMPLETE_R7_NEXT
+  cold_start_validation_state: state/cold-start-validation.yaml
+  cold_start_validation_report: docs/55-cold-start-recovery-validation-2026-08-21.md
+  cold_start_reconstructor: scripts/reconstruct_cold_start.py
+  cold_start_verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+  roadmap_stage: R7_COMPLETE_R8_NEXT
   f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
   f1_2c_rule: ISOLATED_DO_NOT_MODIFY
 technical_next_exact_step: FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
-technical_next_step_gate: DEFERRED_UNTIL_R8
-next_exact_step: R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+technical_next_step_gate: R8_NEXT_FRESH_RECOVERY_VERDICT_REQUIRED_BEFORE_TECHNICAL_MUTATION
+next_exact_step: R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+r8_does_not_authorize:
+  - NODE01_G2B_BOOTSTRAP
+  - REAL_GRANT_ISSUE_OR_REISSUE
+  - REAL_BOUNDED_WRITE
+  - PRODUCTION_MUTATION
+  - MERGE_G2B
