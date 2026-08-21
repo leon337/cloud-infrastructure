@@ -19,11 +19,9 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(mission["status"], "ACTIVE")
         self.assertEqual(mission["issue"], 10)
         self.assertEqual(mission["pull_request"], 11)
-        self.assertEqual(mission["roadmap"]["R1"], "COMPLETE")
-        self.assertEqual(mission["roadmap"]["R2"], "COMPLETE")
-        self.assertEqual(mission["roadmap"]["R3"], "COMPLETE")
-        self.assertEqual(mission["roadmap"]["R4"], "COMPLETE")
-        self.assertEqual(mission["roadmap"]["R5"], "NEXT")
+        for key in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
+            self.assertEqual(mission["roadmap"][key], "COMPLETE")
+        self.assertEqual(mission["roadmap"]["R8"], "NEXT")
         self.assertEqual(
             state["continuity"]["startup_recovery_protocol"],
             "governance/AI-STARTUP-RECOVERY-PROTOCOL.md",
@@ -41,12 +39,28 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             "state/mission-persistence-policy.yaml",
         )
         self.assertEqual(
+            state["continuity"]["institutional_memory_state"],
+            "state/institutional-memory.yaml",
+        )
+        self.assertEqual(
+            state["continuity"]["continuity_drift_controls_state"],
+            "state/continuity-drift-controls.yaml",
+        )
+        self.assertEqual(
+            state["continuity"]["cold_start_validation_state"],
+            "state/cold-start-validation.yaml",
+        )
+        self.assertEqual(
             state["continuity"]["max_material_work_without_remote_checkpoint_minutes"],
             30,
         )
         self.assertEqual(
             state["continuity"]["g2b_recovery_checkpoint_doc"],
             "docs/54-control-bridge-g2b-recovery-checkpoint.md",
+        )
+        self.assertEqual(
+            state["continuity"]["next_exact_step"],
+            "R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT",
         )
 
         self.assertEqual(bridge["priority"], "P0")
@@ -67,7 +81,7 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             "ISOLATED_DO_NOT_MODIFY",
         )
 
-    def test_entrypoints_require_protocol_persistence_and_point_to_r5(self):
+    def test_entrypoints_require_continuity_controls_and_point_to_r8(self):
         for relative in ("README.md", "CONTEXT.md", "CHECKPOINT.md"):
             text = (ROOT / relative).read_text()
             self.assertNotIn("Codex está indisponível", text)
@@ -75,7 +89,10 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             self.assertIn("state/startup-recovery-protocol.yaml", text)
             self.assertIn("governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md", text)
             self.assertIn("state/mission-persistence-policy.yaml", text)
-            self.assertIn("R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO", text)
+            self.assertIn("state/institutional-memory.yaml", text)
+            self.assertIn("state/continuity-drift-controls.yaml", text)
+            self.assertIn("state/cold-start-validation.yaml", text)
+            self.assertIn("R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT", text)
             self.assertIn("codex/control-bridge-g2b", text)
             self.assertIn("docs/54-control-bridge-g2b-recovery-checkpoint.md", text)
 
@@ -94,22 +111,24 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(state["pilot"]["project"], "leon337/g2a-smoke/dev")
         self.assertEqual(state["pilot"]["path"], "G2B-PILOT.txt")
         self.assertEqual(state["pilot"]["grant_duration_hours"], 24)
-        self.assertEqual(state["continuity"]["roadmap_stage"], "R4_COMPLETE_R5_NEXT")
+        self.assertEqual(state["continuity"]["roadmap_stage"], "R7_COMPLETE_R8_NEXT")
         self.assertEqual(
             state["continuity"]["mission_persistence_policy_state"],
             "state/mission-persistence-policy.yaml",
+        )
+        self.assertEqual(
+            state["continuity"]["cold_start_validation_state"],
+            "state/cold-start-validation.yaml",
         )
         self.assertFalse(state["evidence"]["real_write"])
         self.assertFalse(state["evidence"]["real_rollback"])
         self.assertFalse(state["evidence"]["real_revocation"])
 
-    def test_active_mission_state_points_to_r5_and_closed_human_gates(self):
+    def test_active_mission_state_points_to_r8_and_closed_human_gates(self):
         state = yaml.safe_load((ROOT / "state/active-mission.yaml").read_text())
-        self.assertEqual(state["continuity_roadmap"]["R1"], "COMPLETE")
-        self.assertEqual(state["continuity_roadmap"]["R2"], "COMPLETE")
-        self.assertEqual(state["continuity_roadmap"]["R3"], "COMPLETE")
-        self.assertEqual(state["continuity_roadmap"]["R4"], "COMPLETE")
-        self.assertEqual(state["continuity_roadmap"]["R5"], "NEXT")
+        for key in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
+            self.assertEqual(state["continuity_roadmap"][key], "COMPLETE")
+        self.assertEqual(state["continuity_roadmap"]["R8"], "NEXT")
         self.assertEqual(
             state["startup_recovery_protocol"]["protocol_version"],
             "CLOUD_INFRA_AI_STARTUP_RECOVERY_V1",
@@ -119,12 +138,25 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             "CLOUD_INFRA_LONG_RUNNING_MISSION_PERSISTENCE_V1",
         )
         self.assertEqual(
+            state["institutional_memory"]["protocol_version"],
+            "CLOUD_INFRA_INSTITUTIONAL_MEMORY_V1",
+        )
+        self.assertEqual(
+            state["continuity_drift_controls"]["protocol_version"],
+            "CLOUD_INFRA_CONTINUITY_DRIFT_CONTROLS_V1",
+        )
+        self.assertEqual(
+            state["cold_start_validation"]["protocol_version"],
+            "CLOUD_INFRA_COLD_START_VALIDATION_V1",
+        )
+        self.assertEqual(state["cold_start_validation"]["status"], "PASS")
+        self.assertEqual(
             state["control_bridge_g2b"]["recovery_checkpoint_doc"],
             "docs/54-control-bridge-g2b-recovery-checkpoint.md",
         )
         self.assertEqual(
             state["next_exact_step"],
-            "R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO",
+            "R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT",
         )
         for value in state["human_gates"].values():
             self.assertIn("NOT_AUTHORIZED", value)
