@@ -21,7 +21,7 @@ Em 2026-08-20, várias horas de implementação do G2-B permaneceram apenas em u
 
 A recuperação exigiu reconstrução manual usando conversa, screenshots, Git worktrees, commits locais, reflog, ledger e arquivos não rastreados. O evento demonstrou uma lacuna de engenharia: a continuidade ainda dependia excessivamente de memória de sessão e estado local.
 
-O relato histórico permanente deste incidente será criado na etapa R5 como memorando institucional; este documento registra a missão e o estado corrente, não substitui o futuro memo histórico.
+O relato histórico permanente deste incidente foi criado no R5 em `history/memos/2026-08-20-g2b-local-work-recovery-incident.md`. Este documento registra a missão e o estado corrente; o memo histórico preserva o que aconteceu e por que importou.
 
 ## Estado recuperado e publicado
 
@@ -49,6 +49,8 @@ O checkpoint remoto é preservação, não aceitação da Task 7.
 - contrato machine-readable do protocolo: `state/startup-recovery-protocol.yaml`;
 - política de persistência para missões longas: `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`;
 - contrato machine-readable de persistência: `state/mission-persistence-policy.yaml`;
+- memória institucional: `state/institutional-memory.yaml` e `history/memos/`;
+- controles de drift: `governance/CONTINUITY-DRIFT-CONTROLS.md`, `state/continuity-drift-controls.yaml`, `scripts/check_continuity_drift.py`;
 - estado estruturado da missão ativa: `state/active-mission.yaml`;
 - porta de entrada: `CONTEXT.md`;
 - checkpoint corrente: `CHECKPOINT.md`;
@@ -126,37 +128,45 @@ WIP_CHECKPOINT_DOES_NOT_IMPLY_ACCEPTANCE
 SESSION_STATE_IS_NOT_DURABLE_STATE
 ```
 
-A política determina:
-
-- checkpoint por Task/slice, revisão/correção material, mudança de estado, HUMAN_GATE, pausa/handoff e limite temporal;
-- limite máximo de 30 minutos de trabalho material sem checkpoint remoto recuperável quando o remoto estiver disponível;
-- preflight de capacidade de push/autenticação antes de missões longas, incluindo permissão de workflow quando `.github/workflows/` puder ser alterado;
-- WIP remoto explicitamente permitido sem significar `PASS` ou aceitação;
-- Git e ledger/estado sincronizados no mesmo ciclo de persistência quando o significado da Task muda;
-- agente controlador responsável pela durabilidade de resultados de subagentes;
-- após reboot/rate limit/perda de sessão, execução obrigatória do R3 antes de retomar;
-- se persistência remota falhar, checkpoint local imediato quando seguro, blocker registrado e suspensão de novo trabalho material não relacionado até reconciliar/publicar;
-- handoff obrigatório com missão, Task, estado, branch, HEAD, delta local, testes, blockers, gates, trabalho paralelo e próximo passo exato.
-
-A política não substitui a memória histórica. Checkpoints respondem onde retomar; o R5 registrará o que aconteceu, por que importou e o que mudou.
+A política determina checkpoint por Task/slice, revisão/correção material, mudança de estado, HUMAN_GATE, pausa/handoff e limite temporal; preflight de persistência; WIP sem falsa aceitação; sincronização de estado/Git; responsabilidade do controlador pela durabilidade; recuperação obrigatória após reboot/rate-limit/perda de sessão; e fail-closed quando persistência remota quebra.
 
 ### R5 — Institutional project memory
 
-**Status:** NEXT.
+**Status:** COMPLETE.
 
-Criar mecanismo permanente de memorandos para incidentes, mudanças de objetivo, decisões, descobertas e recuperações. O primeiro memorando registrará o incidente de 2026-08-20 e suas consequências corretivas/preventivas.
+Foi criado o mecanismo institucional append-oriented:
+
+- `history/memos/README.md`;
+- `state/institutional-memory.yaml`;
+- `history/memos/2026-08-20-g2b-local-work-recovery-incident.md`.
+
+O primeiro memo preserva o incidente de 20/08/2026, seu impacto, limites de evidência, recuperação, lacuna comprovada, ações corretivas/preventivas e riscos residuais. Correções históricas materiais exigem novo memo/adendo; não existe reescrita retrospectiva silenciosa.
 
 ### R6 — Consistency and drift controls
 
-**Status:** NOT_STARTED.
+**Status:** COMPLETE.
 
-Criar controles para detectar documentação stale, missão/branch incompatível, ledger atrás do Git, PASS sem evidência, HUMAN_GATE ambíguo e ausência de próximo passo.
+Foram criados:
+
+- `governance/CONTINUITY-DRIFT-CONTROLS.md`;
+- `state/continuity-drift-controls.yaml`;
+- `scripts/check_continuity_drift.py`;
+- `tests/test_continuity_drift_controls.py`;
+- integração do checker em `scripts/test.sh`.
+
+Regra central:
+
+```text
+NO_CONTINUITY_ADVANCE_WITH_UNEXPLAINED_CANONICAL_DRIFT
+```
+
+Os controles cobrem identidade da missão, branch/PR, lifecycle do roadmap, next exact step, coerência das entradas canônicas, preservação do estado G2-B, HUMAN_GATEs, ownership paralelo, memória institucional, `state/current.yaml`, PASS sem evidência e requisito de evidência para R7.
 
 ### R7 — Cold-start recovery validation
 
-**Status:** NOT_STARTED.
+**Status:** NEXT.
 
-Uma IA sem contexto anterior deverá reconstruir corretamente o projeto usando apenas o repositório/GitHub.
+Executar uma reconstrução repository-only do projeto sem recorrer a histórico de chat como fonte. A validação deve reconstruir corretamente missão, branch, Tasks 1–6, Task 7 parcial 6/1, Tasks 8–10, isolamento F1.2c, gate NODE-01 e próximo passo exato, registrando a evidência e qualquer limitação do modo de execução.
 
 ### R8 — Resume G2-B Task 7
 
@@ -179,5 +189,5 @@ Não estão autorizados por esta missão:
 ## Próximo passo exato
 
 ```text
-R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
+R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
 ```
