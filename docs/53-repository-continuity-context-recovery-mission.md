@@ -51,6 +51,7 @@ O checkpoint remoto é preservação, não aceitação da Task 7.
 - contrato machine-readable de persistência: `state/mission-persistence-policy.yaml`;
 - memória institucional: `state/institutional-memory.yaml` e `history/memos/`;
 - controles de drift: `governance/CONTINUITY-DRIFT-CONTROLS.md`, `state/continuity-drift-controls.yaml`, `scripts/check_continuity_drift.py`;
+- evidência de cold start: `state/cold-start-validation.yaml`, `docs/55-cold-start-recovery-validation-2026-08-21.md`;
 - estado estruturado da missão ativa: `state/active-mission.yaml`;
 - porta de entrada: `CONTEXT.md`;
 - checkpoint corrente: `CHECKPOINT.md`;
@@ -78,9 +79,7 @@ A branch local foi publicada, o checkpoint WIP foi preservado e o PR #11 foi cri
 
 Foram reconciliados `README.md`, `CONTEXT.md`, `CHECKPOINT.md`, `state/current.yaml`, `state/control-bridge-g2b.yaml`, `state/active-mission.yaml`, este documento, `docs/54-control-bridge-g2b-recovery-checkpoint.md` e o teste de continuidade correspondente.
 
-A trilha principal F1.2c permanece preservada como projeção separada; a missão transversal ativa agora possui estado explícito e próximo passo próprio.
-
-Validação GitHub Actions do HEAD de reconciliação não pôde ser usada como prova de conteúdo: os jobs `validate` de Foundation e Docker Boundary concluíram `failure` sem expor steps; integrações foram `skipped` e o endpoint de logs retornou `BlobNotFound`. Portanto, o estado correto é **CI INCONCLUSIVE / causa não confirmada**, não `PASS` e não uma falha de conteúdo presumida.
+A trilha principal F1.2c permanece preservada como projeção separada; a missão transversal ativa possui estado explícito e próximo passo próprio.
 
 ### R3 — Mandatory AI/project startup and recovery protocol
 
@@ -164,19 +163,69 @@ Os controles cobrem identidade da missão, branch/PR, lifecycle do roadmap, next
 
 ### R7 — Cold-start recovery validation
 
-**Status:** NEXT.
+**Status:** COMPLETE.
 
-Executar uma reconstrução repository-only do projeto sem recorrer a histórico de chat como fonte. A validação deve reconstruir corretamente missão, branch, Tasks 1–6, Task 7 parcial 6/1, Tasks 8–10, isolamento F1.2c, gate NODE-01 e próximo passo exato, registrando a evidência e qualquer limitação do modo de execução.
+Artefatos:
+
+- `scripts/reconstruct_cold_start.py`;
+- `tests/test_cold_start_recovery.py`;
+- `docs/55-cold-start-recovery-validation-2026-08-21.md`;
+- `state/cold-start-validation.yaml`.
+
+A reconstrução repository-only recuperou corretamente:
+
+```text
+ACTIVE_MISSION=REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+BRANCH=codex/control-bridge-g2b
+PR=11_DRAFT_DO_NOT_MERGE
+TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
+TASK_7=PARTIAL_6_PASS_1_FAIL
+KNOWN_RED=EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED
+TASKS_8_10=NOT_STARTED
+F1_2C=ISOLATED_DO_NOT_MODIFY
+NODE01_G2B_GATE=CLOSED_NOT_AUTHORIZED
+REAL_GRANT_GATE=CLOSED_NOT_AUTHORIZED
+REAL_WRITE_GATE=CLOSED_NOT_AUTHORIZED
+REAL_WRITE_EXECUTED=false
+MERGE_G2B=CLOSED_NOT_AUTHORIZED
+```
+
+Veredicto:
+
+```text
+PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+```
+
+Limitação explícita: o papel validador executou dentro da mesma sessão MCF; o R7 prova suficiência e coerência das fontes de repositório/GitHub, não independência cognitiva de uma instância externa separada.
+
+O commit de reconciliação final de `state/current.yaml` foi auditado e alterou apenas a região de continuidade/missão, preservando evidências históricas não relacionadas.
+
+A CI GitHub permanece tratada como `INCONCLUSIVE` quando jobs `validate` falham antes de expor steps/logs; isso não é reinterpretado como falha ou PASS de conteúdo.
 
 ### R8 — Resume G2-B Task 7
 
-**Status:** NOT_STARTED.
+**Status:** NEXT — technical execution not started by R5–R7 mission.
 
-Somente após a fundação de continuidade: corrigir o gap exato do schema do grant existente, rerodar testes, validar sintaxe Ansible em ambiente aprovado, revisar independentemente a Task 7 e apenas então considerar Task 8.
+Ponto técnico preservado:
+
+```text
+FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
+```
+
+Antes de qualquer mutação técnica, a sessão que assumir R8 deve executar novamente o protocolo de startup/recovery e obter o veredicto aplicável.
+
+R8 `NEXT` **não** autoriza:
+
+- bootstrap G2-B no NODE-01;
+- emissão ou reemissão real de grant;
+- escrita real;
+- produção;
+- merge G2-B;
+- Task 8 enquanto Task 7 permanecer parcial.
 
 ## Limites atuais
 
-Não estão autorizados por esta missão:
+Continuam fechados:
 
 - bootstrap G2-B no NODE-01;
 - emissão ou reemissão real de grant;
@@ -189,5 +238,7 @@ Não estão autorizados por esta missão:
 ## Próximo passo exato
 
 ```text
-R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
 ```
+
+Nenhuma execução técnica de R8 foi realizada durante a conclusão de R5–R7.
