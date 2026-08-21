@@ -39,6 +39,14 @@ institutional_memory:
   directory: history/memos/
   first_memo: history/memos/2026-08-20-g2b-local-work-recovery-incident.md
   preservation_rule: APPEND_ORIENTED_NO_SILENT_REWRITE
+continuity_drift_controls:
+  status: ACTIVE_REQUIRED
+  protocol_version: CLOUD_INFRA_CONTINUITY_DRIFT_CONTROLS_V1
+  document: governance/CONTINUITY-DRIFT-CONTROLS.md
+  machine_state: state/continuity-drift-controls.yaml
+  executable_check: scripts/check_continuity_drift.py
+  integrated_test_entrypoint: scripts/test.sh
+  fail_closed_rule: NO_CONTINUITY_ADVANCE_WITH_UNEXPLAINED_CANONICAL_DRIFT
 control_bridge_g2b:
   status: TASK_7_PARTIAL_RECOVERED_REMOTE
   recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
@@ -72,8 +80,8 @@ continuity_roadmap:
   R3: COMPLETE
   R4: COMPLETE
   R5: COMPLETE
-  R6: NEXT
-  R7: NOT_STARTED
+  R6: COMPLETE
+  R7: NEXT
   R8: NOT_STARTED
 validation:
   structural_reconciliation: PASS
@@ -81,10 +89,12 @@ validation:
   r4_persistence_contract: PERSISTED
   r5_institutional_memory_contract: PERSISTED
   r5_first_incident_memo: PERSISTED
+  r6_drift_control_contract: PERSISTED
+  r6_executable_checker: INTEGRATED_IN_SCRIPTS_TEST_SH
   historical_evidence_preservation_check: PASS_AFTER_TARGETED_REVERT_OF_TWO_ACCIDENTAL_LINES
-  github_actions_head_validation: INCONCLUSIVE_VALIDATE_JOBS_FAILED_WITH_NO_EXPOSED_STEPS
-  github_actions_logs: UNAVAILABLE_BLOB_NOT_FOUND
-next_exact_step: R6_ADD_CONSISTENCY_AND_DRIFT_CONTROLS
+  github_actions_head_validation: PENDING_CURRENT_HEAD
+next_exact_step: R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
 recovery_rule: NEW_AGENT_MUST_EXECUTE_STARTUP_RECOVERY_PROTOCOL_BEFORE_IMPLEMENTATION
 persistence_rule: LONG_RUNNING_WORK_MUST_FOLLOW_MISSION_PERSISTENCE_POLICY
 memory_rule: MATERIAL_PROJECT_HISTORY_MUST_USE_APPEND_ORIENTED_INSTITUTIONAL_MEMOS
+drift_rule: CANONICAL_DRIFT_MUST_FAIL_CLOSED_UNTIL_RECONCILED
