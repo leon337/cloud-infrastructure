@@ -55,9 +55,12 @@ continuity:
   institutional_memory_state: state/institutional-memory.yaml
   institutional_memory_dir: history/memos/
   first_incident_memo: history/memos/2026-08-20-g2b-local-work-recovery-incident.md
-  roadmap_stage: R5_COMPLETE_R6_NEXT
+  drift_controls_document: governance/CONTINUITY-DRIFT-CONTROLS.md
+  drift_controls_state: state/continuity-drift-controls.yaml
+  drift_checker: scripts/check_continuity_drift.py
+  roadmap_stage: R6_COMPLETE_R7_NEXT
   f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
   f1_2c_rule: ISOLATED_DO_NOT_MODIFY
 technical_next_exact_step: FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
 technical_next_step_gate: DEFERRED_UNTIL_R8
-next_exact_step: R6_ADD_CONSISTENCY_AND_DRIFT_CONTROLS
+next_exact_step: R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
