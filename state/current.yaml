@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 updated_at: 2026-08-21
-documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK7_PARTIAL_CONTINUITY_R6_COMPLETE
+documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK7_PARTIAL_CONTINUITY_R7_COMPLETE
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
@@ -23,6 +23,9 @@ continuity:
   continuity_drift_controls: governance/CONTINUITY-DRIFT-CONTROLS.md
   continuity_drift_controls_state: state/continuity-drift-controls.yaml
   continuity_drift_checker: scripts/check_continuity_drift.py
+  cold_start_validation_state: state/cold-start-validation.yaml
+  cold_start_validation_report: docs/55-cold-start-recovery-validation-2026-08-21.md
+  cold_start_reconstructor: scripts/reconstruct_cold_start.py
   active_mission_state: state/active-mission.yaml
   active_mission_doc: docs/53-repository-continuity-context-recovery-mission.md
   active_mission_issue: 10
@@ -30,8 +33,8 @@ continuity:
   active_branch: codex/control-bridge-g2b
   g2b_recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
-  active_roadmap_stage: R6_COMPLETE_R7_NEXT
-  next_exact_step: R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+  active_roadmap_stage: R7_COMPLETE_R8_NEXT
+  next_exact_step: R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
   checkpoint: CHECKPOINT.md
   platform_discovery_state: state/platform-discovery.yaml
   codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
@@ -61,8 +64,8 @@ active_mission:
     R4: COMPLETE
     R5: COMPLETE
     R6: COMPLETE
-    R7: NEXT
-    R8: NOT_STARTED
+    R7: COMPLETE
+    R8: NEXT
 control_bridge:
   priority: P0
   g1: PASS_REAL_NODE_01_ROUNDTRIP
