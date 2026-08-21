@@ -52,9 +52,12 @@ continuity:
   startup_recovery_protocol_state: state/startup-recovery-protocol.yaml
   mission_persistence_policy: governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
   mission_persistence_policy_state: state/mission-persistence-policy.yaml
-  roadmap_stage: R4_COMPLETE_R5_NEXT
+  institutional_memory_state: state/institutional-memory.yaml
+  institutional_memory_dir: history/memos/
+  first_incident_memo: history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+  roadmap_stage: R5_COMPLETE_R6_NEXT
   f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
   f1_2c_rule: ISOLATED_DO_NOT_MODIFY
 technical_next_exact_step: FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
 technical_next_step_gate: DEFERRED_UNTIL_R8
-next_exact_step: R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
+next_exact_step: R6_ADD_CONSISTENCY_AND_DRIFT_CONTROLS
