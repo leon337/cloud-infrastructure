@@ -1,0 +1,85 @@
+protocol_version: CLOUD_INFRA_CANONICAL_STATE_TOOLCHAIN_RECONCILIATION_V1
+updated_at: 2026-08-22
+repository: leon337/cloud-infrastructure
+mission:
+  id: CANONICAL_STATE_TOOLCHAIN_RECONCILIATION
+  authority: LEANDRO
+  orchestrator: MESTRE_MCF
+  status: REQUIRES_HUMAN_DECISION
+  conclusion_class: C
+  conclusion: CURRENT_MODEL_INCONSISTENT_REQUIRES_GOVERNANCE_INTEGRATION_DECISION
+branch:
+  name: team/canonical-state-toolchain-20260822
+  base_branch: main
+  base_sha: f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b
+canonical_state:
+  verdict: IDENTIFIED_AS_EVIDENCE_SET_NOT_YET_SAFE_TO_SERIALIZE_IN_STATE_CURRENT
+  main_state_current: STALE_NOT_MUTATED
+  main_state_current_updated_at: 2026-08-18
+  primary_current_evidence:
+    - main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b:README.md
+    - pull_request_11@fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+    - pull_request_19@5b0864762e2c3054da4e449feb1e47abc584963f
+  established_facts:
+    g2b_tasks_1_7: COMPLETE
+    g2b_task_8: FAILED_ATTEMPT_3_NOT_ACCEPTED
+    g2b_tasks_9_10: NOT_STARTED
+    f1_2c: PARTIAL_WITH_FAILED_NETWORK_SERVICES_UNIT
+    production: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
+    main_integration_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
+  serialization_rule: DO_NOT_COPY_MAIN_OR_G2B_STATE_SNAPSHOT_AS_CURRENT_TRUTH
+toolchain:
+  canonical_entrypoint: scripts/test.sh
+  first_verified_origin:
+    commit: edd2497d657cc9bc35952f5dfc71090a18dade53
+    branch: codex/mission-001-foundations-f1-1
+    pull_request: 2
+    workflow: .github/workflows/foundation-ci.yml
+  status: CANONICAL_ENTRYPOINT_PROVEN_BUT_NO_MAINLINE_NEUTRAL_EXECUTABLE_PACKAGE_FOUND
+  earliest_package_dependency: F1_1_IMPLEMENTATION_STATE_AND_INVENTORY
+  successor_lineages:
+    - codex/mission-001-f1-2c-network-enforcement
+    - mcf/mission-001-control-bridge-g1
+    - codex/control-bridge-g2b
+  successor_changes:
+    f1_2c: PROJECT_STATUS_VALIDATION_ADDED
+    g1: CONTROL_PLANE_COMPILE_COVERAGE_ADDED
+    g2b: CONTINUITY_DRIFT_CHECK_ADDED
+continuity_model:
+  state_active_mission:
+    main: ABSENT
+    recovered_g2b_checkpoint_7205a647: ABSENT
+    verified_present_by: 5db49d76dd530038aaf032aeba055b61eaab653a
+    lineage: G2B_CONTINUITY_RECOVERY
+    decision: DO_NOT_PROMOTE_AS_GLOBAL_CANONICAL_WITHOUT_GOVERNANCE_DECISION
+  roadmap_checklist:
+    main: ABSENT
+    recovered_g2b_checkpoint_7205a647: ABSENT
+    continuity_r7_checkpoint_5db49d76: ABSENT
+    current_g2b: PRESENT_BUT_STALE_VS_MAIN_README
+    decision: DO_NOT_COPY_TO_MAIN
+boundaries:
+  g2b_code_imported: false
+  f1_2c_code_imported: false
+  protected_branches_modified: false
+  node_01_privileged_operations: false
+  production_promoted: false
+candidate_changes:
+  state_current: NOT_CHANGED_FAIL_CLOSED
+  state_active_mission: NOT_ADDED_FAIL_CLOSED
+  roadmap_checklist: NOT_ADDED_FAIL_CLOSED
+  scripts_test_sh: NOT_ADDED_FAIL_CLOSED
+  persisted_outputs:
+    - docs/57-canonical-state-toolchain-reconciliation-2026-08-22.md
+    - state/canonical-state-toolchain-reconciliation.yaml
+    - evidence/canonical-state-toolchain/validation.md
+human_decision:
+  required: true
+  question: SELECT_CANONICAL_INTEGRATION_STRATEGY_FOR_MAINLINE_NEUTRAL_STATE_AND_VALIDATION_PACKAGE
+  safe_options:
+    - AUTHORIZE_EXTRACTION_OF_MAINLINE_NEUTRAL_STATE_VALIDATION_PACKAGE_FROM_PROVEN_LINEAGES_WITHOUT_G2B_OR_F1_2C_FUNCTIONAL_CODE
+    - WAIT_FOR_AN_EXPLICIT_PREDECESSOR_GOVERNANCE_INTEGRATION_THAT_SUPPLIES_THE_REQUIRED_PACKAGE
+  forbidden_shortcut: COPY_LATEST_FILES_FROM_G2B_OR_F1_2C
+repository_hygiene:
+  current_verdict: BLOCKED
+  unblock_condition: CANONICAL_STATE_SERIALIZED_AND_CANONICAL_TEST_ENTRYPOINT_EXECUTABLE_ON_SELECTED_INTEGRATION_BASE
