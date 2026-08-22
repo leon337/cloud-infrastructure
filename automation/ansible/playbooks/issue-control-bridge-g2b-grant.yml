@@ -157,10 +157,30 @@
           {{ g2b_issue_existing_grant_data.content | b64decode | from_json }}
       when: g2b_issue_existing_grant_state.stat.exists
 
-    - name: Require minimum safe fields on an existing grant
+    - name: Require the exact canonical schema on an existing grant
       ansible.builtin.assert:
         that:
           - g2b_issue_existing_grant is mapping
+          - >-
+            (g2b_issue_existing_grant.keys() | list | sort) ==
+            [
+              'allowed_operations',
+              'allowed_paths',
+              'authority',
+              'declared_actor',
+              'enabled',
+              'executor_sha256',
+              'grant_id',
+              'max_active_mutations',
+              'max_content_bytes',
+              'mission_id',
+              'not_after',
+              'not_before',
+              'project',
+              'protocol',
+              'transport_principal_id',
+              'transport_principal_login'
+            ]
           - g2b_issue_existing_grant.protocol == 'MCF_WORKSPACE_MUTATION_V1'
           - g2b_issue_existing_grant.grant_id is string
           - >-
