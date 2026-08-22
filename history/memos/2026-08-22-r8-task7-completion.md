@@ -71,3 +71,7 @@ Estado atual: `TASK_7_COMPLETE_TASK_8_NOT_STARTED`. Próximo passo: `G2B_TASK8_P
 - `docs/54-control-bridge-g2b-recovery-checkpoint.md`;
 - Issue #10;
 - PR #11.
+
+## Adendo — CI do HEAD final
+
+Após a publicação do commit canônico `047495c5c4215fc82d9e52d30114608af56deee5`, o `foundation-ci` run `32549668020` e o `docker-boundary-ci` run `32549667969` concluíram como `action_required`. O endpoint de jobs do Foundation retornou lista vazia. Portanto, o estado corrente do hosted CI é `INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS`; isso não substitui nem invalida a prova self-hosted 7/7 + 3/3 usada para aceitar a Task 7.

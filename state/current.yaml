@@ -84,7 +84,7 @@ control_bridge:
   g2b_task_7_candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
   g2b_task_7_ansible_syntax: PASS_3_SELF_HOSTED
   self_hosted_runner: ONLINE_OBSERVED_2026_08_22_TASK7_VALIDATION
-  hosted_ci: INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
+  hosted_ci: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS_OBSERVED_AFTER_R8_PUBLICATION
   source: state/control-bridge-g2b.yaml
 work_ownership:
   f1_2c_systemd_runtime_lock:

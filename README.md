@@ -94,7 +94,7 @@ NODE01_G2B_GATE=CLOSED
 NEXT_EXACT_STEP=G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 ```
 
-O RED recuperado da Task 7 foi resolvido com validação fail-closed do conjunto exato de chaves de grant existente. O candidato `604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390` obteve 7/7 testes focados e 3/3 syntax-checks Ansible no self-hosted runner, sem apply, grant ou escrita real. O GitHub-hosted CI permaneceu inconclusivo por falha pré-step com zero steps/`BlobNotFound`; isso não foi tratado como falha de conteúdo.
+O RED recuperado da Task 7 foi resolvido com validação fail-closed do conjunto exato de chaves de grant existente. O candidato `604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390` obteve 7/7 testes focados e 3/3 syntax-checks Ansible no self-hosted runner, sem apply, grant ou escrita real. No candidato, o GitHub-hosted CI falhou antes dos steps com `BlobNotFound`; no commit de conclusão R8 `047495c5...`, os runs hosted concluíram `action_required` sem criar jobs. Ambos permanecem inconclusivos como prova de conteúdo.
 
 ## Estado operacional — baseline reconciliada em 16/08/2026
 

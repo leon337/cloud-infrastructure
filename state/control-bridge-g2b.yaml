@@ -30,6 +30,9 @@ implementation:
     evidence_issue_comment: https://github.com/leon337/cloud-infrastructure/issues/10#issuecomment-5377605173
     github_hosted_foundation_run: 32548752333
     github_hosted_validation: INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
+    r8_completion_sha: 047495c5c4215fc82d9e52d30114608af56deee5
+    post_r8_publication_foundation_run: 32549668020
+    post_r8_publication_hosted_validation: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS
     review_mode: SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
   tasks_8_10: NOT_STARTED
 pilot:
