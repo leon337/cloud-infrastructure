@@ -65,6 +65,7 @@ class G2BDisposableIntegrationTests(unittest.TestCase):
             self.assertIn(expected, text)
         self.assertNotIn("cat /etc/mcf-control-bridge/g2b-grant.json", text)
         self.assertNotIn("set -x", text)
+        self.assertIn('if ! docker exec "$CONTAINER" id -u ubuntu', text)
 
     def test_workflow_is_commit_bound_github_hosted_and_pinned(self) -> None:
         self.assertTrue(WORKFLOW_PATH.is_file(), "missing G2-B CI workflow")

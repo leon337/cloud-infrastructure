@@ -18,6 +18,7 @@ IMAGE=
 CONTAINER=
 RUN_TOKEN=
 BUNDLE_SOURCE_COUNT=0
+UBUNTU_USER_CREATED=false
 
 fail() {
   printf 'G2B_DISPOSABLE_TEST_FAIL stage=%s reason=%s\n' "$CURRENT_STAGE" "$1" >&2
@@ -137,7 +138,10 @@ for _ in $(seq 1 30); do
 done
 [[ $systemd_ready == true ]] || fail systemd_not_ready
 
-docker exec "$CONTAINER" useradd --create-home --shell /bin/bash ubuntu
+if ! docker exec "$CONTAINER" id -u ubuntu >/dev/null 2>&1; then
+  docker exec "$CONTAINER" useradd --create-home --shell /bin/bash ubuntu
+  UBUNTU_USER_CREATED=true
+fi
 
 run_playbook() {
   docker exec --workdir "$CONTAINER_REPOSITORY_ROOT/automation/ansible" "$CONTAINER" \
@@ -285,7 +289,9 @@ printf '%s\n' 'G2B_POST_REVOKE_REFUSAL_PASS'
 
 CURRENT_STAGE=bounded_cleanup
 run_playbook playbooks/rollback-control-bridge-g2b.yml -e g2b_rollback_confirm=true >/dev/null
-docker exec "$CONTAINER" userdel --remove ubuntu >/dev/null 2>&1 || true
+if [[ $UBUNTU_USER_CREATED == true ]]; then
+  docker exec "$CONTAINER" userdel --remove ubuntu >/dev/null 2>&1 || true
+fi
 for path in \
   /etc/mcf-control-bridge-g2b.managed \
   /etc/mcf-control-bridge/g2b-grant.json \
