@@ -1,12 +1,12 @@
 protocol_version: MCF_CONTROL_BRIDGE_G2B_STATE_V1
-updated_at: 2026-08-21
+updated_at: 2026-08-22
 scope: TRANSVERSAL_CONTROL_PLANE
 priority: P0
 repository: leon337/cloud-infrastructure
 branch: codex/control-bridge-g2b
 base_branch: mcf/mission-001-control-bridge-g1
 base_sha: 8ee1fd719a50d0c9440a10a11a372dda8af1f457
-status: TASK_7_PARTIAL_RECOVERED_REMOTE
+status: TASK_7_COMPLETE_TASK_8_NOT_STARTED
 recovery_checkpoint:
   sha: 7205a647f918580d09c87ed44f38b0a433552a51
   document: docs/54-control-bridge-g2b-recovery-checkpoint.md
@@ -15,13 +15,22 @@ recovery_checkpoint:
   pull_request_state: DRAFT_DO_NOT_MERGE
 implementation:
   tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
-  task_7: PARTIAL
+  task_7: COMPLETE
   task_7_focused_tests:
-    pass: 6
-    fail: 1
-  known_red: EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED
+    pass: 7
+    fail: 0
+  known_red: RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
   known_red_literal: g2b_issue_existing_grant.keys()
-  ansible_syntax: NOT_EXECUTED_CURRENT_LOCAL_ENVIRONMENT_MISSING_ANSIBLE_PLAYBOOK
+  ansible_syntax: PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
+  task_7_validation:
+    candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+    local_regression: PASS_367_TESTS_15_SHELL_SYNTAX
+    self_hosted_focused_tests: PASS_7_OF_7
+    self_hosted_ansible_syntax: PASS_3
+    evidence_issue_comment: https://github.com/leon337/cloud-infrastructure/issues/10#issuecomment-5377605173
+    github_hosted_foundation_run: 32548752333
+    github_hosted_validation: INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
+    review_mode: SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
   tasks_8_10: NOT_STARTED
 pilot:
   project: leon337/g2a-smoke/dev
@@ -46,6 +55,7 @@ evidence:
   mcf_effective_use: false
 continuity:
   mission_issue: 10
+  mission_status: COMPLETE
   mission_state: state/active-mission.yaml
   mission_doc: docs/53-repository-continuity-context-recovery-mission.md
   startup_recovery_protocol: governance/AI-STARTUP-RECOVERY-PROTOCOL.md
@@ -62,12 +72,12 @@ continuity:
   cold_start_validation_report: docs/55-cold-start-recovery-validation-2026-08-21.md
   cold_start_reconstructor: scripts/reconstruct_cold_start.py
   cold_start_verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
-  roadmap_stage: R7_COMPLETE_R8_NEXT
+  roadmap_stage: R8_COMPLETE
   f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
   f1_2c_rule: ISOLATED_DO_NOT_MODIFY
-technical_next_exact_step: FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
-technical_next_step_gate: R8_NEXT_FRESH_RECOVERY_VERDICT_REQUIRED_BEFORE_TECHNICAL_MUTATION
-next_exact_step: R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+technical_next_exact_step: G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
+technical_next_step_gate: TASK_8_DISPOSABLE_ONLY_NEVER_NODE01
+next_exact_step: G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 r8_does_not_authorize:
   - NODE01_G2B_BOOTSTRAP
   - REAL_GRANT_ISSUE_OR_REISSUE

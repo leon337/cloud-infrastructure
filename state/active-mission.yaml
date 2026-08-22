@@ -1,14 +1,21 @@
 protocol_version: CLOUD_INFRA_ACTIVE_MISSION_V1
-updated_at: 2026-08-21
+updated_at: 2026-08-22
 mission:
-  id: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
-  title: Repository Continuity & Context Recovery Hardening
+  id: CONTROL_BRIDGE_G2B
+  title: Control Bridge G2-B bounded write
   status: ACTIVE
-  priority: P0_TRANSVERSAL
+  priority: P0
   authority: LEANDRO
   orchestrator: MESTRE_MCF
+  github_issue: null
+  repository_doc: docs/superpowers/plans/2026-08-20-control-bridge-g2b-bounded-write.md
+  continuity_origin_issue: 10
+continuity_mission:
+  id: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+  status: COMPLETE
   github_issue: 10
   repository_doc: docs/53-repository-continuity-context-recovery-mission.md
+  completed_at: 2026-08-22
 repository:
   name: leon337/cloud-infrastructure
   active_branch: codex/control-bridge-g2b
@@ -38,6 +45,7 @@ institutional_memory:
   machine_state: state/institutional-memory.yaml
   directory: history/memos/
   first_memo: history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+  latest_memo: history/memos/2026-08-22-r8-task7-completion.md
   preservation_rule: APPEND_ORIENTED_NO_SILENT_REWRITE
 continuity_drift_controls:
   status: ACTIVE_REQUIRED
@@ -48,7 +56,7 @@ continuity_drift_controls:
   integrated_test_entrypoint: scripts/test.sh
   fail_closed_rule: NO_CONTINUITY_ADVANCE_WITH_UNEXPLAINED_CANONICAL_DRIFT
 cold_start_validation:
-  status: PASS
+  status: PASS_HISTORICAL_R7_SNAPSHOT
   protocol_version: CLOUD_INFRA_COLD_START_VALIDATION_V1
   machine_state: state/cold-start-validation.yaml
   report: docs/55-cold-start-recovery-validation-2026-08-21.md
@@ -57,16 +65,18 @@ cold_start_validation:
   verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
   independent_fresh_model_process: NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
 control_bridge_g2b:
-  status: TASK_7_PARTIAL_RECOVERED_REMOTE
+  status: TASK_7_COMPLETE_TASK_8_NOT_STARTED
   recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
-  task_7: PARTIAL
+  task_7: COMPLETE
   task_7_focused_tests:
-    pass: 6
-    fail: 1
-  known_red: EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED
+    pass: 7
+    fail: 0
+  known_red: RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
   known_red_literal: g2b_issue_existing_grant.keys()
-  ansible_syntax: NOT_EXECUTED_CURRENT_LOCAL_ENVIRONMENT_MISSING_ANSIBLE_PLAYBOOK
+  ansible_syntax: PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
+  task_7_candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+  task_7_evidence_issue_comment: https://github.com/leon337/cloud-infrastructure/issues/10#issuecomment-5377605173
   tasks_8_10: NOT_STARTED
   real_write: NOT_EXECUTED
   real_rollback: NOT_EXECUTED
@@ -91,7 +101,7 @@ continuity_roadmap:
   R5: COMPLETE
   R6: COMPLETE
   R7: COMPLETE
-  R8: NEXT
+  R8: COMPLETE
 validation:
   structural_reconciliation: PASS
   r3_protocol_contract: PERSISTED
@@ -100,13 +110,18 @@ validation:
   r5_first_incident_memo: PERSISTED
   r6_drift_control_contract: PERSISTED
   r6_executable_checker: INTEGRATED_IN_SCRIPTS_TEST_SH
-  r7_cold_start_validation: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+  r7_cold_start_validation: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION_HISTORICAL_SNAPSHOT
   r7_independent_fresh_model_process: NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
-  historical_evidence_preservation_check: PASS_AFTER_TARGETED_REVERT_OF_TWO_ACCIDENTAL_LINES
-  github_actions_head_validation: INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
-next_exact_step: R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+  r8_recovery_verdict: PASS
+  r8_task7_focused_tests: PASS_7_OF_7
+  r8_ansible_syntax: PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
+  r8_local_regression: PASS_367_TESTS_15_SHELL_SYNTAX
+  r8_role_review: PASS_SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
+  r8_github_hosted_validation: INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
+  historical_evidence_preservation_check: PASS
+next_exact_step: G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 recovery_rule: NEW_AGENT_MUST_EXECUTE_STARTUP_RECOVERY_PROTOCOL_BEFORE_IMPLEMENTATION
 persistence_rule: LONG_RUNNING_WORK_MUST_FOLLOW_MISSION_PERSISTENCE_POLICY
 memory_rule: MATERIAL_PROJECT_HISTORY_MUST_USE_APPEND_ORIENTED_INSTITUTIONAL_MEMOS
 drift_rule: CANONICAL_DRIFT_MUST_FAIL_CLOSED_UNTIL_RECONCILED
-r8_rule: R8_NEXT_DOES_NOT_OPEN_ANY_HUMAN_GATE_AND_REQUIRES_FRESH_RECOVERY_VERDICT_BEFORE_TECHNICAL_MUTATION
+r8_rule: R8_COMPLETE_DOES_NOT_OPEN_ANY_HUMAN_GATE_OR_START_TASK_8

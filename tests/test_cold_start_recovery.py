@@ -21,13 +21,13 @@ def load_reconstructor():
 class ColdStartRecoveryTests(unittest.TestCase):
     def test_repository_only_reconstruction_recovers_required_state(self):
         snapshot = load_reconstructor().reconstruct()
-        self.assertEqual(snapshot["active_mission"], "REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING")
+        self.assertEqual(snapshot["active_mission"], "CONTROL_BRIDGE_G2B")
         self.assertEqual(snapshot["branch"], "codex/control-bridge-g2b")
         self.assertEqual(snapshot["pull_request"], 11)
         self.assertEqual(snapshot["pull_request_state"], "DRAFT_DO_NOT_MERGE")
         self.assertEqual(snapshot["tasks_1_6"], "COMPLETE_MATERIALLY_REVIEWED")
-        self.assertEqual(snapshot["task_7"], "PARTIAL_6_PASS_1_FAIL")
-        self.assertEqual(snapshot["known_red"], "EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED")
+        self.assertEqual(snapshot["task_7"], "COMPLETE_7_PASS_0_FAIL")
+        self.assertEqual(snapshot["known_red"], "RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED")
         self.assertEqual(snapshot["tasks_8_10"], "NOT_STARTED")
         self.assertEqual(snapshot["f1_2c"], "ISOLATED_DO_NOT_MODIFY")
         self.assertEqual(snapshot["node01_g2b_gate"], "CLOSED_NOT_AUTHORIZED")

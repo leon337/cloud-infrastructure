@@ -80,3 +80,19 @@ As regras de recuperação/persistência estão em:
 ```text
 FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
 ```
+
+## Adendo 2026-08-22 — resolução da Task 7
+
+Este adendo não altera o checkpoint histórico acima. Em R8, o RED preservado neste documento foi resolvido.
+
+```text
+TASK_7_CURRENT=COMPLETE
+FOCUSED_TESTS_CURRENT=7_PASS_0_FAIL
+KNOWN_RED_CURRENT=RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
+ANSIBLE_SYNTAX_CURRENT=PASS_3_SELF_HOSTED
+CANDIDATE_SHA=604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+TASK_8_CURRENT=NOT_STARTED
+NEXT_EXACT_STEP=G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
+```
+
+A evidência persistida está no Issue #10. NODE-01, grant real, escrita real, produção e merge permaneceram fechados.

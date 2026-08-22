@@ -1,8 +1,8 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-21
-documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK7_PARTIAL_CONTINUITY_R7_COMPLETE
+updated_at: 2026-08-22
+documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK7_COMPLETE_CONTINUITY_R8_COMPLETE
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
@@ -27,14 +27,17 @@ continuity:
   cold_start_validation_report: docs/55-cold-start-recovery-validation-2026-08-21.md
   cold_start_reconstructor: scripts/reconstruct_cold_start.py
   active_mission_state: state/active-mission.yaml
-  active_mission_doc: docs/53-repository-continuity-context-recovery-mission.md
-  active_mission_issue: 10
+  active_mission_doc: docs/superpowers/plans/2026-08-20-control-bridge-g2b-bounded-write.md
+  active_mission_issue: null
+  continuity_mission_doc: docs/53-repository-continuity-context-recovery-mission.md
+  continuity_mission_issue: 10
+  continuity_mission_status: COMPLETE
   active_pull_request: 11
   active_branch: codex/control-bridge-g2b
   g2b_recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
-  active_roadmap_stage: R7_COMPLETE_R8_NEXT
-  next_exact_step: R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+  active_roadmap_stage: R8_COMPLETE_RETURNED_TO_G2B
+  next_exact_step: G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
   checkpoint: CHECKPOINT.md
   platform_discovery_state: state/platform-discovery.yaml
   codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
@@ -47,14 +50,15 @@ continuity:
   technology_mapping: docs/46-technology-mapping-v1.md
   component_inventory: state/components.yaml
 active_mission:
-  id: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+  id: CONTROL_BRIDGE_G2B
   status: ACTIVE
-  priority: P0_TRANSVERSAL
+  priority: P0
   authority: LEANDRO
   orchestrator: MESTRE_MCF
-  issue: 10
+  issue: null
+  continuity_origin_issue: 10
   state: state/active-mission.yaml
-  document: docs/53-repository-continuity-context-recovery-mission.md
+  document: docs/superpowers/plans/2026-08-20-control-bridge-g2b-bounded-write.md
   branch: codex/control-bridge-g2b
   pull_request: 11
   roadmap:
@@ -65,20 +69,22 @@ active_mission:
     R5: COMPLETE
     R6: COMPLETE
     R7: COMPLETE
-    R8: NEXT
+    R8: COMPLETE
 control_bridge:
   priority: P0
   g1: PASS_REAL_NODE_01_ROUNDTRIP
   g2a: PASS_REAL_NODE_01_READ_ONLY
-  g2b: TASK_7_PARTIAL_RECOVERED_REMOTE
+  g2b: TASK_7_COMPLETE_TASK_8_NOT_STARTED
   g2b_tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
-  g2b_task_7: PARTIAL_6_PASS_1_FAIL
+  g2b_task_7: COMPLETE_7_PASS_0_FAIL
   g2b_tasks_8_10: NOT_STARTED
   g2b_real_write: NOT_EXECUTED
   g2b_pr: 11_DRAFT_DO_NOT_MERGE
   g2b_recovery_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
-  self_hosted_runner: ONLINE_OBSERVED_2026_08_20_GITHUB_API
-  hosted_ci: INCONCLUSIVE_VALIDATE_FAILED_NO_EXPOSED_STEPS
+  g2b_task_7_candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+  g2b_task_7_ansible_syntax: PASS_3_SELF_HOSTED
+  self_hosted_runner: ONLINE_OBSERVED_2026_08_22_TASK7_VALIDATION
+  hosted_ci: INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
   source: state/control-bridge-g2b.yaml
 work_ownership:
   f1_2c_systemd_runtime_lock:
@@ -362,7 +368,7 @@ codex_execution:
       real_vps_post_check_mode_invariance: PASS_AT_2026_08_17T08_38_33Z
       real_vps_apply: PASS_AT_2026_08_17T09_25_38Z_CHANGED_13_FAILED_0_UNREACHABLE_0
       real_vps_apply_log_sha256: 7e3eaf1a328d07b181469cb4c6dae31ec48be6dbe11f5720347da673c521ac5c
-      real_vps_idempotence: PASS_AT_2026-08-17T10_16_20Z_CHANGED_0_FAILED_0_UNREACHABLE_0
+      real_vps_idempotence: PASS_AT_2026_08_17T10_16_20Z_CHANGED_0_FAILED_0_UNREACHABLE_0
       real_vps_idempotence_log_sha256: 42fd0abf73266274d9e1628819a6ea339422d61f90066b1ae701ea80388948fc
       real_vps_restart: PASS_AT_2026_08_17T11_26_44Z
       real_vps_post_restart: PASS_AT_2026_08_17T12_07_29Z_CHANGED_0_FAILED_0_UNREACHABLE_0

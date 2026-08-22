@@ -1,59 +1,44 @@
 # Cloud Infrastructure
 
-## MISSÃO ATIVA DE CONTINUIDADE
+## MISSÃO ATIVA — CONTROL BRIDGE G2-B
 
-A missão transversal ativa é **Repository Continuity & Context Recovery Hardening**.
+A missão de continuidade **Repository Continuity & Context Recovery Hardening** (#10) concluiu R1–R8. O trabalho ativo retorna ao **Control Bridge G2-B**.
 
 ```text
-MISSION_ISSUE=10
-MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
+MISSION=CONTROL_BRIDGE_G2B
 MISSION_STATE=state/active-mission.yaml
+CONTINUITY_MISSION_ISSUE=10_COMPLETE
+CONTINUITY_MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
-STARTUP_PROTOCOL_STATE=state/startup-recovery-protocol.yaml
 PERSISTENCE_POLICY=governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
-PERSISTENCE_POLICY_STATE=state/mission-persistence-policy.yaml
 INSTITUTIONAL_MEMORY=state/institutional-memory.yaml
-FIRST_INCIDENT_MEMO=history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+R8_MEMO=history/memos/2026-08-22-r8-task7-completion.md
 DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
-DRIFT_CONTROLS_STATE=state/continuity-drift-controls.yaml
-DRIFT_CHECKER=scripts/check_continuity_drift.py
-COLD_START_VALIDATION=state/cold-start-validation.yaml
-COLD_START_REPORT=docs/55-cold-start-recovery-validation-2026-08-21.md
-COLD_START_RECONSTRUCTOR=scripts/reconstruct_cold_start.py
-G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
+COLD_START_R7_SNAPSHOT=state/cold-start-validation.yaml
 ACTIVE_BRANCH=codex/control-bridge-g2b
 ACTIVE_PR=11_DRAFT_DO_NOT_MERGE
-RECOVERY_CHECKPOINT_SHA=7205a647f918580d09c87ed44f38b0a433552a51
 TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
-TASK_7=PARTIAL_6_PASS_1_FAIL
+TASK_7=COMPLETE_7_PASS_0_FAIL
+TASK_7_CANDIDATE_SHA=604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
 TASKS_8_10=NOT_STARTED
+ROADMAP_R1_R8=COMPLETE
 NODE01_G2B_GATE=CLOSED
+REAL_GRANT_GATE=CLOSED
+REAL_WRITE_GATE=CLOSED
+PRODUCTION_GATE=CLOSED
+MERGE_G2B_GATE=CLOSED
 F1_2C=PARALLEL_ISOLATED_DO_NOT_MODIFY
-ROADMAP_R1=COMPLETE
-ROADMAP_R2=COMPLETE
-ROADMAP_R3=COMPLETE
-ROADMAP_R4=COMPLETE
-ROADMAP_R5=COMPLETE
-ROADMAP_R6=COMPLETE
-ROADMAP_R7=COMPLETE
-ROADMAP_R8=NEXT
-R7_VERDICT=PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
-R7_INDEPENDENT_FRESH_MODEL_PROCESS=NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
-GITHUB_ACTIONS_CONTENT_VALIDATION=INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
-NEXT_EXACT_STEP=R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+NEXT_EXACT_STEP=G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 ```
 
-> Nova IA/agente: execute primeiro [`governance/AI-STARTUP-RECOVERY-PROTOCOL.md`](governance/AI-STARTUP-RECOVERY-PROTOCOL.md), usando o contrato [`state/startup-recovery-protocol.yaml`](state/startup-recovery-protocol.yaml). Depois leia [`state/active-mission.yaml`](state/active-mission.yaml), [`CONTEXT.md`](CONTEXT.md) e [`CHECKPOINT.md`](CHECKPOINT.md). Não implemente antes de `RECOVERY_VERDICT=PASS` e não assuma estado local `CLEAN` quando ele não puder ser verificado.
+> Nova IA/agente: execute primeiro [`governance/AI-STARTUP-RECOVERY-PROTOCOL.md`](governance/AI-STARTUP-RECOVERY-PROTOCOL.md), leia `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/control-bridge-g2b.yaml`, e obtenha `RECOVERY_VERDICT=PASS` antes de implementar.
 
-> Missões longas também devem obedecer [`governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`](governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md) e [`state/mission-persistence-policy.yaml`](state/mission-persistence-policy.yaml). Trabalho material não deve ficar mais de 30 minutos sem checkpoint remoto recuperável quando o remoto estiver disponível; WIP publicado não significa aceitação.
+> O R7 permanece como snapshot histórico repository-only do estado anterior à R8. A conclusão de R8 não altera retroativamente essa evidência.
 
-> Eventos materiais devem ser preservados pela memória institucional em [`history/memos/`](history/memos/) e [`state/institutional-memory.yaml`](state/institutional-memory.yaml). Drift entre fontes canônicas deve falhar fechado conforme [`governance/CONTINUITY-DRIFT-CONTROLS.md`](governance/CONTINUITY-DRIFT-CONTROLS.md) e `scripts/check_continuity_drift.py`.
+> **R8 concluída não abre nenhum HUMAN_GATE.** Task 8 é o próximo trabalho técnico e deve ocorrer somente em boundary descartável conforme o plano; NODE-01, grant real, escrita real, produção e merge continuam fechados.
 
-> R7 foi concluído com `PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION`. O relatório está em [`docs/55-cold-start-recovery-validation-2026-08-21.md`](docs/55-cold-start-recovery-validation-2026-08-21.md) e o estado em [`state/cold-start-validation.yaml`](state/cold-start-validation.yaml). A execução por papel ocorreu na mesma sessão e não comprova independência cognitiva de uma instância externa.
-
-> **R8 ser `NEXT` não abre nenhum HUMAN_GATE.** Antes de qualquer correção técnica da Task 7, uma nova execução do protocolo de startup/recovery deve produzir o veredicto aplicável. NODE-01, grant real, escrita real, produção e merge continuam fechados.
-
-> A seção `PROJECT_STATUS` abaixo é uma projeção gerada da **trilha principal da plataforma**. Ela não substitui o estado da missão transversal ativa acima.
+> A seção `PROJECT_STATUS` abaixo continua sendo a projeção da trilha principal da plataforma e não substitui o estado transversal G2-B acima.
 
 <!-- PROJECT_STATUS:START -->
 ## STATUS ATUAL
@@ -71,7 +56,7 @@ NEXT_EXACT_STEP=R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
 - **GitHub Project:** `BLOCKED_EXTERNAL_MISSING_READ_PROJECT_AND_PROJECT_SCOPES`
 - **Produção:** `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`
 - **Rotação de credenciais:** `DEFERRED_BY_HUMAN_DECISION`
-- **Atualizado em:** `2026-08-20`
+- **Atualizado em:** `2026-08-22`
 
 > Esta seção é gerada das fontes canônicas; não edite manualmente.
 <!-- PROJECT_STATUS:END -->
@@ -93,11 +78,12 @@ GitHub live, branch/PR aplicável, código, testes e evidência do SHA aplicáve
 ## Control Bridge — estado transversal reconciliado
 
 ```text
-CONTROL_BRIDGE_G2B=TASK_7_PARTIAL_RECOVERED_REMOTE
+CONTROL_BRIDGE_G2B=TASK_7_COMPLETE_TASK_8_NOT_STARTED
 G1=PASS_REAL_NODE_01_ROUNDTRIP
 G2A=PASS_REAL_NODE_01_READ_ONLY
 G2B_TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
-G2B_TASK_7=PARTIAL_6_PASS_1_FAIL
+G2B_TASK_7=COMPLETE_7_PASS_0_FAIL
+G2B_TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
 G2B_TASKS_8_10=NOT_STARTED
 G2B_REAL_WRITE=NOT_EXECUTED
 G2B_PR=11_DRAFT_DO_NOT_MERGE
@@ -105,9 +91,10 @@ MESTRE_MCF=CURRENT_ORCHESTRATOR
 LEANDRO=FINAL_HUMAN_AUTHORITY
 F1_2C_SYSTEMD_RUNTIME_LOCK=PARALLEL_ISOLATED_DO_NOT_MODIFY
 NODE01_G2B_GATE=CLOSED
+NEXT_EXACT_STEP=G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 ```
 
-O checkpoint remoto `7205a647f918580d09c87ed44f38b0a433552a51` preserva o WIP recuperado e **não** significa aceitação da Task 7. O RED conhecido é a ausência da validação exata de chaves do grant existente (`g2b_issue_existing_grant.keys()`); a sintaxe Ansible da Task 7 ainda não foi executada no ambiente local recuperado.
+O RED recuperado da Task 7 foi resolvido com validação fail-closed do conjunto exato de chaves de grant existente. O candidato `604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390` obteve 7/7 testes focados e 3/3 syntax-checks Ansible no self-hosted runner, sem apply, grant ou escrita real. O GitHub-hosted CI permaneceu inconclusivo por falha pré-step com zero steps/`BlobNotFound`; isso não foi tratado como falha de conteúdo.
 
 ## Estado operacional — baseline reconciliada em 16/08/2026
 

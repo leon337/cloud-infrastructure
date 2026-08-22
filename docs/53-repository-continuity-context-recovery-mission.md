@@ -1,7 +1,7 @@
 # 53 — Repository Continuity & Context Recovery Hardening
 
 Data: 2026-08-20  
-Status: **ACTIVE**  
+Status: **COMPLETE — R1–R8**
 Prioridade: **P0 transversal**  
 Autoridade humana: **LEANDRO**  
 Orquestração: **MESTRE / MCF**  
@@ -23,7 +23,7 @@ A recuperação exigiu reconstrução manual usando conversa, screenshots, Git w
 
 O relato histórico permanente deste incidente foi criado no R5 em `history/memos/2026-08-20-g2b-local-work-recovery-incident.md`. Este documento registra a missão e o estado corrente; o memo histórico preserva o que aconteceu e por que importou.
 
-## Estado recuperado e publicado
+## Estado recuperado e publicado — snapshot histórico pré-R8
 
 ```text
 BRANCH=codex/control-bridge-g2b
@@ -204,24 +204,24 @@ A CI GitHub permanece tratada como `INCONCLUSIVE` quando jobs `validate` falham 
 
 ### R8 — Resume G2-B Task 7
 
-**Status:** NEXT — technical execution not started by R5–R7 mission.
+**Status:** COMPLETE.
 
-Ponto técnico preservado:
+A sessão executou novamente o protocolo de startup/recovery e obteve `RECOVERY_VERDICT=PASS`. O RED conhecido foi reproduzido em 6/7 e corrigido de forma fail-closed exigindo o conjunto exato de chaves do grant existente.
+
+Evidências:
 
 ```text
-FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
+TASK_7_CANDIDATE_SHA=604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+FOCUSED_TESTS=7_PASS_0_FAIL
+LOCAL_REGRESSION=PASS_367_TESTS_15_SHELL_SYNTAX
+ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
+GITHUB_HOSTED_FOUNDATION_RUN=32548752333_INCONCLUSIVE_PRE_STEP_ZERO_STEPS_BLOB_NOT_FOUND
+ROLE_REVIEW=PASS_SAME_SESSION_MCF_ROLE_NOT_EXTERNAL_INDEPENDENT
 ```
 
-Antes de qualquer mutação técnica, a sessão que assumir R8 deve executar novamente o protocolo de startup/recovery e obter o veredicto aplicável.
+A prova self-hosted foi limitada a testes e `--syntax-check`; não executou apply, bootstrap, emissão de grant ou escrita real. A falha do GitHub-hosted runner foi classificada como infraestrutura pré-step e não como falha de conteúdo.
 
-R8 `NEXT` **não** autoriza:
-
-- bootstrap G2-B no NODE-01;
-- emissão ou reemissão real de grant;
-- escrita real;
-- produção;
-- merge G2-B;
-- Task 8 enquanto Task 7 permanecer parcial.
+Task 8 permaneceu `NOT_STARTED`. Nenhum HUMAN_GATE foi aberto.
 
 ## Limites atuais
 
@@ -237,8 +237,14 @@ Continuam fechados:
 
 ## Próximo passo exato
 
+A missão de continuidade está concluída e a missão ativa retorna ao Control Bridge G2-B:
+
 ```text
-R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 ```
 
-Nenhuma execução técnica de R8 foi realizada durante a conclusão de R5–R7.
+Task 8 deve respeitar o plano aprovado: boundary Ubuntu 24.04/systemd descartável, nunca NODE-01.
+
+## Encerramento da missão de continuidade
+
+R1–R8 estão `COMPLETE`. Os protocolos, memória institucional, drift controls e cold-start evidence permanecem ativos como infraestrutura permanente de continuidade. O snapshot R7 continua histórico; o estado corrente está em `state/active-mission.yaml`, `state/current.yaml` e `state/control-bridge-g2b.yaml`.

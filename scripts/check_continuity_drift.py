@@ -66,15 +66,15 @@ def collect_errors() -> list[str]:
     current_bridge = current.get("control_bridge", {})
 
     check(
-        mission.get("id") == "REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING",
+        mission.get("id") == "CONTROL_BRIDGE_G2B",
         "STALE_ACTIVE_MISSION_REFERENCE",
         "unexpected active mission id",
     )
-    check(mission.get("github_issue") == 10, "STALE_ACTIVE_MISSION_REFERENCE", "issue must be #10")
+    check(mission.get("continuity_origin_issue") == 10, "STALE_ACTIVE_MISSION_REFERENCE", "continuity origin issue must be #10")
     check(repository.get("name") == "leon337/cloud-infrastructure", "STALE_ACTIVE_MISSION_REFERENCE", "repository mismatch")
     check(repository.get("active_branch") == bridge.get("branch"), "MISSION_BRANCH_OR_PR_MISMATCH", "active branch differs from G2-B state")
     check(repository.get("pull_request") == bridge.get("recovery_checkpoint", {}).get("pull_request"), "MISSION_BRANCH_OR_PR_MISMATCH", "PR differs from G2-B state")
-    check(mission.get("github_issue") == bridge.get("continuity", {}).get("mission_issue"), "MISSION_BRANCH_OR_PR_MISMATCH", "issue differs from G2-B continuity state")
+    check(mission.get("continuity_origin_issue") == bridge.get("continuity", {}).get("mission_issue"), "MISSION_BRANCH_OR_PR_MISMATCH", "continuity origin issue differs from G2-B state")
 
     check(set(ROADMAP_KEYS).issubset(roadmap), "ROADMAP_STATE_REGRESSION_OR_INVALID_TRANSITION", "R1-R8 must all be present")
     for key in ROADMAP_KEYS:
@@ -104,11 +104,13 @@ def collect_errors() -> list[str]:
     check(current_continuity.get("next_exact_step") == next_step, "CURRENT_STATE_DRIFT", "state/current.yaml next_exact_step mismatch")
 
     check(bridge.get("implementation", {}).get("tasks_1_6") == "COMPLETE_MATERIALLY_REVIEWED", "G2B_TASK_STATE_DRIFT", "Tasks 1-6 changed")
-    check(bridge.get("implementation", {}).get("task_7") == "PARTIAL", "G2B_TASK_STATE_DRIFT", "Task 7 must remain PARTIAL before R8 technical work")
-    check(bridge.get("implementation", {}).get("task_7_focused_tests", {}).get("pass") == 6, "G2B_TASK_STATE_DRIFT", "Task 7 pass count changed without R8")
-    check(bridge.get("implementation", {}).get("task_7_focused_tests", {}).get("fail") == 1, "G2B_TASK_STATE_DRIFT", "Task 7 fail count changed without R8")
-    check(bridge.get("implementation", {}).get("tasks_8_10") == "NOT_STARTED", "G2B_TASK_STATE_DRIFT", "Tasks 8-10 advanced before R8")
-    check(current_bridge.get("g2b_task_7") == "PARTIAL_6_PASS_1_FAIL", "CURRENT_STATE_DRIFT", "state/current.yaml G2-B Task 7 mismatch")
+    check(bridge.get("implementation", {}).get("task_7") == "COMPLETE", "G2B_TASK_STATE_DRIFT", "Task 7 must remain COMPLETE after R8 evidence")
+    check(bridge.get("implementation", {}).get("task_7_focused_tests", {}).get("pass") == 7, "G2B_TASK_STATE_DRIFT", "Task 7 pass count must remain 7 after R8")
+    check(bridge.get("implementation", {}).get("task_7_focused_tests", {}).get("fail") == 0, "G2B_TASK_STATE_DRIFT", "Task 7 fail count must remain 0 after R8")
+    check(str(bridge.get("implementation", {}).get("ansible_syntax", "")).startswith("PASS_3_"), "PASS_WITHOUT_EVIDENCE", "Task 7 completion lacks Ansible syntax evidence")
+    check(bool(bridge.get("implementation", {}).get("task_7_validation", {}).get("candidate_sha")), "PASS_WITHOUT_EVIDENCE", "Task 7 completion lacks candidate SHA")
+    check(bridge.get("implementation", {}).get("tasks_8_10") == "NOT_STARTED", "G2B_TASK_STATE_DRIFT", "Tasks 8-10 advanced before Task 8 starts")
+    check(current_bridge.get("g2b_task_7") == "COMPLETE_7_PASS_0_FAIL", "CURRENT_STATE_DRIFT", "state/current.yaml G2-B Task 7 mismatch")
     check(current_bridge.get("g2b_tasks_8_10") == "NOT_STARTED", "CURRENT_STATE_DRIFT", "state/current.yaml Tasks 8-10 mismatch")
 
     for gate, value in active.get("human_gates", {}).items():
@@ -166,7 +168,7 @@ def collect_errors() -> list[str]:
             check(reconstruction.get("tasks_8_10") == "NOT_STARTED", "PASS_WITHOUT_EVIDENCE", "cold-start Tasks 8-10 mismatch")
             check(reconstruction.get("f1_2c") == "ISOLATED_DO_NOT_MODIFY", "PASS_WITHOUT_EVIDENCE", "cold-start F1.2c mismatch")
             check(reconstruction.get("node01_g2b_gate") == "CLOSED_NOT_AUTHORIZED", "PASS_WITHOUT_EVIDENCE", "cold-start NODE-01 gate mismatch")
-            check(reconstruction.get("next_exact_step") == next_step, "PASS_WITHOUT_EVIDENCE", "cold-start next step mismatch")
+            check(reconstruction.get("next_exact_step") == "R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT", "PASS_WITHOUT_EVIDENCE", "historical R7 cold-start next step mismatch")
 
     return errors
 

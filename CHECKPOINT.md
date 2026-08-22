@@ -1,26 +1,21 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-21 após concluir R5 (memória institucional), R6 (controles de consistência/drift) e R7 (validação de recuperação por cold start repository-only).
+Atualizado em 2026-08-22 após concluir R8 e aceitar a Task 7 com evidência.
 
 ## Missão ativa
 
 ```text
-MISSION=REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
-MISSION_ISSUE=10
-MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
+MISSION=CONTROL_BRIDGE_G2B
 MISSION_STATE=state/active-mission.yaml
+CONTINUITY_MISSION_ISSUE=10
+CONTINUITY_MISSION_STATUS=COMPLETE
+CONTINUITY_MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
-STARTUP_PROTOCOL_STATE=state/startup-recovery-protocol.yaml
 PERSISTENCE_POLICY=governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
-PERSISTENCE_POLICY_STATE=state/mission-persistence-policy.yaml
 INSTITUTIONAL_MEMORY=state/institutional-memory.yaml
-FIRST_INCIDENT_MEMO=history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+R8_MEMO=history/memos/2026-08-22-r8-task7-completion.md
 DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
-DRIFT_CONTROLS_STATE=state/continuity-drift-controls.yaml
-DRIFT_CHECKER=scripts/check_continuity_drift.py
-COLD_START_VALIDATION=state/cold-start-validation.yaml
-COLD_START_REPORT=docs/55-cold-start-recovery-validation-2026-08-21.md
-COLD_START_RECONSTRUCTOR=scripts/reconstruct_cold_start.py
+COLD_START_R7_SNAPSHOT=state/cold-start-validation.yaml
 G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
 STATUS=ACTIVE
 AUTHORITY=LEANDRO
@@ -32,12 +27,14 @@ ROADMAP_R4=COMPLETE
 ROADMAP_R5=COMPLETE
 ROADMAP_R6=COMPLETE
 ROADMAP_R7=COMPLETE
-ROADMAP_R8=NEXT
-R7_VERDICT=PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
-NEXT_EXACT_STEP=R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+ROADMAP_R8=COMPLETE
+TASK_7=COMPLETE_7_PASS_0_FAIL
+TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
+TASKS_8_10=NOT_STARTED
+NEXT_EXACT_STEP=G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 ```
 
-Esta missão é transversal. R8 ser `NEXT` não abre nenhum HUMAN_GATE nem autoriza mutação do NODE-01.
+A missão transversal de continuidade foi concluída. Seus controles permanecem ativos; a execução retorna ao Control Bridge G2-B. R8 não abriu NODE-01, grant real, escrita real, produção ou merge.
 
 ## Regras obrigatórias de retomada, persistência, memória e drift
 
@@ -236,18 +233,25 @@ Em caso de divergência, aplicar o protocolo e parar em `BLOCKED_RECONCILIATION`
 ## Próximo passo exato da missão ativa
 
 ```text
-R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 ```
 
-## R8 — ainda não iniciado tecnicamente
+## R8 — COMPLETE
 
-O próximo passo técnico preservado continua:
+Evidência de conclusão:
 
 ```text
-FIX_EXISTING_GRANT_EXACT_KEY_SCHEMA_THEN_RETEST_TASK_7
+RECOVERY_VERDICT=PASS
+TASK_7_RED=RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
+FOCUSED_TESTS=7_PASS_0_FAIL
+LOCAL_REGRESSION=367_TESTS_PASS_15_SHELL_SYNTAX_PASS
+ANSIBLE_SYNTAX=3_PASS_SELF_HOSTED
+TASK_7_CANDIDATE_SHA=604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+GITHUB_HOSTED_CI=INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
+TASK_8=NOT_STARTED
 ```
 
-Antes de executá-lo, a sessão que assumir R8 deve executar novamente o protocolo de startup/recovery. R8 `NEXT` não abre NODE-01, grant, real write, produção ou merge.
+A validação self-hosted executou somente testes e syntax-checks; não houve playbook apply, bootstrap NODE-01, grant, escrita real, produção ou merge.
 
 ## Estado da trilha principal da plataforma
 

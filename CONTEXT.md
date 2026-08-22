@@ -61,30 +61,19 @@ Em modo remoto sem acesso ao computador, `LOCAL_STATE=UNVERIFIED`; isso não sig
 
 Nenhuma fonte inferior pode sobrescrever silenciosamente uma superior. Histórico não deve ser reescrito para parecer estado presente.
 
-## Missão ativa — continuidade e recuperação de contexto
+## Missão ativa — Control Bridge G2-B
 
 ```text
-MISSION=REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
-MISSION_ISSUE=10
-MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
+MISSION=CONTROL_BRIDGE_G2B
 MISSION_STATE=state/active-mission.yaml
-STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
-STARTUP_PROTOCOL_STATE=state/startup-recovery-protocol.yaml
-PERSISTENCE_POLICY=governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
-PERSISTENCE_POLICY_STATE=state/mission-persistence-policy.yaml
-INSTITUTIONAL_MEMORY_STATE=state/institutional-memory.yaml
-FIRST_INCIDENT_MEMO=history/memos/2026-08-20-g2b-local-work-recovery-incident.md
-DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
-DRIFT_CONTROLS_STATE=state/continuity-drift-controls.yaml
-COLD_START_VALIDATION=state/cold-start-validation.yaml
-COLD_START_REPORT=docs/55-cold-start-recovery-validation-2026-08-21.md
-STATUS=ACTIVE
-PRIORITY=P0_TRANSVERSAL
+CONTINUITY_MISSION=REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+CONTINUITY_MISSION_ISSUE=10
+CONTINUITY_MISSION_STATUS=COMPLETE
+CONTINUITY_MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 AUTHORITY=LEANDRO
 ORCHESTRATOR=MESTRE_MCF
 ACTIVE_BRANCH=codex/control-bridge-g2b
 ACTIVE_PR=11_DRAFT_DO_NOT_MERGE
-RECOVERY_CHECKPOINT_SHA=7205a647f918580d09c87ed44f38b0a433552a51
 ROADMAP_R1=COMPLETE
 ROADMAP_R2=COMPLETE
 ROADMAP_R3=COMPLETE
@@ -92,26 +81,23 @@ ROADMAP_R4=COMPLETE
 ROADMAP_R5=COMPLETE
 ROADMAP_R6=COMPLETE
 ROADMAP_R7=COMPLETE
-ROADMAP_R8=NEXT
-R7_VERDICT=PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
-NEXT_EXACT_STEP=R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+ROADMAP_R8=COMPLETE
+R7_VERDICT=PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION_HISTORICAL_SNAPSHOT
+NEXT_EXACT_STEP=G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 ```
 
-Objetivo: fazer o repositório explicar a si próprio e permitir recuperação de contexto sem depender de memória de chat ou de uma única máquina.
+A missão de continuidade concluiu R1–R8 e devolveu a missão ativa ao G2-B. Os controles criados continuam obrigatórios. O R7 permanece evidência histórica do estado pré-R8 e não deve ser reescrito.
 
-O R7 provou suficiência/coerência das fontes para reconstrução repository-only. A execução foi por papel na mesma sessão e não comprova uma instância cognitiva independente.
-
-## G2-B — estado exato recuperado
+## G2-B — estado atual
 
 ```text
 G1=PASS_REAL_NODE_01_ROUNDTRIP
 G2A=PASS_REAL_NODE_01_READ_ONLY
 G2B_TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
-G2B_TASK_7=PARTIAL
-G2B_TASK_7_TESTS=6_PASS_1_FAIL
-G2B_KNOWN_RED=EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED
-G2B_KNOWN_RED_LITERAL=g2b_issue_existing_grant.keys()
-G2B_ANSIBLE_SYNTAX=NOT_EXECUTED_CURRENT_LOCAL_ENVIRONMENT
+G2B_TASK_7=COMPLETE
+G2B_TASK_7_TESTS=7_PASS_0_FAIL
+G2B_KNOWN_RED=RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
+G2B_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
 G2B_TASKS_8_10=NOT_STARTED
 G2B_REAL_WRITE=NOT_EXECUTED
 G2B_REAL_ROLLBACK=NOT_EXECUTED
@@ -120,9 +106,7 @@ NODE01_G2B_GATE=CLOSED
 MERGE_G2B=NO
 ```
 
-Fontes: `state/control-bridge-g2b.yaml`, `docs/54-control-bridge-g2b-recovery-checkpoint.md`, PR #11, especificação e plano G2-B.
-
-O checkpoint WIP remoto preserva o trabalho incompleto; ele não transforma a Task 7 em `PASS`.
+Fontes atuais: `state/control-bridge-g2b.yaml`, `state/active-mission.yaml`, Issue #10, PR #11 e o plano G2-B. O checkpoint `docs/54-control-bridge-g2b-recovery-checkpoint.md` permanece histórico e contém um adendo pós-R8.
 
 ## Trabalho paralelo isolado
 
@@ -216,8 +200,8 @@ Fatos voláteis devem ser medidos novamente antes de qualquer operação real.
 - HUMAN_GATE sempre exige autorização explícita de LEANDRO.
 - MESTRE/MCF orquestra a missão ativa.
 - `RECOVERY_VERDICT=PASS` não abre automaticamente nenhum HUMAN_GATE.
-- R8 estar `NEXT` não equivale a autorização de bootstrap, grant, escrita, produção ou merge.
-- Antes de qualquer mutação técnica em R8, executar novamente o protocolo de startup/recovery e reconciliar estado local/remoto aplicável.
+- R8 concluída não equivale a autorização de bootstrap, grant, escrita, produção ou merge.
+- Antes de iniciar Task 8, executar novamente o protocolo de startup/recovery e reconciliar estado local/remoto aplicável.
 - Missões longas devem persistir trabalho material remotamente no máximo a cada 30 minutos, ou antes quando ocorrer um trigger obrigatório.
 - WIP remoto preserva continuidade; não prova aceitação.
 - Se persistência remota falhar, preservar localmente, registrar o blocker e não continuar acumulando horas de trabalho material.
@@ -229,10 +213,10 @@ Fatos voláteis devem ser medidos novamente antes de qualquer operação real.
 
 ## Ponto exato
 
-A missão de continuidade concluiu R1–R7. O próximo passo é:
+A missão de continuidade concluiu R1–R8 e a Task 7 está aceita. O próximo passo técnico é:
 
 ```text
-R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
 ```
 
-Esse marcador apenas identifica o ponto de retomada. Nenhum trabalho técnico de R8 foi iniciado nesta etapa e nenhum HUMAN_GATE foi aberto.
+Task 8 permanece `NOT_STARTED`; nenhum HUMAN_GATE foi aberto pela conclusão da R8.
