@@ -1,0 +1,26 @@
+MCF_G2B_LIVE_STATUS
+UTC=2026-08-22T12:21:36Z
+HOST_MONITOR_STATUS=pending
+HOST_MONITOR_TAIL_BEGIN
+2026-08-22T12:15:27Z iteration=39 status=running markers=0 tail= 
+2026-08-22T12:15:58Z iteration=40 status=running markers=0 tail= 
+2026-08-22T12:16:30Z iteration=41 status=running markers=0 tail= 
+2026-08-22T12:17:07Z iteration=42 status=running markers=0 tail= 
+2026-08-22T12:17:38Z iteration=43 status=running markers=0 tail= 
+2026-08-22T12:18:10Z iteration=44 status=running markers=0 tail= 
+2026-08-22T12:18:41Z iteration=45 status=running markers=0 tail= 
+2026-08-22T12:19:12Z iteration=46 status=running markers=0 tail= 
+2026-08-22T12:19:44Z iteration=47 status=running markers=0 tail= 
+2026-08-22T12:20:16Z iteration=48 status=running markers=0 tail= 
+2026-08-22T12:20:47Z iteration=49 status=running markers=0 tail= 
+2026-08-22T12:21:18Z iteration=50 status=running markers=0 tail= 
+HOST_MONITOR_TAIL_END
+GUEST_SSH=PASS
+GUEST_TASK8_STATUS=running
+RESOURCE=pending
+MARKERS=0
+GUEST_TERMINAL_LINES_BEGIN
+GUEST_TERMINAL_LINES_END
+REPO_HEAD=fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+REPO_TREE=94accd46f9b4d7c51b972e6b39972a2aced70f3e
+REPO_DIRTY_COUNT=0
