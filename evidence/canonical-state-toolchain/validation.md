@@ -7,13 +7,9 @@ PR: #22 (draft / do not merge)
 
 ## Boundary verification
 
-GitHub compare from `main` to candidate HEAD `a4ce924463d349d7dd3ba972979ba46eb2ab8bb7` reported the branch exactly 3 commits ahead / 0 behind, with only these paths changed at that checkpoint:
+GitHub compare from `main` to the candidate showed only mission-owned reporting/checkpoint files plus the temporary evidence workflow while that workflow existed. No `control_plane/`, `automation/ansible/`, `platform/network/`, G2-B implementation test path, `state/current.yaml`, `state/active-mission.yaml`, `ROADMAP-CHECKLIST.md` or `scripts/test.sh` was imported or modified.
 
-- `.github/workflows/canonical-state-toolchain-reconciliation.yml`;
-- `docs/57-canonical-state-toolchain-reconciliation-2026-08-22.md`;
-- `state/canonical-state-toolchain-reconciliation.yaml`.
-
-No `control_plane/`, `automation/ansible/`, `platform/network/`, G2-B implementation test path, `state/current.yaml`, `state/active-mission.yaml`, `ROADMAP-CHECKLIST.md` or `scripts/test.sh` was imported or modified.
+The temporary workflow was removed after evidence capture because it is not the canonical validation toolchain and is not proposed for integration.
 
 Result: `BOUNDARY_ISOLATION=PASS_BY_GITHUB_COMPARE`.
 
@@ -27,7 +23,7 @@ Therefore `./scripts/test.sh` was **NOT EXECUTED**. This is the known canonical-
 
 ## `git diff --check` and checkpoint workflow
 
-An evidence-only GitHub-hosted workflow was added to run, in order:
+A temporary evidence-only GitHub-hosted workflow was created to run, in order:
 
 1. `git diff --check f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b...HEAD`;
 2. parse/assert the reconciliation checkpoint YAML;
@@ -50,9 +46,17 @@ Workflow run `32604781198`, attempt 2:
 - step list returned by GitHub API: empty (`0` steps);
 - log retrieval again returned HTTP 404 with `BlobNotFound`.
 
-Because both attempts ended before any reported step, **`git diff --check` was NOT EXECUTED by GitHub Actions**, and the YAML/boundary commands in that workflow were also NOT EXECUTED. The run failure is not classified as a content failure because there is no executed-step evidence supporting that claim.
+After the evidence file was added, a new PR synchronize event produced workflow run `32604854460` on HEAD `930d835749652c6a3c1e8e3e70bf23be7af780b4`:
+
+- conclusion: `failure`;
+- job `checkpoint-validation`: `failure`;
+- step list returned by GitHub API: empty (`0` steps).
+
+Because all observed runs ended before any reported step, **`git diff --check` was NOT EXECUTED by GitHub Actions**, and the YAML/boundary commands in that workflow were also NOT EXECUTED. The workflow failure is not classified as a content failure because there is no executed-step evidence supporting that claim.
 
 Result: `CHECKPOINT_WORKFLOW=INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND`.
+
+The temporary workflow file was then deleted from the candidate branch. Its historical runs remain evidence only.
 
 ## Structured-state validation status
 
