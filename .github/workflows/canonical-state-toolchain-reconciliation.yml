@@ -1,0 +1,70 @@
+name: canonical-state-toolchain-reconciliation
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkpoint-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out reconciliation candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run required diff whitespace check
+        run: git diff --check f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b...HEAD
+
+      - name: Validate reconciliation checkpoint YAML
+        run: |
+          python -m pip install --disable-pip-version-check PyYAML==6.0.3
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          path = Path('state/canonical-state-toolchain-reconciliation.yaml')
+          data = yaml.safe_load(path.read_text(encoding='utf-8'))
+          assert data['mission']['status'] == 'REQUIRES_HUMAN_DECISION'
+          assert data['mission']['conclusion_class'] == 'C'
+          assert data['branch']['base_sha'] == 'f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b'
+          assert data['toolchain']['canonical_entrypoint'] == 'scripts/test.sh'
+          assert data['boundaries']['g2b_code_imported'] is False
+          assert data['boundaries']['f1_2c_code_imported'] is False
+          assert data['candidate_changes']['state_current'] == 'NOT_CHANGED_FAIL_CLOSED'
+          print('RECONCILIATION_CHECKPOINT_YAML_PASS')
+          PY
+
+      - name: Prove state and implementation boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -Eq '^(control_plane/|automation/ansible/|platform/network/|platform/control-bridge/|scripts/control_bridge_g2b|tests/test_g2b_)'; then
+            echo 'BOUNDARY_FAIL functional G2-B/F1.2c path entered reconciliation delta' >&2
+            exit 1
+          fi
+          if printf '%s\n' "$changed" | grep -qx 'state/current.yaml'; then
+            echo 'BOUNDARY_FAIL state/current.yaml changed before governance decision' >&2
+            exit 1
+          fi
+          echo 'BOUNDARY_PASS no functional G2-B/F1.2c paths and no state/current.yaml mutation'
+
+      - name: Record canonical suite availability
+        shell: bash
+        run: |
+          if [[ -x scripts/test.sh ]]; then
+            echo 'CANONICAL_SUITE_PRESENT_UNEXPECTED_FOR_THIS_MAIN_BASE'
+            ./scripts/test.sh
+          else
+            echo 'CANONICAL_SUITE_BLOCKED_ABSENT_ON_MAIN_BASE'
+            echo 'This checkpoint workflow is evidence-only and is not a substitute for scripts/test.sh.'
+          fi
