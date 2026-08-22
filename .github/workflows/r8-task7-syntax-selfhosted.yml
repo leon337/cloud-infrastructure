@@ -1,0 +1,80 @@
+name: r8-task7-syntax-selfhosted
+
+on:
+  push:
+    branches:
+      - ops/r8-task7-syntax-selfhosted-20260822
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: r8-task7-syntax-selfhosted
+  cancel-in-progress: false
+
+jobs:
+  validate-task7:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out exact R8 candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install isolated Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Install locked validation dependencies
+        run: python -m pip install --disable-pip-version-check --no-cache-dir -r requirements-dev.lock
+
+      - name: Run focused Task 7 tests
+        run: python -m unittest tests.test_g2b_bootstrap_artifacts -v
+
+      - name: Validate exact Task 7 Ansible syntax
+        run: |
+          cd automation/ansible
+          ansible-playbook playbooks/apply-control-bridge-g2b.yml --syntax-check
+          ansible-playbook playbooks/rollback-control-bridge-g2b.yml --syntax-check
+          ansible-playbook playbooks/issue-control-bridge-g2b-grant.yml --syntax-check
+
+      - name: Publish PASS evidence to mission issue
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_SHA: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          body = "\n".join([
+              "R8_TASK7_SELF_HOSTED_VALIDATION=PASS",
+              f"TARGET_SHA={os.environ['TARGET_SHA']}",
+              "FOCUSED_TESTS=7_PASS",
+              "ANSIBLE_SYNTAX=3_PASS",
+              "ENVIRONMENT=self-hosted-node-01 + actions/setup-python@v6-pinned + requirements-dev.lock",
+              "EXECUTION_BOUNDARY=SYNTAX_CHECK_ONLY_NO_PLAYBOOK_APPLY_NO_GRANT_NO_REAL_WRITE",
+          ])
+          request = urllib.request.Request(
+              "https://api.github.com/repos/leon337/cloud-infrastructure/issues/10/comments",
+              data=json.dumps({"body": body}).encode("utf-8"),
+              headers={
+                  "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "Content-Type": "application/json",
+              },
+              method="POST",
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              if response.status != 201:
+                  raise SystemExit(f"unexpected GitHub status {response.status}")
+          PY
