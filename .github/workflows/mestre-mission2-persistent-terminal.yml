@@ -9,98 +9,79 @@ permissions:
   issues: write
 
 jobs:
-  mission2:
-    if: github.actor == 'leon337' && github.event.issue.title == '[VPS-TERMINAL] MISSION2 persistent Hello World'
+  verify:
+    if: github.actor == 'leon337' && github.event.issue.title == '[VPS-TERMINAL] MISSION2 verify persistence'
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 5
 
     steps:
-      - name: Leave a persistent terminal open with Hello World
-        id: terminal
+      - name: Verify persistent PTY from an independent job
+        id: verify
         shell: bash
         run: |
           set -euo pipefail
+          pid_file="$HOME/.local/state/mcf-mission2-terminal.pid"
+          socket_path="/run/user/$(id -u)/mcf-mission2-terminal.sock"
+          pid="$(cat "$pid_file" 2>/dev/null || true)"
 
-          unit="mcf-mission2-hello-terminal.service"
-          mode=""
-          evidence=""
+          [ -n "$pid" ]
+          kill -0 "$pid"
+          [ -S "$socket_path" ]
+          [ "$(stat -c '%a' "$socket_path")" = '600' ]
 
-          systemctl --user stop "$unit" >/dev/null 2>&1 || true
-          systemctl --user reset-failed "$unit" >/dev/null 2>&1 || true
-
-          xfce_pid="$(pgrep -u "$(id -u)" -n xfce4-session || true)"
-          if command -v xfce4-terminal >/dev/null 2>&1 && [ -n "$xfce_pid" ] && [ -r "/proc/$xfce_pid/environ" ]; then
-            session_env="$(tr '\0' '\n' < "/proc/$xfce_pid/environ")"
-            display="$(printf '%s\n' "$session_env" | sed -n 's/^DISPLAY=//p' | tail -n1)"
-            dbus="$(printf '%s\n' "$session_env" | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' | tail -n1)"
-            xauth="$(printf '%s\n' "$session_env" | sed -n 's/^XAUTHORITY=//p' | tail -n1)"
-
-            if [ -n "$display" ] && [ -n "$dbus" ]; then
-              args=(--user --unit="$unit" --collect --setenv="DISPLAY=$display" --setenv="DBUS_SESSION_BUS_ADDRESS=$dbus")
-              if [ -n "$xauth" ]; then
-                args+=(--setenv="XAUTHORITY=$xauth")
-              fi
-
-              systemd-run "${args[@]}" \
-                /usr/bin/xfce4-terminal \
-                --disable-server \
-                --title='MCF Mission 2 — Hello World' \
-                --hold \
-                --command="/bin/bash -lc 'printf \"Hello World\\n\"; exec /bin/bash'"
-              sleep 3
-              if systemctl --user is-active --quiet "$unit"; then
-                mode="XFCE_GUI"
-                evidence="$(systemctl --user show "$unit" -p ActiveState -p SubState -p MainPID --no-pager | tr '\n' ' ')"
-              fi
-            fi
-          fi
-
-          if [ -z "$mode" ] && command -v tmux >/dev/null 2>&1; then
-            systemctl --user stop "$unit" >/dev/null 2>&1 || true
-            systemd-run --user --unit="$unit" --collect \
-              /usr/bin/tmux -D new-session -s mcf-mission2-hello \
-              "/bin/bash -lc 'printf \"Hello World\\n\"; exec /bin/bash'"
-            sleep 2
-            if systemctl --user is-active --quiet "$unit"; then
-              mode="TMUX"
-              evidence="$(systemctl --user show "$unit" -p ActiveState -p SubState -p MainPID --no-pager | tr '\n' ' ')"
-            fi
-          fi
-
-          if [ -z "$mode" ]; then
-            echo "No supported persistent terminal path became active" >&2
-            exit 1
-          fi
+          verify="$(SOCKET_PATH="$socket_path" python3 - <<'PY'
+          import os, socket, time
+          s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+          s.settimeout(2)
+          s.connect(os.environ['SOCKET_PATH'])
+          chunks = []
+          end = time.time() + 2
+          while time.time() < end:
+              try:
+                  data = s.recv(4096)
+              except socket.timeout:
+                  break
+              if not data:
+                  break
+              chunks.append(data)
+              if b'Hello World' in b''.join(chunks):
+                  break
+          s.close()
+          text = b''.join(chunks).decode('utf-8', 'replace')
+          print('HELLO_WORLD_PRESENT=YES' if 'Hello World' in text else 'HELLO_WORLD_PRESENT=NO')
+          PY
+          )"
+          [ "$verify" = 'HELLO_WORLD_PRESENT=YES' ]
 
           {
-            echo "mode=$mode"
-            echo "unit=$unit"
-            echo "evidence=$evidence"
+            echo "pid=$pid"
+            echo "socket=$socket_path"
+            echo "verify=$verify"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Publish Mission 2 proof
+      - name: Publish independent verification
         if: always()
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           REPOSITORY: ${{ github.repository }}
-          MODE: ${{ steps.terminal.outputs.mode }}
-          UNIT: ${{ steps.terminal.outputs.unit }}
-          EVIDENCE: ${{ steps.terminal.outputs.evidence }}
-          OUTCOME: ${{ steps.terminal.outcome }}
+          PID: ${{ steps.verify.outputs.pid }}
+          SOCKET: ${{ steps.verify.outputs.socket }}
+          VERIFY: ${{ steps.verify.outputs.verify }}
+          OUTCOME: ${{ steps.verify.outcome }}
         run: |
           python3 - <<'PY'
           import json, os, urllib.request
           ok = os.environ.get('OUTCOME') == 'success'
           body = (
-              '## MCF Mission 2 — Persistent terminal\n\n'
+              '## MCF Mission 2 — Independent persistence verification\n\n'
               f'- status: `{"PASS" if ok else "FAIL"}`\n'
-              f'- runner: `self-hosted / node-01 / mcf-control`\n'
-              f'- mode: `{os.environ.get("MODE") or "NONE"}`\n'
-              f'- unit: `{os.environ.get("UNIT") or "NONE"}`\n'
-              '- terminal_text: `Hello World`\n'
-              f'- persistence: `{os.environ.get("EVIDENCE") or "NOT_VERIFIED"}`\n'
+              '- runner: `self-hosted / node-01 / mcf-control`\n'
+              f'- pid: `{os.environ.get("PID") or "NONE"}`\n'
+              f'- socket: `{os.environ.get("SOCKET") or "NONE"}`\n'
+              f'- terminal_text: `Hello World`\n'
+              f'- verification: `{os.environ.get("VERIFY") or "NOT_VERIFIED"}`\n'
           )
           payload = json.dumps({'body': body}).encode()
           req = urllib.request.Request(
