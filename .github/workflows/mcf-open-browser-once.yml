@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   open-browser:
@@ -15,18 +16,31 @@ jobs:
     steps:
       - name: Open Firefox in active VPS desktop session
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
-          echo "MCF_BROWSER_OPEN_START"
-          echo "HOST=$(hostname) USER=$(id -un) UID=$(id -u)"
+          set -u
+          report() {
+            body="$1"
+            curl -fsS -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/11/comments" \
+              -d "$(python3 -c 'import json,sys; print(json.dumps({"body":sys.argv[1]}))' "$body")" \
+              >/dev/null || true
+          }
 
+          echo "MCF_BROWSER_OPEN_START"
           uid="$(id -u)"
+          user="$(id -un)"
+          host="$(hostname)"
           session_pid="$(pgrep -u "$uid" -n xfce4-session || true)"
           if [ -z "$session_pid" ]; then
             session_pid="$(pgrep -u "$uid" -n xfce4-panel || true)"
           fi
           if [ -z "$session_pid" ]; then
-            echo "MCF_BROWSER_OPEN_FAIL_NO_ACTIVE_XFCE_SESSION"
+            report "MCF_BROWSER_OPEN_RESULT=FAIL_NO_ACTIVE_XFCE_SESSION\nHOST=$host USER=$user"
             exit 21
           fi
 
@@ -38,12 +52,13 @@ jobs:
           home="$(printf '%s\n' "$env_dump" | sed -n 's/^HOME=//p' | head -n1)"
 
           if [ -z "$display" ]; then
-            echo "MCF_BROWSER_OPEN_FAIL_NO_DISPLAY"
+            report "MCF_BROWSER_OPEN_RESULT=FAIL_NO_DISPLAY\nHOST=$host USER=$user XFCE_PID=$session_pid"
             exit 22
           fi
-
-          echo "XFCE_PID=$session_pid DISPLAY=$display"
-          command -v firefox >/dev/null 2>&1 || { echo "MCF_BROWSER_OPEN_FAIL_FIREFOX_MISSING"; exit 23; }
+          if ! command -v firefox >/dev/null 2>&1; then
+            report "MCF_BROWSER_OPEN_RESULT=FAIL_FIREFOX_MISSING\nHOST=$host USER=$user DISPLAY=$display"
+            exit 23
+          fi
 
           : "${home:=$HOME}"
           : "${xauth:=$home/.Xauthority}"
@@ -59,5 +74,5 @@ jobs:
             >/tmp/mcf-open-browser.log 2>&1 </dev/null &
 
           browser_pid=$!
-          echo "LAUNCH_PID=$browser_pid"
+          report "MCF_BROWSER_OPEN_RESULT=DISPATCHED\nHOST=$host USER=$user DISPLAY=$display XFCE_PID=$session_pid LAUNCH_PID=$browser_pid"
           echo "MCF_BROWSER_OPEN_DISPATCHED"
