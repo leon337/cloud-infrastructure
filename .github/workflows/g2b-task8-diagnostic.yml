@@ -1,59 +1,84 @@
 name: g2b-task8-diagnostic
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
     branches:
-      - team/g2b-task8-20260822
-    paths:
-      - .github/workflows/g2b-task8-diagnostic.yml
+      - codex/control-bridge-g2b
 
 permissions:
   contents: read
 
 jobs:
   inspect-attempt3:
+    if: github.actor == 'leon337' && github.head_ref == 'team/g2b-task8-20260822'
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 5
     steps:
-      - name: Read sanitized Task 8 attempt 3 residue only
+      - name: Localize failed apply from preserved disposable guest
         shell: bash
         run: |
           set -Eeuo pipefail
-          readonly CANDIDATE=fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
-          readonly QEMU_PID=775679
-          echo 'G2B_TASK8_DIAGNOSTIC_V1'
-          printf 'host=%s user=%s\n' "$(hostname --short)" "$(id -un)"
+          echo 'G2B_TASK8_ATTEMPT3_FORENSIC_V1'
 
-          if kill -0 "$QEMU_PID" 2>/dev/null; then
-            echo 'attempt3_qemu=ALIVE'
-            printf 'attempt3_qemu_cmdline='
-            tr '\0' ' ' <"/proc/$QEMU_PID/cmdline" \
-              | sed -E 's#(/[^ ]*(id_rsa|private|secret|token|key)[^ ]*)#<redacted-path>#Ig'
-            echo
-          else
+          qemu_pid="$(pgrep -f 'qemu-system-x86_64.*g2b-disposable-task8-vm3' | head -1 || true)"
+          if [[ -z "$qemu_pid" ]]; then
             echo 'attempt3_qemu=ABSENT'
+            exit 2
           fi
+          echo 'attempt3_qemu=ALIVE'
 
-          echo 'candidate_scoped_files_begin'
-          find /tmp -maxdepth 3 -type f -user "$(id -un)" \
-            \( -iname '*g2b*' -o -iname '*task8*' -o -iname '*control-bridge*' \) \
-            -printf '%p|%s bytes|%TY-%Tm-%TdT%TH:%TM:%TS\n' 2>/dev/null \
-            | sort | head -200 || true
-          echo 'candidate_scoped_files_end'
+          cmdline="$(tr '\0' ' ' <"/proc/$qemu_pid/cmdline")"
+          workdir="$(sed -nE 's#.*-pidfile (/tmp/g2b-task8-vm3\.[^ /]+/qemu\.pid).*#\1#p' <<<"$cmdline" | xargs -r dirname)"
+          if [[ -z "$workdir" || "$workdir" != /tmp/g2b-task8-vm3.* ]]; then
+            echo 'safe_workdir=INVALID'
+            exit 3
+          fi
+          echo 'safe_workdir=PASS'
 
-          echo 'candidate_reference_files_begin'
-          grep -rlF -- "$CANDIDATE" /tmp 2>/dev/null \
-            | grep -E '/(g2b|control-bridge|task8|mcf)' \
-            | head -100 || true
-          echo 'candidate_reference_files_end'
+          key="$workdir/id_ed25519"
+          [[ -f "$key" && "$(stat -c '%a' "$key")" == 600 ]] || { echo 'identity_file=INVALID'; exit 4; }
 
-          echo 'sanitized_failure_lines_begin'
-          grep -RhnE \
-            'G2B_DISPOSABLE_TEST_ABORTED|FAILED!|fatal:|ERROR!|No such file|Permission denied|Assertion failed|MODULE FAILURE|non-zero return code' \
-            /tmp/*g2b* /tmp/*G2B* /tmp/*task8* /tmp/*control-bridge* 2>/dev/null \
-            | tail -200 \
-            | sed -E \
-                -e 's/(token|secret|password|private[_ -]?key)[=:][^ ,}]+/\1=<redacted>/Ig' \
-                -e 's#-----BEGIN [A-Z ]+-----#<redacted-key-material>#g' \
-            || true
-          echo 'sanitized_failure_lines_end'
+          read -r -d '' guest_command <<'GUEST' || true
+          set -u
+          echo 'FORENSIC_GUEST_IDENTITY'
+          id -un
+          hostname --short
+          echo 'FORENSIC_G2B_OBJECTS'
+          for path in \
+            /etc/mcf-control-bridge-g2b.managed \
+            /run/lock/mcf-control-bridge-g2b-install \
+            /run/lock/mcf-control-bridge-g2b.lock \
+            /usr/local/libexec \
+            /usr/local/libexec/mcf-control-g2b \
+            /usr/local/lib/mcf-control-bridge \
+            /etc/mcf-control-bridge \
+            /etc/sudoers.d/mcf-control-g2b \
+            /etc/tmpfiles.d/mcf-control-bridge-g2b.conf \
+            /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev \
+            /var/lib/mcf-control-bridge/state/g2b \
+            /var/log/mcf-control-bridge/g2b; do
+            if test -e "$path" || test -L "$path"; then
+              stat -c 'PRESENT|%n|type=%F|mode=%a|uid=%u|gid=%g|size=%s' "$path" 2>&1 || true
+            else
+              printf 'ABSENT|%s\n' "$path"
+            fi
+          done
+          echo 'FORENSIC_IDENTITY'
+          getent passwd mcf-workspace || echo 'passwd_mcf_workspace=ABSENT'
+          getent group mcf-workspace || echo 'group_mcf_workspace=ABSENT'
+          id -nG mcf-workspace 2>&1 || true
+          passwd -S mcf-workspace 2>&1 | sed -E 's/^([^ ]+) ([^ ]+).*/passwd_state|\1|\2/' || true
+          echo 'FORENSIC_REPO_AND_TASK_LOG'
+          test -f /home/ubuntu/g2b-task8.status && { printf 'task_status='; cat /home/ubuntu/g2b-task8.status; } || echo 'task_status=ABSENT'
+          test -f /home/ubuntu/g2b-task8.log && tail -n 20 /home/ubuntu/g2b-task8.log || true
+          echo 'FORENSIC_RELATED_PROCESSES'
+          pgrep -af 'test_control_bridge_g2b|ansible-playbook|control-bridge-g2b-test-' || true
+          GUEST
+
+          ssh -i "$key" -p 22284 \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=5 \
+            ubuntu@127.0.0.1 "/bin/bash -s" <<<"$guest_command"
