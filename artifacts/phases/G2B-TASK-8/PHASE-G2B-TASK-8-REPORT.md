@@ -12,7 +12,7 @@ O HEAD observado de `codex/control-bridge-g2b` foi:
 
 `fbef3d407dbd9b7947b6c100a63d098eaebe2b6a`
 
-O PR #11 permaneceu draft/aberto. A descrição do PR ainda descrevia a tentativa 3 como em execução, enquanto comentários posteriores registravam a terminação com status 2. A divergência foi registrada e o estado terminal posterior foi usado como evidência.
+O PR #11 permaneceu draft/aberto. A descrição do PR ainda descrevia a tentativa 3 como em execução, enquanto comentários posteriores e a reconciliação de `main` registravam a terminação com status 2. A divergência foi registrada e o estado terminal posterior foi usado como evidência.
 
 Branches `ops/g2b-status-output-20260822` e `ops/g2b-cancel-long-waiters-20260822` foram inspecionadas e estavam divergidas do lineage atual; não foram adotadas.
 
@@ -85,17 +85,11 @@ Auditorias read-only já existentes:
 
 Às 14:09 UTC de 2026-08-22, a QEMU `g2b-disposable-task8-vm3` ainda estava ativa e acessível por SSH local. O cleanup do container interno foi bem-sucedido (`cleanup=0`). O estado atual da QEMU após esse snapshot é `NÃO VERIFICADO`.
 
-## Recuperação adicional
-
-Foi preparada uma reprodução diagnóstica limitada à mesma boundary descartável preservada, com o mesmo `candidate.tar.gz`. A única instrumentação planejada era remover a supressão de stdout das duas chamadas Ansible e marcar separadamente as invocações 1 e 2. O trabalho longo permaneceria dentro da VM e o self-hosted runner seria usado somente em ações one-shot de início/status.
-
-Nenhum resultado dessa reprodução ficou observável nas evidências disponíveis antes do encerramento. Portanto sua execução e seu resultado são `NOT_VERIFIED` e não são usados para inferir causa, correção ou PASS.
-
-Os workflows temporários dessa recuperação foram removidos por commits normais. O diff final do PR #21 voltou a conter somente os 11 arquivos de evidência + PRF.
-
 ## Alterações desta frente
 
-Foi preservada a branch isolada `team/g2b-task8-20260822` e o draft PR #21. Foram materializados evidência da tentativa 3, PRF, checkpoint, decisões, validação e mission trace.
+Foi criada a branch isolada `team/g2b-task8-20260822` e o draft PR #21.
+
+Um workflow diagnóstico temporário foi criado para tentar uma leitura forense one-shot da VM preservada. Nenhum run foi disparado pelo GitHub. O workflow é removido da árvore final; seus commits permanecem no histórico para auditabilidade.
 
 Nenhum código funcional do G2-B foi alterado.
 
@@ -107,4 +101,4 @@ A perda de stdout do Ansible é uma causa comprovada de insuficiência de observ
 
 ## Decisão
 
-Aplicada a condição de parada definida por LEANDRO: não corrigir por hipótese, não declarar PASS sem lifecycle reproduzível e não iniciar Tasks 9/10.
+Aplicada a condição de parada definida por LEANDRO: não corrigir por hipótese, não repetir cegamente o lifecycle e não iniciar Tasks 9/10.
