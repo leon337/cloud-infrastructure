@@ -362,7 +362,7 @@ codex_execution:
       real_vps_post_check_mode_invariance: PASS_AT_2026_08_17T08_38_33Z
       real_vps_apply: PASS_AT_2026_08_17T09_25_38Z_CHANGED_13_FAILED_0_UNREACHABLE_0
       real_vps_apply_log_sha256: 7e3eaf1a328d07b181469cb4c6dae31ec48be6dbe11f5720347da673c521ac5c
-      real_vps_idempotence: PASS_AT_2026-08-17T10_16_20Z_CHANGED_0_FAILED_0_UNREACHABLE_0
+      real_vps_idempotence: PASS_AT_2026_08_17T10_16_20Z_CHANGED_0_FAILED_0_UNREACHABLE_0
       real_vps_idempotence_log_sha256: 42fd0abf73266274d9e1628819a6ea339422d61f90066b1ae701ea80388948fc
       real_vps_restart: PASS_AT_2026_08_17T11_26_44Z
       real_vps_post_restart: PASS_AT_2026_08_17T12_07_29Z_CHANGED_0_FAILED_0_UNREACHABLE_0
