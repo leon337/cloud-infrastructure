@@ -1,0 +1,92 @@
+name: g2b-task8-diag-status-once
+
+on:
+  push:
+    branches:
+      - team/g2b-task8-20260822
+    paths:
+      - .github/workflows/g2b-task8-diag-status-once.yml
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  capture-status:
+    if: github.actor == 'leon337'
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    steps:
+      - name: Read detached diagnostic status
+        id: status
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          qemu_pid="$(pgrep -f 'qemu-system-x86_64.*g2b-disposable-task8-vm3' | head -1 || true)"
+          if [[ -z "$qemu_pid" ]]; then
+            report='G2B_TASK8_DIAG_STATUS_V1
+attempt3_qemu=ABSENT'
+          else
+            cmdline="$(tr '\0' ' ' <"/proc/$qemu_pid/cmdline")"
+            workdir="$(sed -nE 's#.*-pidfile (/tmp/g2b-task8-vm3\.[^ /]+/qemu\.pid).*#\1#p' <<<"$cmdline" | xargs -r dirname)"
+            key="$workdir/id_ed25519"
+            report="$(ssh -i "$key" -p 22284 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 ubuntu@127.0.0.1 /bin/bash -s <<'GUEST'
+          set -u
+          echo G2B_TASK8_DIAG_STATUS_V1
+          pid_file=/home/ubuntu/.local/state/g2b-task8-diagnostic.pid
+          root_file=/home/ubuntu/.local/state/g2b-task8-diagnostic.root
+          if test -f "$pid_file"; then
+            pid=$(cat "$pid_file")
+            echo "diagnostic_pid=$pid"
+            if test -d "/proc/$pid"; then echo diagnostic_process=ALIVE; else echo diagnostic_process=EXITED; fi
+          else
+            echo diagnostic_pid=ABSENT
+            echo diagnostic_process=NOT_STARTED
+          fi
+          if test -f "$root_file"; then printf 'diagnostic_root='; cat "$root_file"; else echo diagnostic_root=ABSENT; fi
+          if test -f /home/ubuntu/g2b-task8-diagnostic.status; then
+            printf 'diagnostic_status='; cat /home/ubuntu/g2b-task8-diagnostic.status
+          else
+            echo diagnostic_status=PENDING
+          fi
+          echo LOG_TAIL_BEGIN
+          if test -f /home/ubuntu/g2b-task8-diagnostic.log; then
+            tail -n 260 /home/ubuntu/g2b-task8-diagnostic.log | sed -E 's/(?i)(authorization:|bearer |token=|secret=).*/[REDACTED]/'
+          else
+            echo diagnostic_log=ABSENT
+          fi
+          echo LOG_TAIL_END
+          GUEST
+          )"
+          fi
+          printf '%s\n' "$report"
+          {
+            echo 'report<<EOF'
+            printf '%s\n' "$report"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish bounded status to PR 21
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          REPORT: ${{ steps.status.outputs.report }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          body = "## G2-B Task 8 diagnostic status\n\n```text\n" + os.environ['REPORT'][-28000:] + "\n```"
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['REPOSITORY']}/issues/21/comments",
+              data=json.dumps({'body': body}).encode(),
+              headers={
+                  'Authorization': f"Bearer {os.environ['GITHUB_TOKEN']}",
+                  'Accept': 'application/vnd.github+json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'Content-Type': 'application/json',
+              },
+              method='POST',
+          )
+          with urllib.request.urlopen(req, timeout=20) as resp:
+              print(f'comment_status={resp.status}')
+          PY
