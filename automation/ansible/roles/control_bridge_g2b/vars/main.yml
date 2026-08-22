@@ -37,6 +37,7 @@ g2b_marker_sha256_dev: 7e2485cf20698c416d4ebfca2ae6eed3af5ff9c29082ff25b8db55c81
 g2b_marker_sha256_test: ffc4ef1d2c3d70cd3164940a322052e548d97f8087944ecedb783a07d3444895
 
 g2b_root_directories:
+  - {path: /usr/local/libexec, owner: root, group: root, mode: "0755"}
   - {path: /usr/local/lib/mcf-control-bridge, owner: root, group: root, mode: "0755"}
   - {path: /usr/local/lib/mcf-control-bridge/control_plane, owner: root, group: root, mode: "0755"}
   - {path: /usr/local/lib/mcf-control-bridge/control_plane/g2b, owner: root, group: root, mode: "0755"}

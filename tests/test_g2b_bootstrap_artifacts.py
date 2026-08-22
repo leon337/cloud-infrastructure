@@ -131,6 +131,7 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
 
         roots = self.vars["g2b_root_directories"]
         self.assertTrue(roots)
+        self.assertIn("/usr/local/libexec", {item["path"] for item in roots})
         for item in roots:
             self.assertEqual((item["owner"], item["group"]), ("root", "root"))
             self.assertEqual(int(item["mode"], 8) & 0o022, 0)

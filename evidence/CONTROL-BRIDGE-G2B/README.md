@@ -45,3 +45,16 @@ The privileged lifecycle harness explicitly refuses `node-01` and `vmi3506102`. 
 - retry resource decision: `6 vCPU / 12 GiB RAM / TCG multi-thread`; 14 GiB was rejected to preserve host safety margin
 
 Attempt 1 is a real disposable-harness compatibility failure, not a G2-B executor acceptance failure and not an authorized-resize abort. Task 8 remains unaccepted until a fresh exact candidate completes all 13 lifecycle markers and cleanup in the resized disposable VM.
+## Task 8 VPS QEMU/TCG attempt 2
+
+- candidate: `e6aba995cbee69e1cb1e37ea954b94d4fa92082c`
+- VM resources: `6 vCPU / 12 GiB RAM / TCG multi-thread`
+- result: `EXIT_2` at `apply_g2b` before the first lifecycle marker
+- cleanup: `cleanup=0`; disposable Docker fixture removed
+- diagnostic reproduction preserved the Ansible failure output
+- proven cause: Ubuntu 24.04 clean fixture lacks `/usr/local/libexec`, while the role installs `/usr/local/libexec/mcf-control-g2b`
+- correction: add `/usr/local/libexec` to the root-owned managed directory set with mode `0755`
+- TDD: focused bootstrap/disposable tests `11 PASS`
+- full local regression after correction: `371 PASS`, shell syntax `16 PASS`, continuity drift `PASS`
+
+Attempt 2 is a real bootstrap portability gap in the G2-B role, not a QEMU failure and not a NODE-01 mutation. Task 8 remains unaccepted pending a fresh exact-candidate lifecycle run.
