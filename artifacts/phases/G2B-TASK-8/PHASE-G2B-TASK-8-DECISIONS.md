@@ -24,10 +24,12 @@ A correção de `/usr/local/libexec` já estava no candidato. O lock de instala�
 
 A evidência original suprimiu stdout do Ansible. Sem causa comprovada, o lifecycle não foi repetido apenas para obter um resultado diferente.
 
-## D7 — Probe temporário sem execução
+## D7 — Recuperação diagnóstica adicional limitada
 
-Foi criado um workflow read-only e one-shot na branch filha para localizar resíduos da VM preservada. GitHub não gerou run. O probe é removido da árvore final.
+Foi preparada uma reprodução diagnóstica restrita à boundary descartável preservada, usando o mesmo candidato e alterando apenas a observabilidade das duas invocações Ansible. O trabalho longo seria executado dentro da VM; o self-hosted runner seria usado somente para ações one-shot.
+
+Nenhum resultado dessa recuperação ficou observável nas evidências disponíveis. Portanto execução e resultado são classificados como `NOT_VERIFIED` e não sustentam nenhuma conclusão técnica. Os workflows temporários foram removidos da árvore final por commits normais.
 
 ## D8 — Condição de parada
 
-Como a causa não pôde ser determinada com segurança, a frente retorna `BLOCKED`. Tasks 9/10, escrita G2-B real no NODE-01, HUMAN_GATE e merge permanecem intocados.
+Como a causa não pôde ser determinada com segurança e não existe lifecycle pós-correção comprovado, a frente retorna `BLOCKED`. Tasks 9/10, escrita G2-B real no NODE-01, HUMAN_GATE e merge permanecem intocados.
