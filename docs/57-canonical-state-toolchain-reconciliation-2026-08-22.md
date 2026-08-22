@@ -106,7 +106,9 @@ The branch `validation/evidence-inheritance-tool-20260819` was also inspected. I
 - `mcf/mission-001-control-bridge-g1`;
 - recovered G2-B checkpoint `7205a647f918580d09c87ed44f38b0a433552a51`.
 
-It is verified present by continuity checkpoint `5db49d76dd530038aaf032aeba055b61eaab653a`, where it describes `REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING`, references G2-B PR #11, isolates F1.2c, and integrates the continuity drift checker into `scripts/test.sh`.
+The exact introduction point is commit `5717defcf59e6a4cb664119f74227d7f5dee812a` (`docs(continuity): add canonical active mission state`), whose direct parent is the recovered G2-B checkpoint `7205a647f918580d09c87ed44f38b0a433552a51`. The file is therefore proven to originate in the post-recovery G2-B continuity lineage, not in F1.1/F1.2c/G1 or current main.
+
+By continuity checkpoint `5db49d76dd530038aaf032aeba055b61eaab653a`, it describes `REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING`, references G2-B PR #11, isolates F1.2c, and is used by continuity/drift controls that are later wired into `scripts/test.sh`.
 
 The later G2-B branch changes that same file to make `CONTROL_BRIDGE_G2B` the active mission. Its current contents are also stale relative to the merged 2026-08-22 attempt-3 reconciliation.
 
@@ -114,7 +116,9 @@ Decision: **the active-mission model is a real continuity artifact, but it is no
 
 ## `ROADMAP-CHECKLIST.md` lineage and decision
 
-`ROADMAP-CHECKLIST.md` is absent from current main, F1.2c, G1, the recovered G2-B checkpoint `7205a647...`, and continuity R7 checkpoint `5db49d76...`. It appears later in the G2-B/continuity lineage.
+`ROADMAP-CHECKLIST.md` is absent from current main, F1.2c, G1, the recovered G2-B checkpoint `7205a647...`, continuity R7 checkpoint `5db49d76...`, and remains absent through commit `8e696288cb8f02b79ee130ac7cc5eca42ab6c961`.
+
+The exact introduction point is the next commit, `48146d3ed6a7d28215b9d34f3954673054738d0a` (`checkpoint(g2b): record Task 8 external boundary blocker`). The first version explicitly names the G2-B branch and PR #11 and projects machine-readable state from `state/current.yaml` plus `state/control-bridge-g2b.yaml`. This proves that the checklist was introduced as a G2-B Task-8 checkpoint surface, not as a neutral predecessor artifact.
 
 The current G2-B copy still advertises the earlier Task-8 external-block/QEMU-install step, while merged main `README.md` records Task-8 attempt 3 already failed. Therefore the file is not a safe source for current main state.
 
