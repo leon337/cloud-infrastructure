@@ -30,6 +30,12 @@ Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 - [ ] G2-B Task 10 — `NOT_STARTED` — exige HUMAN_GATE explícito para NODE-01 bootstrap/grant/write
 - [ ] G2-B merge — `AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE`
 
+### Plano de remediação recomendado
+
+- `docs/56-g2b-task8-vps-qemu-tcg-disposable-boundary-plan.md`
+- estratégia: VM Ubuntu 24.04 descartável em QEMU/TCG na própria VPS; nunca executar o harness privilegiado diretamente no NODE-01.
+- gate atual: autorização humana para instalar `qemu-system-x86`, `qemu-utils` e `cloud-image-utils`.
+
 ### Bloqueio G2-B atual
 
 `control-bridge-g2b-ci` run `32551353362` falhou antes de executar steps; a reexecução repetiu `steps=0` e logs `BlobNotFound`. O lifecycle descartável foi `SKIPPED`. O plano proíbe rerotear essa prova privilegiada para NODE-01.
@@ -37,7 +43,7 @@ Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 Próximo passo exato:
 
 ```text
-RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
+HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
 ```
 
 ## Roadmap principal da plataforma

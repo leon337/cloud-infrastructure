@@ -37,7 +37,7 @@ continuity:
   g2b_recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
   active_roadmap_stage: R8_COMPLETE_RETURNED_TO_G2B
-  next_exact_step: RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
+  next_exact_step: HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
   checkpoint: CHECKPOINT.md
   platform_discovery_state: state/platform-discovery.yaml
   codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md

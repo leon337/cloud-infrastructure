@@ -93,9 +93,12 @@ continuity:
   roadmap_stage: R8_COMPLETE
   f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
   f1_2c_rule: ISOLATED_DO_NOT_MODIFY
-technical_next_exact_step: RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
+technical_next_exact_step: HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
 technical_next_step_gate: BLOCKED_EXTERNAL_TASK8_DISPOSABLE_BOUNDARY_REQUIRED_NEVER_NODE01
-next_exact_step: RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
+task_8_remediation_plan: docs/56-g2b-task8-vps-qemu-tcg-disposable-boundary-plan.md
+task_8_remediation_strategy: VPS_QEMU_TCG_DISPOSABLE_UBUNTU24_SYSTEMD
+task_8_host_package_gate: WAITING_HUMAN_AUTHORIZATION
+next_exact_step: HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
 r8_does_not_authorize:
   - NODE01_G2B_BOOTSTRAP
   - REAL_GRANT_ISSUE_OR_REISSUE

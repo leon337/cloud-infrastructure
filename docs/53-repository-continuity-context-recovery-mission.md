@@ -240,7 +240,7 @@ Continuam fechados:
 A missão de continuidade está concluída e a missão ativa retorna ao Control Bridge G2-B:
 
 ```text
-RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
+HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
 ```
 
 Task 8 deve respeitar o plano aprovado: boundary Ubuntu 24.04/systemd descartável, nunca NODE-01.

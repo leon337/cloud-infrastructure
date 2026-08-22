@@ -60,7 +60,7 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         )
         self.assertEqual(
             state["continuity"]["next_exact_step"],
-            "RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY",
+            "HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES",
         )
 
         self.assertEqual(bridge["priority"], "P0")
@@ -94,7 +94,7 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             self.assertIn("state/institutional-memory.yaml", text)
             self.assertIn("state/continuity-drift-controls.yaml", text)
             self.assertIn("state/cold-start-validation.yaml", text)
-            self.assertIn("RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY", text)
+            self.assertIn("HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES", text)
             self.assertIn("codex/control-bridge-g2b", text)
             self.assertIn("docs/54-control-bridge-g2b-recovery-checkpoint.md", text)
 
@@ -163,11 +163,13 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         )
         self.assertEqual(
             state["next_exact_step"],
-            "RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY",
+            "HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES",
         )
         for gate, value in state["human_gates"].items():
             if gate == "merge_g2b":
                 self.assertEqual(value, "AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE")
+            elif gate == "task8_qemu_tcg_host_packages":
+                self.assertEqual(value, "WAITING_HUMAN_AUTHORIZATION")
             else:
                 self.assertIn("NOT_AUTHORIZED", value)
 

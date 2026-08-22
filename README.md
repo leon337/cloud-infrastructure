@@ -32,7 +32,7 @@ REAL_WRITE_GATE=CLOSED
 PRODUCTION_GATE=CLOSED
 MERGE_G2B_GATE=CLOSED
 F1_2C=PARALLEL_ISOLATED_DO_NOT_MODIFY
-NEXT_EXACT_STEP=RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
+NEXT_EXACT_STEP=HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
 ```
 
 > Nova IA/agente: execute primeiro [`governance/AI-STARTUP-RECOVERY-PROTOCOL.md`](governance/AI-STARTUP-RECOVERY-PROTOCOL.md), leia `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/control-bridge-g2b.yaml`, e obtenha `RECOVERY_VERDICT=PASS` antes de implementar.
@@ -95,7 +95,7 @@ MESTRE_MCF=CURRENT_ORCHESTRATOR
 LEANDRO=FINAL_HUMAN_AUTHORITY
 F1_2C_SYSTEMD_RUNTIME_LOCK=PARALLEL_ISOLATED_DO_NOT_MODIFY
 NODE01_G2B_GATE=CLOSED
-NEXT_EXACT_STEP=RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
+NEXT_EXACT_STEP=HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
 ```
 
 O RED recuperado da Task 7 foi resolvido com validação fail-closed do conjunto exato de chaves de grant existente. O candidato `604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390` obteve 7/7 testes focados e 3/3 syntax-checks Ansible no self-hosted runner, sem apply, grant ou escrita real. No candidato, o GitHub-hosted CI falhou antes dos steps com `BlobNotFound`; no commit de conclusão R8 `047495c5...`, os runs hosted concluíram `action_required` sem criar jobs. Ambos permanecem inconclusivos como prova de conteúdo.
