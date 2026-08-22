@@ -21,11 +21,6 @@ attempt3:
     latest_verified_state: ALIVE
     latest_verified_at_utc: 2026-08-22T14:09:03Z
     current_state: NOT_VERIFIED
-recovery:
-  additional_diagnostic_reproduction: NOT_VERIFIED
-  observable_result: NONE
-  conclusion_usage: NONE
-  temporary_workflows_final_tree: REMOVED
 boundaries:
   real_node01_g2b_write: NOT_EXECUTED
   task9: NOT_STARTED
@@ -34,11 +29,11 @@ boundaries:
   final_merge: NOT_EXECUTED
 changes:
   functional_code: NONE
-  temporary_diagnostic_workflows_final_tree: REMOVED
+  temporary_diagnostic_workflow_final_tree: REMOVED
 next_action:
   - verify GitHub and disposable VM state live before any action
   - preserve any remaining attempt-3 forensic state before cleanup
-  - reproduce only in a disposable boundary with stdout/stderr captured separately for apply invocation 1 and 2
+  - if the failed task remains unrecoverable, reproduce only in a fresh disposable boundary with stdout/stderr captured separately for apply invocation 1 and 2
   - fix only a proven cause
   - then run focused, regression, and complete disposable lifecycle validation
   - do not start Tasks 9/10 until Task 8 has reproducible PASS evidence
