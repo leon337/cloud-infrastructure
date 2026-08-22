@@ -1,1 +1,2 @@
 hell word terminal probe
+synchronize trigger
