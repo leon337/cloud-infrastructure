@@ -1,80 +1,70 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-18 após retomada manual da missão. Este arquivo responde: **onde estamos agora?**
+Atualizado para a reconciliação de 22/08/2026 registrada em `README.md`.
 
 ## Estado durável
 
-- Repositório: `leon337/cloud-infrastructure`, branch `main`.
-- FASE 0 — inventário: `DONE`.
-- FASE 1 — acesso, recovery e segurança mínima: `DONE`.
-- FASE 2 — Cloud Workstation: `DONE`, `FUNCTIONAL_AND_VALIDATED`.
-- As antigas F3–F10 permanecem históricas/provisórias; a implementação agora segue a arquitetura definida pela Platform Discovery.
-- `CREDENTIAL_ROTATION`: `DEFERRED_BY_HUMAN_DECISION`.
-- Platform Discovery Q1–Q40 concluída para fins de delegação; Q1–Q39 são requisitos arquitetônicos vinculantes.
-- Q40 = `D`: LEANDRO delegou ao Codex a seleção tecnológica e a implementação incremental da plataforma DEV/lab.
-- Missão canônica: `docs/CODEX-EXECUTION-MISSION-001.md`.
-- Checkpoint da decisão: `docs/39-platform-discovery-checkpoint-028.md`.
-- Estado estruturado: `state/platform-discovery.yaml`.
-- `implementation_authorized: true` para a plataforma privada DEV/lab dentro dos guardrails.
-- `codex_implementation_mission_authorized: true`.
-- `production_promotion_authorized: false`; produção continua sujeita a HUMAN_GATE de LEANDRO.
+- Repositório: `leon337/cloud-infrastructure`.
+- `main`: painel/documentação integrada; não contém todas as linhagens ativas da plataforma e do Control Bridge.
+- F0: `DONE`.
+- F1 inicial: `DONE`.
+- F2 Cloud Workstation: `DONE / FUNCTIONAL_AND_VALIDATED`.
+- S0 Recovery: `DONE`.
+- F1.1 Foundations: `DONE`.
+- F1.2b Docker Boundary: `DONE`.
+- F1.2c Network Enforcement: `PARTIAL`, com trabalho paralelo preservado.
+- G1: `PASS_REAL_NODE_01_ROUNDTRIP`.
+- G2-A: `PASS_REAL_NODE_01_READ_ONLY`.
+- G2-B Tasks 1–7: `COMPLETE` no estado reconciliado do README.
+- G2-B Task 8: `FAILED_ATTEMPT_3`, ainda não aceita.
+- G2-B Tasks 9–10: `NOT_STARTED`.
+- Merge G2-B: `NOT_ELIGIBLE`.
+- Produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
+- Rotação de credenciais: `DEFERRED_BY_HUMAN_DECISION`.
 
-## Contingência de executor — 18/08/2026
+## Ownership e refs críticas
 
-- LEANDRO informou que o Codex está indisponível.
-- LEANDRO assumiu temporariamente a execução manual das ações na VPS.
-- MESTRE assume a orquestração técnica, análise dos resultados, definição de microtarefas, prechecks, rollback, validação e checkpoint.
-- A contingência altera apenas o executor atual; não reabre decisões Q1–Q40, não amplia a autorização e não altera os guardrails.
-- O contrato incremental de `docs/CODEX-EXECUTION-MISSION-001.md` continua sendo usado como contrato de execução, independentemente do executor.
+- `main` — ref canônica integrada.
+- `mcf/mission-001-control-bridge-g1` — G1/G2-A, protegida.
+- `codex/control-bridge-g2b` — G2-B ativo, PR #11 draft, protegida.
+- `codex/mission-001-f1-2c-network-enforcement` — frente F1.2c.
+- `fix/f1-2c-systemd-runtime-lock` — correções paralelas F1.2c; preservar trabalho local registrado.
 
-## Guardrails vigentes
+Nenhuma sanitização deve reimplementar G2-B, reabrir arquitetura ou descartar trabalho F1.2c.
 
-- LEANDRO continua autoridade humana final.
-- Q1–Q39 não podem ser reabertas silenciosamente pelo executor.
-- Nunca versionar passwords, passphrases, private keys, tokens, API keys, 2FA, connection strings reais ou credenciais do provedor.
-- Management Plane não deve ser exposto publicamente.
-- Agentes não recebem root/Docker daemon irrestrito.
-- Mudanças críticas devem ter precheck, rollback e evidência.
-- Cloud Workstation permanece cockpit humano opcional e não deve ser destruída sem plano de recuperação adequado.
-- Rotação de credenciais continua adiada por decisão humana.
-- Promoção para produção externa continua bloqueada até novo HUMAN_GATE.
+## Incidentes abertos relevantes
 
-## Segurança e acesso atuais
+### G2-B Task 8
 
-- `ubuntu`/publickey validado com chave dedicada; chave anterior preservada.
-- SSH efetivo: root login `no`, password `no`, keyboard-interactive `no`, publickey `yes`, `MaxAuthTries 3`, `LoginGraceTime 30`, `AllowUsers ubuntu`.
-- UFW ativo: default deny incoming; somente OpenSSH TCP 22 para IPv4/IPv6.
-- fail2ban/sshd ativo.
-- sudo exige senha; não há `NOPASSWD`; `visudo` validado.
-- `ubuntu` não pertence ao grupo `lxd`; LXD daemon/socket estão desabilitados e inativos.
+A terceira tentativa descartável terminou com `apply_g2b exit=2`. O snapshot reconciliado informa que o guest descartável foi preservado para investigação. Não há aceite da Task 8.
 
-## Recovery e backup
+Próximo passo registrado:
 
-- VNC Contabo revalidado funcionalmente.
-- Rescue disponível, não acionado.
-- Snapshots não configurados; backup do provedor não contratado; firewall do provedor não configurado.
-- Backup diário sanitizado em `/var/backups/cloud-infrastructure` com timer ativo.
-- Primeira cópia off-host em `/home/leo/Backups/cloud-infrastructure`; SHA-256 remoto/local idêntico e extração de 24 arquivos validada.
-- Backup amplo de dados e reconstrução total ainda não foram testados; `FND-BACKUP-001` permanece mitigado/aberto.
+```text
+PRESERVE_G2B_ATTEMPT3_EVIDENCE_THEN_DIAGNOSE_EXIT_2_AND_CLEAN_DISPOSABLE_VM
+```
 
-## Cloud Workstation
+### F1.2c
 
-- Stack: XFCE + LightDM + XRDP/xorgxrdp.
-- XRDP escuta somente em `127.0.0.1:3389`; sesman somente em `[::1]:3350`; não há regra pública para RDP.
-- Cliente validado por túnel SSH local `127.0.0.1:13389`.
-- Passaram: desktop, login gráfico, Firefox, VS Code, terminal, terminal integrado, Thunar, projeto Git, múltiplas janelas, clipboard nos dois sentidos, 1100×700 e 1280×720, reconnect, persistência, logout/login e reboot.
-- Recursos pós-reboot com sessão gráfica ativa: 8 CPUs, ~2,2 GiB/23 GiB RAM, ~7,5 GiB/290 GiB disco.
+`cloud-platform-network-services.service` foi observada em `failed`. A próxima ação dessa frente é diagnóstico somente leitura antes de qualquer restart/reapply.
 
-## Findings
+## Guardrails
 
-- Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUDO-001`, `FND-DOC-001`, `FND-AUDIT-001`.
-- Mitigado e aberto: `FND-BACKUP-001`.
-- A investigar: `FND-CPU-001`, `FND-CLOUDINIT-001`.
+- LEANDRO é a autoridade humana final.
+- Q1–Q39 permanecem vinculantes; Q40-D não foi reaberta.
+- Produção externa continua atrás de HUMAN_GATE.
+- Secrets reais não podem ser persistidos no Git/evidência.
+- G2-B não fornece shell arbitrário, root, sudo genérico ou Docker socket.
+- Workflows self-hosted devem ser bounded; runner não é mecanismo de wait/polling.
+- `PASS`, `DONE`, `SAFE_TO_DELETE` e equivalentes exigem evidência específica.
 
 ## Regra de retomada
 
-Toda retomada começa em `CONTEXT.md`, verifica a `main` real, lê `CHECKPOINT.md`, `state/current.yaml`, `state/platform-discovery.yaml`, `docs/39-platform-discovery-checkpoint-028.md` e `docs/CODEX-EXECUTION-MISSION-001.md`.
+1. consultar GitHub live;
+2. ler `README.md`, `CONTEXT.md`, este checkpoint e `state/current.yaml`;
+3. identificar a branch proprietária da frente;
+4. ler state/evidence dessa branch sem promovê-los para `main` por inferência;
+5. preservar divergências/worktrees antes de qualquer mutação;
+6. respeitar HUMAN_GATEs e limites da frente.
 
-Próximo passo exato: **MISSION ACCEPTANCE + RECOVERY REPORT**, preservando o mesmo conteúdo exigido pela missão Codex, mas executado temporariamente por LEANDRO sob orquestração do MESTRE.
-
-Antes de qualquer implementação ampla: recuperar GitHub + estado real da VPS, registrar divergências, confirmar riscos, Technology Mapping inicial e primeiro incremento com rollback; depois prosseguir incrementalmente dentro da autorização Q40-D.
+O checkpoint de 18/08 que dizia `MISSION_ACCEPTANCE_AND_RECOVERY_REPORT` e descrevia execução manual por LEANDRO deixou de representar o estado atual e foi substituído por este checkpoint corrente. O histórico continua preservado no Git.
