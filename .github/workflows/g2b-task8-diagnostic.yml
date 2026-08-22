@@ -1,0 +1,59 @@
+name: g2b-task8-diagnostic
+
+on:
+  push:
+    branches:
+      - team/g2b-task8-20260822
+    paths:
+      - .github/workflows/g2b-task8-diagnostic.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-attempt3:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    steps:
+      - name: Read sanitized Task 8 attempt 3 residue only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          readonly CANDIDATE=fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+          readonly QEMU_PID=775679
+          echo 'G2B_TASK8_DIAGNOSTIC_V1'
+          printf 'host=%s user=%s\n' "$(hostname --short)" "$(id -un)"
+
+          if kill -0 "$QEMU_PID" 2>/dev/null; then
+            echo 'attempt3_qemu=ALIVE'
+            printf 'attempt3_qemu_cmdline='
+            tr '\0' ' ' <"/proc/$QEMU_PID/cmdline" \
+              | sed -E 's#(/[^ ]*(id_rsa|private|secret|token|key)[^ ]*)#<redacted-path>#Ig'
+            echo
+          else
+            echo 'attempt3_qemu=ABSENT'
+          fi
+
+          echo 'candidate_scoped_files_begin'
+          find /tmp -maxdepth 3 -type f -user "$(id -un)" \
+            \( -iname '*g2b*' -o -iname '*task8*' -o -iname '*control-bridge*' \) \
+            -printf '%p|%s bytes|%TY-%Tm-%TdT%TH:%TM:%TS\n' 2>/dev/null \
+            | sort | head -200 || true
+          echo 'candidate_scoped_files_end'
+
+          echo 'candidate_reference_files_begin'
+          grep -rlF -- "$CANDIDATE" /tmp 2>/dev/null \
+            | grep -E '/(g2b|control-bridge|task8|mcf)' \
+            | head -100 || true
+          echo 'candidate_reference_files_end'
+
+          echo 'sanitized_failure_lines_begin'
+          grep -RhnE \
+            'G2B_DISPOSABLE_TEST_ABORTED|FAILED!|fatal:|ERROR!|No such file|Permission denied|Assertion failed|MODULE FAILURE|non-zero return code' \
+            /tmp/*g2b* /tmp/*G2B* /tmp/*task8* /tmp/*control-bridge* 2>/dev/null \
+            | tail -200 \
+            | sed -E \
+                -e 's/(token|secret|password|private[_ -]?key)[=:][^ ,}]+/\1=<redacted>/Ig' \
+                -e 's#-----BEGIN [A-Z ]+-----#<redacted-key-material>#g' \
+            || true
+          echo 'sanitized_failure_lines_end'
