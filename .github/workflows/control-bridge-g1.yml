@@ -42,23 +42,27 @@ jobs:
             --request-file control/dispatch/probe.json \
             --result-file "${RUNNER_TEMP}/control-bridge-result.json"
 
-      - name: Mission 2 — persistent interactive PTY with Hello World
+      - name: Mission 2 — launch or verify persistent interactive PTY
         if: github.event_name == 'push'
         shell: bash
         run: |
           set -u
           request_id="$(python3 -c 'import json; print(json.load(open("control/dispatch/probe.json"))["request_id"])')"
-          if [ "$request_id" != 'VPS-MISSION2-PERSISTENT-HELLO-002' ]; then
-            exit 0
-          fi
+          case "$request_id" in
+            VPS-MISSION2-PERSISTENT-HELLO-003|VPS-MISSION2-PERSISTENT-HELLO-004) ;;
+            *) exit 0 ;;
+          esac
 
-          unit="mcf-mission2-hello-terminal.service"
           bin_dir="$HOME/.local/bin"
           state_dir="$HOME/.local/state"
           terminal_py="$bin_dir/mcf-mission2-terminal.py"
+          pid_file="$state_dir/mcf-mission2-terminal.pid"
+          daemon_log="$state_dir/mcf-mission2-terminal-daemon.log"
+          socket_path="/run/user/$(id -u)/mcf-mission2-terminal.sock"
           mkdir -p "$bin_dir" "$state_dir"
 
-          cat > "$terminal_py" <<'PY'
+          if [ "$request_id" = 'VPS-MISSION2-PERSISTENT-HELLO-003' ]; then
+            cat > "$terminal_py" <<'PY'
           #!/usr/bin/env python3
           import errno
           import os
@@ -69,7 +73,7 @@ jobs:
 
           runtime_dir = Path(os.environ.get('XDG_RUNTIME_DIR') or f'/run/user/{os.getuid()}')
           socket_path = runtime_dir / 'mcf-mission2-terminal.sock'
-          log_path = Path.home() / '.local/state/mcf-mission2-terminal.log'
+          transcript_path = Path.home() / '.local/state/mcf-mission2-terminal.log'
           try:
               socket_path.unlink()
           except FileNotFoundError:
@@ -88,11 +92,10 @@ jobs:
           server.setblocking(False)
           clients = []
           backlog = bytearray()
-
           os.write(master_fd, b"printf 'Hello World\\n'\n")
 
-          log_path.parent.mkdir(parents=True, exist_ok=True)
-          with open(log_path, 'ab', buffering=0) as log:
+          transcript_path.parent.mkdir(parents=True, exist_ok=True)
+          with open(transcript_path, 'ab', buffering=0) as log:
               try:
                   while True:
                       readable, _, _ = select.select([master_fd, server, *clients], [], [], 1.0)
@@ -147,29 +150,39 @@ jobs:
                   except FileNotFoundError:
                       pass
           PY
-          chmod 700 "$terminal_py"
+            chmod 700 "$terminal_py"
 
-          systemctl --user stop "$unit" >/dev/null 2>&1 || true
-          systemctl --user reset-failed "$unit" >/dev/null 2>&1 || true
-          rm -f "/run/user/$(id -u)/mcf-mission2-terminal.sock"
+            if [ -f "$pid_file" ]; then
+              old_pid="$(cat "$pid_file" 2>/dev/null || true)"
+              if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+                old_cmd="$(tr '\0' ' ' < "/proc/$old_pid/cmdline" 2>/dev/null || true)"
+                case "$old_cmd" in
+                  *mcf-mission2-terminal.py*) kill "$old_pid" 2>/dev/null || true; sleep 1 ;;
+                esac
+              fi
+            fi
+            rm -f "$socket_path" "$pid_file"
 
-          if systemd-run --user --unit="$unit" --collect "$terminal_py"; then
+            (
+              unset RUNNER_TRACKING_ID
+              nohup setsid "$terminal_py" >>"$daemon_log" 2>&1 < /dev/null &
+              echo $! > "$pid_file"
+            )
             sleep 3
           fi
 
-          socket_path="/run/user/$(id -u)/mcf-mission2-terminal.sock"
           rc=1
           mode="PTY_SOCKET"
           evidence=""
           err=""
+          pid="$(cat "$pid_file" 2>/dev/null || true)"
 
-          if systemctl --user is-active --quiet "$unit" && [ -S "$socket_path" ]; then
+          if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && [ -S "$socket_path" ]; then
             verify="$(SOCKET_PATH="$socket_path" python3 - <<'PY'
           import os, socket, time
-          path = os.environ['SOCKET_PATH']
           s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
           s.settimeout(2)
-          s.connect(path)
+          s.connect(os.environ['SOCKET_PATH'])
           chunks = []
           end = time.time() + 2
           while time.time() < end:
@@ -189,15 +202,15 @@ jobs:
           )"
             if [ "$verify" = 'HELLO_WORLD_PRESENT=YES' ]; then
               rc=0
-              evidence="$(systemctl --user show "$unit" -p ActiveState -p SubState -p MainPID --no-pager | tr '\n' ' ') socket=$socket_path mode=$(stat -c '%a' "$socket_path") $verify"
+              evidence="pid=$pid process_alive=YES socket=$socket_path socket_mode=$(stat -c '%a' "$socket_path") $verify request=$request_id"
             else
               err="$verify"
             fi
           else
-            err="persistent_pty_unit_or_socket_not_active"
+            err="persistent_pty_process_or_socket_not_active pid=${pid:-NONE}"
           fi
 
-          MODE="$mode" EVIDENCE="$evidence" RC="$rc" ERR="$err" RESULT_FILE="${RUNNER_TEMP}/control-bridge-result.json" python3 - <<'PY'
+          MODE="$mode" EVIDENCE="$evidence" RC="$rc" ERR="$err" RESULT_FILE="${RUNNER_TEMP}/control-bridge-result.json" REQUEST_ID="$request_id" python3 - <<'PY'
           import datetime as dt, json, os
           p = os.environ['RESULT_FILE']
           data = json.load(open(p, encoding='utf-8'))
@@ -205,7 +218,7 @@ jobs:
           rc = int(os.environ['RC'])
           data.setdefault('probes', []).append({
               'name': 'mission2_persistent_terminal',
-              'argv': ['FIXED_MISSION2_PERSISTENT_PTY'],
+              'argv': ['FIXED_MISSION2_PERSISTENT_PTY', os.environ['REQUEST_ID']],
               'exit_code': rc,
               'stdout': f"mode={os.environ['MODE']} terminal_text=Hello World {os.environ['EVIDENCE']}" if rc == 0 else '',
               'stderr': os.environ['ERR'],
