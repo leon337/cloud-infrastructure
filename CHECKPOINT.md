@@ -34,7 +34,7 @@ TASK_7=COMPLETE_7_PASS_0_FAIL
 TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
 TASK_8=BLOCKED_EXTERNAL
 TASKS_9_10=NOT_STARTED
-NEXT_EXACT_STEP=HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
+NEXT_EXACT_STEP=LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
 ```
 
 A missão transversal de continuidade foi concluída. Seus controles permanecem ativos; a execução retorna ao Control Bridge G2-B. R8 não abriu NODE-01, grant real, escrita real, produção ou merge.

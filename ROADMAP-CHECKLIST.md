@@ -43,7 +43,7 @@ Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 Próximo passo exato:
 
 ```text
-HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
+LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
 ```
 
 ## Roadmap principal da plataforma

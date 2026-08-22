@@ -121,7 +121,7 @@ def collect_errors() -> list[str]:
         if gate == "merge_g2b":
             check(value == "AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE", "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "merge authorization must remain conditional on acceptance")
         elif gate == "task8_qemu_tcg_host_packages":
-            check(value == "WAITING_HUMAN_AUTHORIZATION", "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "Task 8 QEMU host package gate must wait for explicit authorization")
+            check(value == "AUTHORIZED_BY_LEANDRO_WAITING_DIRECT_PRIVILEGED_EXECUTION", "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "Task 8 QEMU host package gate is authorized but awaits direct privileged execution")
         else:
             check(isinstance(value, str) and "NOT_AUTHORIZED" in value, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", f"{gate} is not fail-closed")
     check(bridge.get("evidence", {}).get("real_write") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "real write evidence unexpectedly true")

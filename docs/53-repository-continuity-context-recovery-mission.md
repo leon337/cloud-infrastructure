@@ -240,7 +240,7 @@ Continuam fechados:
 A missão de continuidade está concluída e a missão ativa retorna ao Control Bridge G2-B:
 
 ```text
-HUMAN_REVIEW_AND_AUTHORIZE_QEMU_TCG_HOST_PACKAGES
+LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
 ```
 
 Task 8 deve respeitar o plano aprovado: boundary Ubuntu 24.04/systemd descartável, nunca NODE-01.

@@ -86,3 +86,15 @@ Before Task 8 acceptance there is no NODE-01 G2-B bootstrap. A failed VM test is
 ## Canonical next action
 
 `HUMAN_AUTHORIZE_QEMU_TCG_HOST_PACKAGES_THEN_EXECUTE_G2B_TASK8_DISPOSABLE_VM`
+
+## Gate executado em 2026-08-22
+
+LEANDRO autorizou a instalação dos três pacotes host. O runtime remoto usado pelo MESTRE bloqueou comandos privilegiados antes da execução; nenhum pacote foi instalado pela automação.
+
+A próxima ação exige execução direta no terminal da VPS:
+
+```bash
+sudo apt-get update && sudo apt-get install -y qemu-system-x86 qemu-utils cloud-image-utils
+```
+
+Após isso, o MESTRE deve verificar versões, criar a VM TCG descartável e continuar a Task 8 sem instalar G2-B diretamente no NODE-01.
