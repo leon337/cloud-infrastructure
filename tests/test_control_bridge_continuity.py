@@ -16,7 +16,7 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         mission = state["active_mission"]
 
         self.assertEqual(mission["id"], "CONTROL_BRIDGE_G2B")
-        self.assertEqual(mission["status"], "ACTIVE")
+        self.assertEqual(mission["status"], "BLOCKED_EXTERNAL")
         self.assertIsNone(mission["issue"])
         self.assertEqual(mission["continuity_origin_issue"], 10)
         self.assertEqual(mission["pull_request"], 11)
@@ -60,15 +60,17 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         )
         self.assertEqual(
             state["continuity"]["next_exact_step"],
-            "G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY",
+            "RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY",
         )
 
         self.assertEqual(bridge["priority"], "P0")
         self.assertEqual(bridge["g1"], "PASS_REAL_NODE_01_ROUNDTRIP")
         self.assertEqual(bridge["g2a"], "PASS_REAL_NODE_01_READ_ONLY")
-        self.assertEqual(bridge["g2b"], "TASK_7_COMPLETE_TASK_8_NOT_STARTED")
+        self.assertEqual(bridge["g2b"], "TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY")
         self.assertEqual(bridge["g2b_task_7"], "COMPLETE_7_PASS_0_FAIL")
-        self.assertEqual(bridge["g2b_tasks_8_10"], "NOT_STARTED")
+        self.assertEqual(bridge["g2b_task_8"], "BLOCKED_EXTERNAL")
+        self.assertEqual(bridge["g2b_tasks_9_10"], "NOT_STARTED")
+        self.assertEqual(bridge["g2b_tasks_8_10"], "TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED")
         self.assertEqual(
             state["work_ownership"]["f1_2c_systemd_runtime_lock"]["owner"],
             "MESTRE_MCF_AND_LEANDRO",
@@ -92,13 +94,13 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             self.assertIn("state/institutional-memory.yaml", text)
             self.assertIn("state/continuity-drift-controls.yaml", text)
             self.assertIn("state/cold-start-validation.yaml", text)
-            self.assertIn("G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY", text)
+            self.assertIn("RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY", text)
             self.assertIn("codex/control-bridge-g2b", text)
             self.assertIn("docs/54-control-bridge-g2b-recovery-checkpoint.md", text)
 
     def test_g2b_state_preserves_task7_completion_and_fail_closed_boundaries(self):
         state = yaml.safe_load((ROOT / "state/control-bridge-g2b.yaml").read_text())
-        self.assertEqual(state["status"], "TASK_7_COMPLETE_TASK_8_NOT_STARTED")
+        self.assertEqual(state["status"], "TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY")
         self.assertEqual(
             state["recovery_checkpoint"]["document"],
             "docs/54-control-bridge-g2b-recovery-checkpoint.md",
@@ -109,7 +111,11 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(state["implementation"]["task_7_focused_tests"]["fail"], 0)
         self.assertTrue(state["implementation"]["ansible_syntax"].startswith("PASS_3_"))
         self.assertEqual(state["implementation"]["task_7_validation"]["candidate_sha"], "604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390")
-        self.assertEqual(state["implementation"]["tasks_8_10"], "NOT_STARTED")
+        self.assertEqual(state["implementation"]["task_8"], "BLOCKED_EXTERNAL")
+        self.assertEqual(state["implementation"]["tasks_9_10"], "NOT_STARTED")
+        self.assertEqual(state["implementation"]["tasks_8_10"], "TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED")
+        self.assertEqual(state["implementation"]["task_8_validation"]["hosted_run"], 32551353362)
+        self.assertEqual(state["implementation"]["task_8_validation"]["hosted_validate_steps"], 0)
         self.assertEqual(state["pilot"]["project"], "leon337/g2a-smoke/dev")
         self.assertEqual(state["pilot"]["path"], "G2B-PILOT.txt")
         self.assertEqual(state["pilot"]["grant_duration_hours"], 24)
@@ -157,10 +163,13 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         )
         self.assertEqual(
             state["next_exact_step"],
-            "G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY",
+            "RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY",
         )
-        for value in state["human_gates"].values():
-            self.assertIn("NOT_AUTHORIZED", value)
+        for gate, value in state["human_gates"].items():
+            if gate == "merge_g2b":
+                self.assertEqual(value, "AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE")
+            else:
+                self.assertIn("NOT_AUTHORIZED", value)
 
     def test_startup_recovery_contract_is_fail_closed(self):
         protocol = yaml.safe_load((ROOT / "state/startup-recovery-protocol.yaml").read_text())

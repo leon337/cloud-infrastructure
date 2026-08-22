@@ -221,7 +221,7 @@ ROLE_REVIEW=PASS_SAME_SESSION_MCF_ROLE_NOT_EXTERNAL_INDEPENDENT
 
 A prova self-hosted foi limitada a testes e `--syntax-check`; não executou apply, bootstrap, emissão de grant ou escrita real. A falha do GitHub-hosted runner foi classificada como infraestrutura pré-step e não como falha de conteúdo.
 
-Task 8 permaneceu `NOT_STARTED`. Nenhum HUMAN_GATE foi aberto.
+Após o encerramento da missão de continuidade, Task 8 foi iniciada pela missão G2-B. O harness e os contratos estáticos foram implementados e validados, mas a prova privilegiada em boundary Ubuntu 24.04/systemd está `BLOCKED_EXTERNAL`: o run `32551353362` e sua reexecução falharam antes de qualquer step (`steps=0`, logs `BlobNotFound`). O plano proíbe reroteamento para NODE-01.
 
 ## Limites atuais
 
@@ -240,7 +240,7 @@ Continuam fechados:
 A missão de continuidade está concluída e a missão ativa retorna ao Control Bridge G2-B:
 
 ```text
-G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
+RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
 ```
 
 Task 8 deve respeitar o plano aprovado: boundary Ubuntu 24.04/systemd descartável, nunca NODE-01.

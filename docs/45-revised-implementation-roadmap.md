@@ -3,6 +3,12 @@
 Status: **ACTIVE — Q40-D**
 Substitui como roadmap corrente as antigas fases provisórias F3–F10.
 
+## Checklist canônico de leitura rápida
+
+O checklist consolidado humano/IA está em [`ROADMAP-CHECKLIST.md`](../ROADMAP-CHECKLIST.md). Ele projeta o estado atual de `state/current.yaml` e `state/control-bridge-g2b.yaml`; divergência entre checklist e estado machine-readable é bloqueante até reconciliação.
+
+Estado transversal atual: **G2-B Task 8 `BLOCKED_EXTERNAL`** porque a prova privilegiada Ubuntu 24.04/systemd descartável não iniciou no GitHub-hosted runner (`run 32551353362`, retry confirmado com `steps=0`/`BlobNotFound`). Não rerotear para NODE-01.
+
 ## Estados
 
 - `PLANNED`: desired state ainda não implementado;

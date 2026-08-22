@@ -6,7 +6,7 @@ repository: leon337/cloud-infrastructure
 branch: codex/control-bridge-g2b
 base_branch: mcf/mission-001-control-bridge-g1
 base_sha: 8ee1fd719a50d0c9440a10a11a372dda8af1f457
-status: TASK_7_COMPLETE_TASK_8_NOT_STARTED
+status: TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY
 recovery_checkpoint:
   sha: 7205a647f918580d09c87ed44f38b0a433552a51
   document: docs/54-control-bridge-g2b-recovery-checkpoint.md
@@ -34,7 +34,21 @@ implementation:
     post_r8_publication_foundation_run: 32549668020
     post_r8_publication_hosted_validation: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS
     review_mode: SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
-  tasks_8_10: NOT_STARTED
+  task_8: BLOCKED_EXTERNAL
+  task_8_validation:
+    candidate_sha: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
+    contract_tests: PASS_4_OF_4
+    local_regression: PASS_371_TESTS_16_SHELL_SYNTAX
+    hosted_workflow: control-bridge-g2b-ci
+    hosted_run: 32551353362
+    hosted_validate_attempt_1_job: 96978527344
+    hosted_validate_attempt_2_job: 96978618226
+    hosted_validate_steps: 0
+    hosted_logs: BLOB_NOT_FOUND
+    disposable_lifecycle: SKIPPED_DEPENDENCY_VALIDATE_FAILED_PRE_STEP
+    boundary_rule: NEVER_NODE01_GITHUB_HOSTED_OR_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_ONLY
+  tasks_9_10: NOT_STARTED
+  tasks_8_10: TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED
 pilot:
   project: leon337/g2a-smoke/dev
   path: G2B-PILOT.txt
@@ -56,6 +70,7 @@ evidence:
   real_rollback: false
   real_revocation: false
   mcf_effective_use: false
+  disposable_lifecycle: false
 continuity:
   mission_issue: 10
   mission_status: COMPLETE
@@ -78,9 +93,9 @@ continuity:
   roadmap_stage: R8_COMPLETE
   f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
   f1_2c_rule: ISOLATED_DO_NOT_MODIFY
-technical_next_exact_step: G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
-technical_next_step_gate: TASK_8_DISPOSABLE_ONLY_NEVER_NODE01
-next_exact_step: G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
+technical_next_exact_step: RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
+technical_next_step_gate: BLOCKED_EXTERNAL_TASK8_DISPOSABLE_BOUNDARY_REQUIRED_NEVER_NODE01
+next_exact_step: RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
 r8_does_not_authorize:
   - NODE01_G2B_BOOTSTRAP
   - REAL_GRANT_ISSUE_OR_REISSUE

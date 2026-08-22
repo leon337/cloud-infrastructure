@@ -109,12 +109,19 @@ def collect_errors() -> list[str]:
     check(bridge.get("implementation", {}).get("task_7_focused_tests", {}).get("fail") == 0, "G2B_TASK_STATE_DRIFT", "Task 7 fail count must remain 0 after R8")
     check(str(bridge.get("implementation", {}).get("ansible_syntax", "")).startswith("PASS_3_"), "PASS_WITHOUT_EVIDENCE", "Task 7 completion lacks Ansible syntax evidence")
     check(bool(bridge.get("implementation", {}).get("task_7_validation", {}).get("candidate_sha")), "PASS_WITHOUT_EVIDENCE", "Task 7 completion lacks candidate SHA")
-    check(bridge.get("implementation", {}).get("tasks_8_10") == "NOT_STARTED", "G2B_TASK_STATE_DRIFT", "Tasks 8-10 advanced before Task 8 starts")
+    check(bridge.get("implementation", {}).get("task_8") == "BLOCKED_EXTERNAL", "G2B_TASK_STATE_DRIFT", "Task 8 must remain BLOCKED_EXTERNAL until disposable proof exists")
+    check(bridge.get("implementation", {}).get("tasks_9_10") == "NOT_STARTED", "G2B_TASK_STATE_DRIFT", "Tasks 9-10 advanced before Task 8 proof")
+    check(bridge.get("implementation", {}).get("tasks_8_10") == "TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED", "G2B_TASK_STATE_DRIFT", "combined Task 8-10 state mismatch")
     check(current_bridge.get("g2b_task_7") == "COMPLETE_7_PASS_0_FAIL", "CURRENT_STATE_DRIFT", "state/current.yaml G2-B Task 7 mismatch")
-    check(current_bridge.get("g2b_tasks_8_10") == "NOT_STARTED", "CURRENT_STATE_DRIFT", "state/current.yaml Tasks 8-10 mismatch")
+    check(current_bridge.get("g2b_task_8") == "BLOCKED_EXTERNAL", "CURRENT_STATE_DRIFT", "state/current.yaml Task 8 mismatch")
+    check(current_bridge.get("g2b_tasks_9_10") == "NOT_STARTED", "CURRENT_STATE_DRIFT", "state/current.yaml Tasks 9-10 mismatch")
+    check(current_bridge.get("g2b_tasks_8_10") == "TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED", "CURRENT_STATE_DRIFT", "state/current.yaml combined Task 8-10 mismatch")
 
     for gate, value in active.get("human_gates", {}).items():
-        check(isinstance(value, str) and "NOT_AUTHORIZED" in value, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", f"{gate} is not fail-closed")
+        if gate == "merge_g2b":
+            check(value == "AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE", "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "merge authorization must remain conditional on acceptance")
+        else:
+            check(isinstance(value, str) and "NOT_AUTHORIZED" in value, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", f"{gate} is not fail-closed")
     check(bridge.get("evidence", {}).get("real_write") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "real write evidence unexpectedly true")
     check(bridge.get("evidence", {}).get("real_rollback") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "real rollback evidence unexpectedly true")
     check(bridge.get("evidence", {}).get("real_revocation") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "real revocation evidence unexpectedly true")

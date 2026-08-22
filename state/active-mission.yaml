@@ -3,7 +3,7 @@ updated_at: 2026-08-22
 mission:
   id: CONTROL_BRIDGE_G2B
   title: Control Bridge G2-B bounded write
-  status: ACTIVE
+  status: BLOCKED_EXTERNAL
   priority: P0
   authority: LEANDRO
   orchestrator: MESTRE_MCF
@@ -65,7 +65,7 @@ cold_start_validation:
   verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
   independent_fresh_model_process: NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
 control_bridge_g2b:
-  status: TASK_7_COMPLETE_TASK_8_NOT_STARTED
+  status: TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY
   recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
   task_7: COMPLETE
@@ -77,7 +77,12 @@ control_bridge_g2b:
   ansible_syntax: PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
   task_7_candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
   task_7_evidence_issue_comment: https://github.com/leon337/cloud-infrastructure/issues/10#issuecomment-5377605173
-  tasks_8_10: NOT_STARTED
+  task_8: BLOCKED_EXTERNAL
+  task_8_candidate_sha: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
+  task_8_hosted_run: 32551353362
+  task_8_hosted_validation: BLOCKED_EXTERNAL_ZERO_STEPS_BLOB_NOT_FOUND_RETRY_CONFIRMED
+  tasks_9_10: NOT_STARTED
+  tasks_8_10: TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED
   real_write: NOT_EXECUTED
   real_rollback: NOT_EXECUTED
   real_revocation: NOT_EXECUTED
@@ -92,7 +97,7 @@ human_gates:
   real_grant_issue_or_reissue: CLOSED_NOT_AUTHORIZED
   real_bounded_write: CLOSED_NOT_AUTHORIZED
   production_mutation: CLOSED_NOT_AUTHORIZED
-  merge_g2b: CLOSED_NOT_AUTHORIZED
+  merge_g2b: AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE
 continuity_roadmap:
   R1: COMPLETE
   R2: COMPLETE
@@ -119,7 +124,7 @@ validation:
   r8_role_review: PASS_SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
   r8_github_hosted_validation: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS_OBSERVED_AFTER_R8_PUBLICATION
   historical_evidence_preservation_check: PASS
-next_exact_step: G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
+next_exact_step: RESTORE_GITHUB_HOSTED_DISPOSABLE_BOUNDARY_OR_PROVIDE_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_BOUNDARY
 recovery_rule: NEW_AGENT_MUST_EXECUTE_STARTUP_RECOVERY_PROTOCOL_BEFORE_IMPLEMENTATION
 persistence_rule: LONG_RUNNING_WORK_MUST_FOLLOW_MISSION_PERSISTENCE_POLICY
 memory_rule: MATERIAL_PROJECT_HISTORY_MUST_USE_APPEND_ORIENTED_INSTITUTIONAL_MEMOS
