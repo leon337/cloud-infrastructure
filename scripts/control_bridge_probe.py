@@ -97,6 +97,7 @@ def build_result(request_id: str, issue_number: int) -> dict[str, Any]:
         run_probe("python", ["python3", "--version"]),
         run_probe("disk", ["df", "-h", "/"]),
         run_probe("memory", ["free", "-h"]),
+        run_probe("terminal_hell_word", ["/bin/bash", "-lc", "printf 'hell word\\n'"]),
         run_probe("ssh", ["systemctl", "is-active", "ssh"]),
         run_probe("ufw", ["systemctl", "is-active", "ufw"]),
         run_probe("docker", ["systemctl", "is-active", "docker"]),
@@ -110,7 +111,7 @@ def build_result(request_id: str, issue_number: int) -> dict[str, Any]:
                 ["sudo", "-n", str(runner_path), "status"],
             )
         )
-    all_core_ok = all(item["exit_code"] == 0 for item in probes[:6])
+    all_core_ok = all(item["exit_code"] == 0 for item in probes[:7])
     return {
         "protocol": RESULT_PROTOCOL,
         "request_id": request_id,
