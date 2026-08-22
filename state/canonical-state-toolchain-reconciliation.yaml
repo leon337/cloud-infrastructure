@@ -18,8 +18,27 @@ canonical_state:
   main_state_current_updated_at: 2026-08-18
   primary_current_evidence:
     - main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b:README.md
+    - workflow_run_32577815107@2026-08-22T14:09:03Z
     - pull_request_11@fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
     - pull_request_19@5b0864762e2c3054da4e449feb1e47abc584963f
+  live_conflict:
+    pr_11_body:
+      status: STALE_PROJECTION
+      observed_claim: TASK_8_IN_PROGRESS_VPS_QEMU_TCG_DISPOSABLE_PROOF
+      updated_at_utc: 2026-08-22T23:18:14Z
+    pr_11_latest_measurement_comment:
+      captured_at_utc: 2026-08-22T12:22:40Z
+      observed_claim: GUEST_TASK8_RUNNING
+    later_executable_audit:
+      workflow_run: 32577815107
+      captured_at_utc: 2026-08-22T14:09:03Z
+      guest_status_exit: 2
+      terminal_marker: G2B_DISPOSABLE_TEST_ABORTED_STAGE_APPLY_G2B_EXIT_2_CLEANUP_0
+      acceptance_markers_proven: false
+    integrated_projection:
+      main_readme_reconciled_at_utc: 2026-08-22T14:09:00Z
+      status: TASK_8_FAILED_ATTEMPT_3
+    resolution: PR11_BODY_AND_EARLIER_RUNNING_MEASUREMENT_ARE_STALE_VS_LATER_EXECUTABLE_AUDIT_AND_MERGED_MAIN_RECONCILIATION
   established_facts:
     g2b_tasks_1_7: COMPLETE
     g2b_task_8: FAILED_ATTEMPT_3_NOT_ACCEPTED
@@ -78,6 +97,7 @@ candidate_changes:
     - docs/57-canonical-state-toolchain-reconciliation-2026-08-22.md
     - state/canonical-state-toolchain-reconciliation.yaml
     - evidence/canonical-state-toolchain/validation.md
+    - evidence/canonical-state-toolchain/live-state-conflict.md
 human_decision:
   required: true
   question: SELECT_CANONICAL_INTEGRATION_STRATEGY_FOR_MAINLINE_NEUTRAL_STATE_AND_VALIDATION_PACKAGE
