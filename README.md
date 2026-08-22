@@ -71,7 +71,7 @@ NEXT_EXACT_STEP=R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
 - **GitHub Project:** `BLOCKED_EXTERNAL_MISSING_READ_PROJECT_AND_PROJECT_SCOPES`
 - **Produção:** `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`
 - **Rotação de credenciais:** `DEFERRED_BY_HUMAN_DECISION`
-- **Atualizado em:** `2026-08-20`
+- **Atualizado em:** `2026-08-21`
 
 > Esta seção é gerada das fontes canônicas; não edite manualmente.
 <!-- PROJECT_STATUS:END -->
