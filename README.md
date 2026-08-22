@@ -12,6 +12,25 @@ Configurar, proteger, documentar e tornar reproduzível a VPS enquanto LEANDRO a
 
 O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada; `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; o GitHub é a memória canônica após validação e publicação.
 
+## Regra operacional — acesso à VPS e self-hosted runner
+
+> **IMPORTANTE PARA QUALQUER IA/AGENTE:** o self-hosted runner da VPS/NODE-01 é um transporte curto e serializado. Ele **não deve ser usado como mecanismo de espera, monitoramento contínuo ou polling prolongado**.
+
+Em 22/08/2026 foi identificado um incidente operacional causado por workflows temporários de observação que mantinham o único self-hosted runner ocupado com `sleep`, loops de polling e timeouts longos (10/15/60/75 minutos). A fila resultante criou uma latência artificial próxima de 25 minutos para novas operações e deu a falsa impressão de que o acesso à VPS ou o ChatGPT possuíam esse limite específico.
+
+Regras vinculantes para trabalhos futuros na VPS:
+
+- **NÃO** criar jobs self-hosted que fiquem aguardando um processo terminar por vários minutos.
+- **NÃO** usar `sleep`, loops de polling ou `timeout-minutes` elevado como mecanismo de acompanhamento de lifecycle.
+- **NÃO** ocupar o único runner apenas para observar logs ou estado.
+- Operações longas devem ser disparadas de forma **desacoplada na própria VPS**, persistindo PID/status/logs/checkpoints fora da sessão de controle.
+- O MESTRE/ChatGPT ou qualquer outro agente deve consultar o estado por **probes curtos e independentes**, retornar imediatamente e repetir uma nova consulta somente quando necessário.
+- Workflows temporários de transporte/observação devem ser mínimos, fail-closed e removidos após o uso.
+- Antes de usar o self-hosted runner, verificar se não há job antigo `queued`/`in_progress` ocupando ou bloqueando a fila.
+- Nunca interpretar uma fila causada pelo runner como limitação intrínseca da VPS ou como evidência de falha do processo remoto.
+
+A correção aplicada no incidente foi remover/reverter os workflows de espera longa da branch operacional. Esta regra evita recriar o gargalo; ela **não altera nem promete remover limites próprios da plataforma ChatGPT ou de ferramentas externas**.
+
 ## Estado operacional — 18/08/2026
 
 - FASE 0, FASE 1 e FASE 2: **DONE**.
