@@ -42,59 +42,159 @@ jobs:
             --request-file control/dispatch/probe.json \
             --result-file "${RUNNER_TEMP}/control-bridge-result.json"
 
-      - name: Mission 2 — leave persistent Hello World terminal open
+      - name: Mission 2 — persistent interactive PTY with Hello World
         if: github.event_name == 'push'
         shell: bash
         run: |
           set -u
           request_id="$(python3 -c 'import json; print(json.load(open("control/dispatch/probe.json"))["request_id"])')"
-          if [ "$request_id" != 'VPS-MISSION2-PERSISTENT-HELLO-001' ]; then
+          if [ "$request_id" != 'VPS-MISSION2-PERSISTENT-HELLO-002' ]; then
             exit 0
           fi
 
           unit="mcf-mission2-hello-terminal.service"
-          mode=""
-          evidence=""
-          rc=1
-          err=""
+          bin_dir="$HOME/.local/bin"
+          state_dir="$HOME/.local/state"
+          terminal_py="$bin_dir/mcf-mission2-terminal.py"
+          mkdir -p "$bin_dir" "$state_dir"
+
+          cat > "$terminal_py" <<'PY'
+          #!/usr/bin/env python3
+          import errno
+          import os
+          import pty
+          import select
+          import socket
+          from pathlib import Path
+
+          runtime_dir = Path(os.environ.get('XDG_RUNTIME_DIR') or f'/run/user/{os.getuid()}')
+          socket_path = runtime_dir / 'mcf-mission2-terminal.sock'
+          log_path = Path.home() / '.local/state/mcf-mission2-terminal.log'
+          try:
+              socket_path.unlink()
+          except FileNotFoundError:
+              pass
+
+          child_pid, master_fd = pty.fork()
+          if child_pid == 0:
+              os.environ['PS1'] = 'mcf-mission2$ '
+              os.execv('/bin/bash', ['/bin/bash', '--noprofile', '--norc', '-i'])
+
+          os.set_blocking(master_fd, False)
+          server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+          server.bind(str(socket_path))
+          os.chmod(socket_path, 0o600)
+          server.listen(4)
+          server.setblocking(False)
+          clients = []
+          backlog = bytearray()
+
+          os.write(master_fd, b"printf 'Hello World\\n'\n")
+
+          log_path.parent.mkdir(parents=True, exist_ok=True)
+          with open(log_path, 'ab', buffering=0) as log:
+              try:
+                  while True:
+                      readable, _, _ = select.select([master_fd, server, *clients], [], [], 1.0)
+                      if master_fd in readable:
+                          try:
+                              data = os.read(master_fd, 4096)
+                          except OSError as exc:
+                              if exc.errno == errno.EIO:
+                                  break
+                              raise
+                          if not data:
+                              break
+                          log.write(data)
+                          backlog.extend(data)
+                          if len(backlog) > 65536:
+                              del backlog[:-65536]
+                          for client in clients[:]:
+                              try:
+                                  client.sendall(data)
+                              except OSError:
+                                  client.close()
+                                  clients.remove(client)
+
+                      if server in readable:
+                          client, _ = server.accept()
+                          client.setblocking(True)
+                          if backlog:
+                              client.sendall(backlog)
+                          client.setblocking(False)
+                          clients.append(client)
+
+                      for client in clients[:]:
+                          if client not in readable:
+                              continue
+                          try:
+                              data = client.recv(4096)
+                          except BlockingIOError:
+                              continue
+                          except OSError:
+                              data = b''
+                          if not data:
+                              client.close()
+                              clients.remove(client)
+                              continue
+                          os.write(master_fd, data)
+              finally:
+                  for client in clients:
+                      client.close()
+                  server.close()
+                  try:
+                      socket_path.unlink()
+                  except FileNotFoundError:
+                      pass
+          PY
+          chmod 700 "$terminal_py"
 
           systemctl --user stop "$unit" >/dev/null 2>&1 || true
           systemctl --user reset-failed "$unit" >/dev/null 2>&1 || true
+          rm -f "/run/user/$(id -u)/mcf-mission2-terminal.sock"
 
-          xfce_pid="$(pgrep -u "$(id -u)" -n xfce4-session || true)"
-          if command -v xfce4-terminal >/dev/null 2>&1 && [ -n "$xfce_pid" ] && [ -r "/proc/$xfce_pid/environ" ]; then
-            session_env="$(tr '\0' '\n' < "/proc/$xfce_pid/environ")"
-            display="$(printf '%s\n' "$session_env" | sed -n 's/^DISPLAY=//p' | tail -n1)"
-            dbus="$(printf '%s\n' "$session_env" | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' | tail -n1)"
-            xauth="$(printf '%s\n' "$session_env" | sed -n 's/^XAUTHORITY=//p' | tail -n1)"
-            if [ -n "$display" ] && [ -n "$dbus" ]; then
-              args=(--user --unit="$unit" --collect --setenv="DISPLAY=$display" --setenv="DBUS_SESSION_BUS_ADDRESS=$dbus")
-              if [ -n "$xauth" ]; then args+=(--setenv="XAUTHORITY=$xauth"); fi
-              if systemd-run "${args[@]}" /usr/bin/xfce4-terminal --disable-server --title='MCF Mission 2 — Hello World' --hold --command="/bin/bash -lc 'printf \"Hello World\\n\"; exec /bin/bash'"; then
-                sleep 3
-                if systemctl --user is-active --quiet "$unit"; then
-                  mode="XFCE_GUI"
-                  evidence="$(systemctl --user show "$unit" -p ActiveState -p SubState -p MainPID --no-pager | tr '\n' ' ')"
-                  rc=0
-                fi
-              fi
-            fi
+          if systemd-run --user --unit="$unit" --collect "$terminal_py"; then
+            sleep 3
           fi
 
-          if [ "$rc" -ne 0 ] && command -v tmux >/dev/null 2>&1; then
-            systemctl --user stop "$unit" >/dev/null 2>&1 || true
-            if systemd-run --user --unit="$unit" --collect /usr/bin/tmux -D new-session -s mcf-mission2-hello "/bin/bash -lc 'printf \"Hello World\\n\"; exec /bin/bash'"; then
-              sleep 2
-              if systemctl --user is-active --quiet "$unit"; then
-                mode="TMUX"
-                evidence="$(systemctl --user show "$unit" -p ActiveState -p SubState -p MainPID --no-pager | tr '\n' ' ')"
-                rc=0
-              fi
-            fi
-          fi
+          socket_path="/run/user/$(id -u)/mcf-mission2-terminal.sock"
+          rc=1
+          mode="PTY_SOCKET"
+          evidence=""
+          err=""
 
-          if [ "$rc" -ne 0 ]; then
-            err="no_persistent_terminal_path_became_active"
+          if systemctl --user is-active --quiet "$unit" && [ -S "$socket_path" ]; then
+            verify="$(SOCKET_PATH="$socket_path" python3 - <<'PY'
+          import os, socket, time
+          path = os.environ['SOCKET_PATH']
+          s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+          s.settimeout(2)
+          s.connect(path)
+          chunks = []
+          end = time.time() + 2
+          while time.time() < end:
+              try:
+                  data = s.recv(4096)
+              except socket.timeout:
+                  break
+              if not data:
+                  break
+              chunks.append(data)
+              if b'Hello World' in b''.join(chunks):
+                  break
+          s.close()
+          text = b''.join(chunks).decode('utf-8', 'replace')
+          print('HELLO_WORLD_PRESENT=YES' if 'Hello World' in text else 'HELLO_WORLD_PRESENT=NO')
+          PY
+          )"
+            if [ "$verify" = 'HELLO_WORLD_PRESENT=YES' ]; then
+              rc=0
+              evidence="$(systemctl --user show "$unit" -p ActiveState -p SubState -p MainPID --no-pager | tr '\n' ' ') socket=$socket_path mode=$(stat -c '%a' "$socket_path") $verify"
+            else
+              err="$verify"
+            fi
+          else
+            err="persistent_pty_unit_or_socket_not_active"
           fi
 
           MODE="$mode" EVIDENCE="$evidence" RC="$rc" ERR="$err" RESULT_FILE="${RUNNER_TEMP}/control-bridge-result.json" python3 - <<'PY'
@@ -105,9 +205,9 @@ jobs:
           rc = int(os.environ['RC'])
           data.setdefault('probes', []).append({
               'name': 'mission2_persistent_terminal',
-              'argv': ['FIXED_MISSION2_PERSISTENT_TERMINAL'],
+              'argv': ['FIXED_MISSION2_PERSISTENT_PTY'],
               'exit_code': rc,
-              'stdout': f"mode={os.environ['MODE']} Hello World {os.environ['EVIDENCE']}" if rc == 0 else '',
+              'stdout': f"mode={os.environ['MODE']} terminal_text=Hello World {os.environ['EVIDENCE']}" if rc == 0 else '',
               'stderr': os.environ['ERR'],
               'started_at': now,
               'finished_at': now,
