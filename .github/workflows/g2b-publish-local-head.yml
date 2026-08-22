@@ -1,4 +1,4 @@
-name: g2b-publish-local-head
+name: g2b-sync-local-head
 
 on:
   push:
@@ -6,18 +6,18 @@ on:
       - ops/r8-task7-syntax-selfhosted-20260822
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  publish:
+  sync:
     runs-on: self-hosted
     timeout-minutes: 5
     steps:
-      - name: Publish exact guarded local G2-B head
+      - name: Fast-forward local G2-B clone to exact remote head
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_LOCAL: 1a17bbdcbd833e88cca40309f241f45bf500953d
-          EXPECTED_REMOTE: 945052dc2503ba18a0e96ef03237c620ef336f9f
+          EXPECTED_REMOTE: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
           TARGET_BRANCH: codex/control-bridge-g2b
         run: |
           set -euo pipefail
@@ -29,7 +29,9 @@ jobs:
           auth_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           remote_sha="$(git ls-remote "$auth_url" "refs/heads/${TARGET_BRANCH}" | cut -f1)"
           test "$remote_sha" = "$EXPECTED_REMOTE"
-          git push "$auth_url" "${EXPECTED_LOCAL}:refs/heads/${TARGET_BRANCH}"
-          final_sha="$(git ls-remote "$auth_url" "refs/heads/${TARGET_BRANCH}" | cut -f1)"
-          test "$final_sha" = "$EXPECTED_LOCAL"
-          printf 'G2B_LOCAL_HEAD_PUBLISHED=%s\n' "$final_sha"
+          git fetch --no-tags "$auth_url" "refs/heads/${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
+          test "$(git rev-parse refs/remotes/origin/${TARGET_BRANCH})" = "$EXPECTED_REMOTE"
+          git merge --ff-only "refs/remotes/origin/${TARGET_BRANCH}"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_REMOTE"
+          test -z "$(git status --porcelain)"
+          printf 'G2B_LOCAL_SYNCED=%s\n' "$EXPECTED_REMOTE"
