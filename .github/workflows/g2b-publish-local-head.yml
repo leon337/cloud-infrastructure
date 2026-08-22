@@ -16,7 +16,7 @@ jobs:
       - name: Publish exact guarded local G2-B head
         env:
           GH_TOKEN: ${{ github.token }}
-          EXPECTED_LOCAL: a12dd173768ab59a7f8c1ae1b4c978f120020a64
+          EXPECTED_LOCAL: 1a17bbdcbd833e88cca40309f241f45bf500953d
           EXPECTED_REMOTE: 945052dc2503ba18a0e96ef03237c620ef336f9f
           TARGET_BRANCH: codex/control-bridge-g2b
         run: |
