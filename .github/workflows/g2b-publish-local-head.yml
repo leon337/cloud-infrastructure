@@ -13,11 +13,11 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 5
     steps:
-      - name: Publish exact guarded local G2-B checkpoint
+      - name: Publish exact guarded local G2-B head
         env:
           GH_TOKEN: ${{ github.token }}
-          EXPECTED_LOCAL: 48146d3ed6a7d28215b9d34f3954673054738d0a
-          EXPECTED_REMOTE: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
+          EXPECTED_LOCAL: 31c2782aa605e43132147200616d366f3ecdd8c2
+          EXPECTED_REMOTE: 48146d3ed6a7d28215b9d34f3954673054738d0a
           TARGET_BRANCH: codex/control-bridge-g2b
         run: |
           set -euo pipefail
@@ -32,4 +32,4 @@ jobs:
           git push "$auth_url" "${EXPECTED_LOCAL}:refs/heads/${TARGET_BRANCH}"
           final_sha="$(git ls-remote "$auth_url" "refs/heads/${TARGET_BRANCH}" | cut -f1)"
           test "$final_sha" = "$EXPECTED_LOCAL"
-          printf 'G2B_BLOCKER_CHECKPOINT_PUBLISHED=%s\n' "$final_sha"
+          printf 'G2B_LOCAL_HEAD_PUBLISHED=%s\n' "$final_sha"
