@@ -1,0 +1,60 @@
+name: g2b-cancel-long-waiters
+
+on:
+  push:
+    branches:
+      - ops/g2b-cancel-long-waiters-20260822
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Cancel stale long-wait G2-B observer jobs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100"
+          curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "$api" > /tmp/runs.json
+          python3 - <<'PY' > /tmp/ids.txt
+          import json
+          names={'g2b-live-status','g2b-task8-finisher','g2b-task9-transition'}
+          data=json.load(open('/tmp/runs.json'))
+          for run in data.get('workflow_runs',[]):
+              if run.get('name') in names and run.get('status') in {'queued','in_progress','waiting','pending'}:
+                  print(run['id'])
+          PY
+          cancelled=0
+          while read -r id; do
+            [[ -n "$id" ]] || continue
+            curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${id}/cancel" >/dev/null || true
+            cancelled=$((cancelled+1))
+          done < /tmp/ids.txt
+          printf 'CANCEL_REQUESTS=%s\n' "$cancelled" > /tmp/result.txt
+          sleep 5
+          curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "$api" > /tmp/runs-after.json
+          python3 - <<'PY' >> /tmp/result.txt
+          import json
+          names={'g2b-live-status','g2b-task8-finisher','g2b-task9-transition'}
+          data=json.load(open('/tmp/runs-after.json'))
+          active=[]
+          for run in data.get('workflow_runs',[]):
+              if run.get('name') in names and run.get('status') in {'queued','in_progress','waiting','pending'}:
+                  active.append((run['id'],run['name'],run['status']))
+          print('ACTIVE_LONG_WAITERS='+str(len(active)))
+          for rid,name,status in active:
+              print(f'ACTIVE={rid} {name} {status}')
+          PY
+          python3 - <<'PY' > /tmp/comment.json
+          import json,pathlib
+          text=pathlib.Path('/tmp/result.txt').read_text()
+          print(json.dumps({'body':'```text\nMCF_G2B_LONG_WAITER_CLEANUP\n'+text+'```'}))
+          PY
+          curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/11/comments" --data-binary @/tmp/comment.json >/dev/null
