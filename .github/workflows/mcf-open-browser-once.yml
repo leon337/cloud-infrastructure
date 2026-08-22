@@ -1,0 +1,63 @@
+name: mcf-open-browser-once
+
+on:
+  push:
+    branches:
+      - ops/open-browser-vps-20260822
+
+permissions:
+  contents: read
+
+jobs:
+  open-browser:
+    runs-on: self-hosted
+    timeout-minutes: 2
+    steps:
+      - name: Open Firefox in active VPS desktop session
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "MCF_BROWSER_OPEN_START"
+          echo "HOST=$(hostname) USER=$(id -un) UID=$(id -u)"
+
+          uid="$(id -u)"
+          session_pid="$(pgrep -u "$uid" -n xfce4-session || true)"
+          if [ -z "$session_pid" ]; then
+            session_pid="$(pgrep -u "$uid" -n xfce4-panel || true)"
+          fi
+          if [ -z "$session_pid" ]; then
+            echo "MCF_BROWSER_OPEN_FAIL_NO_ACTIVE_XFCE_SESSION"
+            exit 21
+          fi
+
+          env_dump="$(tr '\0' '\n' < "/proc/$session_pid/environ")"
+          display="$(printf '%s\n' "$env_dump" | sed -n 's/^DISPLAY=//p' | head -n1)"
+          dbus="$(printf '%s\n' "$env_dump" | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' | head -n1)"
+          xdg="$(printf '%s\n' "$env_dump" | sed -n 's/^XDG_RUNTIME_DIR=//p' | head -n1)"
+          xauth="$(printf '%s\n' "$env_dump" | sed -n 's/^XAUTHORITY=//p' | head -n1)"
+          home="$(printf '%s\n' "$env_dump" | sed -n 's/^HOME=//p' | head -n1)"
+
+          if [ -z "$display" ]; then
+            echo "MCF_BROWSER_OPEN_FAIL_NO_DISPLAY"
+            exit 22
+          fi
+
+          echo "XFCE_PID=$session_pid DISPLAY=$display"
+          command -v firefox >/dev/null 2>&1 || { echo "MCF_BROWSER_OPEN_FAIL_FIREFOX_MISSING"; exit 23; }
+
+          : "${home:=$HOME}"
+          : "${xauth:=$home/.Xauthority}"
+          : "${xdg:=/run/user/$uid}"
+
+          setsid env \
+            DISPLAY="$display" \
+            DBUS_SESSION_BUS_ADDRESS="$dbus" \
+            XDG_RUNTIME_DIR="$xdg" \
+            XAUTHORITY="$xauth" \
+            HOME="$home" \
+            firefox --new-window about:blank \
+            >/tmp/mcf-open-browser.log 2>&1 </dev/null &
+
+          browser_pid=$!
+          echo "LAUNCH_PID=$browser_pid"
+          echo "MCF_BROWSER_OPEN_DISPATCHED"
