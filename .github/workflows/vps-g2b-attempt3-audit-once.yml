@@ -29,6 +29,7 @@ jobs:
           import pathlib
           import re
           import socket
+          import subprocess
 
           process_name = "g2b-disposable-task8-vm3"
           matches = []
@@ -67,6 +68,27 @@ jobs:
               )
               return ["[REDACTED]" if sensitive.search(line) else line for line in lines[-line_limit:]]
 
+          def run(argv, timeout=30):
+              try:
+                  result = subprocess.run(
+                      argv,
+                      check=False,
+                      capture_output=True,
+                      text=True,
+                      timeout=timeout,
+                  )
+                  return {
+                      "exit_code": result.returncode,
+                      "stdout": result.stdout[-16000:],
+                      "stderr": result.stderr[-4000:],
+                  }
+              except (OSError, subprocess.TimeoutExpired) as exc:
+                  return {
+                      "exit_code": 124 if isinstance(exc, subprocess.TimeoutExpired) else 127,
+                      "stdout": "",
+                      "stderr": str(exc),
+                  }
+
           inspected = []
           for match in matches:
               workdir = safe_workdir(match["argv"])
@@ -104,6 +126,10 @@ jobs:
                           "run.log",
                       ]
                   }
+                  item["control_files"] = {
+                      name: sanitized_tail(workdir / name)
+                      for name in ["run-task8.sh", "resource-watch.sh"]
+                  }
               inspected.append(item)
 
           ssh_banner = {"reachable": False, "banner": ""}
@@ -115,6 +141,52 @@ jobs:
           except OSError as exc:
               ssh_banner["error"] = str(exc)
 
+          guest_state = None
+          if inspected and inspected[0].get("workdir") and ssh_banner["reachable"]:
+              workdir = pathlib.Path(inspected[0]["workdir"])
+              identity_file = workdir / "id_ed25519"
+              if identity_file.is_file() and (identity_file.stat().st_mode & 0o777) == 0o600:
+                  guest_command = """
+                  set -eu
+                  printf '%s\n' 'GUEST_IDENTITY'
+                  id
+                  hostname
+                  printf '%s\n' 'CLOUD_INIT'
+                  cloud-init status || true
+                  printf '%s\n' 'FAILED_UNITS'
+                  systemctl --failed --no-legend --plain || true
+                  printf '%s\n' 'RELATED_PROCESSES'
+                  pgrep -af 'test_control_bridge_g2b|ansible-playbook|docker build' || true
+                  printf '%s\n' 'CANDIDATE_PATHS'
+                  find /home/ubuntu /tmp -maxdepth 3 -type f \
+                    \( -name 'test_control_bridge_g2b_vm.sh' -o -name 'harness.log' \
+                    -o -name 'result.log' -o -name 'candidate.tar.gz' \) \
+                    -printf '%p|%s|%TY-%Tm-%TdT%TH:%TM:%TSZ\n' 2>/dev/null || true
+                  printf '%s\n' 'DOCKER_STATE'
+                  docker ps --format '{{.Names}}|{{.Status}}|{{.Image}}' 2>&1 || true
+                  """
+                  guest_state = run(
+                      [
+                          "ssh",
+                          "-i",
+                          str(identity_file),
+                          "-p",
+                          "22284",
+                          "-o",
+                          "BatchMode=yes",
+                          "-o",
+                          "StrictHostKeyChecking=no",
+                          "-o",
+                          "UserKnownHostsFile=/dev/null",
+                          "-o",
+                          "ConnectTimeout=5",
+                          "ubuntu@127.0.0.1",
+                          "/bin/bash",
+                          "-lc",
+                          guest_command,
+                      ]
+                  )
+
           payload = {
               "protocol": "G2B_ATTEMPT3_READ_ONLY_AUDIT_V1",
               "captured_at_utc": datetime.datetime.now(datetime.timezone.utc)
@@ -124,6 +196,7 @@ jobs:
               "qemu_process_count": len(matches),
               "qemu": inspected,
               "guest_ssh_banner": ssh_banner,
+              "guest_read_only_state": guest_state,
           }
           print(json.dumps(payload, indent=2, sort_keys=True))
           PY
