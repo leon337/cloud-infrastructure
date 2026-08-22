@@ -1,0 +1,35 @@
+name: g2b-publish-local-head
+
+on:
+  push:
+    branches:
+      - ops/r8-task7-syntax-selfhosted-20260822
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: self-hosted
+    timeout-minutes: 5
+    steps:
+      - name: Publish exact guarded local G2-B checkpoint
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_LOCAL: 48146d3ed6a7d28215b9d34f3954673054738d0a
+          EXPECTED_REMOTE: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
+          TARGET_BRANCH: codex/control-bridge-g2b
+        run: |
+          set -euo pipefail
+          repo=/home/ubuntu/cloud-infrastructure
+          cd "$repo"
+          test "$(git branch --show-current)" = "$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_LOCAL"
+          test -z "$(git status --porcelain)"
+          auth_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          remote_sha="$(git ls-remote "$auth_url" "refs/heads/${TARGET_BRANCH}" | cut -f1)"
+          test "$remote_sha" = "$EXPECTED_REMOTE"
+          git push "$auth_url" "${EXPECTED_LOCAL}:refs/heads/${TARGET_BRANCH}"
+          final_sha="$(git ls-remote "$auth_url" "refs/heads/${TARGET_BRANCH}" | cut -f1)"
+          test "$final_sha" = "$EXPECTED_LOCAL"
+          printf 'G2B_BLOCKER_CHECKPOINT_PUBLISHED=%s\n' "$final_sha"
