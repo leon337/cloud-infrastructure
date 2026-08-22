@@ -1,0 +1,23 @@
+name: mestre-terminal-probe
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+    paths:
+      - control/dispatch/terminal-probe.txt
+
+permissions:
+  contents: read
+
+jobs:
+  terminal:
+    if: github.actor == 'leon337' && github.head_ref == 'mcf/terminal-hell-word-main-test'
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    steps:
+      - name: Open bounded bash terminal and type hell word
+        shell: bash
+        run: |
+          printf 'hell word\n'
