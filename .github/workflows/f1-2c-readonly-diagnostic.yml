@@ -1,0 +1,89 @@
+name: f1-2c-readonly-diagnostic
+
+on:
+  pull_request:
+    branches:
+      - fix/f1-2c-systemd-runtime-lock
+
+permissions:
+  contents: read
+
+concurrency:
+  group: f1-2c-readonly-diagnostic-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  node01-readonly:
+    if: github.head_ref == 'team/f1-2c-network-recovery-20260822'
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 3
+
+    steps:
+      - name: Capture bounded read-only F1.2c incident evidence
+        shell: bash
+        run: |
+          set -uo pipefail
+          unit=cloud-platform-network-services.service
+          base=cloud-platform-network-enforcement.service
+
+          echo '=== F1_2C_READONLY_IDENTITY ==='
+          date -u --iso-8601=seconds
+          hostname
+          id
+
+          echo '=== NETWORK_SERVICES_STATUS ==='
+          systemctl status "$unit" --no-pager --full || true
+          echo '=== NETWORK_SERVICES_SHOW ==='
+          systemctl show "$unit" --no-pager \
+            -p LoadState -p ActiveState -p SubState -p Result -p ExecMainStatus \
+            -p FragmentPath -p DropInPaths -p UnitFileState -p Requires -p After -p PartOf \
+            -p ConditionResult -p RuntimeDirectory || true
+          echo '=== NETWORK_SERVICES_UNIT ==='
+          systemctl cat "$unit" --no-pager || true
+          echo '=== NETWORK_SERVICES_JOURNAL ==='
+          journalctl -u "$unit" --since '2026-08-19 00:00:00 UTC' -n 240 --no-pager -o short-iso || true
+
+          echo '=== INSTALLED_IDENTITY ==='
+          for path in \
+            /usr/local/libexec/cloud-platform-network-services \
+            /usr/local/libexec/cloud-platform-network-enforcement \
+            /etc/systemd/system/cloud-platform-network-services.service \
+            /etc/systemd/system/cloud-platform-network-enforcement.service; do
+            if [[ -e "$path" ]]; then
+              stat -c '%n|%U:%G|%a|%s|%y' "$path" || true
+              sha256sum "$path" || true
+            else
+              printf 'MISSING %s\n' "$path"
+            fi
+          done
+
+          echo '=== LOCK_STATE ==='
+          ls -ld /run /run/lock /run/cloud-platform-network-services 2>&1 || true
+          for path in /run/lock/cloud-platform-network-services.lock /run/lock/cloud-platform-network-enforcement.lock /run/cloud-platform-network-services/lock; do
+            if [[ -e "$path" ]]; then
+              stat -c '%n|%U:%G|%a|%s|%y|%F' "$path" || true
+            else
+              printf 'ABSENT %s\n' "$path"
+            fi
+          done
+
+          echo '=== BASE_ENFORCEMENT_STATUS ==='
+          systemctl status "$base" --no-pager --full || true
+          systemctl show "$base" --no-pager -p ActiveState -p SubState -p Result -p ExecMainStatus -p FragmentPath || true
+          systemctl cat "$base" --no-pager || true
+
+          echo '=== NETWORK_STATE ==='
+          sysctl net.ipv4.ip_forward net.ipv6.conf.all.forwarding 2>&1 || true
+          ip -br link 2>&1 || true
+          ip -4 route show 2>&1 || true
+          ip -6 route show 2>&1 || true
+          ss -Hlnptu 2>&1 || true
+
+          echo '=== UNPRIVILEGED_DOCKER_VISIBILITY ==='
+          docker ps --format '{{.Names}}|{{.Status}}' 2>&1 || true
+          docker network ls --format '{{.Name}}|{{.Driver}}|{{.Scope}}' 2>&1 || true
+
+          echo '=== SYSTEMD_SECURITY_SUMMARY ==='
+          systemd-analyze security "$unit" --no-pager 2>&1 || true
+
+          echo 'F1_2C_READONLY_DIAGNOSTIC=COMPLETE'
