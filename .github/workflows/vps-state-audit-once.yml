@@ -1,0 +1,160 @@
+name: vps-state-audit-once
+
+on:
+  push:
+    branches:
+      - codex/vps-state-reconciliation-20260822
+    paths:
+      - .github/workflows/vps-state-audit-once.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vps-state-audit-once
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 3
+    steps:
+      - name: Capture bounded read-only NODE-01 state
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import datetime
+          import json
+          import os
+          import pathlib
+          import socket
+          import subprocess
+
+          def run(argv, timeout=15):
+              try:
+                  result = subprocess.run(
+                      argv,
+                      check=False,
+                      capture_output=True,
+                      text=True,
+                      timeout=timeout,
+                  )
+                  return {
+                      "argv": argv,
+                      "exit_code": result.returncode,
+                      "stdout": result.stdout[-12000:],
+                      "stderr": result.stderr[-4000:],
+                  }
+              except (OSError, subprocess.TimeoutExpired) as exc:
+                  return {
+                      "argv": argv,
+                      "exit_code": 124 if isinstance(exc, subprocess.TimeoutExpired) else 127,
+                      "stdout": "",
+                      "stderr": str(exc),
+                  }
+
+          def inspect_repository(path_text):
+              path = pathlib.Path(path_text)
+              result = {"path": path_text, "exists": path.exists(), "is_git": False}
+              if not path.exists():
+                  return result
+              git_check = run(["git", "-C", path_text, "rev-parse", "--git-dir"])
+              result["is_git"] = git_check["exit_code"] == 0
+              if not result["is_git"]:
+                  return result
+              result["head"] = run(["git", "-C", path_text, "rev-parse", "HEAD"])
+              result["branch"] = run(
+                  ["git", "-C", path_text, "symbolic-ref", "--short", "-q", "HEAD"]
+              )
+              result["status"] = run(
+                  ["git", "-C", path_text, "status", "--porcelain=v2", "--branch"]
+              )
+              result["last_commit"] = run(
+                  [
+                      "git",
+                      "-C",
+                      path_text,
+                      "log",
+                      "-1",
+                      "--date=iso-strict",
+                      "--pretty=format:%H|%ad|%s",
+                  ]
+              )
+              result["worktrees"] = run(
+                  ["git", "-C", path_text, "worktree", "list", "--porcelain"]
+              )
+              return result
+
+          state_dir = pathlib.Path("/home/ubuntu/.local/state")
+          terminal_pid_file = state_dir / "mcf-mission2-terminal.pid"
+          terminal_pid = ""
+          if terminal_pid_file.is_file():
+              terminal_pid = terminal_pid_file.read_text(encoding="utf-8").strip()
+          terminal_socket = pathlib.Path(
+              f"/run/user/{os.getuid()}/mcf-mission2-terminal.sock"
+          )
+
+          payload = {
+              "protocol": "NODE01_READ_ONLY_RECONCILIATION_V1",
+              "captured_at_utc": datetime.datetime.now(datetime.timezone.utc)
+              .replace(microsecond=0)
+              .isoformat()
+              .replace("+00:00", "Z"),
+              "identity": {
+                  "hostname": socket.gethostname(),
+                  "uid": os.getuid(),
+                  "user": os.environ.get("USER", ""),
+              },
+              "system": {
+                  "uptime": run(["uptime", "-p"]),
+                  "disk": run(["df", "-h", "/"]),
+                  "memory": run(["free", "-h"]),
+                  "failed_units": run(
+                      ["systemctl", "--failed", "--no-legend", "--plain"]
+                  ),
+                  "core_units": {
+                      unit: run(["systemctl", "is-active", unit])
+                      for unit in ["ssh", "ufw", "docker", "containerd"]
+                  },
+                  "runner_units": run(
+                      [
+                          "systemctl",
+                          "list-units",
+                          "--type=service",
+                          "--all",
+                          "--no-legend",
+                          "--plain",
+                          "actions.runner.*",
+                      ]
+                  ),
+              },
+              "qemu_host_packages": {
+                  package: run(
+                      ["dpkg-query", "-W", "-f=${Status}|${Version}\\n", package]
+                  )
+                  for package in [
+                      "qemu-system-x86",
+                      "qemu-utils",
+                      "cloud-image-utils",
+                  ]
+              },
+              "active_related_processes": run(
+                  ["pgrep", "-af", "qemu-system|test_control_bridge_g2b|ansible-playbook"]
+              ),
+              "persistent_terminal": {
+                  "pid_file_exists": terminal_pid_file.is_file(),
+                  "pid": terminal_pid,
+                  "process_alive": bool(terminal_pid)
+                  and pathlib.Path(f"/proc/{terminal_pid}").exists(),
+                  "socket_exists": terminal_socket.is_socket(),
+                  "socket_mode": oct(terminal_socket.stat().st_mode & 0o777)
+                  if terminal_socket.exists()
+                  else None,
+              },
+              "repositories": [
+                  inspect_repository("/home/ubuntu/cloud-infrastructure"),
+                  inspect_repository("/home/ubuntu/multiagent-collaboration-framework"),
+              ],
+          }
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          PY
