@@ -72,6 +72,9 @@ class G2BDisposableIntegrationTests(unittest.TestCase):
             text,
         )
         self.assertNotIn("assert v ==", text)
+        self.assertIn("G2B_ROLLBACK_PLAYBOOK_FAIL task=%s", text)
+        self.assertIn("rollback-control-bridge-g2b.log", text)
+        self.assertNotIn('cat "$ROLLBACK_LOG"', text)
 
     def test_disposable_inventory_does_not_override_task_become(self) -> None:
         self.assertTrue(TEST_INVENTORY_PATH.is_file(), "missing G2-B disposable inventory")

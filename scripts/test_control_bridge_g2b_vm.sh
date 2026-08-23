@@ -289,7 +289,18 @@ docker exec "$CONTAINER" test ! -e "$WORKSPACE_PATH/$PILOT_PATH" || fail post_re
 printf '%s\n' 'G2B_POST_REVOKE_REFUSAL_PASS'
 
 CURRENT_STAGE=bounded_cleanup
-run_playbook playbooks/rollback-control-bridge-g2b.yml -e g2b_rollback_confirm=true >/dev/null
+ROLLBACK_LOG="$HARNESS_TMP_DIR/rollback-control-bridge-g2b.log"
+if ! run_playbook playbooks/rollback-control-bridge-g2b.yml \
+  -e g2b_rollback_confirm=true >"$ROLLBACK_LOG" 2>&1; then
+  FAILED_ROLLBACK_TASK=$(awk '
+    /^TASK \[/ { current=$0 }
+    /^fatal:/ { failed=current }
+    END { print failed }
+  ' "$ROLLBACK_LOG")
+  printf 'G2B_ROLLBACK_PLAYBOOK_FAIL task=%s\n' \
+    "${FAILED_ROLLBACK_TASK:-unknown}" >&2
+  fail rollback_playbook_failed
+fi
 if [[ $UBUNTU_USER_CREATED == true ]]; then
   docker exec "$CONTAINER" userdel --remove ubuntu >/dev/null 2>&1 || true
 fi
