@@ -12,7 +12,7 @@ jobs:
   diagnose:
     if: github.actor != 'github-actions[bot]'
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
-    timeout-minutes: 5
+    timeout-minutes: 30
     steps:
       - name: Checkout isolated branch
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -20,7 +20,7 @@ jobs:
           ref: mcf/hermes-relay-bootstrap-20260823
           fetch-depth: 0
 
-      - name: Deploy bounded Hermes relay as ubuntu
+      - name: Verify unprivileged boundary
         shell: bash
         run: |
           set -euo pipefail
@@ -29,6 +29,12 @@ jobs:
             echo 'REFUSED unexpected passwordless sudo' >&2
             exit 1
           fi
+          test -x /home/ubuntu/.local/bin/hermes
+
+      - name: Deploy bounded Hermes relay as ubuntu
+        shell: bash
+        run: |
+          set -euo pipefail
           base=/home/ubuntu/.local/share/mcf-hermes-relay
           mkdir -p "$base"
           install -m 0700 ops/hermes-relay/relay.py "$base/relay.py"
@@ -44,7 +50,128 @@ jobs:
           grep -q hello_world_gui "$base/relay.py"
           echo RELAY_DEPLOY_PASS
 
+      - name: Install llama.cpp unified app in user space
+        shell: bash
+        run: |
+          set -euo pipefail
+          export HOME=/home/ubuntu
+          export PATH="$HOME/.local/bin:$PATH"
+          if [[ ! -x "$HOME/.local/bin/llama" ]]; then
+            curl -LsSf https://llama.app/install.sh | SKIP_CUDA=1 SKIP_ROCM=1 SKIP_VULKAN=1 sh
+          fi
+          "$HOME/.local/bin/llama" version
+
+      - name: Start Qwen 4B local provider
+        shell: bash
+        run: |
+          set -euo pipefail
+          export HOME=/home/ubuntu
+          export PATH="$HOME/.local/bin:$PATH"
+          base="$HOME/.local/share/mcf-hermes-local-provider"
+          mkdir -p "$base"
+          if [[ -f "$base/llama.pid" ]] && kill -0 "$(cat "$base/llama.pid")" 2>/dev/null; then
+            kill "$(cat "$base/llama.pid")" || true
+            sleep 2
+          fi
+          rm -f "$base/server.log"
+          env -u RUNNER_TRACKING_ID nohup "$HOME/.local/bin/llama" serve \
+            -hf bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF:Q4_K_M \
+            -c 65536 \
+            --cache-type-k q8_0 \
+            --cache-type-v q8_0 \
+            --jinja \
+            --reasoning off \
+            --host 127.0.0.1 \
+            --port 8080 \
+            --alias qwen3-4b-instruct-2507 \
+            --no-webui \
+            > "$base/server.log" 2>&1 < /dev/null &
+          echo $! > "$base/llama.pid"
+          echo "LLAMA_PID=$(cat "$base/llama.pid")"
+
+      - name: Wait for local provider
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=/home/ubuntu/.local/share/mcf-hermes-local-provider
+          for i in $(seq 1 240); do
+            if curl -fsS --max-time 3 http://127.0.0.1:8080/health >/dev/null 2>&1; then
+              echo LOCAL_PROVIDER_HEALTH=PASS
+              exit 0
+            fi
+            if [[ -f "$base/llama.pid" ]] && ! kill -0 "$(cat "$base/llama.pid")" 2>/dev/null; then
+              echo LOCAL_PROVIDER_PROCESS_EXITED >&2
+              tail -n 120 "$base/server.log" >&2 || true
+              exit 1
+            fi
+            sleep 5
+          done
+          echo LOCAL_PROVIDER_HEALTH=TIMEOUT >&2
+          tail -n 120 "$base/server.log" >&2 || true
+          exit 1
+
+      - name: Verify local tool calling
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp)
+          curl -fsS http://127.0.0.1:8080/v1/chat/completions \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"qwen3-4b-instruct-2507","messages":[{"role":"user","content":"Call the readiness tool with value HERMES_READY."}],"tools":[{"type":"function","function":{"name":"readiness","description":"Record readiness","parameters":{"type":"object","properties":{"value":{"type":"string"}},"required":["value"]}}}],"tool_choice":"required","max_tokens":64}' > "$tmp"
+          python3 - "$tmp" <<'PY'
+          import json,sys
+          obj=json.load(open(sys.argv[1]))
+          calls=obj['choices'][0]['message'].get('tool_calls') or []
+          if not calls:
+              raise SystemExit('TOOL_CALLING=FAIL')
+          print('TOOL_CALLING=PASS')
+          print('TOOL_NAME='+calls[0]['function']['name'])
+          PY
+          rm -f "$tmp"
+
+      - name: Configure Hermes local provider
+        shell: bash
+        run: |
+          set -euo pipefail
+          export HOME=/home/ubuntu
+          py="$HOME/.hermes/hermes-agent/.venv/bin/python"
+          "$py" - <<'PY'
+          from pathlib import Path
+          import os, tempfile, yaml
+          p=Path('/home/ubuntu/.hermes/config.yaml')
+          cfg=yaml.safe_load(p.read_text()) if p.exists() else {}
+          if not isinstance(cfg, dict): cfg={}
+          model=cfg.get('model')
+          if not isinstance(model, dict): model={}
+          model.update({
+              'default':'qwen3-4b-instruct-2507',
+              'provider':'custom',
+              'base_url':'http://127.0.0.1:8080/v1',
+              'api_key':'no-key',
+              'context_length':65536,
+          })
+          cfg['model']=model
+          fd,tmp=tempfile.mkstemp(prefix='config.',suffix='.yaml',dir=str(p.parent))
+          os.close(fd)
+          Path(tmp).write_text(yaml.safe_dump(cfg,sort_keys=False,allow_unicode=True))
+          os.chmod(tmp,0o600)
+          os.replace(tmp,p)
+          print('HERMES_LOCAL_PROVIDER_CONFIGURED=PASS')
+          PY
+
+      - name: Hermes cognitive smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          export HOME=/home/ubuntu
+          export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
+          out=$(timeout 300 "$HOME/.local/bin/hermes" -z 'Reply with exactly HERMES_READY and nothing else.' --ignore-rules)
+          printf 'HERMES_SMOKE_OUTPUT=%s\n' "$out"
+          test "$out" = HERMES_READY
+          echo HERMES_COGNITIVE_SMOKE=PASS
+
       - name: Collect sanitized status
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
@@ -56,27 +183,19 @@ jobs:
             echo "HOST=$(hostname)"
             echo "SENTINELX_ACTIVE=$(systemctl is-active sentinelx-cloud-core 2>/dev/null || true)"
             echo "SENTINELX_ENABLED=$(systemctl is-enabled sentinelx-cloud-core 2>/dev/null || true)"
-            if [[ -f /etc/sentinelx/identity.json ]]; then
-              echo "IDENTITY_PRESENT=yes"
-              stat -c 'IDENTITY_META=%U:%G mode=%a bytes=%s' /etc/sentinelx/identity.json
-            else
-              echo "IDENTITY_PRESENT=no"
-            fi
-            echo "SENTINELX_PROCESS=$(pgrep -af 'sentinelx-cloud-core.*--hub' | sed -E 's#--identity [^ ]+#--identity REDACTED#g; s#--config [^ ]+#--config REDACTED#g' | head -1 || true)"
-            hub_code=$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 8 https://mcp.sentinelx.app || true)
-            echo "HUB_HTTP=$hub_code"
+            echo "LOCAL_PROVIDER_HEALTH=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 3 http://127.0.0.1:8080/health || true)"
+            echo "LLAMA_PROCESS=$(pgrep -af '/home/ubuntu/.local/bin/llama serve' | head -1 || true)"
             echo "RELAY_SOCKET=$([[ -S /tmp/mcf-hermes-relay.sock ]] && echo yes || echo no)"
             echo "RELAY_PROCESS=$(pgrep -af 'mcf-hermes-relay/relay.py' | head -1 || true)"
             echo "RELAY_HAS_BOUNDED_HELLO=$([[ -f /home/ubuntu/.local/share/mcf-hermes-relay/relay.py ]] && grep -q 'hello_world_gui' /home/ubuntu/.local/share/mcf-hermes-relay/relay.py && echo yes || echo no)"
             echo "HERMES_VERSION=$(/home/ubuntu/.local/bin/hermes --version 2>/dev/null | head -1 || true)"
-            echo "--- SENTINELX_LOG_TAIL_SANITIZED ---"
-            journalctl -u sentinelx-cloud-core -n 15 --no-pager 2>/dev/null \
-              | sed -E 's/(token|jwt|authorization|bearer|secret|password)([=: ]+)[^ ]+/\1\2REDACTED/Ig; s/host_[A-Za-z0-9_-]+/HOST_ID_REDACTED/g' \
-              | tail -15 || true
+            echo "MEM=$(free -h | awk '/Mem:/{print $3" used, "$7" available"}')"
+            echo "DISK=$(df -h / | awk 'NR==2{print $3" used, "$4" available"}')"
           } > "$out"
           cat "$out"
 
       - name: Persist sanitized evidence on isolated branch
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
@@ -86,5 +205,5 @@ jobs:
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'chore: record sanitized Hermes/SentinelX status [skip ci]'
+          git commit -m 'chore: record sanitized Hermes local-provider status [skip ci]'
           git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
