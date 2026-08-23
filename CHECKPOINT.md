@@ -1,80 +1,62 @@
-# CHECKPOINT — IMPLEMENTAÇÃO DA VPS
+# CHECKPOINT — State + Toolchain canônicos
 
-Atualizado em 2026-08-18 após retomada manual da missão. Este arquivo responde: **onde estamos agora?**
+Atualizado em 22/08/2026 após autorização explícita de LEANDRO para uma extração mainline-neutral de state + validação.
 
-## Estado durável
+## Estado da frente
 
-- Repositório: `leon337/cloud-infrastructure`, branch `main`.
-- FASE 0 — inventário: `DONE`.
-- FASE 1 — acesso, recovery e segurança mínima: `DONE`.
-- FASE 2 — Cloud Workstation: `DONE`, `FUNCTIONAL_AND_VALIDATED`.
-- As antigas F3–F10 permanecem históricas/provisórias; a implementação agora segue a arquitetura definida pela Platform Discovery.
-- `CREDENTIAL_ROTATION`: `DEFERRED_BY_HUMAN_DECISION`.
-- Platform Discovery Q1–Q40 concluída para fins de delegação; Q1–Q39 são requisitos arquitetônicos vinculantes.
-- Q40 = `D`: LEANDRO delegou ao Codex a seleção tecnológica e a implementação incremental da plataforma DEV/lab.
-- Missão canônica: `docs/CODEX-EXECUTION-MISSION-001.md`.
-- Checkpoint da decisão: `docs/39-platform-discovery-checkpoint-028.md`.
-- Estado estruturado: `state/platform-discovery.yaml`.
-- `implementation_authorized: true` para a plataforma privada DEV/lab dentro dos guardrails.
-- `codex_implementation_mission_authorized: true`.
-- `production_promotion_authorized: false`; produção continua sujeita a HUMAN_GATE de LEANDRO.
+- Base: `main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b`.
+- Branch: `team/canonical-state-toolchain-20260822`.
+- PR: `#22`, draft, sem autorização de merge final.
+- HUMAN_GATE: resolvido por LEANDRO.
+- Estado: `CANONICAL_HOSTED_EXECUTOR_RESTORED_PENDING_EXECUTION`.
 
-## Contingência de executor — 18/08/2026
+## State canônico
 
-- LEANDRO informou que o Codex está indisponível.
-- LEANDRO assumiu temporariamente a execução manual das ações na VPS.
-- MESTRE assume a orquestração técnica, análise dos resultados, definição de microtarefas, prechecks, rollback, validação e checkpoint.
-- A contingência altera apenas o executor atual; não reabre decisões Q1–Q40, não amplia a autorização e não altera os guardrails.
-- O contrato incremental de `docs/CODEX-EXECUTION-MISSION-001.md` continua sendo usado como contrato de execução, independentemente do executor.
+`state/current.yaml` foi reconciliado a partir de evidência, sem copiar snapshots branch-local obsoletos.
 
-## Guardrails vigentes
+- `main`: `DOCUMENTATION_AND_INTEGRATION_DRIFT`;
+- F1.2c: `REQUIRES_REVIEW`, sem reapply NODE-01 autorizado;
+- G2-B Tasks 1–7: `COMPLETE`;
+- G2-B Task 8: `FAILED_ATTEMPT_3_NOT_ACCEPTED`, causa `NOT_VERIFIED`, diagnóstico `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
+- G2-B Tasks 9–10: `NOT_STARTED`;
+- produção: fechada;
+- Repository Hygiene: `REPOSITORY_HYGIENE_REVALIDATED`; PR #19 foi validado contra a toolchain canônica, sem credencial literal histórica detectada.
 
-- LEANDRO continua autoridade humana final.
-- Q1–Q39 não podem ser reabertas silenciosamente pelo executor.
-- Nunca versionar passwords, passphrases, private keys, tokens, API keys, 2FA, connection strings reais ou credenciais do provedor.
-- Management Plane não deve ser exposto publicamente.
-- Agentes não recebem root/Docker daemon irrestrito.
-- Mudanças críticas devem ter precheck, rollback e evidência.
-- Cloud Workstation permanece cockpit humano opcional e não deve ser destruída sem plano de recuperação adequado.
-- Rotação de credenciais continua adiada por decisão humana.
-- Promoção para produção externa continua bloqueada até novo HUMAN_GATE.
+## Toolchain canônica
 
-## Segurança e acesso atuais
+Entry point: `scripts/test.sh`.
+Origem: `edd2497d657cc9bc35952f5dfc71090a18dade53`, F1.1 / PR #2.
 
-- `ubuntu`/publickey validado com chave dedicada; chave anterior preservada.
-- SSH efetivo: root login `no`, password `no`, keyboard-interactive `no`, publickey `yes`, `MaxAuthTries 3`, `LoginGraceTime 30`, `AllowUsers ubuntu`.
-- UFW ativo: default deny incoming; somente OpenSSH TCP 22 para IPv4/IPv6.
-- fail2ban/sshd ativo.
-- sudo exige senha; não há `NOPASSWD`; `visudo` validado.
-- `ubuntu` não pertence ao grupo `lxd`; LXD daemon/socket estão desabilitados e inativos.
+Preservado de forma mainline-neutral:
 
-## Recovery e backup
+- diff check;
+- scanner de secrets da árvore e histórico alcançável;
+- links Markdown;
+- YAML estrito;
+- state/consistência;
+- unit tests;
+- sintaxe Python/shell;
+- ShellCheck.
 
-- VNC Contabo revalidado funcionalmente.
-- Rescue disponível, não acionado.
-- Snapshots não configurados; backup do provedor não contratado; firewall do provedor não configurado.
-- Backup diário sanitizado em `/var/backups/cloud-infrastructure` com timer ativo.
-- Primeira cópia off-host em `/home/leo/Backups/cloud-infrastructure`; SHA-256 remoto/local idêntico e extração de 24 arquivos validada.
-- Backup amplo de dados e reconstrução total ainda não foram testados; `FND-BACKUP-001` permanece mitigado/aberto.
+O caminho de integração canônico é `.github/workflows/canonical-validation.yml` em `ubuntu-24.04`, com Python 3.12 e `requirements-dev.lock`. Isso preserva o executor do workflow F1.1 em vez de acoplar CI ao NODE-01.
 
-## Cloud Workstation
+Uma prova de manutenção separada pode executar a mesma suíte em NODE-01 apenas para branches `team/canonical-state-toolchain-*`, com boundary não privilegiado obrigatório. Ela não substitui o CI hospedado.
 
-- Stack: XFCE + LightDM + XRDP/xorgxrdp.
-- XRDP escuta somente em `127.0.0.1:3389`; sesman somente em `[::1]:3350`; não há regra pública para RDP.
-- Cliente validado por túnel SSH local `127.0.0.1:13389`.
-- Passaram: desktop, login gráfico, Firefox, VS Code, terminal, terminal integrado, Thunar, projeto Git, múltiplas janelas, clipboard nos dois sentidos, 1100×700 e 1280×720, reconnect, persistência, logout/login e reboot.
-- Recursos pós-reboot com sessão gráfica ativa: 8 CPUs, ~2,2 GiB/23 GiB RAM, ~7,5 GiB/290 GiB disco.
+## Evidência anterior
 
-## Findings
+Run `32609819790`, job `97120890824`, candidato `55cbbf0b...` executou no NODE-01 e provou checkout/boundary/ShellCheck/workspace, mas falhou no `git diff --check` por quatro trailing spaces desta frente. Os defeitos foram corrigidos.
 
-- Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUDO-001`, `FND-DOC-001`, `FND-AUDIT-001`.
-- Mitigado e aberto: `FND-BACKUP-001`.
-- A investigar: `FND-CPU-001`, `FND-CLOUDINIT-001`.
+Auditoria posterior restaurou o scanner histórico, links Markdown, YAML estrito e o boundary hosted original; por isso o candidato atual deve executar novamente do início.
 
-## Regra de retomada
+## Interpretação de falhas
 
-Toda retomada começa em `CONTEXT.md`, verifica a `main` real, lê `CHECKPOINT.md`, `state/current.yaml`, `state/platform-discovery.yaml`, `docs/39-platform-discovery-checkpoint-028.md` e `docs/CODEX-EXECUTION-MISSION-001.md`.
+- falha causada pelos arquivos desta extração: esta frente corrige e reroda;
+- `SECRET_POLICY_FAIL` em histórico preexistente: blocker real para Repository Hygiene, não motivo para enfraquecer a suíte;
+- runner GitHub-hosted falhando antes de steps: blocker externo de execução, separado de falha de conteúdo;
+- runner NODE-01 ocupado por G2-B: não cancelar/interferir.
 
-Próximo passo exato: **MISSION ACCEPTANCE + RECOVERY REPORT**, preservando o mesmo conteúdo exigido pela missão Codex, mas executado temporariamente por LEANDRO sob orquestração do MESTRE.
+## Decisões negativas
 
-Antes de qualquer implementação ampla: recuperar GitHub + estado real da VPS, registrar divergências, confirmar riscos, Technology Mapping inicial e primeiro incremento com rollback; depois prosseguir incrementalmente dentro da autorização Q40-D.
+`state/active-mission.yaml` e `ROADMAP-CHECKLIST.md` continuam `NOT_ADOPTED`; nenhum código funcional G2-B/F1.2c foi importado; nenhuma ação privilegiada/produção/branch cleanup foi executada.
+
+Próximo passo após integração: **retomar as frentes F1.2c e G2-B preservando o HUMAN_GATE de produção**.

@@ -1,188 +1,252 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-18
-documentation_state: MANUAL_EXECUTION_CONTINGENCY_ACTIVE
+candidate_branch: team/canonical-state-toolchain-20260822
+updated_at: "2026-08-23T04:02:00-03:00"
+state_classification: CURRENT_RECONCILED_INTEGRATION_CANDIDATE_REVALIDATED
+documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
+
 continuity:
   historical_validations_preserved: true
-  current_state_independent_validation: NOT_EXECUTED
-  future_state_validation_policy: PUC_REVALIDATION_REQUIRED
+  current_state_independent_validation: PASS_LOCAL_FULL_HISTORY_CANONICAL_SUITE_WITH_HYGIENE_REVALIDATION
   canonical_entrypoint: CONTEXT.md
   checkpoint: CHECKPOINT.md
+  validation_entrypoint: scripts/test.sh
   platform_discovery_state: state/platform-discovery.yaml
-  codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
+  active_mission_model:
+    file: state/active-mission.yaml
+    status: NOT_ADOPTED
+    reason: SINGLE_ACTIVE_MISSION_MODEL_NOT_PROVEN_FOR_PARALLEL_MAINLINE_FRONTS
+  roadmap_checklist:
+    file: ROADMAP-CHECKLIST.md
+    status: NOT_ADOPTED
+    reason: G2B_TASK8_SPECIFIC_SURFACE_NOT_MAINLINE_NEUTRAL
+
+source_snapshot:
+  main:
+    sha: f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b
+    merged_reconciliation_pr: 18
+    executive_projection: README.md
+  executable_evidence:
+    node01_read_only_audit_run: 32577551012
+    g2b_attempt3_read_only_audit_run: 32577815107
+    canonical_maintenance_proof_run: 32610484209
+    canonical_maintenance_proof_job: 97122604465
+    hosted_canonical_latest_run: 32618609069
+  open_fronts:
+    repository_hygiene_pr: 19
+    f1_2c_recovery_pr: 20
+    g2b_task8_diagnostic_pr: 21
+    canonical_state_toolchain_pr: 22
+    f1_2c_kvm_gate_pr: 23
+
 project:
   name: IMPLEMENTACAO_DA_VPS
-  status: ACTIVE
-  phases:
-    phase_0: DONE
-    phase_1: DONE
+  status: ACTIVE_WITH_OPEN_INCIDENTS_AND_PARALLEL_RECOVERY
+  integration_status: DOCUMENTATION_AND_INTEGRATION_DRIFT
+  durable_completed:
+    phase_0_inventory: DONE
+    phase_1_access_recovery_security: DONE
     phase_2_cloud_workstation: DONE
-    future_platform_implementation: AUTHORIZED_INCREMENTAL_DEV_LAB
-  cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
-  credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
+    platform_s0: COMPLETE
+    platform_f1_1: COMPLETE
+    platform_f1_2b: COMPLETE
+  next_exact_step: RESUME_OPEN_F1_2C_AND_G2B_FRONTS_WITH_PRODUCTION_GATE_CLOSED
+
 execution:
-  original_q40_delegate: CODEX
-  codex_availability: UNAVAILABLE_REPORTED_BY_LEANDRO_2026_08_18
-  current_mode: LEANDRO_MANUAL_EXECUTION_GUIDED_BY_MESTRE
   authority: LEANDRO
   orchestrator: MESTRE
-  execution_contract: docs/CODEX-EXECUTION-MISSION-001.md
-  q1_to_q40_reopened: false
-  scope_expanded: false
-platform_discovery:
-  status: HANDOFF_TO_CODEX_AUTHORIZED
-  decision_source: state/platform-discovery.yaml
-  checkpoint: docs/39-platform-discovery-checkpoint-028.md
-  q1_to_q39: BINDING_ARCHITECTURAL_REQUIREMENTS
-  q40:
-    status: DECIDED
-    choice: D
-    decision: DELEGATE_TECHNOLOGY_SELECTION_AND_INCREMENTAL_DEV_LAB_IMPLEMENTATION_TO_CODEX
-  implementation_authorized: true
-  codex_implementation_mission_authorized: true
+  mode: MCF_ISOLATED_PARALLEL_FRONTS
+  single_active_mission_projection: NOT_CANONICAL_FOR_MAIN
   production_promotion_authorized: false
-  execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
-  next_question: NONE
-  target_artifacts:
-    - CONSOLIDATED_REQUIREMENTS
-    - TARGET_ARCHITECTURE
-    - THREAT_MODEL_AND_AUTONOMY_BOUNDARIES
-    - INFRASTRUCTURE_BLUEPRINT_V1
-    - REVISED_IMPLEMENTATION_ROADMAP
-    - CODEX_EXECUTION_MISSION
+
+platform:
+  f1_2c:
+    status: REQUIRES_REVIEW
+    accepted: false
+    recovery_branch: team/f1-2c-network-recovery-20260822
+    recovery_candidate_sha: 4a88c038736cd20013fa0ec3b20ba63fb2e01f6a
+    static_validation:
+      status: PASS
+      run: 32605115252
+      exact_head: true
+    disposable_kvm:
+      status: NOT_EXECUTED_EXTERNAL_RUNNER_PRE_STEP_FAILURE
+      gate_pr: 23
+      run: 32607458396
+      upstream_cause: NOT_VERIFIED
+    node01_reapply_authorized: false
+
+control_bridge:
+  g1: PASS_REAL_NODE_01_ROUNDTRIP
+  g2a: PASS_REAL_NODE_01_READ_ONLY
+  g2b:
+    accepted: false
+    base_branch: codex/control-bridge-g2b
+    base_candidate_sha: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+    tasks_1_7: COMPLETE
+    task_8:
+      last_terminal_attempt: FAILED_ATTEMPT_3_NOT_ACCEPTED
+      terminal_evidence_run: 32577815107
+      terminal_exit: 2
+      acceptance_markers_proven: false
+      diagnostic_branch: team/g2b-task8-20260822
+      diagnostic_head: READ_GITHUB_LIVE
+      diagnostic_last_observed_head: 924382dd4b4fc802f0475dbef6f4749b0d4d20fa
+      diagnostic_status: IN_PROGRESS_DIAGNOSTIC_REPRODUCTION
+      root_cause: NOT_VERIFIED
+      functional_correction: READ_GITHUB_LIVE
+    tasks_9_10: NOT_STARTED
+    merge_status: NOT_ELIGIBLE
+
 remote_vps:
-  snapshot_at_utc: "2026-08-16T01:58:02Z"
-  provider: Contabo
-  product: Cloud VPS 8
-  ipv4: 169.58.171.192
+  observation_class: READ_ONLY_SNAPSHOT
+  observed_at_utc: "2026-08-22T14:03:22Z"
+  source_run: 32577551012
+  status: OPERATIONAL_WITH_OPEN_INCIDENTS
   hostname: vmi3506102
   os: Ubuntu 24.04.4 LTS
-  kernel: Linux 6.8.0-137-generic
-  architecture: x86-64
-  virtualization: KVM_QEMU
+  kernel: 6.8.0-137-generic
   cpu_logical: 8
   ram_total_gib_approx: 23
-  ram_used_after_desktop_gib_approx: 2.2
+  ram_used_gib_approx: 9.5
   swap_bytes: 0
-  storage:
-    primary_disk: /dev/sda
-    size_gib: 300
-    root_filesystem_size_gib_approx: 290
-    root_used_gib_approx: 7.5
-    root_available_gib_approx: 283
-  network:
-    primary_interface: eth0
-    manager: systemd-networkd
-    listeners_external:
-      - "0.0.0.0:22/tcp"
-      - "[::]:22/tcp"
-    xrdp_listener: "127.0.0.1:3389/tcp"
-    xrdp_sesman_listener: "[::1]:3350/tcp"
-    provider_firewall: NOT_CONFIGURED
-  firewall:
-    ufw_status: active
-    default_incoming: deny
-    default_outgoing: allow
-    allowed_inbound: [OpenSSH_22_TCP_IPV4, OpenSSH_22_TCP_IPV6]
-    fail2ban_sshd: active
-  ssh:
-    host_fingerprint_ed25519: SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4
-    root_password_login_historical: VALIDATED
-    root_login_current: DISABLED_BY_POLICY
-    permit_root_login_effective: "no"
-    password_authentication_effective: "no"
-    keyboard_interactive_authentication_effective: "no"
-    publickey_authentication_effective: "yes"
-    allow_tcp_forwarding_effective: "yes"
-    allow_users: [ubuntu]
-    max_auth_tries: 3
-    login_grace_time_seconds: 30
-    ubuntu_login_current: VALIDATED
-    ubuntu_login_method: PUBLICKEY_ONLY
-    automated_attack_activity_historical: CONFIRMED_NOT_COMPROMISE
-  accounts:
-    ubuntu:
-      uid: 1000
-      groups: [ubuntu, adm, cdrom, sudo, dip]
-      sudo_effective: true
-      sudo_requires_password: true
-      nopasswd_all: false
-      member_of_lxd: false
-      authorized_keys:
-        owner: ubuntu:ubuntu
-        permissions: "600"
-        previous_key_preserved: true
-        validated_key:
-          type: ED25519
-          local_private_key_path: ~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815
-          fingerprint: SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg
-          public_key_installed: true
-          login_validated: true
-  lxd:
-    installed_snap_version: 5.21.6-78b046a
-    instances_total_before_disable: 0
-    instances_running_before_disable: 0
-    ubuntu_group_membership_removed: true
-    daemon_service: disabled_inactive
-    unix_socket: disabled_inactive
-    root_equivalent_path_current: REMOVED
-  updates:
-    upgradable_count: 0
-    unattended_upgrades: active_enabled
-    reboot_executed: true
-  cloud_workstation:
-    architecture: XFCE_LIGHTDM_XRDP_OVER_SSH_TUNNEL
-    role: OPTIONAL_HUMAN_COCKPIT_NOT_PLATFORM_DEPENDENCY
-    desktop_session: PASS
-    remote_graphical_login: PASS
-    browser: PASS
-    browser_package: Mozilla_Firefox_DEB_153.0.4
-    vscode: PASS
-    vscode_version: "1.133.0"
-    terminal: PASS
-    vscode_integrated_terminal: PASS
-    file_manager: PASS
-    clipboard_bidirectional: PASS
-    multi_window: PASS
-    resolution_dynamic: PASS
-    resolutions_validated: [1100x700, 1280x720]
-    disconnect_reconnect: PASS
-    session_persistence: PASS
-    logout_login: PASS
-    post_reboot_login: PASS
-  recovery:
-    provider_vnc: VALIDATED_CURRENTLY
-    provider_rescue: AVAILABLE_CONFIRMED
-    provider_snapshots: NOT_CONFIGURED
-    provider_backups: NOT_CONTRACTED
-    provider_firewall: NOT_CONFIGURED
-    config_backup:
-      timer: active_enabled
-      directory_persistence: systemd_tmpfiles
-      remote_path: /var/backups/cloud-infrastructure
-      offhost_path: /home/leo/Backups/cloud-infrastructure
-      remote_local_sha256_match: true
-      extraction_restore_test: PASS
-      restored_files_tested: 24
-    full_data_backup: PENDING
-findings:
-  resolved: [FND-SSH-001, FND-SSH-002, FND-SSH-003, FND-LXD-001, FND-SUDO-001, FND-DOC-001, FND-AUDIT-001]
-  mitigated_open: [FND-BACKUP-001]
-  open_other: [FND-CPU-001, FND-CLOUDINIT-001]
+  root_disk_total_gib_approx: 290
+  root_disk_used_gib_approx: 23
+  core_units:
+    ssh: active
+    ufw: active
+    docker: active
+    containerd: active
+  failed_units:
+    - cloud-platform-network-services.service
+  repository:
+    path: /home/ubuntu/cloud-infrastructure
+    branch: codex/control-bridge-g2b
+    head: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+    clean: true
+
+repository_hygiene:
+  status: REPOSITORY_HYGIENE_REVALIDATED
+  pr: 19
+  revalidation:
+    status: PASS_AGAINST_CANONICAL_TOOLCHAIN
+    head: f34aec6c641fb577d620446df4a743df3ff3fa5d
+    canonical_toolchain_head: f39464daf4a4c5508d891e61f4ddd6394afd08fd
+    synthetic_integration_sha: 3a6b040c67334aeb7f0411f3d6b7c712ed52987b
+    conflicts_resolved:
+      - CHECKPOINT.md
+      - CONTEXT.md
+    conflict_resolution: PR22_CANONICAL_PROJECTIONS_PRESERVED
+    git_diff_check: PASS
+    secret_policy: PASS
+    canonical_suite: PASS
+    unit_tests: 15_OF_15_PASS
+    worktree_clean_before_after: true
+  historical_credential_uri_findings: 0
+  historical_symbolic_runtime_credential_uri_references: 9
+  historical_findings_classification: COMPLETE_NON_SECRET_RUNTIME_REFERENCES
+  historical_diagnostic_non_secret_assignment: EXACT_LINE_HASH_ALLOWLISTED
+  attribution: NINE_PREEXISTING_SYMBOLIC_RUNTIME_REFS_PLUS_ONE_EXTRACTION_DIAGNOSTIC_NON_SECRET_LINE
+  branch_cleanup_required_for_content_integration: false
+
+toolchain:
+  canonical_entrypoint: scripts/test.sh
+  lineage_origin:
+    commit: edd2497d657cc9bc35952f5dfc71090a18dade53
+    branch: codex/mission-001-foundations-f1-1
+    pull_request: 2
+  package: CANONICAL_MAINLINE_NEUTRAL_V2
+  validation_status: PASS
+  canonical_ci:
+    workflow: .github/workflows/canonical-validation.yml
+    runner: ubuntu-24.04
+    python: "3.12"
+    dependency_lock: requirements-dev.lock
+    latest_observed_run: 32618609069
+    latest_observed_status: EXTERNAL_PRE_STEP_FAILURE_BLOB_NOT_FOUND
+  maintenance_proof:
+    workflow: .github/workflows/canonical-validation-maintenance-proof.yml
+    runner: NODE01_SELF_HOSTED_UNPRIVILEGED
+    scope: STATE_TOOLCHAIN_MAINTENANCE_BRANCHES_ONLY
+    executed_run: 32610484209
+    executed_job: 97122604465
+    unprivileged_boundary: PASS
+    git_diff_check: PASS
+    targeted_state_consistency: PASS
+    unit_tests: 12_OF_12_PASS
+    canonical_suite: FAIL_PREEXISTING_HISTORICAL_SECRET_POLICY
+    historical_credential_uri_findings: 9
+  local_full_history_resolution_proof:
+    executor: CONNECTED_HOST_LOCAL_MIRROR
+    host: leo-N43SM
+    mirror_includes_all_refs: true
+    git_diff_check: PASS
+    secret_policy: PASS
+    markdown_links: PASS
+    yaml: PASS
+    state: PASS
+    consistency: PASS
+    unit_tests: 15_OF_15_PASS
+    python_syntax: PASS
+    shell_syntax: PASS
+    shellcheck: SKIPPED_NOT_INSTALLED_LOCAL
+    canonical_suite: PASS
+    historical_symbolic_runtime_credential_uri_references: 9
+    historical_literal_credential_uri_findings: 0
+    temporary_diagnostic_non_secret_assignment: EXACT_LINE_HASH_ALLOWLISTED
+  workflow_owned_pycache_defect:
+    status: FIXED
+    commit: 84d1d23ff32ee1577958da9d754179eeb217ddb9
+  generic_contract_preserved:
+    repository_secret_history_scan: true
+    markdown_local_links: true
+    strict_yaml_duplicate_key_rejection: true
+  validators:
+    - scripts/check_repository_secrets.py
+    - scripts/check_markdown_links.py
+    - scripts/yaml_strict.py
+    - scripts/validate_yaml.py
+    - scripts/validate_state.py
+    - scripts/check_canonical_consistency.py
+    - tests/test_canonical_state.py
+    - tests/test_toolchain_contract.py
+  excluded_coupled_validator:
+    - scripts/validate_manifests.py
+  functional_lineage_code_imported: false
+  g2b_functional_code_imported: false
+  f1_2c_functional_code_imported: false
+
+boundaries:
+  protected_branches_modified: false
+  node01_privileged_operations: false
+  production_promoted: false
+  branch_deletion_performed: false
+
 authorization:
   authority: LEANDRO
-  phase_1_and_2_full_access: EXECUTED
-  credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
-  platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
-  codex_technology_selection: AUTHORIZED_BY_Q40_D
-  codex_implementation_mission: AUTHORIZED_BY_Q40_D
-  manual_execution_contingency: ACTIVE_BY_CURRENT_LEANDRO_INSTRUCTION
+  canonical_neutral_extraction: AUTHORIZED_2026_08_22
   production_promotion: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
-  future_scope_expansion: HUMAN_GATE_REQUIRED
-  historical_executed:
-    AUTH-SSH-KEEPALIVE-001: EXECUTED_AND_VALIDATED
+  g2b_real_write: NOT_AUTHORIZED
+  f1_2c_node01_reapply: NOT_AUTHORIZED
+  destructive_history_remediation: NOT_AUTHORIZED
+
 secrets_policy:
-  never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]
+  current_tree_scan: true
+  reachable_git_history_scan: true
+  historical_credential_uri_findings: 0
+  historical_symbolic_runtime_credential_uri_references: 9
+  historical_symbolic_runtime_classification: COMPLETE_NON_SECRET
+  historical_literal_credential_uri_findings: 0
+  finding_values_exposed: false
+  allowlist_added_for_findings: false
+  diagnostic_assignment_exact_hash_allowlist_added: true
+  never_version:
+    - passwords
+    - passphrases
+    - private_ssh_keys
+    - tokens
+    - api_keys
+    - two_factor_codes
+    - real_connection_strings
+    - provider_credentials

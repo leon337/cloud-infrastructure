@@ -1,0 +1,3 @@
+# Mainline-neutral canonical validation dependency set.
+# Derived from the proven F1.1 lock; regenerate intentionally.
+PyYAML==6.0.3
