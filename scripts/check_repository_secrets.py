@@ -15,11 +15,13 @@ from collections.abc import Iterable, Iterator
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 MAX_SCAN_BYTES = 8 * 1024 * 1024
 
-# A historical state field used a secret-shaped key for a non-secret status.
-# The value is not reproduced here; only the SHA-256 of the normalized line is
-# allowlisted. All other assignment-shaped history remains scanned.
+# Proven historical non-secret lines are allowlisted only by the SHA-256 of
+# their normalized line. This covers one state/status field and one temporary
+# redacted diagnostic variable assignment; no secret value is reproduced here.
+# All other assignment-shaped history remains scanned.
 HISTORICAL_NON_SECRET_ASSIGNMENT_LINE_SHA256 = {
     "5a01f4f54c233a03be979b009a24c7e80206334dd860304710c953ac931ece6e",
+    "7eae0b03f7c21a0eb9792277ccebc66e5c7bd345b00e029bacf841985c6b1955",
 }
 
 ALLOWED_SECRETISH_PATHS = {
@@ -32,6 +34,16 @@ FORBIDDEN_PATH_PATTERNS = (
     re.compile(r"\.(?:key|p12|pfx|jks|keystore)$", re.IGNORECASE),
     re.compile(r"(^|/)(?:secrets?|credentials?)(?:/|$)", re.IGNORECASE),
 )
+
+RUNTIME_CREDENTIAL_REFERENCE = re.compile(
+    rb"^(?:"
+    rb"\$[A-Za-z_][A-Za-z0-9_]*"
+    rb"|\$\{[A-Za-z_][A-Za-z0-9_]*\}"
+    rb"|\{\{[A-Za-z0-9_.-]+\}\}"
+    rb"|\$\{\{[A-Za-z0-9_.-]+\}\}"
+    rb")$"
+)
+
 
 CONTENT_RULES = {
     "private-key-material": re.compile(
@@ -65,7 +77,7 @@ CONTENT_RULES = {
     ),
     "credential-in-uri": re.compile(
         rb"\b(?:https?|postgres(?:ql)?|mysql|redis|amqps?)://"
-        rb"[^\s/:@]+:[^\s/@]+@",
+        rb"[^\s/:@]+:(?P<password>[^\s/@]+)@",
         re.IGNORECASE,
     ),
 }
@@ -103,6 +115,14 @@ def content_findings(
     allowed_assignment_line_hashes: frozenset[str] = frozenset(),
 ) -> Iterator[str]:
     for rule_name, rule in CONTENT_RULES.items():
+        if rule_name == "credential-in-uri":
+            for match in rule.finditer(content):
+                if RUNTIME_CREDENTIAL_REFERENCE.fullmatch(match.group("password")):
+                    continue
+                yield rule_name
+                break
+            continue
+
         if rule_name != "secret-like-assignment":
             if rule.search(content):
                 yield rule_name

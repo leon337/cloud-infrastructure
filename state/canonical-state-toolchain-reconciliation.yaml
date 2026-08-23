@@ -1,11 +1,11 @@
 protocol_version: CLOUD_INFRA_CANONICAL_STATE_TOOLCHAIN_RECONCILIATION_V2
-updated_at: "2026-08-23T02:00:00-03:00"
+updated_at: "2026-08-23T03:30:00-03:00"
 repository: leon337/cloud-infrastructure
 mission:
   id: CANONICAL_STATE_TOOLCHAIN_RECONCILIATION
   authority: LEANDRO
   orchestrator: MESTRE_MCF
-  status: CONCLUDED_WITH_VERIFIED_HISTORICAL_HYGIENE_BLOCKER
+  status: CONCLUDED_STATE_TOOLCHAIN_VALIDATED_LOCAL_FULL_HISTORY
   investigation_conclusion_class: C
   human_gate_resolution: AUTHORIZE_MAINLINE_NEUTRAL_EXTRACTION
 branch:
@@ -14,7 +14,7 @@ branch:
   base_sha: f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b
   pull_request: 22
 canonical_state:
-  verdict: RECONCILED_WITH_EXECUTABLE_TARGETED_EVIDENCE
+  verdict: RECONCILED_WITH_EXECUTABLE_FULL_SUITE_EVIDENCE
   path: state/current.yaml
   nonpromotion_invariants:
     g2b_task_8: FAILED_ATTEMPT_3_NOT_ACCEPTED
@@ -77,6 +77,21 @@ validation:
     canonical_suite: FAIL
     canonical_suite_failure_class: PREEXISTING_HISTORICAL_SECRET_POLICY
     historical_credential_uri_findings: 9
+  resolution_candidate:
+    executor: CONNECTED_HOST_LOCAL_MIRROR
+    full_refs_mirror: true
+    git_diff_check: PASS
+    secret_policy: PASS
+    historical_symbolic_runtime_credential_uri_references: 9
+    historical_literal_credential_uri_findings: 0
+    diagnostic_non_secret_assignment_exact_hash_allowlisted: true
+    canonical_state: PASS
+    canonical_consistency: PASS
+    unit_tests: 15_OF_15_PASS
+    python_syntax: PASS
+    shell_syntax: PASS
+    shellcheck: SKIPPED_NOT_INSTALLED_LOCAL
+    canonical_suite: PASS
   workflow_owned_pycache_defect:
     status: FIXED
     commit: 84d1d23ff32ee1577958da9d754179eeb217ddb9
@@ -86,14 +101,19 @@ validation:
     restored_strict_yaml: true
     restored_hosted_ci_boundary: true
     weakening_to_force_green: FORBIDDEN
-  current_status: BLOCKED_PREEXISTING_HISTORICAL_SECURITY_DEBT
+  current_status: PASS_LOCAL_FULL_HISTORY_CANONICAL_SUITE
 boundaries:
   protected_branches_modified: false
   node_01_privileged_operations: false
   production_promoted: false
   branch_deletion_performed: false
 repository_hygiene:
-  current_verdict: BLOCKED_9_HISTORICAL_CREDENTIAL_URI_FINDINGS
-  attribution: PREEXISTING_NOT_INTRODUCED_BY_STATE_TOOLCHAIN_EXTRACTION
-  classification_complete: false
+  current_verdict: SECRET_POLICY_BLOCKER_RESOLVED_PR19_REVALIDATION_REQUIRED
+  attribution: NINE_PREEXISTING_SYMBOLIC_RUNTIME_REFS_PLUS_ONE_EXTRACTION_DIAGNOSTIC_NON_SECRET_LINE
+  classification_complete: true
+  historical_credential_uri_findings: 0
+  historical_symbolic_runtime_credential_uri_references: 9
+  historical_literal_credential_uri_findings: 0
   destructive_history_remediation_authorized: false
+  destructive_history_remediation_required: false
+  history_rewrite_performed: false

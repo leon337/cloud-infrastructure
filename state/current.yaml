@@ -2,13 +2,13 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: team/canonical-state-toolchain-20260822
-updated_at: "2026-08-23T02:00:00-03:00"
-state_classification: CURRENT_RECONCILED_CANDIDATE_BLOCKED_BY_HISTORICAL_HYGIENE
+updated_at: "2026-08-23T03:30:00-03:00"
+state_classification: CURRENT_RECONCILED_CANDIDATE_VALIDATED_LOCAL_FULL_HISTORY
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 continuity:
   historical_validations_preserved: true
-  current_state_independent_validation: PASS_TARGETED_WITH_HISTORICAL_SECRET_GATE_BLOCKER
+  current_state_independent_validation: PASS_LOCAL_FULL_HISTORY_CANONICAL_SUITE
   canonical_entrypoint: CONTEXT.md
   checkpoint: CHECKPOINT.md
   validation_entrypoint: scripts/test.sh
@@ -51,7 +51,7 @@ project:
     platform_s0: COMPLETE
     platform_f1_1: COMPLETE
     platform_f1_2b: COMPLETE
-  next_exact_step: CLASSIFY_OR_REMEDIATE_9_HISTORICAL_CREDENTIAL_URI_FINDINGS_BEFORE_MERGE
+  next_exact_step: REVALIDATE_REPOSITORY_HYGIENE_PR19_AND_REVIEW_PR22_WITH_RESOLVED_SECRET_BLOCKER
 
 execution:
   authority: LEANDRO
@@ -130,12 +130,14 @@ repository_hygiene:
   status: REPOSITORY_HYGIENE_BLOCKED
   pr: 19
   blockers:
-    canonical_state: RECONCILED_WITH_TARGETED_EXECUTABLE_EVIDENCE
-    canonical_toolchain: CANONICAL_BUT_FULL_SUITE_BLOCKED_BY_PREEXISTING_HISTORY
-    historical_credential_uri_findings: 9
-    historical_findings_classification: INCOMPLETE
-  attribution: PREEXISTING_NOT_INTRODUCED_BY_STATE_TOOLCHAIN_EXTRACTION
-  unblock_condition: CLASSIFY_OR_REMEDIATE_9_HISTORICAL_CREDENTIAL_URI_FINDINGS_AND_RERUN_CANONICAL_SUITE
+    canonical_state: RECONCILED_WITH_FULL_EXECUTABLE_EVIDENCE
+    canonical_toolchain: CANONICAL_SUITE_PASS_LOCAL_FULL_HISTORY
+    historical_credential_uri_findings: 0
+    historical_symbolic_runtime_credential_uri_references: 9
+    historical_findings_classification: COMPLETE_NON_SECRET_RUNTIME_REFERENCES
+    historical_diagnostic_non_secret_assignment: EXACT_LINE_HASH_ALLOWLISTED
+  attribution: NINE_PREEXISTING_SYMBOLIC_RUNTIME_REFS_PLUS_ONE_EXTRACTION_DIAGNOSTIC_NON_SECRET_LINE
+  unblock_condition: REVALIDATE_PR19_WITH_GREEN_SECRET_POLICY_AND_CURRENT_BRANCH_HYGIENE
 
 toolchain:
   canonical_entrypoint: scripts/test.sh
@@ -144,7 +146,7 @@ toolchain:
     branch: codex/mission-001-foundations-f1-1
     pull_request: 2
   package: CANONICAL_MAINLINE_NEUTRAL_V2
-  validation_status: BLOCKED_PREEXISTING_HISTORICAL_SECURITY_DEBT
+  validation_status: PASS
   canonical_ci:
     workflow: .github/workflows/canonical-validation.yml
     runner: ubuntu-24.04
@@ -164,6 +166,24 @@ toolchain:
     unit_tests: 12_OF_12_PASS
     canonical_suite: FAIL_PREEXISTING_HISTORICAL_SECRET_POLICY
     historical_credential_uri_findings: 9
+  local_full_history_resolution_proof:
+    executor: CONNECTED_HOST_LOCAL_MIRROR
+    host: leo-N43SM
+    mirror_includes_all_refs: true
+    git_diff_check: PASS
+    secret_policy: PASS
+    markdown_links: PASS
+    yaml: PASS
+    state: PASS
+    consistency: PASS
+    unit_tests: 15_OF_15_PASS
+    python_syntax: PASS
+    shell_syntax: PASS
+    shellcheck: SKIPPED_NOT_INSTALLED_LOCAL
+    canonical_suite: PASS
+    historical_symbolic_runtime_credential_uri_references: 9
+    historical_literal_credential_uri_findings: 0
+    temporary_diagnostic_non_secret_assignment: EXACT_LINE_HASH_ALLOWLISTED
   workflow_owned_pycache_defect:
     status: FIXED
     commit: 84d1d23ff32ee1577958da9d754179eeb217ddb9
@@ -203,9 +223,13 @@ authorization:
 secrets_policy:
   current_tree_scan: true
   reachable_git_history_scan: true
-  historical_credential_uri_findings: 9
+  historical_credential_uri_findings: 0
+  historical_symbolic_runtime_credential_uri_references: 9
+  historical_symbolic_runtime_classification: COMPLETE_NON_SECRET
+  historical_literal_credential_uri_findings: 0
   finding_values_exposed: false
   allowlist_added_for_findings: false
+  diagnostic_assignment_exact_hash_allowlist_added: true
   never_version:
     - passwords
     - passphrases

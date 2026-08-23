@@ -93,7 +93,7 @@ That evidence is sufficient to prove the failures are not introduced by the Stat
 
 A temporary redacted diagnostic workflow was created only to collect provenance on the constrained self-hosted runner, but the job remained queued. It is removed from the final mission candidate rather than left as temporary repository surface.
 
-## Final mission verdict
+## Prior mission verdict before historical-hygiene resolution
 
 ```text
 STATE_RECONCILIATION=PASS_WITH_EXECUTABLE_TARGETED_EVIDENCE
@@ -107,4 +107,67 @@ HOSTED_EXECUTOR=EXTERNAL_PRE_STEP_FAILURE
 PR22=DO_NOT_MERGE
 ```
 
-Final classification: `CONCLUDED_WITH_VERIFIED_HISTORICAL_HYGIENE_BLOCKER`.
+Final classification at that point: `CONCLUDED_WITH_VERIFIED_HISTORICAL_HYGIENE_BLOCKER`.
+
+
+## Historical-hygiene resolution follow-up
+
+A full `--mirror` clone was created on the connected local host so the audit could see repository refs that the earlier Actions checkout did not expose. No credential value was printed or persisted in evidence.
+
+The nine historical `credential-in-uri` blobs were mapped to historical operational GitHub Actions workflows. Redacted classification of all nine returned the same result:
+
+```text
+KNOWN_AUTH_MARKER / SYMBOLIC_RUNTIME_REFERENCE / GITHUB
+```
+
+Therefore the nine raw regex hits contained runtime credential references, not literal versioned passwords or tokens. The policy defect was that `credential-in-uri` treated a pure symbolic runtime reference as if it were literal credential material. The correction keeps literal credentials fail-closed and does not add a blob-specific allowlist for these nine objects.
+
+The full mirror also exposed one additional historical `secret-like-assignment` blob, `af1ce6811000...`, from the temporary redacted diagnostic workflow created by this mission. Inspection of that historical source proved the matched assignment is analyzer code assigning `match.group(...)` to a local variable named `password`; it contains no credential value. That single normalized line is covered by an exact SHA-256 allowlist using the scanner's pre-existing non-secret historical-line mechanism.
+
+TDD evidence:
+
+```text
+RED: symbolic runtime credential URI was rejected by the old policy
+GREEN: symbolic runtime credential URI accepted
+GREEN: literal credential URI remains rejected
+RED: known non-secret historical diagnostic assignment rejected before exact hash allowlist
+GREEN: exact diagnostic line allowlisted; all other assignment-shaped history remains scanned
+```
+
+Pre-publication full-history worktree validation then proved:
+
+```text
+GIT_DIFF_CHECK_PASS
+SECRET_POLICY_PASS
+LOCAL_MARKDOWN_LINKS_PASS
+YAML_PARSE_PASS count=5
+CANONICAL_STATE_VALIDATION_PASS
+CANONICAL_CONSISTENCY_PASS
+UNIT_TESTS=15/15_PASS
+PYTHON_SYNTAX_PASS count=8
+SHELL_SYNTAX_PASS count=3
+CANONICAL_VALIDATION_PASS
+```
+
+ShellCheck was not installed on the connected local host, so `scripts/test.sh` used its documented non-CI skip path for that stage. The earlier constrained maintenance proof had already passed pinned ShellCheck, and this resolution changes no shell script. Exact-head CI remains a separate executor check.
+
+No history rewrite, force-push, credential rotation, protected-line mutation, production action, G2-B functional change, or F1.2c functional change was required.
+
+## Current resolution verdict
+
+```text
+STATE_RECONCILIATION=PASS_WITH_EXECUTABLE_FULL_SUITE_EVIDENCE
+TOOLCHAIN_CANONICITY=PASS
+SECRET_POLICY=PASS_LOCAL_FULL_HISTORY
+HISTORICAL_CREDENTIAL_URI_LITERAL_FINDINGS=0
+HISTORICAL_SYMBOLIC_RUNTIME_REFERENCES_CLASSIFIED=9
+TEMP_DIAGNOSTIC_NON_SECRET_ASSIGNMENT=EXACT_LINE_HASH_ALLOWLISTED
+FUNCTIONAL_G2B_F1_2C_IMPORT_BOUNDARY=PASS
+PRODUCTION_BOUNDARY=PASS
+PROTECTED_LINE_MUTATION=PASS_NONE_PERFORMED
+REPOSITORY_HYGIENE_SECRET_BLOCKER=RESOLVED_PR19_REVALIDATION_REQUIRED
+HOSTED_EXECUTOR=EXTERNAL_PRE_STEP_FAILURE
+PR22=DRAFT_DO_NOT_MERGE_PENDING_EXACT_HEAD_AND_HUMAN_REVIEW
+```
+
+Current classification: `CONCLUDED_STATE_TOOLCHAIN_VALIDATED_LOCAL_FULL_HISTORY`.
