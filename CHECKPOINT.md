@@ -1,200 +1,264 @@
 # CHECKPOINT — IMPLEMENTAÇÃO DA VPS
 
-Atualizado em 2026-08-18 após provar em CI o desired state NODE-01 dos serviços F1.2c.
+Checklist canônico de leitura rápida: `ROADMAP-CHECKLIST.md`.
 
-## Estado durável
+Atualizado em 2026-08-22 após concluir R8 e aceitar a Task 7 com evidência.
 
-- Repositório canônico: `leon337/cloud-infrastructure`, branch `main`.
-- Base recuperada: `987c5359ea948d1903355e98177ae1eb2f1849d5`.
-- Branch do slice: `codex/mission-001-foundations-f1-2b-preparation`.
-- F0, F1 e F2 Cloud Workstation: `DONE`.
-- Mission Acceptance + Recovery: `DONE`.
-- Q1–Q39: requisitos arquitetônicos vinculantes.
-- Q40-D: Technology Mapping + implementação incremental DEV/lab autorizados.
-- Produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
-- Rotação: `DEFERRED_BY_HUMAN_DECISION`.
-- F1.1: commit de implementação
-  `edd2497d657cc9bc35952f5dfc71090a18dade53` aprovado no GitHub Actions run
-  `31972460567`, inclusive VM descartável privilegiada; slice `DONE`; check
-  mode, backup off-host, apply `changed=7`, idempotência
-  `changed=0` e invariância real passaram em `2026-08-17`.
-- F1.2b: apply/rollback, pin APT, preflight, helper de árvore e harness
-  concluídos a partir do desired-state commit `7015c80759a797bcb141773b79cd9b95f6fbecf1`;
-  commit testado `fa66f1049bac5540a5b12219186a421cc39dcbc0` e GitHub run
-  `31996516019` `PASS`; correções passaram nos runs `32004951916` e
-  `32007871491`; preview NODE-01 sem mutação, backup off-host, apply
-  `changed=13`, idempotência e pós-restart `changed=0` e invariância `PASS`.
+## Missão ativa
 
-## Artefatos canônicos criados
+```text
+MISSION=CONTROL_BRIDGE_G2B
+MISSION_STATE=state/active-mission.yaml
+CONTINUITY_MISSION_ISSUE=10
+CONTINUITY_MISSION_STATUS=COMPLETE
+CONTINUITY_MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
+STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+PERSISTENCE_POLICY=governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
+INSTITUTIONAL_MEMORY=state/institutional-memory.yaml
+R8_MEMO=history/memos/2026-08-22-r8-task7-completion.md
+DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
+COLD_START_R7_SNAPSHOT=state/cold-start-validation.yaml
+G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
+STATUS=ACTIVE
+AUTHORITY=LEANDRO
+ORCHESTRATOR=MESTRE_MCF
+ROADMAP_R1=COMPLETE
+ROADMAP_R2=COMPLETE
+ROADMAP_R3=COMPLETE
+ROADMAP_R4=COMPLETE
+ROADMAP_R5=COMPLETE
+ROADMAP_R6=COMPLETE
+ROADMAP_R7=COMPLETE
+ROADMAP_R8=COMPLETE
+TASK_7=COMPLETE_7_PASS_0_FAIL
+TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
+TASK_8=BLOCKED_EXTERNAL
+TASKS_9_10=NOT_STARTED
+NEXT_EXACT_STEP=LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
+```
 
-- `docs/40-mission-acceptance-recovery-report.md`;
-- `docs/41-consolidated-requirements.md`;
-- `docs/42-target-architecture.md`;
-- `docs/43-threat-model-and-autonomy-boundaries.md`;
-- `docs/44-infrastructure-blueprint-v1.md`;
-- `docs/45-revised-implementation-roadmap.md`;
-- `docs/46-technology-mapping-v1.md`;
-- `decisions/DEC-005-*`, `decisions/DEC-006-*`;
-- `state/components.yaml`;
-- `automation/ansible/`, `platform/`, `scripts/`, `tests/`;
-- `runbooks/platform-foundation.md`;
-- `evidence/SLICE-001/`.
+A missão transversal de continuidade foi concluída. Seus controles permanecem ativos; a execução retorna ao Control Bridge G2-B. R8 não abriu NODE-01, grant real, escrita real, produção ou merge.
 
-## SLICE-001 — estado de evidência
+## Regras obrigatórias de retomada, persistência, memória e drift
 
-- Ansible Core 2.21.3 e dependências estão fixados em ambiente local isolado;
-- manifests `ExecutionNode`/`Project` validados por JSON Schema 2020-12;
-- produção `false`, ingress público arbitrário e secret literal rejeitados;
-- secret/path policy passou;
-- suíte estática endurecida, 37 testes unitários/negativos, três syntax-checks
-  Ansible e ShellCheck nos quatro scripts passaram no job `validate` vinculado ao
-  commit `edd2497d`;
-- os resultados anteriores da fixture (`changed=7`, depois `changed=0` e cleanup)
-  permanecem históricos e não são a prova usada para o delta revisado;
-- a revisão encontrou gaps de provenance/TOCTOU no rollback, adoção de objetos,
-  check mode e proteção do target; eles foram corrigidos no desired state e
-  passaram revisão, suíte estática e integração na VM descartável;
-- o preflight sem sudo passou no NODE-01 com `changed=0`, e o inventário de teste
-  foi recusado corretamente na Workstation física;
-- o job `disposable-integration` passou em 1m59: check mode sem mutação real da
-  fixture, partial-marker check, primeiro apply `changed=7`, segunda reconciliação
-  `changed=0`, postconditions, quatro recusas de rollback fail-closed, rollback
-  limpo e cleanup de container/imagem de teste nomeada/bundle;
-- o run [`31972460567`](https://github.com/leon337/cloud-infrastructure/actions/runs/31972460567)
-  valida o commit `edd2497d`; esta atualização posterior de evidência/state não é
-  apresentada como CI do commit final.
-- o checkpoint `da7df70` passou novamente no run
-  [`31973125852`](https://github.com/leon337/cloud-infrastructure/actions/runs/31973125852):
-  job estático em 22 s e integração descartável em 2m25;
-- o baseline read-only de `2026-08-16T21:23:21Z` confirmou identidade, mesmo boot,
-  zero units falhas, mesmos listeners/serviços, LXD inativo, Docker ausente, zero
-  concorrência e todos os objetos/lock F1.1 ausentes, sem sudo ou mutação;
-- timer de backup ativo e último serviço `success`; checksum/archive e cópia
-  off-host devem ser revalidados antes do apply, não deste preview sem mutação.
+Qualquer nova IA/agente ou operador recuperando o projeto deve executar `CLOUD_INFRA_AI_STARTUP_RECOVERY_V1` antes de implementar.
 
-A prova na fixture não substituiu a VPS real. Depois dela, check mode, backup,
-apply, idempotência, restart e invariância também passaram no NODE-01.
+```text
+NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
+```
 
-## Baseline real da VPS antes do apply
+Toda missão longa também deve obedecer `CLOUD_INFRA_LONG_RUNNING_MISSION_PERSISTENCE_V1`:
 
-Snapshot read-only: `2026-08-16T19:46:14Z`.
+```text
+NO_LONG_RUNNING_MISSION_WITHOUT_RECOVERABLE_REMOTE_CHECKPOINTS
+MAX_MATERIAL_WORK_WITHOUT_REMOTE_CHECKPOINT=30_MINUTES
+WIP_CHECKPOINT_DOES_NOT_IMPLY_ACCEPTANCE
+SESSION_STATE_IS_NOT_DURABLE_STATE
+```
 
-- Ubuntu 24.04.4, kernel `6.8.0-137-generic`, KVM, 8 CPUs;
-- ~23,5 GiB RAM, ~17,2 GiB disponível; sem swap;
-- raiz ~289,6 GiB, ~279 GiB disponível;
-- cgroup v2, AppArmor ativo, Python 3.12.3;
-- zero units falhas;
-- público somente SSH TCP 22;
-- XRDP `127.0.0.1:3389`, sesman `[::1]:3350`;
-- SSH/UFW/fail2ban/XRDP/LightDM ativos;
-- `ubuntu` fora de `lxd`; LXD daemon/socket inativos;
-- Docker/containerd ausentes;
-- conta/grupo/paths/units F1.1 aplicados e validados;
-- múltiplas sessões Firefox/VS Code/Codex ativas;
-- `sudo -n` negado conforme política.
+Memória institucional:
 
-O preview F1.2b revalidou o host sem mutação. Docker/containerd, marker, lock e
-listeners 2375/2376 permaneceram ausentes; serviços essenciais ficaram ativos.
+```text
+HISTORICAL_MEMORY_IS_APPEND_ORIENTED
+NO_SILENT_RETROACTIVE_REWRITE
+```
 
-## SLICE-002B — estado concluído
+Drift de continuidade:
 
-- branch recuperado limpo em `d849caa0eafdc231d2782be602be1a2263758b7b`;
-- role/playbooks de apply e rollback versionados com target/allowlist imutáveis;
-- chave/source/pin/config/drop-ins versionados e verificados por SHA-256;
-- install exige versão/path/digest do índice APT autenticado e suprime autostart;
-- helper de rollback compara baseline, usa `find -xdev` nos dois roots literais,
-  congela device/inode e recusa symlink, hardlink, mount, open path e drift;
-- harness GitHub-hosted executou check sem mutação, apply `changed=13`,
-  reconciliação/restart `changed=0`, invariância, sete recusas, rollback e cleanup
-  no run `31996516019` para o commit `fa66f10`;
-- suíte local/CI: 66 unitários/negativos, 34 YAML, dois manifests, seis scripts com
-  sintaxe/ShellCheck e seis syntax-checks Ansible, todos `PASS`;
-- CI GitHub, lifecycle descartável, check mode, backup, apply, idempotência,
-  restart e invariância real estão `PASS`; o runtime está vazio e o primeiro
-  workload permanece `BLOCKED` por F1.2c.
+```text
+NO_CONTINUITY_ADVANCE_WITH_UNEXPLAINED_CANONICAL_DRIFT
+```
 
-## SLICE-002C — base de enforcement ativa
+Fontes:
 
-- contrato machine-readable versionado em
-  `platform/network/f1-2c-contract.yaml`, commit
-  `b4cbeb066605754d538ff5abe2d294f0759d6f59`;
-- preserva Q20/Q34, TM-02/TM-03/TM-10, IPv4/IPv6, deny de
-  host/Management/metadata/control/lateral, sharing por grant e egress por
-  profile;
-- DEC-008 seleciona `DOCKER-USER`, bridges internas, DNS por escopo e egress
-  proxy-only; a base fail-closed IPv4/IPv6 foi implementada em chains próprias;
-- o run GitHub `32073151044`, commit `d1da488`, passou apply, idempotência,
-  restart, recusa insegura e rollback em VM descartável;
-- no NODE-01, apply `changed=1`, reconciliação `changed=0`, check e 98 testes
-  passaram entre `2026-08-17T21:58:36Z` e `21:59:04Z`;
-- runtime continua vazio; bridges internas, DNS, proxy de egress, grants e a
-  matriz de conectividade ainda não foram aplicados no NODE-01;
-- o run `32100527131`, commit `8d5963b`, passou em jobs separados: runtime vazio
-  idempotente/reversível e serviços com DNS por escopo, proxy allowlist, deny de
-  egress direto, grant/revogação, falha fechada e cleanup;
-- o desired state NODE-01 foi preparado com CoreDNS 1.14.6 e Squid 7.2 por
-  digest, quatro containers sem portas publicadas, três redes internas/escopadas,
-  egress de infraestrutura separado, chains próprias, systemd e rollback por
-  camada;
-- o commit `f771cfd09f1824562ddfdaea507fb3cb0781f6ac` passou nos runs
-  [`32131461110`](https://github.com/leon337/cloud-infrastructure/actions/runs/32131461110)
-  e [`32131461088`](https://github.com/leon337/cloud-infrastructure/actions/runs/32131461088):
-  123 testes, ShellCheck dos 15 scripts, base/runtime/policy, serviços com apply
-  `1`, idempotência `0`, DNS, proxy, egress direto negado, restart e rollback
-  limpo; o apply real dos serviços continua pendente;
-- evidência sanitizada: `evidence/SLICE-002C/`.
+- `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`;
+- `state/startup-recovery-protocol.yaml`;
+- `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`;
+- `state/mission-persistence-policy.yaml`;
+- `state/institutional-memory.yaml`;
+- `history/memos/`;
+- `governance/CONTINUITY-DRIFT-CONTROLS.md`;
+- `state/continuity-drift-controls.yaml`;
+- `scripts/check_continuity_drift.py`;
+- `state/cold-start-validation.yaml`;
+- `docs/55-cold-start-recovery-validation-2026-08-21.md`.
 
-## Backup/recovery
+Veredictos válidos do protocolo de recuperação:
 
-- timer sanitizado ativo e último resultado de serviço `success`;
-- dois archives remotos passaram checksum e leitura do tar;
-- primeira cópia off-host observada confere; a mais recente não foi observada
-  off-host;
-- houve extração histórica, não restore/rebuild funcional;
-- archives atuais normalizam modes para `0640` e não são restore drop-in;
-- VNC/Rescue/provedor não foram reabertos nesta coleta guest-only;
-- `FND-BACKUP-001` permanece `MITIGATED — OPEN`.
+```text
+PASS
+PASS_READ_ONLY
+BLOCKED_RECONCILIATION
+WAITING_HUMAN_GATE
+```
 
-## Guardrails do próximo passo
+Somente `PASS` permite considerar mutação dentro do escopo recuperado, e mesmo assim nenhum HUMAN_GATE é aberto automaticamente. Em modo remoto sem acesso ao computador, o estado local deve ser declarado `UNVERIFIED`, nunca presumido `CLEAN`.
 
-- F1.1 real está concluído com apply, idempotência e invariância comprovados;
-- LEANDRO digita sudo diretamente nas operações humanas; senha nunca é
-  enviada/registrada;
-- manter segunda sessão SSH e revalidar concorrência antes de futuras mutações;
-- usar `runbooks/platform-foundation.md`;
-- F1.1 não instala pacote/runtime, não cria listener e não toca
-  SSH/UFW/XRDP/Workstation/credenciais;
-- abortar diante de objeto preexistente sem marker ou estado concorrente;
-- depois do apply exigir segunda execução `changed=0`, negações, modes e
-  invariância de listeners/SSH/UFW/fail2ban/XRDP/LXD/units;
-- rollback só quando os namespaces persistentes estiverem vazios.
-- F1.2b está concluído; não repetir o apply fora de reconciliação controlada e
-  nenhum workload é permitido antes de F1.2c.
-- a base F1.2c não autoriza workload: o desired state dos serviços passou CI
-  commit-bound, mas ainda exige apply controlado no NODE-01.
-- o lifecycle declarativo de três bridges internas vazias passou somente na VM
-  descartável (`1c0d698`, run `32075348131`): apply 3, idempotência 0, recusa de
-  rede estranha e rollback 3; nenhuma bridge foi criada no NODE-01.
+## Checkpoint remoto recuperado do G2-B
 
-## Próximo passo exato
+```text
+BRANCH=codex/control-bridge-g2b
+BASE=mcf/mission-001-control-bridge-g1
+RECOVERY_CHECKPOINT_SHA=7205a647f918580d09c87ed44f38b0a433552a51
+PR=11_DRAFT_DO_NOT_MERGE
+COMMITS_AHEAD_OF_BASE_AT_RECOVERY=25
+TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
+TASK_7=PARTIAL
+TASK_7_TESTS=6_PASS_1_FAIL
+KNOWN_RED=EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED
+KNOWN_RED_LITERAL=g2b_issue_existing_grant.keys()
+ANSIBLE_SYNTAX=NOT_EXECUTED_CURRENT_LOCAL_ENVIRONMENT
+TASK_8=BLOCKED_EXTERNAL
+TASKS_9_10=NOT_STARTED
+G2B_REAL_WRITE=NOT_EXECUTED
+G2B_REAL_ROLLBACK=NOT_EXECUTED
+G2B_REAL_REVOCATION=NOT_EXECUTED
+MCF_EFFECTIVE_USE=NOT_EXECUTED
+```
 
-**SLICE_002C_VERIFY_RUNNER_AND_APPLY_NODE_01_NETWORK_SERVICES**
+O commit `7205a647...` é um **checkpoint de preservação WIP**, não uma aceitação da Task 7.
 
-Verificar por leitura o runner temporário e o NODE-01. Se o runner estiver
-expirado ou incompatível, reativá-lo pelo bootstrap assinado em HUMAN_GATE;
-depois executar apply/reconcile/check dos serviços. Nenhum workload de usuário
-está autorizado. Management Network, produção e rotação permanecem fora.
+## R5 — memória institucional
 
-## Architecture/Technology Mapping — gaps condicionais
+R5 criou:
 
-- worker não chama Node Agent diretamente; toda capability privilegiada volta ao
-  Core e é revalidada localmente;
-- PostgreSQL foundation precede Keycloak;
-- o contrato de network/egress/service discovery existe, mas ADR/prova dinâmica
-  e quota de disco ainda bloqueiam o primeiro workload;
-- dados Critical/Important dependem de backup off-host e restore por classe;
-- Loki/Grafana dependem de review AGPL; runner, cache OCI local, audit ledger,
-  mensageria Q38, DNS, object storage e Model Gateway final continuam
-  `CONDITIONAL`;
-- previews DEV no namespace/grant aprovado são autônomos após bootstrap DNS;
-- produção continua não autorizada e rotação continua adiada.
+- `history/memos/README.md`;
+- `history/memos/2026-08-20-g2b-local-work-recovery-incident.md`;
+- `state/institutional-memory.yaml`.
+
+O incidente de 20/08/2026 agora possui memo permanente separado do estado corrente. Memos são append-oriented e correções materiais exigem novo registro/adendo explícito.
+
+## R6 — consistência e drift
+
+R6 criou:
+
+- `governance/CONTINUITY-DRIFT-CONTROLS.md`;
+- `state/continuity-drift-controls.yaml`;
+- `scripts/check_continuity_drift.py`;
+- `tests/test_continuity_drift_controls.py`;
+- integração do checker em `scripts/test.sh`.
+
+O checker cobre identidade da missão, branch/PR, roadmap, próximo passo, preservação da Task 7, HUMAN_GATEs, ownership paralelo, memória institucional, coerência de `state/current.yaml` e exigência de evidência para R7.
+
+## R7 — cold-start recovery validation
+
+R7 criou:
+
+- `scripts/reconstruct_cold_start.py`;
+- `tests/test_cold_start_recovery.py`;
+- `docs/55-cold-start-recovery-validation-2026-08-21.md`;
+- `state/cold-start-validation.yaml`.
+
+A reconstrução repository-only recuperou corretamente missão, branch, PR draft, Tasks 1–6, Task 7 `PARTIAL_6_PASS_1_FAIL`, RED conhecido, Tasks 8–10, isolamento F1.2c, gates fechados e próximo passo. O veredicto é:
+
+```text
+PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+```
+
+Limitação: o papel de validação foi executado na mesma sessão do MCF; isto prova suficiência/coerência das fontes, não independência cognitiva de uma instância externa.
+
+GitHub Actions permaneceu `INCONCLUSIVE` como evidência de conteúdo quando jobs `validate` falharam sem steps e logs utilizáveis; nenhuma causa de conteúdo foi inferida.
+
+## HUMAN_GATEs e limites fechados
+
+```text
+NODE01_G2B_BOOTSTRAP=NOT_AUTHORIZED
+REAL_GRANT_ISSUE_OR_REISSUE=NOT_AUTHORIZED
+REAL_BOUNDED_WRITE=NOT_AUTHORIZED
+PRODUCTION_MUTATION=NOT_AUTHORIZED
+MERGE_G2B=NO
+TASK_8=DO_NOT_START_WHILE_TASK_7_PARTIAL
+```
+
+Nenhuma dessas condições pode ser inferida como autorizada a partir de R7, commits, PR, issue, testes, documentação, checkpoint remoto ou `RECOVERY_VERDICT=PASS`.
+
+## Trabalho paralelo isolado
+
+```text
+F1_2C_BRANCH=fix/f1-2c-systemd-runtime-lock
+F1_2C_FOR_THIS_MISSION=ISOLATED_DO_NOT_MODIFY
+F1_2C_OWNER=MESTRE_MCF_AND_LEANDRO
+```
+
+A trilha F1.2c mantém sua própria evidência e seu próximo passo histórico/técnico. Ela não é o próximo passo da missão ativa de continuidade.
+
+## Trilhas já comprovadas
+
+### F1.1
+
+`DONE` no NODE-01 com check mode, backup off-host, apply, idempotência e invariância comprovados. Evidência detalhada permanece nos documentos e estados históricos da trilha principal.
+
+### F1.2b
+
+`DONE` com runtime Docker vazio, lifecycle controlado e invariância real comprovada. Primeiro workload continua condicionado à network enforcement.
+
+### F1.2c
+
+A base de enforcement foi aplicada e testada historicamente; o trabalho posterior da branch `fix/f1-2c-systemd-runtime-lock` permanece paralelo e fora de escopo desta missão. Não executar ações nessa branch a partir deste checkpoint.
+
+### Control Bridge G1/G2-A
+
+```text
+G1=PASS_REAL_NODE_01_ROUNDTRIP
+G2A=PASS_REAL_NODE_01_READ_ONLY
+SHELL=NOT_IMPLEMENTED
+SUDO=NOT_GRANTED
+DOCKER_SOCKET=NOT_GRANTED
+PRODUCTION=NOT_AUTHORIZED
+```
+
+Fonte detalhada: `docs/52-control-bridge-g2a-implementation-checkpoint.md`.
+
+## Fontes canônicas para retomada
+
+1. `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`
+2. `state/startup-recovery-protocol.yaml`
+3. `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`
+4. `state/mission-persistence-policy.yaml`
+5. `state/institutional-memory.yaml`
+6. `governance/CONTINUITY-DRIFT-CONTROLS.md`
+7. `state/continuity-drift-controls.yaml`
+8. `state/cold-start-validation.yaml`
+9. `state/active-mission.yaml`
+10. `CONTEXT.md`
+11. `CHECKPOINT.md`
+12. `state/current.yaml`
+13. `state/control-bridge-g2b.yaml`
+14. `docs/53-repository-continuity-context-recovery-mission.md`
+15. `docs/54-control-bridge-g2b-recovery-checkpoint.md`
+16. `docs/55-cold-start-recovery-validation-2026-08-21.md`
+17. Issue #10
+18. PR #11
+19. spec e plano G2-B
+20. evidência Git/CI aplicável
+
+Em caso de divergência, aplicar o protocolo e parar em `BLOCKED_RECONCILIATION`. Chats não são fonte canônica.
+
+## Próximo passo exato da missão ativa
+
+```text
+G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
+```
+
+## R8 — COMPLETE
+
+Evidência de conclusão:
+
+```text
+RECOVERY_VERDICT=PASS
+TASK_7_RED=RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
+FOCUSED_TESTS=7_PASS_0_FAIL
+LOCAL_REGRESSION=367_TESTS_PASS_15_SHELL_SYNTAX_PASS
+ANSIBLE_SYNTAX=3_PASS_SELF_HOSTED
+TASK_7_CANDIDATE_SHA=604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+GITHUB_HOSTED_CI=INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS_OBSERVED_AFTER_R8_PUBLICATION
+TASK_8=NOT_STARTED
+```
+
+A validação self-hosted executou somente testes e syntax-checks; não houve playbook apply, bootstrap NODE-01, grant, escrita real, produção ou merge.
+
+## Estado da trilha principal da plataforma
+
+O status executivo F1.2c ainda é projetado pela região `PROJECT_STATUS` do README a partir de `state/current.yaml` e `docs/45-revised-implementation-roadmap.md`. Essa projeção representa a trilha principal e não substitui a missão transversal ativa.
+
+Produção continua `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` e rotação de credenciais continua `DEFERRED_BY_HUMAN_DECISION`.

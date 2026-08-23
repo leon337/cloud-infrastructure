@@ -1,0 +1,58 @@
+protocol_version: CLOUD_INFRA_INSTITUTIONAL_MEMORY_V1
+updated_at: 2026-08-22
+status: ACTIVE_REQUIRED
+purpose: PRESERVE_MATERIAL_PROJECT_HISTORY_INDEPENDENTLY_FROM_CURRENT_STATE
+principles:
+  - HISTORICAL_MEMORY_IS_APPEND_ORIENTED
+  - CURRENT_STATE_AND_HISTORICAL_MEMORY_ARE_DISTINCT
+  - MATERIAL_CORRECTIONS_REQUIRE_EXPLICIT_NEW_RECORD_OR_ADDENDUM
+  - NO_SILENT_RETROACTIVE_REWRITE
+  - EVIDENCE_BEFORE_CAUSAL_CLAIM
+locations:
+  session_history: history/
+  institutional_memos: history/memos/
+  memo_convention: history/memos/YYYY-MM-DD-<slug>.md
+  current_state: state/current.yaml
+  active_mission_state: state/active-mission.yaml
+  current_checkpoint: CHECKPOINT.md
+record_when:
+  - MATERIAL_INCIDENT_OR_INTERRUPTION
+  - OBJECTIVE_OR_SCOPE_CHANGE
+  - SIGNIFICANT_DISCOVERY
+  - MATERIAL_ARCHITECTURAL_OR_PROCESS_DECISION
+  - RECOVERY_EVENT
+  - MATERIAL_RISK_CHANGE
+minimum_memo_sections:
+  - IDENTIFICATION_AND_CLASSIFICATION
+  - PRIOR_CONTEXT
+  - OBSERVED_EVENT
+  - IMPACT
+  - EVIDENCE
+  - RESPONSE_OR_RECOVERY
+  - PROVEN_CAUSE_OR_GAP_WITHOUT_SPECULATION
+  - DECISIONS
+  - CORRECTIVE_AND_PREVENTIVE_ACTIONS
+  - RESIDUAL_RISKS
+  - RELATION_TO_CURRENT_STATE
+  - DURABLE_REFERENCES
+first_memo:
+  id: G2B_LOCAL_WORK_RECOVERY_INCIDENT_2026_08_20
+  date: 2026-08-20
+  path: history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+  classification: CONTINUITY_RECOVERY_INCIDENT
+  mission_issue: 10
+  pull_request: 11
+  preservation_rule: APPEND_ORIENTED_NO_SILENT_REWRITE
+latest_memo:
+  id: R8_TASK7_COMPLETION_2026_08_22
+  date: 2026-08-22
+  path: history/memos/2026-08-22-r8-task7-completion.md
+  classification: SECURITY_CORRECTION_AND_MISSION_TRANSITION
+  mission_issue: 10
+  pull_request: 11
+  preservation_rule: APPEND_ORIENTED_NO_SILENT_REWRITE
+continuity_relationship:
+  checkpoint_answers: WHERE_TO_RESUME
+  institutional_memory_answers: WHAT_HAPPENED_WHY_IT_MATTERED_AND_WHAT_CHANGED
+  memory_overrides_current_state: false
+  unexplained_current_source_divergence_requires_recovery_reconciliation: true

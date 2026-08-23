@@ -209,3 +209,24 @@ G2-B é um design e uma autorização separados. A próxima capability pretendid
 ```text
 NEXT_CONTROL_BRIDGE_STEP=DESIGN_G2B_BOUNDED_WRITE
 ```
+
+## Continuidade reconciliada em 2026-08-20
+
+O próximo passo histórico acima foi satisfeito pelo design G2-B aprovado; a
+implementação continua pendente e fail-closed em `state/control-bridge-g2b.yaml`.
+
+```text
+CONTROL_BRIDGE_G2B=P0_DESIGN_APPROVED_IMPLEMENTATION_PENDING
+G1=PASS_REAL_NODE_01_ROUNDTRIP
+G2A=PASS_REAL_NODE_01_READ_ONLY
+G2B_REAL_WRITE=NOT_EXECUTED
+CODEX=AVAILABLE_PARALLEL_EXECUTOR
+MESTRE_MCF=ORCHESTRATOR
+LEANDRO=FINAL_HUMAN_AUTHORITY
+F1_2C_SYSTEMD_RUNTIME_LOCK=FROZEN_FOR_CODEX_OWNED_BY_MESTRE_MCF_AND_LEANDRO
+GITHUB_HOSTED_CI=BLOCKED_EXTERNAL_BILLING
+SELF_HOSTED_NODE_01_RUNNER=ONLINE_OBSERVED_2026_08_20
+```
+
+O status online é da GitHub API, não observação VPS fresca. F1.2c mantém seus
+fatos/timestamps e sua branch está congelada para Codex.

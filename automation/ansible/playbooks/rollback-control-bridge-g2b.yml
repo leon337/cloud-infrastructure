@@ -1,0 +1,480 @@
+---
+- ansible.builtin.import_playbook: controller-preflight.yml
+
+- name: Roll back only exact proven-idle G2-B bootstrap objects
+  hosts: platform_nodes
+  gather_facts: true
+  become: true
+  serial: 1
+
+  vars:
+    g2b_rollback_confirm: false
+
+  vars_files:
+    - ../roles/control_bridge_g2b/vars/main.yml
+
+  tasks:
+    - name: Require explicit bounded rollback confirmation
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_confirm | bool
+        fail_msg: >-
+          Re-run with -e g2b_rollback_confirm=true only after reviewing every
+          grant, mutation, receipt, process, open file, and baseline gate.
+
+    - name: Verify the exact rollback NODE-01 target
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == 'Ubuntu'
+          - ansible_facts.distribution_version == '24.04'
+          - ansible_facts.service_mgr == 'systemd'
+          - ansible_facts.architecture == 'x86_64'
+          - inventory_hostname == 'node-01'
+          - platform_node_id == 'node-01'
+          - >-
+            (
+              (ansible_connection | default('ssh')) == 'local' and
+              platform_environment == 'test' and
+              platform_repository_root == '/workspace/cloud-infrastructure'
+            ) or (
+              (ansible_connection | default('ssh')) != 'local' and
+              platform_environment == 'dev' and
+              ansible_user == 'ubuntu' and
+              platform_expected_ansible_host == '169.58.171.192' and
+              platform_expected_hostname == 'vmi3506102' and
+              platform_expected_machine_id_sha256 ==
+                '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+              (ansible_host | string) ==
+                (platform_expected_ansible_host | string) and
+              ansible_facts.hostname == platform_expected_hostname and
+              (ansible_facts.machine_id | hash('sha256')) ==
+                platform_expected_machine_id_sha256
+            )
+
+    - name: Select exact rollback marker content
+      ansible.builtin.set_fact:
+        g2b_rollback_marker_content: >-
+          {{ g2b_marker_content_dev if platform_environment == 'dev'
+             else g2b_marker_content_test }}
+        g2b_rollback_marker_sha256: >-
+          {{ g2b_marker_sha256_dev if platform_environment == 'dev'
+             else g2b_marker_sha256_test }}
+
+    - name: Inspect the rollback marker without following links
+      ansible.builtin.stat:
+        path: "{{ g2b_marker_path }}"
+        follow: false
+        checksum_algorithm: sha256
+      register: g2b_rollback_marker_state
+
+    - name: Require exact root-owned marker provenance
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_marker_state.stat.exists
+          - g2b_rollback_marker_state.stat.isreg | default(false)
+          - not (g2b_rollback_marker_state.stat.islnk | default(false))
+          - g2b_rollback_marker_state.stat.uid == 0
+          - g2b_rollback_marker_state.stat.gid == 0
+          - g2b_rollback_marker_state.stat.mode == '0600'
+          - g2b_rollback_marker_state.stat.checksum == g2b_rollback_marker_sha256
+        fail_msg: Marker and hash do not prove G2-B ownership.
+
+    - name: Read the exact rollback marker
+      ansible.builtin.slurp:
+        src: "{{ g2b_marker_path }}"
+      register: g2b_rollback_marker_data
+
+    - name: Require exact marker bytes
+      ansible.builtin.assert:
+        that:
+          - >-
+            (g2b_rollback_marker_data.content | b64decode) ==
+            g2b_rollback_marker_content
+
+    - name: Inspect every managed payload without following links
+      ansible.builtin.stat:
+        path: "{{ item.destination }}"
+        follow: false
+        checksum_algorithm: sha256
+      loop: "{{ g2b_install_payloads }}"
+      register: g2b_rollback_payloads
+
+    - name: Require every exact payload hash owner and mode
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg | default(false)
+          - not (item.stat.islnk | default(false))
+          - item.stat.pw_name == item.item.owner
+          - item.stat.gr_name == item.item.group
+          - item.stat.mode == item.item.mode
+          - item.stat.checksum == item.item.sha256
+        fail_msg: "Payload hash or provenance drifted: {{ item.item.destination }}."
+      loop: "{{ g2b_rollback_payloads.results }}"
+
+    - name: Inspect every managed directory without following links
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        follow: false
+      loop: "{{ g2b_root_directories + g2b_service_directories }}"
+      register: g2b_rollback_directories
+
+    - name: Require exact directory provenance before any removal
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir | default(false)
+          - not (item.stat.islnk | default(false))
+          - item.stat.pw_name == item.item.owner
+          - item.stat.gr_name == item.item.group
+          - item.stat.mode == item.item.mode
+      loop: "{{ g2b_rollback_directories.results }}"
+
+    - name: Inspect the exact service account before rollback
+      ansible.builtin.command:
+        argv: [getent, passwd, "{{ g2b_service_account }}"]
+      register: g2b_rollback_account
+      changed_when: false
+      check_mode: false
+
+    - name: Inspect the exact service group before rollback
+      ansible.builtin.command:
+        argv: [getent, group, "{{ g2b_service_account }}"]
+      register: g2b_rollback_group
+      changed_when: false
+      check_mode: false
+
+    - name: Inspect exact service account memberships before rollback
+      ansible.builtin.command:
+        argv: [id, -nG, "{{ g2b_service_account }}"]
+      register: g2b_rollback_memberships
+      changed_when: false
+      check_mode: false
+
+    - name: Inspect exact service account password state before rollback
+      ansible.builtin.command:
+        argv: [passwd, -S, "{{ g2b_service_account }}"]
+      register: g2b_rollback_password_state
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+    - name: Require exact locked non-login service identity provenance
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_account.stdout.split(':') | length >= 7
+          - g2b_rollback_account.stdout.split(':')[4] == g2b_service_comment
+          - g2b_rollback_account.stdout.split(':')[5] == '/nonexistent'
+          - g2b_rollback_account.stdout.split(':')[6] == '/usr/sbin/nologin'
+          - >-
+            g2b_rollback_account.stdout.split(':')[3] ==
+            g2b_rollback_group.stdout.split(':')[2]
+          - g2b_rollback_memberships.stdout.split() == [g2b_service_account]
+          - >-
+            (g2b_rollback_memberships.stdout.split() |
+              intersect(platform_foundation_privileged_groups) | length) == 0
+          - g2b_rollback_password_state.stdout.split()[1] == 'L'
+        fail_msg: The service identity no longer has exact marked provenance.
+
+    - name: Inspect the exact runtime lock without following links
+      ansible.builtin.stat:
+        path: "{{ g2b_lock_path }}"
+        follow: false
+        checksum_algorithm: sha256
+      register: g2b_rollback_lock_state
+
+    - name: Require exact empty service-owned runtime lock
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_lock_state.stat.exists
+          - g2b_rollback_lock_state.stat.isreg | default(false)
+          - not (g2b_rollback_lock_state.stat.islnk | default(false))
+          - g2b_rollback_lock_state.stat.pw_name == g2b_service_account
+          - g2b_rollback_lock_state.stat.gr_name == g2b_service_account
+          - g2b_rollback_lock_state.stat.mode == '0600'
+          - g2b_rollback_lock_state.stat.checksum ==
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+    - name: Inspect the separately issued grant without following links
+      ansible.builtin.stat:
+        path: "{{ g2b_grant_path }}"
+        follow: false
+      register: g2b_rollback_grant_state
+
+    - name: Require safe grant metadata before reading
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_grant_state.stat.isreg | default(false)
+          - not (g2b_rollback_grant_state.stat.islnk | default(false))
+          - g2b_rollback_grant_state.stat.uid == 0
+          - g2b_rollback_grant_state.stat.gid == 0
+          - g2b_rollback_grant_state.stat.mode == '0644'
+      when: g2b_rollback_grant_state.stat.exists
+
+    - name: Read the grant after metadata validation
+      ansible.builtin.slurp:
+        src: "{{ g2b_grant_path }}"
+      register: g2b_rollback_grant_data
+      when: g2b_rollback_grant_state.stat.exists
+
+    - name: Parse the grant for expiry and revocation gates
+      ansible.builtin.set_fact:
+        g2b_rollback_grant: >-
+          {{ g2b_rollback_grant_data.content | b64decode | from_json }}
+      when: g2b_rollback_grant_state.stat.exists
+
+    - name: Require minimum exact grant fields before gate evaluation
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_grant.protocol == 'MCF_WORKSPACE_MUTATION_V1'
+          - g2b_rollback_grant.grant_id is string
+          - g2b_rollback_grant.executor_sha256 == g2b_executor_bundle_sha256
+          - >-
+            g2b_rollback_grant.not_after is
+            regex('^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$')
+      when: g2b_rollback_grant_state.stat.exists
+
+    - name: Inspect the exact current-grant revocation sentinel
+      ansible.builtin.stat:
+        path: >-
+          {{ g2b_state_path }}/revocations/{{
+             g2b_rollback_grant.grant_id | hash('sha256') }}.json
+        follow: false
+      register: g2b_rollback_revocation_state
+      when: g2b_rollback_grant_state.stat.exists
+
+    - name: Require grant absent expired or revoked
+      ansible.builtin.assert:
+        that:
+          - >-
+            not g2b_rollback_grant_state.stat.exists or
+            g2b_rollback_revocation_state.stat.exists or
+            (ansible_date_time.iso8601 |
+              to_datetime('%Y-%m-%dT%H:%M:%SZ')) >=
+            (g2b_rollback_grant.not_after |
+              to_datetime('%Y-%m-%dT%H:%M:%SZ'))
+        fail_msg: Refusing rollback while the installed grant remains active.
+
+    - name: Inspect the exact pilot file without following links
+      ansible.builtin.stat:
+        path: "{{ g2b_workspace_path }}/{{ g2b_pilot_path }}"
+        follow: false
+      register: g2b_rollback_pilot_state
+
+    - name: Require the pilot file absent before bootstrap rollback
+      ansible.builtin.assert:
+        that:
+          - not g2b_rollback_pilot_state.stat.exists
+        fail_msg: The pilot file still exists; perform protocol rollback first.
+
+    - name: Validate state contains no active mutation snapshot or unresolved receipt
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -c
+          - |-
+            import json,os,pwd,re,stat,sys
+            root='/var/lib/mcf-control-bridge/state/g2b'
+            uid=pwd.getpwnam('mcf-workspace').pw_uid
+            children=('receipts','snapshots','recovery','revocations','audit_pending')
+            allowed=set(children)|{'audit.jsonl'}
+            names=set(os.listdir(root))
+            assert names <= allowed and set(children) <= names
+            leaves=[]
+            values={name:[] for name in children}
+            pattern=re.compile(r'^[0-9a-f]{64}\.json$')
+            for child in children:
+              directory=os.path.join(root,child)
+              metadata=os.lstat(directory)
+              assert stat.S_ISDIR(metadata.st_mode) and metadata.st_uid==uid
+              assert stat.S_IMODE(metadata.st_mode)==0o700
+              for name in os.listdir(directory):
+                assert pattern.fullmatch(name)
+                path=os.path.join(directory,name)
+                metadata=os.lstat(path)
+                assert stat.S_ISREG(metadata.st_mode) and metadata.st_nlink==1
+                assert metadata.st_uid==uid and stat.S_IMODE(metadata.st_mode)==0o600
+                leaves.append(path)
+                if child!='snapshots':
+                  with open(path,encoding='utf-8') as handle:
+                    values[child].append(json.load(handle))
+            assert not values['audit_pending']
+            assert not os.listdir(os.path.join(root,'snapshots'))
+            assert all(value.get('active') is False for value in values['recovery'])
+            writes={value.get('request_id') for value in values['receipts']
+                    if value.get('operation')=='workspace.write' and value.get('status')=='PASS'}
+            rolled={value.get('rollback_request_id') for value in values['receipts']
+                    if value.get('operation')=='rollback' and value.get('status')=='ROLLED_BACK'}
+            assert writes <= rolled
+            audit=os.path.join(root,'audit.jsonl')
+            if os.path.exists(audit):
+              metadata=os.lstat(audit)
+              assert stat.S_ISREG(metadata.st_mode) and metadata.st_nlink==1
+              assert metadata.st_uid==uid and stat.S_IMODE(metadata.st_mode)==0o600
+              with open(audit,encoding='utf-8') as handle:
+                assert all(isinstance(json.loads(line),dict) for line in handle if line.strip())
+              leaves.append(audit)
+            print(json.dumps(sorted(leaves),separators=(',',':')))
+      register: g2b_rollback_state_audit
+      changed_when: false
+      check_mode: false
+
+    - name: Record exact validated state leaf files
+      ansible.builtin.set_fact:
+        g2b_rollback_state_leaves: "{{ g2b_rollback_state_audit.stdout | from_json }}"
+
+    - name: Require only the exact workspace baseline entry
+      ansible.builtin.command:
+        argv: [ls, -1A, "{{ g2b_workspace_path }}"]
+      register: g2b_rollback_workspace_entries
+      changed_when: false
+      check_mode: false
+
+    - name: Require exact workspace baseline
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_workspace_entries.stdout_lines == ['README.md']
+
+    - name: Require the protected log leaf is empty baseline
+      ansible.builtin.command:
+        argv: [ls, -1A, "{{ g2b_log_path }}"]
+      register: g2b_rollback_log_entries
+      changed_when: false
+      check_mode: false
+
+    - name: Require exact empty log baseline
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_log_entries.stdout_lines == []
+
+    - name: Define exact protected parent baseline entries
+      ansible.builtin.set_fact:
+        g2b_rollback_parent_boundaries:
+          - {path: /usr/local/lib/mcf-control-bridge, expected: [control_plane]}
+          - {path: /usr/local/lib/mcf-control-bridge/control_plane, expected: [__init__.py, g2b]}
+          - {path: /usr/local/lib/mcf-control-bridge/control_plane/g2b, expected: [__init__.py, errors.py, executor.py, grant.py, protocol.py, secret_policy.py, state.py, workspace.py]}
+          - {path: /var/lib/mcf-control-bridge, expected: [state, workspaces]}
+          - {path: /var/lib/mcf-control-bridge/workspaces, expected: [leon337]}
+          - {path: /var/lib/mcf-control-bridge/workspaces/leon337, expected: [g2a-smoke]}
+          - {path: /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke, expected: [dev]}
+          - {path: /var/lib/mcf-control-bridge/state, expected: [g2b]}
+          - {path: /var/log/mcf-control-bridge, expected: [g2b]}
+          - path: /etc/mcf-control-bridge
+            expected: >-
+              {{ ['g2b-grant.json'] if g2b_rollback_grant_state.stat.exists else [] }}
+
+    - name: List only each exact protected parent
+      ansible.builtin.command:
+        argv: [ls, -1A, "{{ item.path }}"]
+      loop: "{{ g2b_rollback_parent_boundaries }}"
+      register: g2b_rollback_parent_entries
+      changed_when: false
+      check_mode: false
+
+    - name: Require protected trees contain only exact baseline entries
+      ansible.builtin.assert:
+        that:
+          - (item.stdout_lines | sort) == (item.item.expected | sort)
+        fail_msg: "Unexpected protected-tree entry below {{ item.item.path }}."
+      loop: "{{ g2b_rollback_parent_entries.results }}"
+
+    - name: Inspect service-account processes
+      ansible.builtin.command:
+        argv: [pgrep, -u, "{{ g2b_service_account }}"]
+      register: g2b_rollback_processes
+      changed_when: false
+      failed_when: g2b_rollback_processes.rc not in [0, 1]
+      check_mode: false
+
+    - name: Require the service account owns no process
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_processes.rc == 1
+          - g2b_rollback_processes.stdout | length == 0
+
+    - name: Inspect service-account open files
+      ansible.builtin.command:
+        argv: [lsof, -nP, -u, "{{ g2b_service_account }}"]
+      register: g2b_rollback_open_files
+      changed_when: false
+      failed_when: g2b_rollback_open_files.rc not in [0, 1]
+      check_mode: false
+
+    - name: Require the service account owns no open file
+      ansible.builtin.assert:
+        that:
+          - g2b_rollback_open_files.rc == 1
+          - g2b_rollback_open_files.stdout | length == 0
+
+    - name: Remove validated exact state leaf files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ g2b_rollback_state_leaves }}"
+      when: not ansible_check_mode
+
+    - name: Remove exact managed payload leaf files
+      ansible.builtin.file:
+        path: "{{ item.destination }}"
+        state: absent
+      loop: "{{ g2b_install_payloads }}"
+      when: not ansible_check_mode
+
+    - name: Remove the exact grant leaf when present
+      ansible.builtin.file:
+        path: "{{ g2b_grant_path }}"
+        state: absent
+      when: not ansible_check_mode
+
+    - name: Remove the exact runtime lock leaf
+      ansible.builtin.file:
+        path: "{{ g2b_lock_path }}"
+        state: absent
+      when: not ansible_check_mode
+
+    - name: Remove exact empty state baseline directories
+      ansible.builtin.command:
+        argv: [rmdir, "{{ g2b_state_path }}/{{ item }}"]
+      loop: "{{ g2b_state_baseline_directories }}"
+      changed_when: true
+      when: not ansible_check_mode
+
+    - name: Remove exact empty service and protected parent directories
+      ansible.builtin.command:
+        argv: [rmdir, "{{ item }}"]
+      loop:
+        - /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev
+        - /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke
+        - /var/lib/mcf-control-bridge/workspaces/leon337
+        - /var/lib/mcf-control-bridge/workspaces
+        - /var/lib/mcf-control-bridge/state/g2b
+        - /var/lib/mcf-control-bridge/state
+        - /var/lib/mcf-control-bridge
+        - /var/log/mcf-control-bridge/g2b
+        - /var/log/mcf-control-bridge
+        - /usr/local/lib/mcf-control-bridge/control_plane/g2b
+        - /usr/local/lib/mcf-control-bridge/control_plane
+        - /usr/local/lib/mcf-control-bridge
+        - /etc/mcf-control-bridge
+      changed_when: true
+      when: not ansible_check_mode
+
+    - name: Remove the exact service account without home recursion
+      ansible.builtin.user:
+        name: "{{ g2b_service_account }}"
+        state: absent
+        remove: false
+        force: false
+      when: not ansible_check_mode
+
+    - name: Remove the exact empty service group
+      ansible.builtin.group:
+        name: "{{ g2b_service_account }}"
+        state: absent
+      when: not ansible_check_mode
+
+    - name: Remove the G2-B provenance marker last
+      ansible.builtin.file:
+        path: "{{ g2b_marker_path }}"
+        state: absent
+      when: not ansible_check_mode

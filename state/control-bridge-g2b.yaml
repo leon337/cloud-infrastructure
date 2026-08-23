@@ -1,0 +1,107 @@
+protocol_version: MCF_CONTROL_BRIDGE_G2B_STATE_V1
+updated_at: 2026-08-22
+scope: TRANSVERSAL_CONTROL_PLANE
+priority: P0
+repository: leon337/cloud-infrastructure
+branch: codex/control-bridge-g2b
+base_branch: mcf/mission-001-control-bridge-g1
+base_sha: 8ee1fd719a50d0c9440a10a11a372dda8af1f457
+status: TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY
+recovery_checkpoint:
+  sha: 7205a647f918580d09c87ed44f38b0a433552a51
+  document: docs/54-control-bridge-g2b-recovery-checkpoint.md
+  commits_ahead_of_base: 25
+  pull_request: 11
+  pull_request_state: DRAFT_DO_NOT_MERGE
+implementation:
+  tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
+  task_7: COMPLETE
+  task_7_focused_tests:
+    pass: 7
+    fail: 0
+  known_red: RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
+  known_red_literal: g2b_issue_existing_grant.keys()
+  ansible_syntax: PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
+  task_7_validation:
+    candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+    local_regression: PASS_367_TESTS_15_SHELL_SYNTAX
+    self_hosted_focused_tests: PASS_7_OF_7
+    self_hosted_ansible_syntax: PASS_3
+    evidence_issue_comment: https://github.com/leon337/cloud-infrastructure/issues/10#issuecomment-5377605173
+    github_hosted_foundation_run: 32548752333
+    github_hosted_validation: INCONCLUSIVE_PRE_STEP_FAILURE_ZERO_STEPS_BLOB_NOT_FOUND
+    r8_completion_sha: 047495c5c4215fc82d9e52d30114608af56deee5
+    post_r8_publication_foundation_run: 32549668020
+    post_r8_publication_hosted_validation: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS
+    review_mode: SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
+  task_8: BLOCKED_EXTERNAL
+  task_8_validation:
+    candidate_sha: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
+    contract_tests: PASS_4_OF_4
+    local_regression: PASS_371_TESTS_16_SHELL_SYNTAX
+    hosted_workflow: control-bridge-g2b-ci
+    hosted_run: 32551353362
+    hosted_validate_attempt_1_job: 96978527344
+    hosted_validate_attempt_2_job: 96978618226
+    hosted_validate_steps: 0
+    hosted_logs: BLOB_NOT_FOUND
+    disposable_lifecycle: SKIPPED_DEPENDENCY_VALIDATE_FAILED_PRE_STEP
+    boundary_rule: NEVER_NODE01_GITHUB_HOSTED_OR_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_ONLY
+  tasks_9_10: NOT_STARTED
+  tasks_8_10: TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED
+pilot:
+  project: leon337/g2a-smoke/dev
+  path: G2B-PILOT.txt
+  grant_duration_hours: 24
+  active_mutations_max: 1
+  production: false
+boundaries:
+  transport_user: ubuntu
+  execution_user: mcf-workspace
+  normal_execution_root: false
+  arbitrary_shell: false
+  docker_socket: false
+  git_mutation: false
+  host_administration: false
+evidence:
+  g1_real_roundtrip: true
+  g2a_real_read: true
+  real_write: false
+  real_rollback: false
+  real_revocation: false
+  mcf_effective_use: false
+  disposable_lifecycle: false
+continuity:
+  mission_issue: 10
+  mission_status: COMPLETE
+  mission_state: state/active-mission.yaml
+  mission_doc: docs/53-repository-continuity-context-recovery-mission.md
+  startup_recovery_protocol: governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+  startup_recovery_protocol_state: state/startup-recovery-protocol.yaml
+  mission_persistence_policy: governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
+  mission_persistence_policy_state: state/mission-persistence-policy.yaml
+  institutional_memory_state: state/institutional-memory.yaml
+  institutional_memory_dir: history/memos/
+  first_incident_memo: history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+  drift_controls_document: governance/CONTINUITY-DRIFT-CONTROLS.md
+  drift_controls_state: state/continuity-drift-controls.yaml
+  drift_checker: scripts/check_continuity_drift.py
+  cold_start_validation_state: state/cold-start-validation.yaml
+  cold_start_validation_report: docs/55-cold-start-recovery-validation-2026-08-21.md
+  cold_start_reconstructor: scripts/reconstruct_cold_start.py
+  cold_start_verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+  roadmap_stage: R8_COMPLETE
+  f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
+  f1_2c_rule: ISOLATED_DO_NOT_MODIFY
+technical_next_exact_step: LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
+technical_next_step_gate: BLOCKED_EXTERNAL_TASK8_DISPOSABLE_BOUNDARY_REQUIRED_NEVER_NODE01
+task_8_remediation_plan: docs/56-g2b-task8-vps-qemu-tcg-disposable-boundary-plan.md
+task_8_remediation_strategy: VPS_QEMU_TCG_DISPOSABLE_UBUNTU24_SYSTEMD
+task_8_host_package_gate: AUTHORIZED_BY_LEANDRO_WAITING_DIRECT_PRIVILEGED_EXECUTION
+next_exact_step: LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
+r8_does_not_authorize:
+  - NODE01_G2B_BOOTSTRAP
+  - REAL_GRANT_ISSUE_OR_REISSUE
+  - REAL_BOUNDED_WRITE
+  - PRODUCTION_MUTATION
+  - MERGE_G2B

@@ -1,0 +1,10 @@
+G2-B TASK 8 SMOKE
+STATE=NAO_APLICAVEL
+
+Reason:
+No functional correction was authorized because the attempt-3 root cause is not proven.
+Running the complete lifecycle again without a proven correction would violate the CAF retry rule and the mission instruction not to repeat blindly.
+
+Real NODE-01 G2-B mutation was not executed.
+Tasks 9/10 were not started.
+Task 8 smoke/acceptance therefore remains NOT_EXECUTED / NOT_ACCEPTED.

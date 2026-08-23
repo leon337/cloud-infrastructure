@@ -1,0 +1,58 @@
+name: control-bridge-g2b-ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - codex/control-bridge-g2b
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: control-bridge-g2b-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.lock
+      - name: Install locked validation dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-dev.lock
+      - name: Validate repository and disposable contract
+        env:
+          PYTHON: python
+          REQUIRE_ANSIBLE: "1"
+        run: |
+          scripts/test.sh
+          python3 -m unittest tests.test_g2b_disposable_integration -v
+
+  disposable-lifecycle:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove complete G2-B lifecycle in disposable boundary
+        env:
+          G2B_TEST_PRIVILEGED_CONFIRM: DISPOSABLE_UBUNTU_24_04_ONLY
+          G2B_CANDIDATE_SHA: ${{ github.sha }}
+        run: scripts/test_control_bridge_g2b_vm.sh

@@ -1,0 +1,75 @@
+protocol_version: CLOUD_INFRA_COLD_START_VALIDATION_V1
+updated_at: 2026-08-21
+status: PASS
+verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+mission_issue: 10
+pull_request: 11
+report: docs/55-cold-start-recovery-validation-2026-08-21.md
+reconstructor: scripts/reconstruct_cold_start.py
+contract_test: tests/test_cold_start_recovery.py
+execution_mode:
+  role: BEATRIZ_MCF
+  source_restriction: REPOSITORY_AND_GITHUB_ONLY_FOR_PROJECT_FACTS
+  same_chat_session: true
+  independent_fresh_model_process: false
+  limitation: SAME_SESSION_ROLE_EXECUTION_DOES_NOT_PROVE_COGNITIVE_INDEPENDENCE
+evidence:
+  - CONTEXT.md
+  - state/active-mission.yaml
+  - state/current.yaml
+  - CHECKPOINT.md
+  - state/control-bridge-g2b.yaml
+  - docs/53-repository-continuity-context-recovery-mission.md
+  - docs/54-control-bridge-g2b-recovery-checkpoint.md
+  - state/institutional-memory.yaml
+  - state/continuity-drift-controls.yaml
+  - ISSUE_10_LIVE
+  - PR_11_LIVE
+pre_advance_reconstruction:
+  active_mission: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+  branch: codex/control-bridge-g2b
+  tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
+  task_7: PARTIAL_6_PASS_1_FAIL
+  tasks_8_10: NOT_STARTED
+  f1_2c: ISOLATED_DO_NOT_MODIFY
+  node01_g2b_gate: CLOSED_NOT_AUTHORIZED
+  next_exact_step: R7_EXECUTE_COLD_START_RECOVERY_VALIDATION
+reconstruction:
+  active_mission: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+  branch: codex/control-bridge-g2b
+  pull_request: 11_DRAFT_DO_NOT_MERGE
+  tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
+  task_7: PARTIAL_6_PASS_1_FAIL
+  known_red: EXISTING_GRANT_EXACT_KEY_SET_NOT_ENFORCED
+  tasks_8_10: NOT_STARTED
+  f1_2c: ISOLATED_DO_NOT_MODIFY
+  node01_g2b_gate: CLOSED_NOT_AUTHORIZED
+  real_grant_gate: CLOSED_NOT_AUTHORIZED
+  real_write_gate: CLOSED_NOT_AUTHORIZED
+  real_write_executed: false
+  merge_gate: CLOSED_NOT_AUTHORIZED
+  next_exact_step: R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT
+required_fact_results:
+  active_mission: PASS
+  active_branch: PASS
+  tasks_1_6: PASS
+  task_7_partial_6_1: PASS
+  known_red: PASS
+  tasks_8_10: PASS
+  f1_2c_isolation: PASS
+  node01_gate_closed: PASS
+  grant_write_gates_closed: PASS
+  real_write_not_executed: PASS
+  draft_pr: PASS
+  exact_next_action: PASS
+ci_evidence:
+  status: INCONCLUSIVE_INFRASTRUCTURE_PRE_STEP_FAILURE
+  foundation_run: 32500978996
+  validate_job_steps_exposed: 0
+  logs: BLOB_NOT_FOUND
+  content_failure_cause_proven: false
+human_gates_opened: false
+r7_completion_effect:
+  R7: COMPLETE
+  R8: NEXT
+  next_exact_step: R8_RESUME_G2B_TASK7_FROM_RECOVERED_POINT

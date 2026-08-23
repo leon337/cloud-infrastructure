@@ -1,14 +1,43 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-18
-documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_NODE_01_SERVICES_CI_PASS_REAL_APPLY_PENDING
+updated_at: 2026-08-22
+documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK8_BLOCKED_EXTERNAL_CONTINUITY_R8_COMPLETE
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
   current_state_independent_validation_report: governance/CONTINUITY-VALIDATION-2026-08-16-MISSION-001.md
   future_state_validation_policy: PUC_REVALIDATION_REQUIRED
   canonical_entrypoint: CONTEXT.md
+  startup_recovery_protocol: governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+  startup_recovery_protocol_state: state/startup-recovery-protocol.yaml
+  startup_recovery_principle: NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
+  mission_persistence_policy: governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
+  mission_persistence_policy_state: state/mission-persistence-policy.yaml
+  mission_persistence_principle: NO_LONG_RUNNING_MISSION_WITHOUT_RECOVERABLE_REMOTE_CHECKPOINTS
+  max_material_work_without_remote_checkpoint_minutes: 30
+  wip_checkpoint_acceptance_rule: WIP_CHECKPOINT_DOES_NOT_IMPLY_ACCEPTANCE
+  institutional_memory_state: state/institutional-memory.yaml
+  institutional_memory_dir: history/memos/
+  first_incident_memo: history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+  continuity_drift_controls: governance/CONTINUITY-DRIFT-CONTROLS.md
+  continuity_drift_controls_state: state/continuity-drift-controls.yaml
+  continuity_drift_checker: scripts/check_continuity_drift.py
+  cold_start_validation_state: state/cold-start-validation.yaml
+  cold_start_validation_report: docs/55-cold-start-recovery-validation-2026-08-21.md
+  cold_start_reconstructor: scripts/reconstruct_cold_start.py
+  active_mission_state: state/active-mission.yaml
+  active_mission_doc: docs/superpowers/plans/2026-08-20-control-bridge-g2b-bounded-write.md
+  active_mission_issue: null
+  continuity_mission_doc: docs/53-repository-continuity-context-recovery-mission.md
+  continuity_mission_issue: 10
+  continuity_mission_status: COMPLETE
+  active_pull_request: 11
+  active_branch: codex/control-bridge-g2b
+  g2b_recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
+  recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
+  active_roadmap_stage: R8_COMPLETE_RETURNED_TO_G2B
+  next_exact_step: LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
   checkpoint: CHECKPOINT.md
   platform_discovery_state: state/platform-discovery.yaml
   codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
@@ -18,8 +47,62 @@ continuity:
   threat_model: docs/43-threat-model-and-autonomy-boundaries.md
   infrastructure_blueprint: docs/44-infrastructure-blueprint-v1.md
   revised_roadmap: docs/45-revised-implementation-roadmap.md
+  roadmap_checklist: ROADMAP-CHECKLIST.md
   technology_mapping: docs/46-technology-mapping-v1.md
   component_inventory: state/components.yaml
+active_mission:
+  id: CONTROL_BRIDGE_G2B
+  status: BLOCKED_EXTERNAL
+  priority: P0
+  authority: LEANDRO
+  orchestrator: MESTRE_MCF
+  issue: null
+  continuity_origin_issue: 10
+  state: state/active-mission.yaml
+  document: docs/superpowers/plans/2026-08-20-control-bridge-g2b-bounded-write.md
+  branch: codex/control-bridge-g2b
+  pull_request: 11
+  roadmap:
+    R1: COMPLETE
+    R2: COMPLETE
+    R3: COMPLETE
+    R4: COMPLETE
+    R5: COMPLETE
+    R6: COMPLETE
+    R7: COMPLETE
+    R8: COMPLETE
+control_bridge:
+  priority: P0
+  g1: PASS_REAL_NODE_01_ROUNDTRIP
+  g2a: PASS_REAL_NODE_01_READ_ONLY
+  g2b: TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY
+  g2b_tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
+  g2b_task_7: COMPLETE_7_PASS_0_FAIL
+  g2b_task_8: BLOCKED_EXTERNAL
+  g2b_task_8_candidate_sha: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
+  g2b_task_8_hosted_run: 32551353362
+  g2b_task_8_hosted_validation: BLOCKED_EXTERNAL_ZERO_STEPS_BLOB_NOT_FOUND_RETRY_CONFIRMED
+  g2b_tasks_9_10: NOT_STARTED
+  g2b_tasks_8_10: TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED
+  g2b_real_write: NOT_EXECUTED
+  g2b_pr: 11_DRAFT_DO_NOT_MERGE
+  g2b_recovery_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
+  g2b_task_7_candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+  g2b_task_7_ansible_syntax: PASS_3_SELF_HOSTED
+  self_hosted_runner: ONLINE_OBSERVED_2026_08_22_TASK7_VALIDATION
+  hosted_ci: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS_OBSERVED_AFTER_R8_PUBLICATION
+  source: state/control-bridge-g2b.yaml
+work_ownership:
+  f1_2c_systemd_runtime_lock:
+    branch: fix/f1-2c-systemd-runtime-lock
+    owner: MESTRE_MCF_AND_LEANDRO
+    frozen_for_codex: true
+    rule_for_active_continuity_mission: ISOLATED_DO_NOT_MODIFY
+  control_bridge_g2b:
+    branch: codex/control-bridge-g2b
+    historical_executor: CODEX
+    current_orchestrator: MESTRE_MCF
+    final_authority: LEANDRO
 project:
   name: IMPLEMENTACAO_DA_VPS
   status: ACTIVE
@@ -271,7 +354,7 @@ codex_execution:
       real_vps_apply: PASS_AT_2026_08_17T06_48_33Z_CHANGED_7_FAILED_0_UNREACHABLE_0
       real_vps_apply_log_sha256: a82d0ac67ed2f941507107ee1008d36475f7ebf5cdab0580605e60899cc5a5d4
       real_vps_idempotence: PASS_AT_2026_08_17T06_57_50Z_CHANGED_0_FAILED_0_UNREACHABLE_0
-      real_vps_idempotence_log_sha256: 2c6e2bf1924e7a1ee735035b9b6da35e7cf18cdc982a9c8212288db47ffa0d4b
+      real_vps_idempotence_log_sha256: 2c6e2bf1924e5571993b6d97e99375e39a5be14d0c2a4bb4d0a17fbec2f3c79
       real_vps_post_apply_invariance: PASS_AT_2026_08_17T06_58_43Z
     human_interaction:
       status: COMPLETED_FOR_F1_1_AND_F1_2B_NO_CURRENT_HUMAN_INTERACTION

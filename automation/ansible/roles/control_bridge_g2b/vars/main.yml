@@ -1,0 +1,142 @@
+---
+# Immutable CONTROL-BRIDGE-G2B installation contract. Role vars intentionally
+# outrank inventory and extra vars so a caller cannot redirect reviewed paths.
+g2b_service_account: mcf-workspace
+g2b_service_comment: MCF protected workspace executor
+g2b_service_home: /nonexistent
+g2b_service_shell: /usr/sbin/nologin
+
+g2b_executor_bundle_root: /usr/local/lib/mcf-control-bridge
+g2b_executor_bundle_sha256: 7ed806ee4d73743f3d0ab6f7f5c216494ed0d4f645f5f2bea0b128f2a689d3af
+g2b_entrypoint_path: /usr/local/libexec/mcf-control-g2b
+g2b_sudoers_path: /etc/sudoers.d/mcf-control-g2b
+g2b_tmpfiles_path: /etc/tmpfiles.d/mcf-control-bridge-g2b.conf
+g2b_grant_path: /etc/mcf-control-bridge/g2b-grant.json
+g2b_marker_path: /etc/mcf-control-bridge-g2b.managed
+g2b_workspace_path: /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev
+g2b_state_path: /var/lib/mcf-control-bridge/state/g2b
+g2b_log_path: /var/log/mcf-control-bridge/g2b
+g2b_lock_path: /run/lock/mcf-control-bridge-g2b.lock
+g2b_pilot_path: G2B-PILOT.txt
+
+g2b_marker_content_dev: |-
+  managed_by=cloud-infrastructure
+  slice=CONTROL-BRIDGE-G2B
+  schema=1
+  environment=dev
+  node=node-01
+  bundle_sha256=7ed806ee4d73743f3d0ab6f7f5c216494ed0d4f645f5f2bea0b128f2a689d3af
+g2b_marker_content_test: |-
+  managed_by=cloud-infrastructure
+  slice=CONTROL-BRIDGE-G2B
+  schema=1
+  environment=test
+  node=node-01
+  bundle_sha256=7ed806ee4d73743f3d0ab6f7f5c216494ed0d4f645f5f2bea0b128f2a689d3af
+g2b_marker_sha256_dev: 7e2485cf20698c416d4ebfca2ae6eed3af5ff9c29082ff25b8db55c811a47ca9
+g2b_marker_sha256_test: ffc4ef1d2c3d70cd3164940a322052e548d97f8087944ecedb783a07d3444895
+
+g2b_root_directories:
+  - {path: /usr/local/libexec, owner: root, group: root, mode: "0755"}
+  - {path: /usr/local/lib/mcf-control-bridge, owner: root, group: root, mode: "0755"}
+  - {path: /usr/local/lib/mcf-control-bridge/control_plane, owner: root, group: root, mode: "0755"}
+  - {path: /usr/local/lib/mcf-control-bridge/control_plane/g2b, owner: root, group: root, mode: "0755"}
+  - {path: /etc/mcf-control-bridge, owner: root, group: root, mode: "0755"}
+  - {path: /var/lib/mcf-control-bridge, owner: root, group: root, mode: "0755"}
+  - {path: /var/lib/mcf-control-bridge/workspaces, owner: root, group: root, mode: "0755"}
+  - {path: /var/lib/mcf-control-bridge/workspaces/leon337, owner: root, group: root, mode: "0755"}
+  - {path: /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke, owner: root, group: root, mode: "0755"}
+  - {path: /var/lib/mcf-control-bridge/state, owner: root, group: root, mode: "0755"}
+  - {path: /var/log/mcf-control-bridge, owner: root, group: root, mode: "0755"}
+
+g2b_service_directories:
+  - {path: /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev, owner: mcf-workspace, group: mcf-workspace, mode: "0700"}
+  - {path: /var/lib/mcf-control-bridge/state/g2b, owner: mcf-workspace, group: mcf-workspace, mode: "0700"}
+  - {path: /var/log/mcf-control-bridge/g2b, owner: mcf-workspace, group: mcf-workspace, mode: "0700"}
+
+g2b_install_payloads:
+  - source: control_plane/__init__.py
+    destination: /usr/local/lib/mcf-control-bridge/control_plane/__init__.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 8d5b8896a1ecfb0617c84419a0bad5f8a41a47ab65678c44419275690de25bad
+  - source: control_plane/g2b/__init__.py
+    destination: /usr/local/lib/mcf-control-bridge/control_plane/g2b/__init__.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: ef1870029c2a0b51cf5615975544087cc9b2957e954f5ce521ad3810544ebc78
+  - source: control_plane/g2b/errors.py
+    destination: /usr/local/lib/mcf-control-bridge/control_plane/g2b/errors.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: e20403b3e6008d30ff55b316be768f029544b5e3aa5e69f8b9e2f9a393d7b714
+  - source: control_plane/g2b/executor.py
+    destination: /usr/local/lib/mcf-control-bridge/control_plane/g2b/executor.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: c68b7ad13948285e82b339dcb595b4b2f1e296178cc098359f7c331eac4eef3e
+  - source: control_plane/g2b/grant.py
+    destination: /usr/local/lib/mcf-control-bridge/control_plane/g2b/grant.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 3d319372a23ca884406c60da9615db42022fdd0a9f5dbf8eb637fd495b3f5f1b
+  - source: control_plane/g2b/protocol.py
+    destination: /usr/local/lib/mcf-control-bridge/control_plane/g2b/protocol.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 6c4a488d3fe9d5b9757ebbeec3de3d3315cc5ae4db362a7b2e5d2eb095252266
+  - source: control_plane/g2b/secret_policy.py
+    destination: /usr/local/lib/mcf-control-bridge/control_plane/g2b/secret_policy.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 9957257030d3bbc4c8d62f2cb91f77c5f23f2b5b9a321797cc85f79d6511c528
+  - source: control_plane/g2b/state.py
+    destination: /usr/local/lib/mcf-control-bridge/control_plane/g2b/state.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 93007d5902ec82da710534246249d5f223ff05ebc61dc7686a0f419152fe905b
+  - source: control_plane/g2b/workspace.py
+    destination: /usr/local/lib/mcf-control-bridge/control_plane/g2b/workspace.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: cca936b52f3f270d7cb4f2ba41fbacbf9fc7a31464cce7fc3a710178684ab8cf
+  - source: platform/control-bridge/mcf-control-g2b
+    destination: /usr/local/libexec/mcf-control-g2b
+    owner: root
+    group: root
+    mode: "0555"
+    sha256: ec96c2213240712e2dab95a8ae3e809d5714c91c5d03f14d17c41b0f72542c9a
+  - source: platform/sudoers/mcf-control-g2b
+    destination: /etc/sudoers.d/mcf-control-g2b
+    owner: root
+    group: root
+    mode: "0440"
+    sha256: e8714271fe9a734cf18a62fe32c886da374baa4e557512af6cc7a45a3eb0bc60
+  - source: platform/tmpfiles.d/mcf-control-bridge-g2b.conf
+    destination: /etc/tmpfiles.d/mcf-control-bridge-g2b.conf
+    owner: root
+    group: root
+    mode: "0644"
+    sha256: d64356913ceec91eadd3a0fbf6d3809771144ef761f7d44fec3de38afb1f9826
+  - source: tests/fixtures/g2a/README.md
+    destination: /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev/README.md
+    owner: mcf-workspace
+    group: mcf-workspace
+    mode: "0600"
+    sha256: ae01e0dd165db25898b5a8f8df3c37e88bf82d09f93e48c76c3f904bbc382304
+
+g2b_state_baseline_directories:
+  - receipts
+  - snapshots
+  - recovery
+  - revocations
+  - audit_pending
