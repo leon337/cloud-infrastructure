@@ -212,6 +212,10 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, text)
         self.assertNotRegex(text, r"(?m)^\s*recurse:\s*true")
+        self.assertIn("g2b_rollback_open_files.rc not in [0, 1]", text)
+        self.assertIn("g2b_rollback_open_files.rc in [0, 1]", text)
+        self.assertIn("g2b_rollback_open_files.stdout | length == 0", text)
+        self.assertNotIn("g2b_rollback_open_files.rc == 1", text)
         self.assertEqual(
             load_yaml(ROLLBACK)[-1]["tasks"][-1]["name"],
             "Remove the G2-B provenance marker last",
