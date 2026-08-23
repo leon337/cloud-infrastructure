@@ -20,6 +20,8 @@ jobs:
       startsWith(github.head_ref, 'team/canonical-state-toolchain-')
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
 
     steps:
       - name: Check out exact validation state
