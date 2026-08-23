@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: team/canonical-state-toolchain-20260822
-updated_at: "2026-08-22T22:08:00-03:00"
+updated_at: "2026-08-22T22:14:30-03:00"
 state_classification: CURRENT_RECONCILED_CANDIDATE
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
@@ -88,10 +88,11 @@ control_bridge:
       terminal_exit: 2
       acceptance_markers_proven: false
       diagnostic_branch: team/g2b-task8-20260822
-      diagnostic_head: 5769acc08d296e0ae4434d46729ebff9a3dfea68
+      diagnostic_head: READ_GITHUB_LIVE
+      diagnostic_last_observed_head: 924382dd4b4fc802f0475dbef6f4749b0d4d20fa
       diagnostic_status: IN_PROGRESS_DIAGNOSTIC_REPRODUCTION
       root_cause: NOT_VERIFIED
-      functional_correction: NONE_AS_OF_SNAPSHOT
+      functional_correction: NONE_REPORTED_AS_OF_LAST_LIVE_PR_READ
     tasks_9_10: NOT_STARTED
     merge_status: NOT_ELIGIBLE
 
