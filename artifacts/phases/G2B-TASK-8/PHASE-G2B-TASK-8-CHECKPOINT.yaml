@@ -1,0 +1,44 @@
+mission: G2-B Task 8
+repository: leon337/cloud-infrastructure
+state: PASS_TECHNICAL_READY_FOR_CENTRAL_AUDIT
+objective_met: true
+source:
+  branch: codex/control-bridge-g2b
+  sha: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+work:
+  branch: team/g2b-task8-20260822
+  pr: 21
+validated_functional_candidate:
+  sha: ac3e2f8a52b881bcd2b40acab0d723d547b90e81
+  clean: true
+  unit_tests: 373/373_PASS
+  ansible_syntax: 9/9_PASS
+  secret_policy: PASS
+  lifecycle_exit: 0
+  acceptance_markers: 13/13_REQUIRED_ORDER_EACH_ONCE
+  abort_markers: 0
+  bounded_cleanup: PASS
+root_causes:
+  attempt3: inventory_ansible_become_false_overrode_task_become
+  workspace_write: installed_boundary_passed_protected_parent_instead_of_fixed_pilot_leaf
+  bounded_cleanup_fixture: lsof_dependency_missing
+  bounded_cleanup_probe: lsof_rc0_with_empty_stdout_is_valid_but_assert_required_rc1
+hosted_ci:
+  state: BLOCKED_BY_BILLING_BEFORE_EXECUTION
+  runs:
+    control_bridge_g2b_ci: 32624457045
+    docker_boundary_ci: 32624457027
+    foundation_ci: 32624457060
+  runner_id: 0
+  steps: 0
+boundaries:
+  real_node01_g2b_write: NOT_EXECUTED
+  task9: NOT_STARTED
+  task10: NOT_STARTED
+  human_gate_crossed: false
+  final_merge: NOT_EXECUTED
+next_action:
+  - central MESTRE audits PR 21 and live GitHub state
+  - do not merge until central integration decision
+  - GitHub billing/spending limit must be resolved before hosted checks can execute
+checkpoint_recipient: MESTRE CENTRAL

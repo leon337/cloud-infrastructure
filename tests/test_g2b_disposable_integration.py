@@ -7,6 +7,8 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 HARNESS_PATH = ROOT / "scripts/test_control_bridge_g2b_vm.sh"
 WORKFLOW_PATH = ROOT / ".github/workflows/control-bridge-g2b-ci.yml"
+TEST_INVENTORY_PATH = ROOT / "automation/ansible/inventory/test-container/hosts.yml"
+FIXTURE_DOCKERFILE_PATH = ROOT / "tests/fixtures/foundation-systemd/Dockerfile"
 
 MARKERS = [
     "G2B_DISPOSABLE_IDENTITY_PASS",
@@ -66,6 +68,16 @@ class G2BDisposableIntegrationTests(unittest.TestCase):
         self.assertNotIn("cat /etc/mcf-control-bridge/g2b-grant.json", text)
         self.assertNotIn("set -x", text)
         self.assertIn('if ! docker exec "$CONTAINER" id -u ubuntu', text)
+
+    def test_disposable_inventory_does_not_override_task_become(self) -> None:
+        self.assertTrue(TEST_INVENTORY_PATH.is_file(), "missing G2-B disposable inventory")
+        text = TEST_INVENTORY_PATH.read_text(encoding="utf-8")
+        self.assertNotIn("ansible_become:", text)
+
+    def test_fixture_installs_cleanup_probe_dependency(self) -> None:
+        self.assertTrue(FIXTURE_DOCKERFILE_PATH.is_file(), "missing G2-B fixture Dockerfile")
+        text = FIXTURE_DOCKERFILE_PATH.read_text(encoding="utf-8")
+        self.assertIn("        lsof " + chr(92) + "\n", text)
 
     def test_workflow_is_commit_bound_github_hosted_and_pinned(self) -> None:
         self.assertTrue(WORKFLOW_PATH.is_file(), "missing G2-B CI workflow")

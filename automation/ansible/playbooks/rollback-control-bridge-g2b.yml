@@ -403,7 +403,7 @@
     - name: Require the service account owns no open file
       ansible.builtin.assert:
         that:
-          - g2b_rollback_open_files.rc == 1
+          - g2b_rollback_open_files.rc in [0, 1]
           - g2b_rollback_open_files.stdout | length == 0
 
     - name: Remove validated exact state leaf files

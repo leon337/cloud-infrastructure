@@ -360,7 +360,7 @@ os.close = _fault_close
         self.assertEqual(observed["transport_principal"].actor_id, 25_374_535)
         self.assertEqual(observed["grant_path"], Path("/etc/mcf-control-bridge/g2b-grant.json"))
         self.assertEqual(observed["installed_root"], Path("/usr/local/lib/mcf-control-bridge"))
-        self.assertEqual(observed["workspace_root"], Path("/var/lib/mcf-control-bridge/workspaces"))
+        self.assertEqual(observed["workspace_root"], Path("/var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev"))
         self.assertEqual(observed["state_root"], Path("/var/lib/mcf-control-bridge/state/g2b"))
         self.assertEqual(observed["lock_path"], Path("/run/lock/mcf-control-bridge-g2b.lock"))
         self.assertEqual(observed["expected_uid"], 4242)
