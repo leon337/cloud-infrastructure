@@ -115,7 +115,9 @@ cleanup() {
   if sudo test -x "$SERVICE" && sudo test -f "$SERVICE_MARKER"; then
     sudo "$SERVICE" rollback >/dev/null 2>&1 || true
   fi
-  sudo unlink -- "$SERVICE_MARKER" "$SYSCTL" "$SERVICE" "$SERVICE_UNIT" >/dev/null 2>&1 || true
+  for managed_file in "$SERVICE_MARKER" "$SYSCTL" "$SERVICE" "$SERVICE_UNIT"; do
+    sudo unlink -- "$managed_file" >/dev/null 2>&1 || true
+  done
   sudo rm -f -- "$CONFIG/compose.yaml" \
     "$CONFIG/cp00000002/Corefile" "$CONFIG/cp00000002/records.hosts" \
     "$CONFIG/cp00000002/squid.conf" "$CONFIG/cp00000003/Corefile" \
@@ -125,7 +127,8 @@ cleanup() {
     /etc/cloud-platform >/dev/null 2>&1 || true
   sudo systemctl disable --now cloud-platform-network-enforcement.service >/dev/null 2>&1 || true
   if sudo test -x "$BASE"; then sudo "$BASE" rollback >/dev/null 2>&1 || true; fi
-  sudo unlink -- "$BASE" "$BASE_UNIT" >/dev/null 2>&1 || true
+  sudo unlink -- "$BASE" >/dev/null 2>&1 || true
+  sudo unlink -- "$BASE_UNIT" >/dev/null 2>&1 || true
   sudo systemctl daemon-reload >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -216,7 +219,8 @@ sudo rm -f -- "$CONFIG/compose.yaml" \
 sudo rmdir "$CONFIG/cp00000002" "$CONFIG/cp00000003" "$CONFIG" /etc/cloud-platform
 sudo systemctl disable --now cloud-platform-network-enforcement.service
 sudo "$BASE" rollback >/dev/null
-sudo unlink -- "$BASE" "$BASE_UNIT"
+sudo unlink -- "$BASE"
+sudo unlink -- "$BASE_UNIT"
 sudo systemctl daemon-reload
 [[ -z $(sudo docker container ls --all --quiet) ]] || fail containers_remained
 [[ -z $(sudo docker image ls --all --quiet) ]] || fail images_remained
