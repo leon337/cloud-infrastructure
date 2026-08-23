@@ -1,11 +1,11 @@
-UTC=2026-08-23T21:48:21Z
+UTC=2026-08-23T21:50:29Z
 RUNNER_USER=ubuntu
 HOST=vmi3506102
 SENTINELX_ACTIVE=active
 LOCAL_PROVIDER_HEALTH=200
 LLAMA_PROCESS=865752 /home/ubuntu/.local/bin/llama serve -hf bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF:Q4_K_M -c 65536 --cache-type-k q8_0 --cache-type-v q8_0 --jinja --reasoning off --host 127.0.0.1 --port 8080 --alias qwen3-4b-instruct-2507 --no-webui
 RELAY_SOCKET=yes
-RELAY_PROCESS=865744 python3 /home/ubuntu/.local/share/mcf-hermes-relay/relay.py
+RELAY_PROCESS=866498 python3 /home/ubuntu/.local/share/mcf-hermes-relay/relay.py
 RELAY_HAS_BOUNDED_HELLO=yes
 HERMES_VERSION=Hermes Agent v0.20.5 (2026.8.19) · upstream 98110123
 HERMES_MODEL={"default": "qwen3-4b-instruct-2507", "provider": "custom", "base_url": "http://127.0.0.1:8080/v1", "api_key": "no-key", "context_length": 65536} 
