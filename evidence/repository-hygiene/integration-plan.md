@@ -55,3 +55,17 @@ When a valid canonical integration base containing the active validation toolcha
 4. rerun independent verification;
 5. only then delete the five proven removable refs;
 6. record final branch/PR/workflow before/after counts and preservation evidence.
+
+## Revalidation update — 2026-08-23
+
+The two blockers described above are now resolved for validation purposes by PR #22 head `f39464daf4a4c5508d891e61f4ddd6394afd08fd`. A local synthetic integration with PR #19 head `5b0864762e2c3054da4e449feb1e47abc584963f` was executed.
+
+Integration recipe proven by revalidation:
+
+1. use the PR #22 canonical State + Toolchain as the newer truth surface;
+2. resolve `CHECKPOINT.md` and `CONTEXT.md` in favor of that newer canonical content;
+3. preserve the twelve non-conflicting Repository Hygiene files from PR #19;
+4. run the canonical suite;
+5. require an explicit human gate before any remote merge or branch cleanup.
+
+Synthetic local SHA `da4cba0ccb768e01afeb445678478fb3f39d30b0` passed the full canonical suite. No remote integration was performed by this proof.

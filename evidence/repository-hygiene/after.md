@@ -108,3 +108,11 @@ Precise reasons:
 4. because Wave-3 tests are not proven, Wave 4 branch deletion is intentionally not executed.
 
 The repository is audited, classified and policy-hardened, but the mission cannot truthfully be declared `REPOSITORY_HYGIENE_PASS` under its acceptance criteria yet.
+
+## Revalidation addendum — 2026-08-23
+
+This file's `REPOSITORY_HYGIENE_BLOCKED` verdict remains the historical verdict of the 2026-08-22 snapshot. It is **superseded for current PR #19 revalidation** by `evidence/repository-hygiene/revalidation-2026-08-23.md`.
+
+The previously missing canonical state/toolchain was supplied and validated by PR #22. The nine historical URI findings were classified as symbolic runtime references rather than literal credentials. A local synthetic integration candidate combining PR #22 and PR #19 passed the full canonical validation suite with 15/15 tests and a clean worktree.
+
+Current revalidation status: `PASS_AGAINST_PR22_CANONICAL_TOOLCHAIN`. This does **not** authorize merge or branch deletion.

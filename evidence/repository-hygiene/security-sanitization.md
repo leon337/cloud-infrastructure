@@ -16,3 +16,9 @@ No secret values are reproduced in this report.
 `SECURITY_SANITIZATION=PASS_CURRENT_DIFF_WITH_HISTORICAL_DEBT`
 
 No history rewrite or G2-B security-boundary change was performed. The nine historical scanner hits remain a redacted follow-up review item.
+
+## Revalidation addendum — 2026-08-23
+
+The 2026-08-22 finding that nine historical `credential-in-uri` blobs required separate review is now **superseded as a current blocker**. PR #22 head `f39464daf4a4c5508d891e61f4ddd6394afd08fd` classified all 9/9 through a full private mirror as symbolic GitHub workflow runtime authentication references, with **0 literal historical credential URI findings**. The scanner now distinguishes symbolic runtime references from literal credentials while remaining fail-closed for literals. No history rewrite, force-push or credential rotation was required.
+
+Current security revalidation evidence: `evidence/repository-hygiene/revalidation-2026-08-23.md`.

@@ -65,3 +65,11 @@ MANDATORY_INTEGRATION_TESTS=BLOCKED_MISSING_TEST_TOOLCHAIN_ON_MAIN_BASELINE
 ```
 
 This verification does not authorize branch deletion.
+
+## Revalidation addendum — 2026-08-23
+
+The sections above are preserved as the 2026-08-22 baseline. Their statements that canonical state and `scripts/test.sh` were unavailable are no longer current blockers. PR #22 provides the reconciled state/toolchain. A local synthetic integration of PR #22 `f39464daf4a4c5508d891e61f4ddd6394afd08fd` with PR #19 `5b0864762e2c3054da4e449feb1e47abc584963f` produced only two canonical-document conflicts (`CHECKPOINT.md`, `CONTEXT.md`), resolved in favor of the newer PR #22 canonical projections. The twelve remaining PR #19 files integrated without conflict.
+
+Exact local synthetic candidate `da4cba0ccb768e01afeb445678478fb3f39d30b0` passed `git diff --check`, full reachable-history secret policy, Markdown, YAML, state, consistency, 15/15 unit tests, Python syntax, shell syntax and `CANONICAL_VALIDATION_PASS` with a clean worktree before and after.
+
+Current verification verdict: `REPOSITORY_HYGIENE_REVALIDATION=PASS_AGAINST_PR22_CANONICAL_TOOLCHAIN`. See `revalidation-2026-08-23.md`.
