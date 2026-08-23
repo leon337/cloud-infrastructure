@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - team/f1-2c-kvm-gate-20260822
+  pull_request:
+    branches:
+      - team/f1-2c-network-recovery-20260822
 
 permissions:
   contents: read
