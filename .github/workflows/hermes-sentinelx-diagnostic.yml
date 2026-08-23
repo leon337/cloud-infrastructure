@@ -1,0 +1,62 @@
+name: hermes-sentinelx-diagnostic
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+
+      - name: Collect sanitized status
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/hermes-relay-bootstrap
+          out=artifacts/hermes-relay-bootstrap/status.txt
+          {
+            echo "UTC=$(date -u +%FT%TZ)"
+            echo "RUNNER_USER=$(id -un)"
+            echo "HOST=$(hostname)"
+            echo "SENTINELX_ACTIVE=$(systemctl is-active sentinelx-cloud-core 2>/dev/null || true)"
+            echo "SENTINELX_ENABLED=$(systemctl is-enabled sentinelx-cloud-core 2>/dev/null || true)"
+            if [[ -f /etc/sentinelx/identity.json ]]; then
+              echo "IDENTITY_PRESENT=yes"
+              stat -c 'IDENTITY_META=%U:%G mode=%a bytes=%s' /etc/sentinelx/identity.json
+            else
+              echo "IDENTITY_PRESENT=no"
+            fi
+            echo "SENTINELX_PROCESS=$(pgrep -af 'sentinelx-cloud-core.*--hub' | sed -E 's#--identity [^ ]+#--identity REDACTED#g; s#--config [^ ]+#--config REDACTED#g' | head -1 || true)"
+            hub_code=$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 8 https://mcp.sentinelx.app || true)
+            echo "HUB_HTTP=$hub_code"
+            echo "RELAY_SOCKET=$([[ -S /tmp/mcf-hermes-relay.sock ]] && echo yes || echo no)"
+            echo "RELAY_PROCESS=$(pgrep -af 'mcf-hermes-relay/relay.py' | head -1 || true)"
+            echo "RELAY_HAS_BOUNDED_HELLO=$([[ -f /home/ubuntu/.local/share/mcf-hermes-relay/relay.py ]] && grep -q 'hello_world_gui' /home/ubuntu/.local/share/mcf-hermes-relay/relay.py && echo yes || echo no)"
+            echo "HERMES_VERSION=$(/home/ubuntu/.local/bin/hermes --version 2>/dev/null | head -1 || true)"
+          } > "$out"
+          cat "$out"
+
+      - name: Persist sanitized evidence on isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'mcf-hermes-diagnostic'
+          git config user.email 'mcf-hermes-diagnostic@users.noreply.github.com'
+          git add artifacts/hermes-relay-bootstrap/status.txt
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'chore: record sanitized Hermes/SentinelX status [skip ci]'
+          git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
