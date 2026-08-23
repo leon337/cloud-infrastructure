@@ -23,6 +23,7 @@
       - g2b_service_home == '/nonexistent'
       - g2b_service_shell == '/usr/sbin/nologin'
       - g2b_entrypoint_path == '/usr/local/libexec/mcf-control-g2b'
+      - g2b_ssh_adapter_path == '/usr/local/libexec/mcf-control-g2b-ssh'
       - g2b_sudoers_path == '/etc/sudoers.d/mcf-control-g2b'
       - g2b_tmpfiles_path == '/etc/tmpfiles.d/mcf-control-bridge-g2b.conf'
       - g2b_grant_path == '/etc/mcf-control-bridge/g2b-grant.json'
@@ -367,6 +368,41 @@
       become_user: ubuntu
       changed_when: false
       check_mode: false
+
+    - name: Verify the fixed SSH adapter derives ubuntu and reaches the executor
+      ansible.builtin.command:
+        argv:
+          - /usr/local/libexec/mcf-control-g2b-ssh
+          - status
+        stdin: |-
+          {"protocol":"MCF_WORKSPACE_MUTATION_V1","request_id":"G2B-SSH-BOOTSTRAP-STATUS-CHECK","mission_id":"CONTROL-BRIDGE-G2B-PILOT","declared_actor":"MESTRE_MCF","project":{"tenant":"leon337","name":"g2a-smoke","environment":"dev"},"operation":"status","arguments":{}}
+        stdin_add_newline: true
+      become: true
+      become_user: ubuntu
+      register: g2b_ssh_status_probe
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Require a bounded identity-bound result from the SSH adapter
+      ansible.builtin.assert:
+        that:
+          - g2b_ssh_status_probe.rc == 0
+          - (g2b_ssh_status_probe.stdout | from_json).operation == 'status'
+          - >-
+            (g2b_ssh_status_probe.stdout |
+              from_json).transport_principal.login == 'ubuntu'
+          - >-
+            ((g2b_ssh_status_probe.stdout |
+              from_json).transport_principal.actor_id | int) > 0
+          - >-
+            (g2b_ssh_status_probe.stdout | from_json).status in
+            ['PASS', 'REFUSED']
+          - >-
+            (g2b_ssh_status_probe.stdout | from_json).status == 'PASS' or
+            (g2b_ssh_status_probe.stdout | from_json).error in
+              ['grant_missing', 'grant_not_active', 'grant_revoked',
+               'grant_principal_mismatch']
 
     - name: Verify the exact sudo status command reaches the executor as mcf-workspace
       ansible.builtin.command:

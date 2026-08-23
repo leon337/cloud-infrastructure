@@ -11,6 +11,21 @@
     - ../roles/control_bridge_g2b/vars/main.yml
 
   tasks:
+    - name: Select only an explicit reviewed G2-B transport profile
+      ansible.builtin.set_fact:
+        g2b_issue_transport_profile: >-
+          {{ g2b_grant_transport_profile | default('github-actions') }}
+
+    - name: Require an exact non-extensible transport profile
+      ansible.builtin.assert:
+        that:
+          - >-
+            g2b_issue_transport_profile in
+            ['github-actions', 'ssh-posix-ubuntu']
+        fail_msg: >-
+          Select only the legacy GitHub transport or the separate reviewed
+          POSIX ubuntu SSH transport profile.
+
     - name: Require all four explicit non-secret human grant inputs
       ansible.builtin.assert:
         that:
@@ -207,15 +222,70 @@
       register: g2b_issue_existing_revocation
       when: g2b_issue_existing_grant_state.stat.exists
 
-    - name: Refuse an active or revoked existing grant and any revoked ID reuse
+    - name: Require safe provenance for an existing revocation sentinel
+      ansible.builtin.assert:
+        that:
+          - g2b_issue_existing_revocation.stat.isreg | default(false)
+          - not (g2b_issue_existing_revocation.stat.islnk | default(false))
+          - g2b_issue_existing_revocation.stat.pw_name == g2b_service_account
+          - g2b_issue_existing_revocation.stat.gr_name == g2b_service_account
+          - g2b_issue_existing_revocation.stat.mode == '0600'
+        fail_msg: >-
+          An existing revocation must be the exact protected service-owned
+          regular sentinel before it can make a grant inactive for reissue.
+      when:
+        - g2b_issue_existing_grant_state.stat.exists
+        - g2b_issue_existing_revocation.stat.exists
+
+    - name: Read an existing revocation only after provenance validation
+      ansible.builtin.slurp:
+        src: >-
+          {{ g2b_state_path }}/revocations/{{
+             g2b_issue_existing_grant.grant_id | hash('sha256') }}.json
+      register: g2b_issue_existing_revocation_data
+      when:
+        - g2b_issue_existing_grant_state.stat.exists
+        - g2b_issue_existing_revocation.stat.exists
+
+    - name: Parse the validated existing revocation
+      ansible.builtin.set_fact:
+        g2b_issue_existing_revocation_value: >-
+          {{ g2b_issue_existing_revocation_data.content | b64decode | from_json }}
+      when:
+        - g2b_issue_existing_grant_state.stat.exists
+        - g2b_issue_existing_revocation.stat.exists
+
+    - name: Require exact irreversible revocation identity before reissue
+      ansible.builtin.assert:
+        that:
+          - g2b_issue_existing_revocation_value is mapping
+          - >-
+            (g2b_issue_existing_revocation_value.keys() | list | sort) ==
+            ['actor', 'grant_id', 'protocol', 'revoked_at']
+          - >-
+            g2b_issue_existing_revocation_value.protocol ==
+            'MCF_WORKSPACE_MUTATION_RESULT_V1'
+          - >-
+            g2b_issue_existing_revocation_value.grant_id ==
+            g2b_issue_existing_grant.grant_id
+          - g2b_issue_existing_revocation_value.actor == 'MESTRE_MCF'
+          - >-
+            g2b_issue_existing_revocation_value.revoked_at is
+            regex('^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]{1,6})?[+]00:00$')
+        fail_msg: >-
+          Existing revocation content does not prove an irreversible protocol
+          revocation for the currently installed grant.
+      when:
+        - g2b_issue_existing_grant_state.stat.exists
+        - g2b_issue_existing_revocation.stat.exists
+
+    - name: Refuse an active existing grant and any revoked ID reuse
       ansible.builtin.assert:
         that:
           - not g2b_issue_requested_revocation.stat.exists
           - >-
             not g2b_issue_existing_grant_state.stat.exists or
-            not g2b_issue_existing_revocation.stat.exists
-          - >-
-            not g2b_issue_existing_grant_state.stat.exists or
+            g2b_issue_existing_revocation.stat.exists or
             not (
               (g2b_issue_existing_grant.not_before |
                 to_datetime('%Y-%m-%dT%H:%M:%SZ')) <=
@@ -228,7 +298,51 @@
             )
         fail_msg: >-
           Refusing to extend an active grant or reuse an irreversible revoked
-          grant. Wait for expiry or choose a fresh explicit grant ID.
+          ID. Choose a fresh ID after revocation or expiry.
+
+    - name: Discover the canonical ubuntu POSIX account for the SSH profile
+      ansible.builtin.command:
+        argv: [getent, passwd, ubuntu]
+      register: g2b_ssh_principal_account
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: g2b_issue_transport_profile == 'ssh-posix-ubuntu'
+
+    - name: Discover the canonical ubuntu primary group for the SSH profile
+      ansible.builtin.command:
+        argv: [getent, group, ubuntu]
+      register: g2b_ssh_principal_group
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: g2b_issue_transport_profile == 'ssh-posix-ubuntu'
+
+    - name: Bind the SSH grant to the exact real non-root ubuntu identity
+      ansible.builtin.assert:
+        that:
+          - g2b_ssh_principal_account.rc == 0
+          - g2b_ssh_principal_account.stdout.split(':') | length == 7
+          - g2b_ssh_principal_account.stdout.split(':')[0] == 'ubuntu'
+          - >-
+            g2b_ssh_principal_account.stdout.split(':')[2] is
+            regex('^[1-9][0-9]{0,9}$')
+          - >-
+            (g2b_ssh_principal_account.stdout.split(':')[2] | int) <=
+            2147483647
+          - >-
+            g2b_ssh_principal_account.stdout.split(':')[3] is
+            regex('^[1-9][0-9]{0,9}$')
+          - g2b_ssh_principal_group.rc == 0
+          - g2b_ssh_principal_group.stdout.split(':') | length >= 3
+          - g2b_ssh_principal_group.stdout.split(':')[0] == 'ubuntu'
+          - >-
+            g2b_ssh_principal_group.stdout.split(':')[2] ==
+            g2b_ssh_principal_account.stdout.split(':')[3]
+        fail_msg: >-
+          The SSH grant requires the real canonical non-root ubuntu UID and
+          primary GID discovered on the preflight-verified NODE-01 target.
+      when: g2b_issue_transport_profile == 'ssh-posix-ubuntu'
 
     - name: Construct only the approved fixed pilot grant fields
       ansible.builtin.set_fact:
@@ -237,8 +351,13 @@
           grant_id: "{{ g2b_grant_id }}"
           enabled: true
           authority: LEANDRO
-          transport_principal_login: leon337
-          transport_principal_id: 25374535
+          transport_principal_login: >-
+            {{ 'ubuntu' if g2b_issue_transport_profile == 'ssh-posix-ubuntu'
+               else 'leon337' }}
+          transport_principal_id: >-
+            {{ (g2b_ssh_principal_account.stdout.split(':')[2] | int)
+               if g2b_issue_transport_profile == 'ssh-posix-ubuntu'
+               else 25374535 }}
           declared_actor: MESTRE_MCF
           mission_id: CONTROL-BRIDGE-G2B-PILOT
           project:
@@ -257,6 +376,21 @@
           not_before: "{{ g2b_grant_not_before }}"
           not_after: "{{ g2b_grant_not_after }}"
           executor_sha256: "{{ g2b_executor_sha256 }}"
+
+    - name: Require the constructed principal to match only its selected profile
+      ansible.builtin.assert:
+        that:
+          - >-
+            (
+              g2b_issue_transport_profile == 'github-actions' and
+              g2b_issue_grant_value.transport_principal_login == 'leon337' and
+              (g2b_issue_grant_value.transport_principal_id | int) == 25374535
+            ) or (
+              g2b_issue_transport_profile == 'ssh-posix-ubuntu' and
+              g2b_issue_grant_value.transport_principal_login == 'ubuntu' and
+              (g2b_issue_grant_value.transport_principal_id | int) ==
+              (g2b_ssh_principal_account.stdout.split(':')[2] | int)
+            )
 
     - name: Validate JSON before atomic root-owned grant rename
       ansible.builtin.copy:

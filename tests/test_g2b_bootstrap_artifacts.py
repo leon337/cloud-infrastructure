@@ -52,6 +52,7 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
             set(BUNDLE_SOURCES)
             | {
                 "platform/control-bridge/mcf-control-g2b",
+                "platform/control-bridge/mcf-control-g2b-ssh",
                 "platform/sudoers/mcf-control-g2b",
                 "platform/tmpfiles.d/mcf-control-bridge-g2b.conf",
                 "tests/fixtures/g2a/README.md",
@@ -72,6 +73,7 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
             }
             | {
                 "/usr/local/libexec/mcf-control-g2b",
+                "/usr/local/libexec/mcf-control-g2b-ssh",
                 "/etc/sudoers.d/mcf-control-g2b",
                 "/etc/tmpfiles.d/mcf-control-bridge-g2b.conf",
                 "/var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev/README.md",
@@ -121,10 +123,12 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
             "systemd-tmpfiles",
             "--create",
             "become_user: ubuntu",
+            "mcf-control-g2b-ssh",
             "sudo",
             "-n",
             "-u",
             "grant_missing",
+            "grant_principal_mismatch",
         ):
             self.assertIn(literal, text)
         self.assertNotIn("ansible.builtin.shell", text)

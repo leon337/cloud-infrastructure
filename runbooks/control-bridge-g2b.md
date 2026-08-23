@@ -2,9 +2,12 @@
 
 Status: **HUMAN GATE REQUIRED — do not run on NODE-01 without review**
 
-This runbook installs the reviewed G2-B bundle but keeps installation separate
-from delegated authority. The apply role never creates, renews, or replaces a
-grant. Only the grant playbook may do that, from four explicit human values.
+This runbook installs the reviewed G2-B bundle and the root-owned direct SSH
+adapter but keeps installation separate from delegated authority. The apply
+role never creates, renews, or replaces a grant. Only the selected GitHub or SSH
+grant playbook may do that, from four explicit human values. The transports use
+one mutually exclusive active pilot grant and the SSH identity contract is
+described in `runbooks/control-bridge-g2b-ssh.md`.
 
 ## Impact and non-goals
 

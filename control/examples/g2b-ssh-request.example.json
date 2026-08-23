@@ -1,0 +1,13 @@
+{
+  "protocol": "MCF_WORKSPACE_MUTATION_V1",
+  "request_id": "G2B-SSH-EXAMPLE-REPLACE-0001",
+  "mission_id": "CONTROL-BRIDGE-G2B-PILOT",
+  "declared_actor": "MESTRE_MCF",
+  "project": {
+    "tenant": "leon337",
+    "name": "g2a-smoke",
+    "environment": "dev"
+  },
+  "operation": "status",
+  "arguments": {}
+}
