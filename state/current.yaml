@@ -2,13 +2,13 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: team/canonical-state-toolchain-20260822
-updated_at: "2026-08-22T22:24:00-03:00"
-state_classification: CURRENT_RECONCILED_CANDIDATE
+updated_at: "2026-08-23T02:00:00-03:00"
+state_classification: CURRENT_RECONCILED_CANDIDATE_BLOCKED_BY_HISTORICAL_HYGIENE
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 continuity:
   historical_validations_preserved: true
-  current_state_independent_validation: PENDING_CANONICAL_TOOLCHAIN_VALIDATION
+  current_state_independent_validation: PASS_TARGETED_WITH_HISTORICAL_SECRET_GATE_BLOCKER
   canonical_entrypoint: CONTEXT.md
   checkpoint: CHECKPOINT.md
   validation_entrypoint: scripts/test.sh
@@ -30,6 +30,9 @@ source_snapshot:
   executable_evidence:
     node01_read_only_audit_run: 32577551012
     g2b_attempt3_read_only_audit_run: 32577815107
+    canonical_maintenance_proof_run: 32610484209
+    canonical_maintenance_proof_job: 97122604465
+    hosted_canonical_latest_run: 32618609069
   open_fronts:
     repository_hygiene_pr: 19
     f1_2c_recovery_pr: 20
@@ -48,7 +51,7 @@ project:
     platform_s0: COMPLETE
     platform_f1_1: COMPLETE
     platform_f1_2b: COMPLETE
-  next_exact_step: EXECUTE_HOSTED_CANONICAL_CI_AND_MAINTENANCE_PROOF_THEN_REVALIDATE_HYGIENE
+  next_exact_step: CLASSIFY_OR_REMEDIATE_9_HISTORICAL_CREDENTIAL_URI_FINDINGS_BEFORE_MERGE
 
 execution:
   authority: LEANDRO
@@ -127,9 +130,12 @@ repository_hygiene:
   status: REPOSITORY_HYGIENE_BLOCKED
   pr: 19
   blockers:
-    canonical_state: CANDIDATE_RECONCILED_PENDING_VALIDATION
-    canonical_toolchain: CANDIDATE_RESTORED_PENDING_VALIDATION
-  unblock_condition: CANONICAL_TOOLCHAIN_EXECUTED_AND_HYGIENE_FINDINGS_RESOLVED
+    canonical_state: RECONCILED_WITH_TARGETED_EXECUTABLE_EVIDENCE
+    canonical_toolchain: CANONICAL_BUT_FULL_SUITE_BLOCKED_BY_PREEXISTING_HISTORY
+    historical_credential_uri_findings: 9
+    historical_findings_classification: INCOMPLETE
+  attribution: PREEXISTING_NOT_INTRODUCED_BY_STATE_TOOLCHAIN_EXTRACTION
+  unblock_condition: CLASSIFY_OR_REMEDIATE_9_HISTORICAL_CREDENTIAL_URI_FINDINGS_AND_RERUN_CANONICAL_SUITE
 
 toolchain:
   canonical_entrypoint: scripts/test.sh
@@ -138,16 +144,29 @@ toolchain:
     branch: codex/mission-001-foundations-f1-1
     pull_request: 2
   package: CANONICAL_MAINLINE_NEUTRAL_V2
-  validation_status: PENDING
+  validation_status: BLOCKED_PREEXISTING_HISTORICAL_SECURITY_DEBT
   canonical_ci:
     workflow: .github/workflows/canonical-validation.yml
     runner: ubuntu-24.04
     python: "3.12"
     dependency_lock: requirements-dev.lock
+    latest_observed_run: 32618609069
+    latest_observed_status: EXTERNAL_PRE_STEP_FAILURE_BLOB_NOT_FOUND
   maintenance_proof:
     workflow: .github/workflows/canonical-validation-maintenance-proof.yml
     runner: NODE01_SELF_HOSTED_UNPRIVILEGED
     scope: STATE_TOOLCHAIN_MAINTENANCE_BRANCHES_ONLY
+    executed_run: 32610484209
+    executed_job: 97122604465
+    unprivileged_boundary: PASS
+    git_diff_check: PASS
+    targeted_state_consistency: PASS
+    unit_tests: 12_OF_12_PASS
+    canonical_suite: FAIL_PREEXISTING_HISTORICAL_SECRET_POLICY
+    historical_credential_uri_findings: 9
+  workflow_owned_pycache_defect:
+    status: FIXED
+    commit: 84d1d23ff32ee1577958da9d754179eeb217ddb9
   generic_contract_preserved:
     repository_secret_history_scan: true
     markdown_local_links: true
@@ -179,10 +198,14 @@ authorization:
   production_promotion: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   g2b_real_write: NOT_AUTHORIZED
   f1_2c_node01_reapply: NOT_AUTHORIZED
+  destructive_history_remediation: NOT_AUTHORIZED
 
 secrets_policy:
   current_tree_scan: true
   reachable_git_history_scan: true
+  historical_credential_uri_findings: 9
+  finding_values_exposed: false
+  allowlist_added_for_findings: false
   never_version:
     - passwords
     - passphrases
