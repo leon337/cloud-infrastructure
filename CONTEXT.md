@@ -24,58 +24,59 @@ Nunca transforme estado desejado em estado observado.
 | Painel executivo | `README.md` |
 | Decisões Platform Discovery Q1–Q40 | `state/platform-discovery.yaml` |
 | Contrato de execução histórico/vinculante | `docs/CODEX-EXECUTION-MISSION-001.md` |
-| Validação canônica do repositório | `scripts/test.sh` |
+| Validação canônica do repositório | `scripts/test.sh` + `.github/workflows/canonical-validation.yml` |
 
 ## Estado reconciliado em 22/08/2026
 
-`main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b` está em `DOCUMENTATION_AND_INTEGRATION_DRIFT`: o README consolidou evidência posterior às antigas projeções de `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml`.
+`main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b` está em `DOCUMENTATION_AND_INTEGRATION_DRIFT`.
 
 Fatos que não podem ser promovidos além da evidência:
 
 - S0, F1.1 e F1.2b: concluídos conforme a reconciliação integrada;
-- F1.2c: `REQUIRES_REVIEW`; existe recovery candidate com validação estática verde, mas a aceitação KVM continua não executada por falha externa pré-step do runner e NODE-01 não recebeu reapply;
+- F1.2c: `REQUIRES_REVIEW`; recovery candidate estático verde, mas KVM acceptance não executado e NODE-01 sem reapply;
 - Control Bridge G1: `PASS_REAL_NODE_01_ROUNDTRIP`;
 - Control Bridge G2-A: `PASS_REAL_NODE_01_READ_ONLY`;
 - G2-B Tasks 1–7: `COMPLETE`;
-- G2-B Task 8: último resultado terminal comprovado `FAILED_ATTEMPT_3_NOT_ACCEPTED`; a causa do `exit=2` continua `NOT_VERIFIED` e há uma reprodução diagnóstica isolada `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
+- G2-B Task 8: último terminal comprovado `FAILED_ATTEMPT_3_NOT_ACCEPTED`; causa `NOT_VERIFIED`; diagnóstico isolado `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
 - G2-B Tasks 9–10: `NOT_STARTED`;
 - produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`;
-- Repository Hygiene: `REPOSITORY_HYGIENE_BLOCKED` até state + toolchain canônicos terem evidência executável e os próprios gates de higiene serem satisfeitos.
+- Repository Hygiene: `REPOSITORY_HYGIENE_BLOCKED` até state/toolchain executarem e os blockers reais de higiene serem tratados.
 
 ## Toolchain canônica
 
-`scripts/test.sh` é o entrypoint canônico, preservando o contrato estabelecido originalmente na lineage F1.1. A implementação atual é uma extração mainline-neutral: valida somente contratos que pertencem ao `main` atual e não importa implementação funcional de G2-B ou F1.2c.
-
-A suíte preserva os gates genéricos separáveis do contrato original:
+`scripts/test.sh` é o entrypoint canônico. A extração mainline-neutral preserva os gates genéricos separáveis do contrato F1.1:
 
 - `git diff --check` contra a base de integração;
-- secret policy na árvore atual **e em todos os blobs Git alcançáveis**;
+- secret policy na árvore atual e em todos os blobs Git alcançáveis;
 - links Markdown locais;
 - YAML estrito com rejeição de chaves duplicadas;
 - invariantes de `state/current.yaml`;
-- consistência entre README, CONTEXT, CHECKPOINT e state;
-- testes unitários do contrato;
-- sintaxe Python e shell;
-- ShellCheck obrigatório no CI.
+- consistência README/CONTEXT/CHECKPOINT/state;
+- testes unitários;
+- sintaxe Python/shell;
+- ShellCheck.
 
-O validador de manifests F1.1 não foi importado porque depende de schemas/manifests da implementação da plataforma. A toolchain neutra não enfraquece o secret gate para fabricar um resultado verde: se o histórico do repositório violar a política, a suíte deve falhar e entregar esse blocker à Repository Hygiene.
+O executor canônico de integração também preserva o boundary F1.1: GitHub-hosted `ubuntu-24.04`, Python 3.12 e dependências lockadas em `requirements-dev.lock`. O lock neutro contém somente `PyYAML==6.0.3`, pois dependências F1.1 acopladas a Ansible/manifests não pertencem a esta extração.
+
+`.github/workflows/canonical-validation-maintenance-proof.yml` é uma prova alternativa restrita às branches `team/canonical-state-toolchain-*` ou disparo manual. Ela usa NODE-01 somente como executor não privilegiado e recusa passwordless sudo ou Docker socket gravável. Não substitui o CI hospedado canônico.
+
+`validate_manifests.py` não é importado porque depende de schemas/manifests da implementação F1.1. A toolchain neutra não enfraquece o secret gate para fabricar resultado verde.
 
 ## Modelo de missão ativa
 
-`state/active-mission.yaml` não faz parte do pacote mainline-neutral neste checkpoint. O arquivo recuperado surgiu na continuidade G2-B e modela uma missão ativa única, enquanto o projeto possui frentes isoladas paralelas. Adotá-lo agora exigiria inventar governança não formalizada.
+`state/active-mission.yaml` permanece `NOT_ADOPTED`: sua lineage G2-B modela uma missão ativa única, enquanto o projeto possui frentes isoladas paralelas.
 
-`ROADMAP-CHECKLIST.md` também não é promovido: sua origem comprovada é um checkpoint específico da Task 8 G2-B. O `README.md` permanece a projeção executiva.
+`ROADMAP-CHECKLIST.md` permanece `NOT_ADOPTED`: sua origem comprovada é um checkpoint específico da Task 8 G2-B. `README.md` permanece a projeção executiva.
 
 ## Guardrails
 
 - LEANDRO é autoridade humana final.
 - MESTRE orquestra a missão.
-- nenhuma conclusão desta reconciliação autoriza merge final, produção ou escrita real G2-B;
-- nenhuma conclusão autoriza reapply F1.2c no NODE-01;
+- nenhuma conclusão autoriza merge final, produção, escrita real G2-B ou reapply F1.2c;
 - nenhuma operação privilegiada no NODE-01 pertence a esta frente;
 - branches G2-B/F1.2c permanecem isoladas;
 - secrets nunca são versionados.
 
 ## Próximo passo exato
 
-**EXECUTE_HARDENED_CANONICAL_VALIDATION_THEN_HANDOFF_REPOSITORY_HYGIENE_RESULTS**.
+**EXECUTE_HOSTED_CANONICAL_CI_AND_MAINTENANCE_PROOF_THEN_HANDOFF_HYGIENE_FINDINGS**.

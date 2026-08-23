@@ -1,5 +1,5 @@
 protocol_version: CLOUD_INFRA_CANONICAL_STATE_TOOLCHAIN_RECONCILIATION_V2
-updated_at: "2026-08-22T22:20:00-03:00"
+updated_at: "2026-08-22T22:24:00-03:00"
 repository: leon337/cloud-infrastructure
 mission:
   id: CANONICAL_STATE_TOOLCHAIN_RECONCILIATION
@@ -7,7 +7,6 @@ mission:
   orchestrator: MESTRE_MCF
   status: VALIDATION_IN_PROGRESS
   investigation_conclusion_class: C
-  investigation_conclusion: CURRENT_MODEL_REQUIRED_GOVERNANCE_INTEGRATION_DECISION
   human_gate_resolution: AUTHORIZE_MAINLINE_NEUTRAL_EXTRACTION
 branch:
   name: team/canonical-state-toolchain-20260822
@@ -17,11 +16,6 @@ branch:
 canonical_state:
   verdict: RECONCILED_CANDIDATE_SERIALIZED_PENDING_EXECUTABLE_VALIDATION
   path: state/current.yaml
-  evidence:
-    main_reconciliation_pr: 18
-    main_sha: f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b
-    node01_read_only_run: 32577551012
-    g2b_attempt3_terminal_run: 32577815107
   nonpromotion_invariants:
     g2b_task_8: FAILED_ATTEMPT_3_NOT_ACCEPTED
     g2b_root_cause: NOT_VERIFIED
@@ -36,7 +30,15 @@ toolchain:
     pull_request: 2
     workflow: .github/workflows/foundation-ci.yml
   package: CANONICAL_MAINLINE_NEUTRAL_V2
-  status: HARDENED_PENDING_EXECUTABLE_VALIDATION
+  canonical_integration_executor:
+    workflow: .github/workflows/canonical-validation.yml
+    runner: ubuntu-24.04
+    python: "3.12"
+    dependency_lock: requirements-dev.lock
+  maintenance_proof_executor:
+    workflow: .github/workflows/canonical-validation-maintenance-proof.yml
+    runner: NODE01_SELF_HOSTED_UNPRIVILEGED
+    scope: STATE_TOOLCHAIN_MAINTENANCE_ONLY
   preserved_generic_contracts:
     repository_secret_history_scan: true
     markdown_local_links: true
@@ -50,31 +52,23 @@ continuity_model:
   state_active_mission:
     status: NOT_ADOPTED
     introduced_by_commit: 5717defcf59e6a4cb664119f74227d7f5dee812a
-    lineage: G2B_CONTINUITY_RECOVERY
-    reason: SINGLE_ACTIVE_MISSION_MODEL_NOT_PROVEN_FOR_PARALLEL_MAINLINE_FRONTS
   roadmap_checklist:
     status: NOT_ADOPTED
     introduced_by_commit: 48146d3ed6a7d28215b9d34f3954673054738d0a
-    lineage: G2B_TASK8_CHECKPOINT
-    reason: G2B_TASK8_SPECIFIC_SURFACE_NOT_MAINLINE_NEUTRAL
 validation:
   first_neutral_candidate:
     sha: 55cbbf0be25daa9fef5ca4ac231f6bd4f74c8ea6
     workflow_run: 32609819790
     job: 97120890824
-    exact_sha_checkout: PASS
-    unprivileged_boundary: PASS
-    pinned_shellcheck: PASS
-    workspace_clean: PASS
     canonical_suite: FAIL
     failure_class: REAL_CONTENT_FAILURE_TRAILING_WHITESPACE
-    git_diff_check: FAIL_FOUR_TRAILING_WHITESPACE_FINDINGS
-    later_suite_stages: NOT_EXECUTED_FAIL_FAST
-  audit_after_first_run:
-    finding: INITIAL_NEUTRAL_SECRET_SCANNER_WAS_WEAKER_THAN_PROVEN_CANONICAL_CONTRACT
-    resolution: RESTORE_GENERIC_HISTORY_SECRET_SCAN_MARKDOWN_LINKS_AND_STRICT_YAML
+  canonicity_audit:
+    restored_history_secret_scan: true
+    restored_markdown_links: true
+    restored_strict_yaml: true
+    restored_hosted_ci_boundary: true
     weakening_to_force_green: FORBIDDEN
-  current_status: HARDENED_CANDIDATE_RERUN_REQUIRED
+  current_status: HOSTED_CANONICAL_AND_MAINTENANCE_PROOF_EXECUTION_REQUIRED
 boundaries:
   protected_branches_modified: false
   node_01_privileged_operations: false
@@ -82,4 +76,3 @@ boundaries:
   branch_deletion_performed: false
 repository_hygiene:
   current_verdict: BLOCKED_PENDING_CANONICAL_EXECUTION_AND_REAL_HYGIENE_FINDINGS
-  rule: CANONICAL_TOOLCHAIN_MUST_NOT_BE_WEAKENED_TO_HIDE_HISTORY_FINDINGS

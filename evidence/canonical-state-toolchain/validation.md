@@ -5,15 +5,9 @@ Branch: `team/canonical-state-toolchain-20260822`
 Base: `main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b`
 PR: #22 (draft / do not merge)
 
-## First neutral candidate
+## Executed candidate 55cbbf0b
 
-```text
-SHA=55cbbf0be25daa9fef5ca4ac231f6bd4f74c8ea6
-WORKFLOW_RUN=32609819790
-JOB=97120890824
-```
-
-Executed results:
+Run `32609819790`, job `97120890824`:
 
 ```text
 EXACT_SHA_CHECKOUT=PASS
@@ -24,40 +18,48 @@ CANONICAL_SUITE=FAIL
 GIT_DIFF_CHECK=FAIL_FOUR_TRAILING_WHITESPACE_FINDINGS
 ```
 
-The four findings belonged to this mission's own report/evidence Markdown. Later suite stages were not executed because the entrypoint fails fast.
+Those four findings were owned by this front and were corrected.
 
-## Canonicity audit after the first run
+## Canonicity hardening
 
-Review against the proven F1.1 contract found that the first extracted secret scanner was weaker than the canonical generic gate: it scanned only current tracked files, while the original scanner also inspects reachable Git-history blobs and forbidden secret-bearing paths.
+Audit against the proven F1.1 lineage restored:
 
-Generic contracts additionally proven separable:
+- reachable-history secret scanning;
+- local Markdown links;
+- strict YAML duplicate-key rejection;
+- the GitHub-hosted `ubuntu-24.04` integration executor;
+- Python 3.12 + locked neutral PyYAML dependency.
 
-- `scripts/check_repository_secrets.py`: current repository + reachable Git history;
-- `scripts/check_markdown_links.py`: local Markdown targets;
-- `scripts/yaml_strict.py` + `scripts/validate_yaml.py`: duplicate-key rejection.
+`validate_manifests.py` stays excluded as F1.1 implementation-coupled.
 
-`validate_manifests.py` is intentionally excluded because it depends on F1.1 platform schemas/manifests.
+## Execution model
 
-Audit verdict:
-
-`HARDEN_TOOLCHAIN_BEFORE_ACCEPTANCE`.
-
-## Hardened candidate rule
-
-The next exact-head run must use the hardened neutral package. Repository-history findings are not to be allowlisted, skipped or converted to PASS merely to unblock hygiene. If a historical secret-policy finding is reproduced, it becomes explicit input to Repository Hygiene.
-
-## Boundary verification
-
-GitHub compare against `main` contains only state/toolchain/workflow/tests/docs/evidence surfaces. Functional G2-B/F1.2c implementation paths are outside the diff.
-
-Current status:
+Canonical required CI:
 
 ```text
-CANONICAL_ENTRYPOINT=RESTORED_EXECUTABLE
-GENERIC_SECRET_HISTORY_GATE=PRESERVED
-MARKDOWN_LINK_GATE=PRESERVED
-STRICT_YAML_GATE=PRESERVED
-F1_1_MANIFEST_VALIDATOR=EXCLUDED_AS_COUPLED
-FINAL_EXACT_HEAD_EXECUTION=REQUIRED
-OVERALL=VALIDATION_IN_PROGRESS
+WORKFLOW=.github/workflows/canonical-validation.yml
+RUNNER=ubuntu-24.04
+PYTHON=3.12
+LOCK=requirements-dev.lock
 ```
+
+Maintenance proof:
+
+```text
+WORKFLOW=.github/workflows/canonical-validation-maintenance-proof.yml
+RUNNER=NODE01_SELF_HOSTED_UNPRIVILEGED
+SCOPE=team/canonical-state-toolchain-* OR manual dispatch
+```
+
+The maintenance proof does not replace the hosted CI path and must not preempt G2-B work occupying NODE-01.
+
+## Current gate
+
+Fresh exact-head execution is required. Interpret outcomes as follows:
+
+- extraction-owned failure -> fix and rerun;
+- historical `SECRET_POLICY_FAIL` -> Repository Hygiene blocker;
+- hosted pre-step failure -> external execution blocker;
+- NODE-01 proof queued behind G2-B -> wait for executor availability without interference.
+
+Current state: `VALIDATION_IN_PROGRESS`.

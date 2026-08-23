@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: team/canonical-state-toolchain-20260822
-updated_at: "2026-08-22T22:20:00-03:00"
+updated_at: "2026-08-22T22:24:00-03:00"
 state_classification: CURRENT_RECONCILED_CANDIDATE
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
@@ -48,7 +48,7 @@ project:
     platform_s0: COMPLETE
     platform_f1_1: COMPLETE
     platform_f1_2b: COMPLETE
-  next_exact_step: EXECUTE_HARDENED_CANONICAL_VALIDATION_THEN_REVALIDATE_REPOSITORY_HYGIENE
+  next_exact_step: EXECUTE_HOSTED_CANONICAL_CI_AND_MAINTENANCE_PROOF_THEN_REVALIDATE_HYGIENE
 
 execution:
   authority: LEANDRO
@@ -92,7 +92,7 @@ control_bridge:
       diagnostic_last_observed_head: 924382dd4b4fc802f0475dbef6f4749b0d4d20fa
       diagnostic_status: IN_PROGRESS_DIAGNOSTIC_REPRODUCTION
       root_cause: NOT_VERIFIED
-      functional_correction: NONE_REPORTED_AS_OF_LAST_LIVE_PR_READ
+      functional_correction: READ_GITHUB_LIVE
     tasks_9_10: NOT_STARTED
     merge_status: NOT_ELIGIBLE
 
@@ -139,6 +139,15 @@ toolchain:
     pull_request: 2
   package: CANONICAL_MAINLINE_NEUTRAL_V2
   validation_status: PENDING
+  canonical_ci:
+    workflow: .github/workflows/canonical-validation.yml
+    runner: ubuntu-24.04
+    python: "3.12"
+    dependency_lock: requirements-dev.lock
+  maintenance_proof:
+    workflow: .github/workflows/canonical-validation-maintenance-proof.yml
+    runner: NODE01_SELF_HOSTED_UNPRIVILEGED
+    scope: STATE_TOOLCHAIN_MAINTENANCE_BRANCHES_ONLY
   generic_contract_preserved:
     repository_secret_history_scan: true
     markdown_local_links: true
