@@ -1,11 +1,11 @@
 protocol_version: CLOUD_INFRA_CANONICAL_STATE_TOOLCHAIN_RECONCILIATION_V2
-updated_at: "2026-08-22T22:24:00-03:00"
+updated_at: "2026-08-23T02:00:00-03:00"
 repository: leon337/cloud-infrastructure
 mission:
   id: CANONICAL_STATE_TOOLCHAIN_RECONCILIATION
   authority: LEANDRO
   orchestrator: MESTRE_MCF
-  status: VALIDATION_IN_PROGRESS
+  status: CONCLUDED_WITH_VERIFIED_HISTORICAL_HYGIENE_BLOCKER
   investigation_conclusion_class: C
   human_gate_resolution: AUTHORIZE_MAINLINE_NEUTRAL_EXTRACTION
 branch:
@@ -14,7 +14,7 @@ branch:
   base_sha: f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b
   pull_request: 22
 canonical_state:
-  verdict: RECONCILED_CANDIDATE_SERIALIZED_PENDING_EXECUTABLE_VALIDATION
+  verdict: RECONCILED_WITH_EXECUTABLE_TARGETED_EVIDENCE
   path: state/current.yaml
   nonpromotion_invariants:
     g2b_task_8: FAILED_ATTEMPT_3_NOT_ACCEPTED
@@ -35,10 +35,14 @@ toolchain:
     runner: ubuntu-24.04
     python: "3.12"
     dependency_lock: requirements-dev.lock
+    latest_observed_run: 32618609069
+    latest_observed_status: EXTERNAL_PRE_STEP_FAILURE_BLOB_NOT_FOUND
   maintenance_proof_executor:
     workflow: .github/workflows/canonical-validation-maintenance-proof.yml
     runner: NODE01_SELF_HOSTED_UNPRIVILEGED
     scope: STATE_TOOLCHAIN_MAINTENANCE_ONLY
+    executed_run: 32610484209
+    executed_job: 97122604465
   preserved_generic_contracts:
     repository_secret_history_scan: true
     markdown_local_links: true
@@ -62,17 +66,34 @@ validation:
     job: 97120890824
     canonical_suite: FAIL
     failure_class: REAL_CONTENT_FAILURE_TRAILING_WHITESPACE
+  executed_candidate:
+    sha: 8d5353eb1d8550d849f81866b54266a4f5afc862
+    workflow_run: 32610484209
+    job: 97122604465
+    git_diff_check: PASS
+    unprivileged_boundary: PASS
+    targeted_state_consistency: PASS
+    unit_tests: 12_OF_12_PASS
+    canonical_suite: FAIL
+    canonical_suite_failure_class: PREEXISTING_HISTORICAL_SECRET_POLICY
+    historical_credential_uri_findings: 9
+  workflow_owned_pycache_defect:
+    status: FIXED
+    commit: 84d1d23ff32ee1577958da9d754179eeb217ddb9
   canonicity_audit:
     restored_history_secret_scan: true
     restored_markdown_links: true
     restored_strict_yaml: true
     restored_hosted_ci_boundary: true
     weakening_to_force_green: FORBIDDEN
-  current_status: HOSTED_CANONICAL_AND_MAINTENANCE_PROOF_EXECUTION_REQUIRED
+  current_status: BLOCKED_PREEXISTING_HISTORICAL_SECURITY_DEBT
 boundaries:
   protected_branches_modified: false
   node_01_privileged_operations: false
   production_promoted: false
   branch_deletion_performed: false
 repository_hygiene:
-  current_verdict: BLOCKED_PENDING_CANONICAL_EXECUTION_AND_REAL_HYGIENE_FINDINGS
+  current_verdict: BLOCKED_9_HISTORICAL_CREDENTIAL_URI_FINDINGS
+  attribution: PREEXISTING_NOT_INTRODUCED_BY_STATE_TOOLCHAIN_EXTRACTION
+  classification_complete: false
+  destructive_history_remediation_authorized: false
