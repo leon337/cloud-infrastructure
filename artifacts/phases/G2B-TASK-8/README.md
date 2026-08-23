@@ -1,6 +1,6 @@
 # PRF — G2-B Task 8
 
-Estado: `BLOCKED`
+Estado: `PASS_TECHNICAL_READY_FOR_CENTRAL_AUDIT`
 
 Este diretório contém o pacote de rastreabilidade da frente isolada G2-B Task 8.
 
@@ -15,15 +15,19 @@ Ordem recomendada:
 8. `MISSION-TRACE.md`
 9. `PHASE-G2B-TASK-8-ARTIFACT-MANIFEST.sha256`
 
-Evidência histórica específica da tentativa 3:
+Evidência histórica:
 - `evidence/CONTROL-BRIDGE-G2B/TASK-8-ATTEMPT-3.md`
+- `evidence/CONTROL-BRIDGE-G2B/TASK-8-FINALIZATION-20260823.md`
 
-Resultado:
-- tentativa 3 preservada e reconstruída até o boundary de processo;
-- causa raiz funcional `NÃO VERIFICADA`;
-- nenhuma alteração funcional;
-- nenhuma escrita G2-B real no NODE-01;
+Resultado técnico:
+- candidato funcional validado: `ac3e2f8a52b881bcd2b40acab0d723d547b90e81`;
+- 373/373 unit tests PASS;
+- 9/9 Ansible syntax PASS;
+- lifecycle descartável exit 0;
+- 13/13 marcadores obrigatórios, uma vez cada, em ordem;
+- bounded cleanup PASS;
+- nenhum write G2-B real no NODE-01;
 - Tasks 9/10 não iniciadas;
-- integração final não realizada.
+- merge final não executado.
 
-A próxima execução deve partir de GitHub vivo e verificar o estado da VM descartável antes de qualquer cleanup ou nova reprodução.
+GitHub-hosted CI está bloqueado antes da execução por billing/spending limit da conta. Os jobs afetados têm runner_id=0 e steps=[]; isso não é classificado como falha funcional do candidato.
