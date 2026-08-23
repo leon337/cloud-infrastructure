@@ -1,0 +1,141 @@
+name: g2b-task8-reproduce-diagnostic
+
+on:
+  push:
+    branches:
+      - team/g2b-task8-20260822
+    paths:
+      - .github/workflows/g2b-task8-reproduce-diagnostic.yml
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  reproduce:
+    if: github.actor == 'leon337'
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 90
+    steps:
+      - name: Reproduce inside preserved disposable VM with full Ansible output
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          echo 'G2B_TASK8_REPRO_DIAG_V1'
+          candidate='fbef3d407dbd9b7947b6c100a63d098eaebe2b6a'
+          qemu_pid="$(pgrep -f 'qemu-system-x86_64.*g2b-disposable-task8-vm3' | head -1 || true)"
+          if [[ -z "$qemu_pid" ]]; then
+            report=$'G2B_TASK8_REPRO_DIAG_V1\nRESULT=BLOCKED\nCAUSE=preserved_qemu_absent\nNO_G2B_NODE01_WRITE=PASS'
+            python3 - "$report" <<'PY'
+          import json, os, sys, urllib.request
+          body = "## G2-B Task 8 reproduction diagnostic\n\n```text\n" + sys.argv[1] + "\n```"
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['REPOSITORY']}/issues/21/comments",
+              data=json.dumps({'body': body}).encode(),
+              headers={'Authorization': f"Bearer {os.environ['GITHUB_TOKEN']}", 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json'},
+              method='POST',
+          )
+          with urllib.request.urlopen(req, timeout=20) as resp: print(resp.status)
+          PY
+            exit 2
+          fi
+
+          cmdline="$(tr '\0' ' ' <"/proc/$qemu_pid/cmdline")"
+          workdir="$(sed -nE 's#.*-pidfile (/tmp/g2b-task8-vm3\.[^ /]+/qemu\.pid).*#\1#p' <<<"$cmdline" | xargs -r dirname)"
+          [[ -n "$workdir" && "$workdir" == /tmp/g2b-task8-vm3.* ]] || { echo 'safe_workdir=INVALID'; exit 3; }
+          key="$workdir/id_ed25519"
+          archive="$workdir/candidate.tar.gz"
+          [[ -f "$key" && "$(stat -c '%a' "$key")" == 600 ]] || { echo 'identity_file=INVALID'; exit 4; }
+          [[ -f "$archive" ]] || { echo 'candidate_archive=ABSENT'; exit 5; }
+
+          echo "attempt3_qemu=ALIVE pid=$qemu_pid"
+          echo "candidate_archive_sha256=$(sha256sum "$archive" | awk '{print $1}')"
+          ssh_opts=(-i "$key" -p 22284 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5)
+          remote_archive="/tmp/g2b-task8-repro-${GITHUB_RUN_ID}.tar.gz"
+          scp "${ssh_opts[@]}" "$archive" "ubuntu@127.0.0.1:$remote_archive" >/dev/null
+
+          set +e
+          ssh "${ssh_opts[@]}" ubuntu@127.0.0.1 /bin/bash -s -- "$candidate" "$remote_archive" <<'GUEST'
+          set -Eeuo pipefail
+          candidate="$1"
+          archive="$2"
+          diag_root="$(mktemp -d /tmp/g2b-task8-repro.XXXXXXXX)"
+          trap 'rm -f -- "$archive"' EXIT
+          tar -xzf "$archive" -C "$diag_root"
+          harness="$(find "$diag_root" -maxdepth 5 -type f -path '*/scripts/test_control_bridge_g2b_vm.sh' -print -quit)"
+          [[ -n "$harness" ]] || { echo 'REPRO_HARNESS_NOT_FOUND'; exit 6; }
+          repo_root="$(cd "$(dirname "$harness")/.." && pwd)"
+          cd "$repo_root"
+
+          python3 - "$harness" <<'PY'
+          import pathlib, sys
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text(encoding='utf-8')
+          old = """CURRENT_STAGE=apply_g2b
+          run_playbook playbooks/apply-control-bridge-g2b.yml >/dev/null
+          run_playbook playbooks/apply-control-bridge-g2b.yml >/dev/null
+          """
+          new = """CURRENT_STAGE=apply_g2b
+          printf '%s\\n' 'G2B_DIAG_APPLY_INVOCATION=1'
+          run_playbook playbooks/apply-control-bridge-g2b.yml
+          printf '%s\\n' 'G2B_DIAG_APPLY_INVOCATION_1=PASS'
+          printf '%s\\n' 'G2B_DIAG_APPLY_INVOCATION=2'
+          run_playbook playbooks/apply-control-bridge-g2b.yml
+          printf '%s\\n' 'G2B_DIAG_APPLY_INVOCATION_2=PASS'
+          """
+          if text.count(old) != 1:
+              raise SystemExit('REPRO_APPLY_BLOCK_MATCH_FAILED')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
+          echo "REPRO_ROOT=$diag_root"
+          echo "REPRO_CANDIDATE=$candidate"
+          echo 'REPRO_NODE01_G2B_WRITE=NOT_EXECUTED'
+          set +e
+          G2B_TEST_PRIVILEGED_CONFIRM=DISPOSABLE_UBUNTU_24_04_ONLY \
+          G2B_CANDIDATE_SHA="$candidate" \
+          "$harness" 2>&1 | tee /home/ubuntu/g2b-task8-repro.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$rc" > /home/ubuntu/g2b-task8-repro.status
+          echo "G2B_TASK8_REPRO_EXIT=$rc"
+          exit "$rc"
+          GUEST
+          rc=$?
+          set -e
+
+          report="$(ssh "${ssh_opts[@]}" ubuntu@127.0.0.1 /bin/bash -s <<'GUEST'
+          set -u
+          echo 'G2B_TASK8_REPRO_DIAG_V1'
+          printf 'REPRO_STATUS='; cat /home/ubuntu/g2b-task8-repro.status 2>/dev/null || echo ABSENT
+          echo 'REPRO_LOG_TAIL_BEGIN'
+          if test -f /home/ubuntu/g2b-task8-repro.log; then
+            tail -n 500 /home/ubuntu/g2b-task8-repro.log
+          else
+            echo REPRO_LOG_ABSENT
+          fi
+          echo 'REPRO_LOG_TAIL_END'
+          echo 'NO_G2B_NODE01_WRITE=PASS'
+          GUEST
+          )"
+          printf '%s\n' "$report"
+
+          python3 - "$report" <<'PY'
+          import json, os, sys, urllib.request
+          report = sys.argv[1]
+          if len(report) > 55000:
+              report = report[-55000:]
+          body = "## G2-B Task 8 reproduction diagnostic\n\n```text\n" + report + "\n```"
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['REPOSITORY']}/issues/21/comments",
+              data=json.dumps({'body': body}).encode(),
+              headers={'Authorization': f"Bearer {os.environ['GITHUB_TOKEN']}", 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json'},
+              method='POST',
+          )
+          with urllib.request.urlopen(req, timeout=20) as resp: print(f'comment_status={resp.status}')
+          PY
+
+          exit "$rc"
