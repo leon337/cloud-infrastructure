@@ -208,7 +208,7 @@ python3 scripts/check_markdown_links.py
 python3 scripts/validate_yaml.py
 python3 scripts/validate_state.py
 python3 scripts/generate_project_status.py --check-readme
-python3 scripts/check_repository_secrets.py
+python3 scripts/check_repository_secrets.py --revision HEAD
 git diff --check
 ```
 
@@ -770,7 +770,7 @@ The committed dispatch example must be non-executing until its `request_id` is i
 
 ```bash
 python3 -m unittest tests.test_control_bridge_g2b_adapter -v
-python3 scripts/check_repository_secrets.py
+python3 scripts/check_repository_secrets.py --revision HEAD
 python3 scripts/validate_yaml.py
 ```
 

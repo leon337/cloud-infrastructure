@@ -1,6 +1,6 @@
 schema_version: 1
 contract_id: MCF_CONTEXT_TO_CLOUD_PROJECT_V1
-observed_at: "2026-08-23T04:06:14-03:00"
+observed_at: "2026-08-23T18:57:16-03:00"
 mapping:
   from:
     context_project_id: cloud-infrastructure
@@ -40,7 +40,7 @@ capabilities:
     state_ref: state/control-bridge-g2a.yaml
     evidence_ref: docs/52-control-bridge-g2a-implementation-checkpoint.md
     local_context_adapter:
-      lifecycle: IMPLEMENTED_LOCALLY_DISABLED_BY_DEFAULT_E2E_PENDING
+      lifecycle: LAB_E2E_WITH_MCF_FIXTURE_VERIFIED_DISABLED_BY_DEFAULT
       transport: STDIO
       operation: context.get
       enabled_by_default: false
@@ -52,10 +52,13 @@ capabilities:
       entrypoint: platform/control-bridge/mcf-cloud-context-read
       config: platform/control-bridge/mcf-cloud-context-read-config.yaml
       result_schema: platform/schemas/mcf-cloud-context-read-result.schema.json
-      unit_tests: PASS_9_OF_9
-      full_regression: PASS_390_OF_390
-      e2e: NOT_EXECUTED
-      repository_fingerprint: NOT_EXECUTED
+      unit_tests: PASS_12_OF_12
+      full_regression: PASS_396_OF_396
+      e2e: PASS_13_OF_13
+      e2e_client: DISPOSABLE_MCF_FIXTURE
+      repository_fingerprint: PASS_GIT_AND_FILESYSTEM_UNCHANGED
+      audit_boundary: ENFORCED_READ_ONLY_IN_CLI
+      vps_freshness: NOT_OBSERVED_LIVE_REQUIRED
       activation: NOT_AUTHORIZED
       evidence_ref: evidence/CONTROL-BRIDGE-G2A/LOCAL-CONTEXT-ADAPTER-CHECKPOINT-20260823.md
   g2b:
@@ -107,11 +110,15 @@ validation:
     revision: 9359450742020d1c99b298379b8a29fefce6294f
   current_unit_suite:
     result: PASS
-    count: 381
-    scope: PRE_LOCAL_ADAPTER_RECONCILIATION
+    count: 396
+    scope: CURRENT_CONTEXT_RECONCILIATION
   aggregate_gate:
-    result: BLOCKED_LOCAL_SHARED_GIT_OBJECT_DB
+    result: PASS
     candidate_failure: false
+    shared_git_object_database: PASS_FSCK_FULL_NO_DANGLING
+    resolution_origin: PARALLEL_MISSION_NOT_THIS_WORKSTREAM
+    history_secret_scope: HEAD_REACHABLE_CANDIDATE_ANCESTRY
+    unrelated_ref_findings: OUT_OF_SCOPE_REQUIRES_SEPARATE_SECURITY_REVIEW
     evidence_ref: evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md
 publication:
   local_branch: codex/context-bridge-reconcile-20260823

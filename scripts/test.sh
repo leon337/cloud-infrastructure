@@ -8,7 +8,7 @@ REQUIRE_SHELLCHECK=${REQUIRE_SHELLCHECK:-0}
 
 cd "$REPOSITORY_ROOT"
 
-"$PYTHON" scripts/check_repository_secrets.py
+"$PYTHON" scripts/check_repository_secrets.py --revision HEAD
 "$PYTHON" scripts/check_markdown_links.py
 "$PYTHON" scripts/validate_yaml.py
 "$PYTHON" scripts/validate_manifests.py

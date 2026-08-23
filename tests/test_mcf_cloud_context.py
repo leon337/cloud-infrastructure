@@ -130,6 +130,20 @@ class McfCloudContextTests(unittest.TestCase):
         self.assertTrue(g2a["read_only"])
         self.assertFalse(g2a["mutation"])
         self.assertEqual(g2a["operations"], self.g2a_state["capabilities"])
+        local = g2a["local_context_adapter"]
+        self.assertEqual(
+            local["lifecycle"],
+            "LAB_E2E_WITH_MCF_FIXTURE_VERIFIED_DISABLED_BY_DEFAULT",
+        )
+        self.assertEqual(local["e2e"], "PASS_13_OF_13")
+        self.assertEqual(local["e2e_client"], "DISPOSABLE_MCF_FIXTURE")
+        self.assertEqual(
+            local["repository_fingerprint"],
+            "PASS_GIT_AND_FILESYSTEM_UNCHANGED",
+        )
+        self.assertEqual(local["vps_freshness"], "NOT_OBSERVED_LIVE_REQUIRED")
+        self.assertFalse(local["enabled_by_default"])
+        self.assertEqual(local["activation"], "NOT_AUTHORIZED")
 
     def test_g2b_is_lab_validated_but_inactive_and_fail_closed(self):
         g2b = self.context["capabilities"]["g2b"]
@@ -154,6 +168,27 @@ class McfCloudContextTests(unittest.TestCase):
         self.assertFalse(publication["push_executed"])
         self.assertIsNone(publication["pull_request"])
         self.assertFalse(publication["merge_authorized"])
+
+    def test_shared_git_object_database_recovery_is_attributed_to_parallel_mission(self):
+        gate = self.context["validation"]["aggregate_gate"]
+        self.assertEqual(gate["result"], "PASS")
+        self.assertFalse(gate["candidate_failure"])
+        self.assertEqual(
+            gate["shared_git_object_database"],
+            "PASS_FSCK_FULL_NO_DANGLING",
+        )
+        self.assertEqual(
+            gate["resolution_origin"],
+            "PARALLEL_MISSION_NOT_THIS_WORKSTREAM",
+        )
+        self.assertEqual(
+            gate["history_secret_scope"],
+            "HEAD_REACHABLE_CANDIDATE_ANCESTRY",
+        )
+        self.assertEqual(
+            gate["unrelated_ref_findings"],
+            "OUT_OF_SCOPE_REQUIRES_SEPARATE_SECURITY_REVIEW",
+        )
 
     def test_schema_rejects_capability_promotion_or_real_evidence(self):
         validator = jsonschema.Draft202012Validator(self.context_schema)

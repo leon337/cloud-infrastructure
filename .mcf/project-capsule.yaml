@@ -4,13 +4,14 @@ purpose: Govern and reproduce the development and lab infrastructure that can ho
 lifecycle: ACTIVE
 snapshot:
   current_workstream: control-bridge-context-reconciliation
-  current_status: G2A_LOCAL_CONTEXT_ADAPTER_IMPLEMENTED_DISABLED_BY_DEFAULT_UNIT_PASS_E2E_PENDING__G2B_TASK8_LAB_VALIDATED_INACTIVE
-  next_action: Run the disposable MCF-client to local G2-A adapter E2E with a repository fingerprint before considering adapter activation.
+  current_status: G2A_LOCAL_CONTEXT_ADAPTER_MCF_FIXTURE_E2E_PASS_DISABLED_BY_DEFAULT__G2B_TASK8_LAB_VALIDATED_INACTIVE
+  next_action: Connect the real MCF lab client to the proven one-line stdio contract without authorizing VPS access or adapter activation.
   blockers:
     - G2-A operational state is historical and requires live verification before material use.
-    - The local G2-A Context adapter has unit and contract proof only; its disposable E2E and repository immutability proof are pending.
+    - The local G2-A Context adapter passed a disposable MCF-fixture E2E, but a real MCF client and any activation remain separate gates.
+    - Historical policy findings on unrelated Git refs require a separate repository-wide security review; candidate HEAD ancestry is clean.
     - G2-B Tasks 9 and 10 are not started; real write, rollback, revocation, and MCF effective use are not proven.
-    - G2-B activation, NODE-01 access, publication, merge, and production mutation are not authorized by this capsule.
+    - G2-B activation, NODE-01 access, merge, and production mutation are not authorized by this capsule.
 sources:
   current_state: context/mcf-cloud-context.yaml
-observed_at: "2026-08-23T04:19:46-03:00"
+observed_at: "2026-08-23T18:57:16-03:00"

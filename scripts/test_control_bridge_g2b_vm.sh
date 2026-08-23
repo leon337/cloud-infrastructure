@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 
 readonly EXPECTED_CONFIRMATION=DISPOSABLE_UBUNTU_24_04_ONLY
-readonly REPOSITORY_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+REPOSITORY_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPOSITORY_ROOT
 readonly DOCKERFILE="$REPOSITORY_ROOT/tests/fixtures/foundation-systemd/Dockerfile"
 readonly CONTAINER_REPOSITORY_ROOT=/workspace/cloud-infrastructure
 readonly WORKSPACE_PATH=/var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev
@@ -10,7 +11,6 @@ readonly STATE_PATH=/var/lib/mcf-control-bridge/state/g2b
 readonly GRANT_PATH=/etc/mcf-control-bridge/g2b-grant.json
 readonly ENTRYPOINT=/usr/local/libexec/mcf-control-g2b
 readonly PILOT_PATH=G2B-PILOT.txt
-readonly ACTOR_ID=25374535
 
 CURRENT_STAGE=preflight
 HARNESS_TMP_DIR=
@@ -230,7 +230,7 @@ if sha != "any": assert v.get("after",{}).get("sha256") == sha, v.get("after")
 PY
 }
 
-CURRENT_STAGE=write
+CURRENT_STAGE='write'
 WRITE_ID=G2B-DISPOSABLE-WRITE-0001
 CONTENT=$'disposable-pilot-v1\n'
 EXPECTED_HASH=$(printf '%s' "$CONTENT" | sha256sum | awk '{print $1}')

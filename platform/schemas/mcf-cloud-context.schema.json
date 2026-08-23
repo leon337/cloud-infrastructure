@@ -68,9 +68,9 @@
             "local_context_adapter": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["lifecycle", "transport", "operation", "enabled_by_default", "read_only", "network_access", "external_process", "arbitrary_path", "request_validation", "entrypoint", "config", "result_schema", "unit_tests", "full_regression", "e2e", "repository_fingerprint", "activation", "evidence_ref"],
+              "required": ["lifecycle", "transport", "operation", "enabled_by_default", "read_only", "network_access", "external_process", "arbitrary_path", "request_validation", "entrypoint", "config", "result_schema", "unit_tests", "full_regression", "e2e", "e2e_client", "repository_fingerprint", "audit_boundary", "vps_freshness", "activation", "evidence_ref"],
               "properties": {
-                "lifecycle": {"const": "IMPLEMENTED_LOCALLY_DISABLED_BY_DEFAULT_E2E_PENDING"},
+                "lifecycle": {"const": "LAB_E2E_WITH_MCF_FIXTURE_VERIFIED_DISABLED_BY_DEFAULT"},
                 "transport": {"const": "STDIO"},
                 "operation": {"const": "context.get"},
                 "enabled_by_default": {"const": false},
@@ -82,10 +82,13 @@
                 "entrypoint": {"const": "platform/control-bridge/mcf-cloud-context-read"},
                 "config": {"const": "platform/control-bridge/mcf-cloud-context-read-config.yaml"},
                 "result_schema": {"const": "platform/schemas/mcf-cloud-context-read-result.schema.json"},
-                "unit_tests": {"const": "PASS_9_OF_9"},
-                "full_regression": {"const": "PASS_390_OF_390"},
-                "e2e": {"const": "NOT_EXECUTED"},
-                "repository_fingerprint": {"const": "NOT_EXECUTED"},
+                "unit_tests": {"const": "PASS_12_OF_12"},
+                "full_regression": {"const": "PASS_396_OF_396"},
+                "e2e": {"const": "PASS_13_OF_13"},
+                "e2e_client": {"const": "DISPOSABLE_MCF_FIXTURE"},
+                "repository_fingerprint": {"const": "PASS_GIT_AND_FILESYSTEM_UNCHANGED"},
+                "audit_boundary": {"const": "ENFORCED_READ_ONLY_IN_CLI"},
+                "vps_freshness": {"const": "NOT_OBSERVED_LIVE_REQUIRED"},
                 "activation": {"const": "NOT_AUTHORIZED"},
                 "evidence_ref": {"const": "evidence/CONTROL-BRIDGE-G2A/LOCAL-CONTEXT-ADAPTER-CHECKPOINT-20260823.md"}
               }
@@ -188,17 +191,21 @@
           "required": ["result", "count", "scope"],
           "properties": {
             "result": {"const": "PASS"},
-            "count": {"const": 381},
-            "scope": {"const": "PRE_LOCAL_ADAPTER_RECONCILIATION"}
+            "count": {"const": 396},
+            "scope": {"const": "CURRENT_CONTEXT_RECONCILIATION"}
           }
         },
         "aggregate_gate": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["result", "candidate_failure", "evidence_ref"],
+          "required": ["result", "candidate_failure", "shared_git_object_database", "resolution_origin", "history_secret_scope", "unrelated_ref_findings", "evidence_ref"],
           "properties": {
-            "result": {"const": "BLOCKED_LOCAL_SHARED_GIT_OBJECT_DB"},
+            "result": {"const": "PASS"},
             "candidate_failure": {"const": false},
+            "shared_git_object_database": {"const": "PASS_FSCK_FULL_NO_DANGLING"},
+            "resolution_origin": {"const": "PARALLEL_MISSION_NOT_THIS_WORKSTREAM"},
+            "history_secret_scope": {"const": "HEAD_REACHABLE_CANDIDATE_ANCESTRY"},
+            "unrelated_ref_findings": {"const": "OUT_OF_SCOPE_REQUIRES_SEPARATE_SECURITY_REVIEW"},
             "evidence_ref": {"const": "evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md"}
           }
         }

@@ -246,22 +246,42 @@ class McfCloudContextReadAdapterTests(unittest.TestCase):
 
     def test_adapter_has_no_network_subprocess_shell_or_write_surface(self):
         for path in (ROOT / adapter.ADAPTER_MODULE_PATH, CLI):
-            tree = ast.parse(path.read_text(encoding="utf-8"))
+            text = path.read_text(encoding="utf-8")
+            tree = ast.parse(text)
             imported = {
                 alias.name.split(".")[0]
                 for node in ast.walk(tree)
                 if isinstance(node, (ast.Import, ast.ImportFrom))
                 for alias in node.names
             }
+            calls = {
+                node.func.attr
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            }
             self.assertTrue(
                 imported.isdisjoint({"socket", "subprocess", "urllib", "http", "requests"}),
                 (path, imported),
             )
-            text = path.read_text(encoding="utf-8")
+            self.assertTrue(
+                calls.isdisjoint(
+                    {
+                        "write_text",
+                        "write_bytes",
+                        "touch",
+                        "unlink",
+                        "remove",
+                        "rename",
+                        "mkdir",
+                        "rmdir",
+                        "chmod",
+                        "chown",
+                        "symlink_to",
+                    }
+                ),
+                (path, calls),
+            )
             for forbidden in (
-                "O_WRONLY",
-                "O_RDWR",
-                "O_CREAT",
                 ".write_text(",
                 ".write_bytes(",
                 "os.system(",
@@ -270,6 +290,13 @@ class McfCloudContextReadAdapterTests(unittest.TestCase):
                 "curl ",
             ):
                 self.assertNotIn(forbidden, text, (path, forbidden))
+
+        cli_text = CLI.read_text(encoding="utf-8")
+        self.assertIn("sys.dont_write_bytecode = True", cli_text)
+        self.assertIn("sys.addaudithook(_read_only_audit_hook)", cli_text)
+        self.assertIn('"subprocess.Popen"', cli_text)
+        self.assertIn('"socket.connect"', cli_text)
+        self.assertIn("_WRITE_OPEN_FLAGS", cli_text)
 
 
 if __name__ == "__main__":

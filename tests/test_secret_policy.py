@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import pathlib
+import subprocess
+import tempfile
 import unittest
 
 
@@ -71,6 +73,99 @@ class SecretPolicyTests(unittest.TestCase):
     def test_env_example_and_public_pem_paths_are_allowed(self):
         self.assertFalse(MODULE.path_is_forbidden("examples/.env.example"))
         self.assertFalse(MODULE.path_is_forbidden("certificates/public-chain.pem"))
+
+    def test_history_modes_cover_merge_ancestry_unrelated_refs_and_worktree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = pathlib.Path(temporary) / "repository"
+            self._git(repository.parent, "init", "-b", "main", repository.name)
+            self._git(repository, "config", "user.name", "Secret Policy Test")
+            self._git(repository, "config", "user.email", "test@example.invalid")
+
+            (repository / "root.txt").write_text("root\n", encoding="utf-8")
+            self._git(repository, "add", "root.txt")
+            self._git(repository, "commit", "-m", "root")
+            root_revision = self._git(repository, "rev-parse", "HEAD").strip()
+
+            self._git(repository, "switch", "-c", "merged-side")
+            (repository / "merged.txt").write_text("merged\n", encoding="utf-8")
+            self._git(repository, "add", "merged.txt")
+            self._git(repository, "commit", "-m", "merged side")
+            merged_blob = self._git(repository, "hash-object", "merged.txt").strip()
+
+            self._git(repository, "switch", "main")
+            (repository / "main.txt").write_text("main\n", encoding="utf-8")
+            self._git(repository, "add", "main.txt")
+            self._git(repository, "commit", "-m", "main")
+            self._git(repository, "merge", "--no-ff", "merged-side", "-m", "merge")
+
+            self._git(repository, "switch", "-c", "unrelated", root_revision)
+            unrelated_secret = b"DB_CLIENT_" + b"SECRET=ordinary-but-real-value\n"
+            (repository / "unrelated.txt").write_bytes(unrelated_secret)
+            self._git(repository, "add", "unrelated.txt")
+            self._git(repository, "commit", "-m", "unrelated")
+            unrelated_blob = self._git(
+                repository, "hash-object", "unrelated.txt"
+            ).strip()
+            self._git(repository, "switch", "main")
+
+            current_secret = b"CURRENT_CLIENT_" + b"SECRET=ordinary-but-real-value\n"
+            (repository / "current.txt").write_bytes(current_secret)
+
+            candidate_blobs = {
+                object_id
+                for object_id, _ in MODULE.reachable_history_blobs(
+                    repository_root=repository,
+                    revision="HEAD",
+                )
+            }
+            all_ref_blobs = {
+                object_id
+                for object_id, _ in MODULE.reachable_history_blobs(
+                    repository_root=repository,
+                    all_refs=True,
+                )
+            }
+            self.assertIn(merged_blob, candidate_blobs)
+            self.assertNotIn(unrelated_blob, candidate_blobs)
+            self.assertIn(unrelated_blob, all_ref_blobs)
+
+            candidate_findings = MODULE.scan(
+                repository_root=repository,
+                revision="HEAD",
+            )
+            all_ref_findings = MODULE.scan(
+                repository_root=repository,
+                all_refs=True,
+            )
+            self.assertIn(("current.txt", "secret-like-assignment"), candidate_findings)
+            unrelated_finding = (
+                f"<git-history-blob:{unrelated_blob[:12]}>",
+                "secret-like-assignment",
+            )
+            self.assertNotIn(unrelated_finding, candidate_findings)
+            self.assertIn(unrelated_finding, all_ref_findings)
+            with self.assertRaisesRegex(ValueError, "exactly one history scope"):
+                list(MODULE.reachable_history_blobs(repository_root=repository))
+
+    def test_repository_gate_declares_candidate_head_scope(self):
+        gate = (ROOT / "scripts/test.sh").read_text(encoding="utf-8")
+        self.assertIn(
+            '"$PYTHON" scripts/check_repository_secrets.py --revision HEAD',
+            gate,
+        )
+        self.assertNotIn("check_repository_secrets.py --all-refs", gate)
+
+    @staticmethod
+    def _git(repository: pathlib.Path, *arguments: str) -> str:
+        completed = subprocess.run(
+            ["git", *arguments],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        return completed.stdout
 
 
 CONTENT_RULES = MODULE.CONTENT_RULES

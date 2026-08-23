@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import os
 import pathlib
 import re
@@ -36,7 +37,7 @@ FORBIDDEN_PATH_PATTERNS = (
     re.compile(r"(^|/)(?:secrets?|credentials?)(?:/|$)", re.IGNORECASE),
 )
 
-def repository_files() -> Iterable[pathlib.Path]:
+def repository_files(repository_root: pathlib.Path = ROOT) -> Iterable[pathlib.Path]:
     result = subprocess.run(
         [
             "git",
@@ -46,7 +47,7 @@ def repository_files() -> Iterable[pathlib.Path]:
             "--exclude-standard",
             "-z",
         ],
-        cwd=ROOT,
+        cwd=repository_root,
         check=True,
         capture_output=True,
     )
@@ -62,9 +63,12 @@ def path_is_forbidden(rendered: str) -> bool:
     return any(rule.search(rendered) for rule in FORBIDDEN_PATH_PATTERNS)
 
 
-def read_repository_file(relative_path: pathlib.Path) -> bytes | None:
+def read_repository_file(
+    relative_path: pathlib.Path,
+    repository_root: pathlib.Path = ROOT,
+) -> bytes | None:
     """Read without following a worktree symlink outside the repository."""
-    absolute_path = ROOT / relative_path
+    absolute_path = repository_root / relative_path
     if absolute_path.is_symlink():
         return os.readlink(absolute_path).encode("utf-8", errors="surrogateescape")
     if not absolute_path.is_file():
@@ -75,11 +79,27 @@ def read_repository_file(relative_path: pathlib.Path) -> bytes | None:
     return absolute_path.read_bytes()
 
 
-def reachable_history_blobs() -> Iterator[tuple[str, int]]:
-    """Yield every reachable Git blob and its size, including merge ancestry."""
+def reachable_history_blobs(
+    *,
+    repository_root: pathlib.Path = ROOT,
+    revision: str | None = None,
+    all_refs: bool = False,
+) -> Iterator[tuple[str, int]]:
+    """Yield blobs in one explicit history scope, including merge ancestry."""
+    if (revision is None) == (not all_refs):
+        raise ValueError("exactly one history scope is required")
+    if revision is not None and revision != "HEAD":
+        raise ValueError("candidate history revision must be HEAD")
+    history_arguments = ["--all"] if all_refs else [revision]
     object_ids = subprocess.run(
-        ["git", "rev-list", "--objects", "--all", "--no-object-names"],
-        cwd=ROOT,
+        [
+            "git",
+            "rev-list",
+            "--objects",
+            *history_arguments,
+            "--no-object-names",
+        ],
+        cwd=repository_root,
         check=True,
         capture_output=True,
         text=True,
@@ -90,7 +110,7 @@ def reachable_history_blobs() -> Iterator[tuple[str, int]]:
     unique_ids = sorted(set(object_ids))
     metadata = subprocess.run(
         ["git", "cat-file", "--batch-check=%(objectname) %(objecttype) %(objectsize)"],
-        cwd=ROOT,
+        cwd=repository_root,
         check=True,
         input="\n".join(unique_ids) + "\n",
         capture_output=True,
@@ -102,32 +122,41 @@ def reachable_history_blobs() -> Iterator[tuple[str, int]]:
             yield object_id, int(raw_size)
 
 
-def scan() -> list[tuple[str, str]]:
+def scan(
+    *,
+    repository_root: pathlib.Path = ROOT,
+    revision: str | None = None,
+    all_refs: bool = False,
+) -> list[tuple[str, str]]:
     findings: list[tuple[str, str]] = []
-    for relative_path in repository_files():
+    for relative_path in repository_files(repository_root):
         rendered = relative_path.as_posix()
         if path_is_forbidden(rendered):
             findings.append((rendered, "forbidden-secret-path"))
 
-        absolute_path = ROOT / relative_path
+        absolute_path = repository_root / relative_path
         if absolute_path.exists() and not absolute_path.is_symlink():
             if absolute_path.is_file() and absolute_path.stat().st_size > MAX_SCAN_BYTES:
                 findings.append((rendered, "unscanned-large-file"))
                 continue
-        content = read_repository_file(relative_path)
+        content = read_repository_file(relative_path, repository_root)
         if content is None:
             continue
         for rule_name in content_findings(content):
             findings.append((rendered, rule_name))
 
-    for object_id, size in reachable_history_blobs():
+    for object_id, size in reachable_history_blobs(
+        repository_root=repository_root,
+        revision=revision,
+        all_refs=all_refs,
+    ):
         rendered = f"<git-history-blob:{object_id[:12]}>"
         if size > MAX_SCAN_BYTES:
             findings.append((rendered, "unscanned-large-blob"))
             continue
         content = subprocess.run(
             ["git", "cat-file", "blob", object_id],
-            cwd=ROOT,
+            cwd=repository_root,
             check=True,
             capture_output=True,
         ).stdout
@@ -141,13 +170,33 @@ def scan() -> list[tuple[str, str]]:
     return findings
 
 
-def main() -> int:
-    findings = scan()
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Scan worktree content and one explicit Git history scope."
+    )
+    scope = parser.add_mutually_exclusive_group(required=True)
+    scope.add_argument(
+        "--revision",
+        choices=("HEAD",),
+        help="scan candidate HEAD and all of its merge ancestry",
+    )
+    scope.add_argument(
+        "--all-refs",
+        action="store_true",
+        help="audit every reachable ref as a separate repository-wide operation",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    findings = scan(revision=args.revision, all_refs=args.all_refs)
+    scope = "all-refs" if args.all_refs else "revision:HEAD"
     if findings:
         for path, rule_name in sorted(set(findings)):
             print(f"SECRET_POLICY_FAIL file={path} rule={rule_name}", file=sys.stderr)
         return 1
-    print("SECRET_POLICY_PASS")
+    print(f"SECRET_POLICY_PASS scope={scope}")
     return 0
 
 

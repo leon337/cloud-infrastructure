@@ -7,6 +7,56 @@ import pathlib
 import sys
 
 
+_FORBIDDEN_AUDIT_EVENTS = frozenset(
+    {
+        "os.chmod",
+        "os.chown",
+        "os.link",
+        "os.mkdir",
+        "os.remove",
+        "os.rename",
+        "os.rmdir",
+        "os.symlink",
+        "os.system",
+        "shutil.copyfile",
+        "shutil.copymode",
+        "shutil.copystat",
+        "shutil.move",
+        "socket.__new__",
+        "socket.bind",
+        "socket.connect",
+        "socket.getaddrinfo",
+        "subprocess.Popen",
+    }
+)
+_FORBIDDEN_AUDIT_PREFIXES = ("os.exec", "os.posix_spawn", "os.spawn")
+_WRITE_OPEN_FLAGS = (
+    os.O_WRONLY
+    | os.O_RDWR
+    | os.O_APPEND
+    | os.O_CREAT
+    | os.O_TRUNC
+    | getattr(os, "O_TMPFILE", 0)
+)
+
+
+def _read_only_audit_hook(event: str, arguments: tuple[object, ...]) -> None:
+    if event in _FORBIDDEN_AUDIT_EVENTS or event.startswith(_FORBIDDEN_AUDIT_PREFIXES):
+        raise PermissionError("adapter_audit_boundary_refused")
+    if event != "open":
+        return
+    mode = arguments[1] if len(arguments) > 1 else None
+    flags = arguments[2] if len(arguments) > 2 else None
+    if isinstance(mode, str) and any(character in mode for character in "wax+"):
+        raise PermissionError("adapter_audit_boundary_refused")
+    if isinstance(flags, int) and flags & _WRITE_OPEN_FLAGS:
+        raise PermissionError("adapter_audit_boundary_refused")
+
+
+sys.dont_write_bytecode = True
+sys.addaudithook(_read_only_audit_hook)
+
+
 REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parents[2]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
