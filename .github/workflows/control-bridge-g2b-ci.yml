@@ -56,3 +56,55 @@ jobs:
           G2B_TEST_PRIVILEGED_CONFIRM: DISPOSABLE_UBUNTU_24_04_ONLY
           G2B_CANDIDATE_SHA: ${{ github.sha }}
         run: scripts/test_control_bridge_g2b_vm.sh
+
+  diagnostic-reproduce:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor == 'leon337' &&
+      github.event.pull_request.number == 21 &&
+      github.event.pull_request.head.ref == 'team/g2b-task8-20260822'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out frozen attempt-3 candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Instrument only the ephemeral harness copy
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/test_control_bridge_g2b_vm.sh')
+          text = path.read_text(encoding='utf-8')
+          old = """CURRENT_STAGE=apply_g2b
+          run_playbook playbooks/apply-control-bridge-g2b.yml >/dev/null
+          run_playbook playbooks/apply-control-bridge-g2b.yml >/dev/null
+          """
+          new = """CURRENT_STAGE=apply_g2b
+          printf '%s\\n' 'G2B_DIAG_APPLY_INVOCATION=1'
+          run_playbook playbooks/apply-control-bridge-g2b.yml
+          printf '%s\\n' 'G2B_DIAG_APPLY_INVOCATION_1=PASS'
+          printf '%s\\n' 'G2B_DIAG_APPLY_INVOCATION=2'
+          run_playbook playbooks/apply-control-bridge-g2b.yml
+          printf '%s\\n' 'G2B_DIAG_APPLY_INVOCATION_2=PASS'
+          """
+          if text.count(old) != 1:
+              raise SystemExit('G2B_DIAG_APPLY_BLOCK_MATCH_FAILED')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          git diff --check
+          git diff -- scripts/test_control_bridge_g2b_vm.sh
+      - name: Reproduce frozen candidate with complete apply logs
+        shell: bash
+        env:
+          G2B_TEST_PRIVILEGED_CONFIRM: DISPOSABLE_UBUNTU_24_04_ONLY
+          G2B_CANDIDATE_SHA: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+        run: |
+          set -o pipefail
+          echo 'G2B_TASK8_HOSTED_DIAGNOSTIC_V1'
+          echo 'REPRO_NODE01_G2B_WRITE=NOT_EXECUTED'
+          scripts/test_control_bridge_g2b_vm.sh 2>&1 | tee g2b-task8-hosted-diagnostic.log
