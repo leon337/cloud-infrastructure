@@ -5,15 +5,7 @@ Branch: `team/canonical-state-toolchain-20260822`
 Base: `main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b`
 PR: #22 (draft / do not merge)
 
-## Historical pre-authorization attempts
-
-Before the neutral package was authorized, temporary evidence-only workflow runs `32604781198` and `32604854460` failed before any reported step. Those runs remain historical infrastructure evidence only; they did not execute `git diff --check` or the canonical suite.
-
-## Neutral package authorization
-
-LEANDRO explicitly authorized the mainline-neutral extraction. The resulting package restores `scripts/test.sh` as the stable entrypoint without importing functional G2-B/F1.2c code.
-
-Implementation candidate:
+## First neutral candidate
 
 ```text
 SHA=55cbbf0be25daa9fef5ca4ac231f6bd4f74c8ea6
@@ -21,52 +13,51 @@ WORKFLOW_RUN=32609819790
 JOB=97120890824
 ```
 
-## Exact-head run 32609819790
-
-The job executed on self-hosted runner `node--1-mcf-control` and checked out the exact SHA above.
-
-Observed results:
+Executed results:
 
 ```text
 EXACT_SHA_CHECKOUT=PASS
 UNPRIVILEGED_BOUNDARY=PASS
-PYYAML_AVAILABLE=6.0.1
 PINNED_SHELLCHECK_PROVISION=PASS
 WORKSPACE_CLEAN=PASS
 CANONICAL_SUITE=FAIL
+GIT_DIFF_CHECK=FAIL_FOUR_TRAILING_WHITESPACE_FINDINGS
 ```
 
-The suite failed at its first command, `git diff --check`, with exactly four trailing-whitespace findings:
+The four findings belonged to this mission's own report/evidence Markdown. Later suite stages were not executed because the entrypoint fails fast.
 
-```text
-docs/57-canonical-state-toolchain-reconciliation-2026-08-22.md:3
-evidence/canonical-state-toolchain/validation.md:3
-evidence/canonical-state-toolchain/validation.md:4
-evidence/canonical-state-toolchain/validation.md:5
-```
+## Canonicity audit after the first run
 
-Result classification:
+Review against the proven F1.1 contract found that the first extracted secret scanner was weaker than the canonical generic gate: it scanned only current tracked files, while the original scanner also inspects reachable Git-history blobs and forbidden secret-bearing paths.
 
-`REAL_CONTENT_FAILURE_TRAILING_WHITESPACE`.
+Generic contracts additionally proven separable:
 
-No state validator, unit test, syntax check or ShellCheck result is claimed for this attempt because execution stopped at the diff gate.
+- `scripts/check_repository_secrets.py`: current repository + reachable Git history;
+- `scripts/check_markdown_links.py`: local Markdown targets;
+- `scripts/yaml_strict.py` + `scripts/validate_yaml.py`: duplicate-key rejection.
+
+`validate_manifests.py` is intentionally excluded because it depends on F1.1 platform schemas/manifests.
+
+Audit verdict:
+
+`HARDEN_TOOLCHAIN_BEFORE_ACCEPTANCE`.
+
+## Hardened candidate rule
+
+The next exact-head run must use the hardened neutral package. Repository-history findings are not to be allowlisted, skipped or converted to PASS merely to unblock hygiene. If a historical secret-policy finding is reproduced, it becomes explicit input to Repository Hygiene.
 
 ## Boundary verification
 
-GitHub compare against `main` contains only canonical-state/toolchain/reporting paths. No functional `control_plane/`, F1.2c network implementation, G2-B implementation path, Ansible role/playbook implementation, privileged NODE-01 mutation, or production path was imported by this mission.
+GitHub compare against `main` contains only state/toolchain/workflow/tests/docs/evidence surfaces. Functional G2-B/F1.2c implementation paths are outside the diff.
 
-Result: `BOUNDARY_ISOLATION=PASS_BY_GITHUB_COMPARE`.
-
-## Current validation state
-
-The four whitespace defects are corrected by the next candidate commit. A fresh exact-head run is mandatory.
+Current status:
 
 ```text
-GIT_DIFF_CHECK=RERUN_REQUIRED
-CANONICAL_SCRIPTS_TEST_SH=RESTORED_EXECUTABLE
-CANONICAL_SCRIPTS_TEST_SH_EXECUTION=RERUN_REQUIRED
-CANONICAL_STATE_VALIDATION=RERUN_REQUIRED
+CANONICAL_ENTRYPOINT=RESTORED_EXECUTABLE
+GENERIC_SECRET_HISTORY_GATE=PRESERVED
+MARKDOWN_LINK_GATE=PRESERVED
+STRICT_YAML_GATE=PRESERVED
+F1_1_MANIFEST_VALIDATOR=EXCLUDED_AS_COUPLED
+FINAL_EXACT_HEAD_EXECUTION=REQUIRED
 OVERALL=VALIDATION_IN_PROGRESS
 ```
-
-This evidence does not authorize merge, branch deletion, G2-B/F1.2c mutation, NODE-01 privileged action, or production promotion.

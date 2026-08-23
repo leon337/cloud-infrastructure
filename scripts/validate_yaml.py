@@ -1,30 +1,34 @@
 #!/usr/bin/env python3
-"""Parse every tracked YAML document in the current repository tree."""
+"""Parse every repository YAML document and reject duplicate mapping keys."""
 
 from __future__ import annotations
 
-import subprocess
-from pathlib import Path
+import pathlib
+import sys
 
 import yaml
 
+from yaml_strict import load_all_strict
+
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+
 
 def main() -> int:
-    raw = subprocess.check_output(["git", "ls-files", "-z", "*.yaml", "*.yml"])
-    paths = [Path(item.decode("utf-8")) for item in raw.split(b"\0") if item]
+    files = sorted((*ROOT.rglob("*.yaml"), *ROOT.rglob("*.yml")))
+    files = [path for path in files if ".venv" not in path.parts and ".git" not in path.parts]
     failures: list[str] = []
-    for path in paths:
+    for path in files:
         try:
-            yaml.safe_load(path.read_text(encoding="utf-8"))
-        except Exception as exc:  # PyYAML exposes multiple parser exception classes.
-            failures.append(f"{path}: {exc}")
-
+            with path.open(encoding="utf-8") as stream:
+                list(load_all_strict(stream))
+        except (OSError, yaml.YAMLError) as exc:
+            failures.append(f"{path.relative_to(ROOT)}: {exc}")
     if failures:
         for failure in failures:
-            print(f"YAML_VALIDATION_FAIL {failure}")
+            print(f"YAML_PARSE_FAIL {failure}", file=sys.stderr)
         return 1
-
-    print(f"YAML_VALIDATION_PASS count={len(paths)}")
+    print(f"YAML_PARSE_PASS count={len(files)}")
     return 0
 
 

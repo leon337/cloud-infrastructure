@@ -2,7 +2,7 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: team/canonical-state-toolchain-20260822
-updated_at: "2026-08-22T22:14:30-03:00"
+updated_at: "2026-08-22T22:20:00-03:00"
 state_classification: CURRENT_RECONCILED_CANDIDATE
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
@@ -48,7 +48,7 @@ project:
     platform_s0: COMPLETE
     platform_f1_1: COMPLETE
     platform_f1_2b: COMPLETE
-  next_exact_step: VALIDATE_CANONICAL_STATE_TOOLCHAIN_THEN_REVALIDATE_REPOSITORY_HYGIENE
+  next_exact_step: EXECUTE_HARDENED_CANONICAL_VALIDATION_THEN_REVALIDATE_REPOSITORY_HYGIENE
 
 execution:
   authority: LEANDRO
@@ -129,7 +129,7 @@ repository_hygiene:
   blockers:
     canonical_state: CANDIDATE_RECONCILED_PENDING_VALIDATION
     canonical_toolchain: CANDIDATE_RESTORED_PENDING_VALIDATION
-  unblock_condition: MERGED_CANONICAL_STATE_AND_EXECUTABLE_CANONICAL_TEST_ENTRYPOINT_WITH_GREEN_EVIDENCE
+  unblock_condition: CANONICAL_TOOLCHAIN_EXECUTED_AND_HYGIENE_FINDINGS_RESOLVED
 
 toolchain:
   canonical_entrypoint: scripts/test.sh
@@ -137,15 +137,23 @@ toolchain:
     commit: edd2497d657cc9bc35952f5dfc71090a18dade53
     branch: codex/mission-001-foundations-f1-1
     pull_request: 2
-  package: CANONICAL_MAINLINE_NEUTRAL_V1
+  package: CANONICAL_MAINLINE_NEUTRAL_V2
   validation_status: PENDING
+  generic_contract_preserved:
+    repository_secret_history_scan: true
+    markdown_local_links: true
+    strict_yaml_duplicate_key_rejection: true
   validators:
-    - scripts/check_current_tree_secrets.py
+    - scripts/check_repository_secrets.py
+    - scripts/check_markdown_links.py
+    - scripts/yaml_strict.py
     - scripts/validate_yaml.py
     - scripts/validate_state.py
     - scripts/check_canonical_consistency.py
     - tests/test_canonical_state.py
     - tests/test_toolchain_contract.py
+  excluded_coupled_validator:
+    - scripts/validate_manifests.py
   functional_lineage_code_imported: false
   g2b_functional_code_imported: false
   f1_2c_functional_code_imported: false
@@ -164,6 +172,8 @@ authorization:
   f1_2c_node01_reapply: NOT_AUTHORIZED
 
 secrets_policy:
+  current_tree_scan: true
+  reachable_git_history_scan: true
   never_version:
     - passwords
     - passphrases

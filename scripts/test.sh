@@ -17,7 +17,8 @@ else
   printf '%s\n' 'GIT_DIFF_CHECK_PASS base=working-tree'
 fi
 
-"$PYTHON" scripts/check_current_tree_secrets.py
+"$PYTHON" scripts/check_repository_secrets.py
+"$PYTHON" scripts/check_markdown_links.py
 "$PYTHON" scripts/validate_yaml.py
 "$PYTHON" scripts/validate_state.py
 "$PYTHON" scripts/check_canonical_consistency.py

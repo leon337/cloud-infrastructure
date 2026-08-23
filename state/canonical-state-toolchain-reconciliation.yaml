@@ -1,5 +1,5 @@
 protocol_version: CLOUD_INFRA_CANONICAL_STATE_TOOLCHAIN_RECONCILIATION_V2
-updated_at: "2026-08-22T22:14:30-03:00"
+updated_at: "2026-08-22T22:20:00-03:00"
 repository: leon337/cloud-infrastructure
 mission:
   id: CANONICAL_STATE_TOOLCHAIN_RECONCILIATION
@@ -15,7 +15,7 @@ branch:
   base_sha: f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b
   pull_request: 22
 canonical_state:
-  verdict: RECONCILED_CANDIDATE_SERIALIZED_PENDING_FINAL_GREEN_VALIDATION
+  verdict: RECONCILED_CANDIDATE_SERIALIZED_PENDING_EXECUTABLE_VALIDATION
   path: state/current.yaml
   evidence:
     main_reconciliation_pr: 18
@@ -35,8 +35,14 @@ toolchain:
     branch: codex/mission-001-foundations-f1-1
     pull_request: 2
     workflow: .github/workflows/foundation-ci.yml
-  package: CANONICAL_MAINLINE_NEUTRAL_V1
-  status: RESTORED_PENDING_FINAL_GREEN_VALIDATION
+  package: CANONICAL_MAINLINE_NEUTRAL_V2
+  status: HARDENED_PENDING_EXECUTABLE_VALIDATION
+  preserved_generic_contracts:
+    repository_secret_history_scan: true
+    markdown_local_links: true
+    strict_yaml_duplicate_key_rejection: true
+  excluded_coupled_contracts:
+    platform_manifest_validation: F1_1_IMPLEMENTATION_COUPLED
   functional_lineage_code_imported: false
   g2b_functional_code_imported: false
   f1_2c_functional_code_imported: false
@@ -64,12 +70,16 @@ validation:
     failure_class: REAL_CONTENT_FAILURE_TRAILING_WHITESPACE
     git_diff_check: FAIL_FOUR_TRAILING_WHITESPACE_FINDINGS
     later_suite_stages: NOT_EXECUTED_FAIL_FAST
-  current_status: FIX_APPLIED_RERUN_REQUIRED
+  audit_after_first_run:
+    finding: INITIAL_NEUTRAL_SECRET_SCANNER_WAS_WEAKER_THAN_PROVEN_CANONICAL_CONTRACT
+    resolution: RESTORE_GENERIC_HISTORY_SECRET_SCAN_MARKDOWN_LINKS_AND_STRICT_YAML
+    weakening_to_force_green: FORBIDDEN
+  current_status: HARDENED_CANDIDATE_RERUN_REQUIRED
 boundaries:
   protected_branches_modified: false
   node_01_privileged_operations: false
   production_promoted: false
   branch_deletion_performed: false
 repository_hygiene:
-  current_verdict: BLOCKED_PENDING_FINAL_GREEN_CANONICAL_VALIDATION
-  unblock_condition: FINAL_EXACT_HEAD_CANONICAL_SUITE_PASS_AND_CENTRAL_AUDIT
+  current_verdict: BLOCKED_PENDING_CANONICAL_EXECUTION_AND_REAL_HYGIENE_FINDINGS
+  rule: CANONICAL_TOOLCHAIN_MUST_NOT_BE_WEAKENED_TO_HIDE_HISTORY_FINDINGS

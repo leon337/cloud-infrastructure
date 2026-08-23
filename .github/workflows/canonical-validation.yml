@@ -43,7 +43,13 @@ jobs:
             echo 'CANONICAL_VALIDATION_REFUSED reason=writable_docker_socket' >&2
             exit 1
           fi
-          python3 -c 'import yaml; print("PYYAML_AVAILABLE", yaml.__version__)'
+          python3 - <<'PY'
+          import yaml
+          major = int(yaml.__version__.split('.', 1)[0])
+          if major != 6:
+              raise SystemExit(f'unsupported PyYAML major: {yaml.__version__}')
+          print('PYYAML_COMPATIBLE', yaml.__version__)
+          PY
           echo 'CANONICAL_VALIDATION_BOUNDARY=PASS'
 
       - name: Provision pinned ShellCheck in runner temp

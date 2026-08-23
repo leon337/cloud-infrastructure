@@ -5,13 +5,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
+from yaml_strict import load_strict
 
 STATE_PATH = Path("state/current.yaml")
 
 
 def read_state() -> dict:
-    data = yaml.safe_load(STATE_PATH.read_text(encoding="utf-8"))
+    data = load_strict(STATE_PATH.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise AssertionError("state/current.yaml must contain a mapping")
     return data
@@ -54,7 +54,7 @@ def main() -> int:
         ("control_bridge", "g2b", "merge_status"): "NOT_ELIGIBLE",
         ("repository_hygiene", "status"): "REPOSITORY_HYGIENE_BLOCKED",
         ("toolchain", "canonical_entrypoint"): "scripts/test.sh",
-        ("toolchain", "package"): "CANONICAL_MAINLINE_NEUTRAL_V1",
+        ("toolchain", "package"): "CANONICAL_MAINLINE_NEUTRAL_V2",
         ("toolchain", "functional_lineage_code_imported"): False,
         ("toolchain", "g2b_functional_code_imported"): False,
         ("toolchain", "f1_2c_functional_code_imported"): False,
@@ -73,7 +73,7 @@ def main() -> int:
         raise AssertionError("G2-B Task 8 root cause must remain NOT_VERIFIED")
 
     validation = value(data, "toolchain", "validation_status")
-    if validation not in {"PENDING", "PASS"}:
+    if validation not in {"PENDING", "PASS", "BLOCKED_BY_REPOSITORY_HYGIENE"}:
         raise AssertionError(f"unexpected toolchain validation_status: {validation!r}")
 
     print("CANONICAL_STATE_VALIDATION_PASS")

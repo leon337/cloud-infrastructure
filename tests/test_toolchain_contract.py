@@ -19,6 +19,21 @@ class ToolchainContractTests(unittest.TestCase):
         self.assertIn("./scripts/test.sh", workflow)
         self.assertIn("contents: read", workflow)
 
+    def test_secret_gate_preserves_reachable_history_scan(self):
+        scanner = Path("scripts/check_repository_secrets.py").read_text(encoding="utf-8")
+        self.assertIn('"rev-list", "--objects", "--all", "--no-object-names"', scanner)
+        self.assertIn("reachable_history_blobs", scanner)
+
+    def test_yaml_validation_rejects_duplicate_keys(self):
+        validator = Path("scripts/validate_yaml.py").read_text(encoding="utf-8")
+        loader = Path("scripts/yaml_strict.py").read_text(encoding="utf-8")
+        self.assertIn("load_all_strict", validator)
+        self.assertIn("found duplicate key", loader)
+
+    def test_platform_manifest_validator_is_not_imported(self):
+        entrypoint = Path("scripts/test.sh").read_text(encoding="utf-8")
+        self.assertNotIn("validate_manifests.py", entrypoint)
+
 
 if __name__ == "__main__":
     unittest.main()

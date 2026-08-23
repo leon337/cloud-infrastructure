@@ -40,22 +40,25 @@ Fatos que não podem ser promovidos além da evidência:
 - G2-B Task 8: último resultado terminal comprovado `FAILED_ATTEMPT_3_NOT_ACCEPTED`; a causa do `exit=2` continua `NOT_VERIFIED` e há uma reprodução diagnóstica isolada `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
 - G2-B Tasks 9–10: `NOT_STARTED`;
 - produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`;
-- Repository Hygiene: `REPOSITORY_HYGIENE_BLOCKED` até state + toolchain canônicos terem evidência verde no caminho de integração.
+- Repository Hygiene: `REPOSITORY_HYGIENE_BLOCKED` até state + toolchain canônicos terem evidência executável e os próprios gates de higiene serem satisfeitos.
 
 ## Toolchain canônica
 
 `scripts/test.sh` é o entrypoint canônico, preservando o contrato estabelecido originalmente na lineage F1.1. A implementação atual é uma extração mainline-neutral: valida somente contratos que pertencem ao `main` atual e não importa implementação funcional de G2-B ou F1.2c.
 
-A suíte cobre:
+A suíte preserva os gates genéricos separáveis do contrato original:
 
-- `git diff --check` quando executada com uma base de integração;
-- padrões de secrets de alta confiança na árvore rastreada atual;
-- parse de YAML;
+- `git diff --check` contra a base de integração;
+- secret policy na árvore atual **e em todos os blobs Git alcançáveis**;
+- links Markdown locais;
+- YAML estrito com rejeição de chaves duplicadas;
 - invariantes de `state/current.yaml`;
 - consistência entre README, CONTEXT, CHECKPOINT e state;
 - testes unitários do contrato;
-- sintaxe de scripts shell;
-- ShellCheck quando exigido pelo CI.
+- sintaxe Python e shell;
+- ShellCheck obrigatório no CI.
+
+O validador de manifests F1.1 não foi importado porque depende de schemas/manifests da implementação da plataforma. A toolchain neutra não enfraquece o secret gate para fabricar um resultado verde: se o histórico do repositório violar a política, a suíte deve falhar e entregar esse blocker à Repository Hygiene.
 
 ## Modelo de missão ativa
 
@@ -75,6 +78,4 @@ A suíte cobre:
 
 ## Próximo passo exato
 
-**VALIDATE_CANONICAL_STATE_TOOLCHAIN_THEN_REVALIDATE_REPOSITORY_HYGIENE**.
-
-Após evidência verde da suíte canônica em SHA exato, esta frente retorna ao MESTRE CENTRAL para auditoria. Merge final continua fora desta missão.
+**EXECUTE_HARDENED_CANONICAL_VALIDATION_THEN_HANDOFF_REPOSITORY_HYGIENE_RESULTS**.
