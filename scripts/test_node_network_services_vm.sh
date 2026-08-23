@@ -162,7 +162,7 @@ if ! sudo systemctl is-active --quiet cloud-platform-network-services.service; t
   fail systemd_service_inactive
 fi
 sudo journalctl -u cloud-platform-network-services.service -n 120 --no-pager | \
-  grep -q 'NETWORK_SERVICES_APPLY=PASS changed=1' || fail systemd_first_apply_evidence_missing
+  grep -F 'NETWORK_SERVICES_APPLY=PASS changed=1' >/dev/null || fail systemd_first_apply_evidence_missing
 
 sudo "$SERVICE" apply | grep -q 'changed=0' || fail idempotence_failed
 sudo "$SERVICE" check | grep -q 'NETWORK_SERVICES_CHECK=PASS' || fail check_failed
@@ -199,7 +199,7 @@ if ! sudo "$SERVICE" check >/dev/null; then
   fail post_restart_check_failed
 fi
 if ! sudo journalctl -u cloud-platform-network-services.service -n 160 --no-pager | \
-  grep -q 'NETWORK_SERVICES_APPLY=PASS changed=1'; then
+  grep -F 'NETWORK_SERVICES_APPLY=PASS changed=1' >/dev/null; then
   diagnose_post_restart_failure
   fail post_restart_reconcile_evidence_missing
 fi
