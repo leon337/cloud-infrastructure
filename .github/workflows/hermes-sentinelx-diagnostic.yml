@@ -20,6 +20,30 @@ jobs:
           ref: mcf/hermes-relay-bootstrap-20260823
           fetch-depth: 0
 
+      - name: Deploy bounded Hermes relay as ubuntu
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = ubuntu
+          if sudo -n true 2>/dev/null; then
+            echo 'REFUSED unexpected passwordless sudo' >&2
+            exit 1
+          fi
+          base=/home/ubuntu/.local/share/mcf-hermes-relay
+          mkdir -p "$base"
+          install -m 0700 ops/hermes-relay/relay.py "$base/relay.py"
+          if [[ -f "$base/relay.pid" ]] && kill -0 "$(cat "$base/relay.pid")" 2>/dev/null; then
+            kill "$(cat "$base/relay.pid")" || true
+            sleep 1
+          fi
+          rm -f /tmp/mcf-hermes-relay.sock
+          env -u RUNNER_TRACKING_ID nohup python3 "$base/relay.py" > "$base/relay.log" 2>&1 < /dev/null &
+          echo $! > "$base/relay.pid"
+          sleep 2
+          test -S /tmp/mcf-hermes-relay.sock
+          grep -q hello_world_gui "$base/relay.py"
+          echo RELAY_DEPLOY_PASS
+
       - name: Collect sanitized status
         shell: bash
         run: |
@@ -46,9 +70,9 @@ jobs:
             echo "RELAY_HAS_BOUNDED_HELLO=$([[ -f /home/ubuntu/.local/share/mcf-hermes-relay/relay.py ]] && grep -q 'hello_world_gui' /home/ubuntu/.local/share/mcf-hermes-relay/relay.py && echo yes || echo no)"
             echo "HERMES_VERSION=$(/home/ubuntu/.local/bin/hermes --version 2>/dev/null | head -1 || true)"
             echo "--- SENTINELX_LOG_TAIL_SANITIZED ---"
-            journalctl -u sentinelx-cloud-core -n 30 --no-pager 2>/dev/null \
+            journalctl -u sentinelx-cloud-core -n 15 --no-pager 2>/dev/null \
               | sed -E 's/(token|jwt|authorization|bearer|secret|password)([=: ]+)[^ ]+/\1\2REDACTED/Ig; s/host_[A-Za-z0-9_-]+/HOST_ID_REDACTED/g' \
-              | tail -30 || true
+              | tail -15 || true
           } > "$out"
           cat "$out"
 
