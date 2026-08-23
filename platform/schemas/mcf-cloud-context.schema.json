@@ -218,8 +218,8 @@
       "properties": {
         "local_branch": {"const": "codex/context-bridge-reconcile-20260823"},
         "safe_pull_request_target": {"const": "mcf/mission-001-control-bridge-g1"},
-        "push_executed": {"const": false},
-        "pull_request": {"type": "null"},
+        "push_executed": {"const": true},
+        "pull_request": {"const": "https://github.com/leon337/cloud-infrastructure/pull/26"},
         "merge_authorized": {"const": false}
       }
     }

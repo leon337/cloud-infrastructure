@@ -14,4 +14,4 @@ snapshot:
     - G2-B activation, NODE-01 access, merge, and production mutation are not authorized by this capsule.
 sources:
   current_state: context/mcf-cloud-context.yaml
-observed_at: "2026-08-23T18:57:16-03:00"
+observed_at: "2026-08-23T19:08:16-03:00"

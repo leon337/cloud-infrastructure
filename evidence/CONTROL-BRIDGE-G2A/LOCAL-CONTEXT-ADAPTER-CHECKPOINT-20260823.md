@@ -144,3 +144,11 @@ ed89ae930c82 credential-in-uri
 - G2-B Tasks 9 and 10: not started;
 - G2-B real write, rollback, revocation, and effective MCF use: not proven;
 - branch merge: not authorized by this record.
+
+## Publication checkpoint
+
+- branch: `codex/context-bridge-reconcile-20260823`;
+- pull request: `https://github.com/leon337/cloud-infrastructure/pull/26`;
+- safe target: `mcf/mission-001-control-bridge-g1`;
+- merge: not executed and not authorized by this record;
+- push/PR workflows: GitHub-hosted disposable validation only for this branch/event; no NODE-01 dispatch path was changed.

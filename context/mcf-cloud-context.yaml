@@ -1,6 +1,6 @@
 schema_version: 1
 contract_id: MCF_CONTEXT_TO_CLOUD_PROJECT_V1
-observed_at: "2026-08-23T18:57:16-03:00"
+observed_at: "2026-08-23T19:08:16-03:00"
 mapping:
   from:
     context_project_id: cloud-infrastructure
@@ -123,6 +123,6 @@ validation:
 publication:
   local_branch: codex/context-bridge-reconcile-20260823
   safe_pull_request_target: mcf/mission-001-control-bridge-g1
-  push_executed: false
-  pull_request: null
+  push_executed: true
+  pull_request: https://github.com/leon337/cloud-infrastructure/pull/26
   merge_authorized: false

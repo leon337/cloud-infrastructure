@@ -159,14 +159,17 @@ class McfCloudContextTests(unittest.TestCase):
         self.assertFalse(g2b["production_authorized"])
         self.assertTrue(all(value is False for value in g2b["real_evidence"].values()))
 
-    def test_publication_and_lineage_are_explicit_and_local_only(self):
+    def test_publication_and_lineage_are_explicit_without_merge_authority(self):
         publication = self.context["publication"]
         self.assertEqual(
             publication["safe_pull_request_target"],
             self.context["lineage"]["mature_base_branch"],
         )
-        self.assertFalse(publication["push_executed"])
-        self.assertIsNone(publication["pull_request"])
+        self.assertTrue(publication["push_executed"])
+        self.assertEqual(
+            publication["pull_request"],
+            "https://github.com/leon337/cloud-infrastructure/pull/26",
+        )
         self.assertFalse(publication["merge_authorized"])
 
     def test_shared_git_object_database_recovery_is_attributed_to_parallel_mission(self):
