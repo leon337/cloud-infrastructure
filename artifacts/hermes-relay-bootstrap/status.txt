@@ -1,4 +1,4 @@
-UTC=2026-08-23T20:51:27Z
+UTC=2026-08-23T21:00:30Z
 RUNNER_USER=ubuntu
 HOST=vmi3506102
 SENTINELX_ACTIVE=active
@@ -8,16 +8,10 @@ IDENTITY_META=sentinelx:sentinelx mode=600 bytes=676
 SENTINELX_PROCESS=853413 /opt/sentinelx-cloud-core/.venv/bin/python3.12 /opt/sentinelx-cloud-core/.venv/bin/sentinelx-cloud-core --hub https://mcp.sentinelx.app --identity REDACTED --config REDACTED
 HUB_HTTP=200
 RELAY_SOCKET=yes
-RELAY_PROCESS=860080 python3 /home/ubuntu/.local/share/mcf-hermes-relay/relay.py
+RELAY_PROCESS=860590 python3 /home/ubuntu/.local/share/mcf-hermes-relay/relay.py
 RELAY_HAS_BOUNDED_HELLO=yes
 HERMES_VERSION=Hermes Agent v0.20.5 (2026.8.19) · upstream 98110123
 --- SENTINELX_LOG_TAIL_SANITIZED ---
-Aug 23 17:35:31 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:35:31,371 WARNING sentinelx_core.client connection closed (1006): no close frame received or sent
-Aug 23 17:35:31 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:35:31,372 INFO sentinelx_core.client reconnecting in 5s (attempt 2)
-Aug 23 17:35:36 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:35:36,380 INFO sentinelx_core.client connecting to wss://mcp.sentinelx.app
-Aug 23 17:35:37 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:35:37,294 INFO sentinelx_core.policy policy_loaded
-Aug 23 17:35:37 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:35:37,433 INFO sentinelx_core.policy policy_loaded
-Aug 23 17:35:37 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:35:37,693 INFO sentinelx_core.client connected; session=sess_b0c868a1b575
 Aug 23 17:37:00 vmi3506102 sudo[857434]: pam_unix(sudo:auth): conversation failed
 Aug 23 17:37:00 vmi3506102 sudo[857434]: pam_unix(sudo:auth): auth could not identify password REDACTED [sentinelx]
 Aug 23 17:37:00 vmi3506102 sudo[857434]: sentinelx : command not allowed ; PWD=/ ; USER=root ; COMMAND=/usr/bin/cat /etc/sentinelx/config.yaml
@@ -27,3 +21,9 @@ Aug 23 17:46:28 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:46:28,073
 Aug 23 17:46:28 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:46:28,956 INFO sentinelx_core.policy policy_loaded
 Aug 23 17:46:29 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:46:29,040 INFO sentinelx_core.policy policy_loaded
 Aug 23 17:46:29 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:46:29,307 INFO sentinelx_core.client connected; session=sess_a55bcfb2e2be
+Aug 23 17:58:52 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:58:52,717 WARNING sentinelx_core.client connection closed (1006): no close frame received or sent
+Aug 23 17:58:52 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:58:52,718 INFO sentinelx_core.client reconnecting in 60s (attempt 4)
+Aug 23 17:59:52 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:59:52,781 INFO sentinelx_core.client connecting to wss://mcp.sentinelx.app
+Aug 23 17:59:53 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:59:53,683 INFO sentinelx_core.policy policy_loaded
+Aug 23 17:59:53 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:59:53,761 INFO sentinelx_core.policy policy_loaded
+Aug 23 17:59:54 vmi3506102 sentinelx-cloud-core[853413]: 2026-08-23 17:59:54,020 INFO sentinelx_core.client connected; session=sess_260a64d75777
