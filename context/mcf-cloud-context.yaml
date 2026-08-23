@@ -39,6 +39,25 @@ capabilities:
       - git.diff
     state_ref: state/control-bridge-g2a.yaml
     evidence_ref: docs/52-control-bridge-g2a-implementation-checkpoint.md
+    local_context_adapter:
+      lifecycle: IMPLEMENTED_LOCALLY_DISABLED_BY_DEFAULT_E2E_PENDING
+      transport: STDIO
+      operation: context.get
+      enabled_by_default: false
+      read_only: true
+      network_access: false
+      external_process: false
+      arbitrary_path: false
+      request_validation: EXACT_CODE_CONTRACT
+      entrypoint: platform/control-bridge/mcf-cloud-context-read
+      config: platform/control-bridge/mcf-cloud-context-read-config.yaml
+      result_schema: platform/schemas/mcf-cloud-context-read-result.schema.json
+      unit_tests: PASS_9_OF_9
+      full_regression: PASS_390_OF_390
+      e2e: NOT_EXECUTED
+      repository_fingerprint: NOT_EXECUTED
+      activation: NOT_AUTHORIZED
+      evidence_ref: evidence/CONTROL-BRIDGE-G2A/LOCAL-CONTEXT-ADAPTER-CHECKPOINT-20260823.md
   g2b:
     lifecycle: LAB_VALIDATED_INACTIVE
     state: TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED
@@ -89,7 +108,7 @@ validation:
   current_unit_suite:
     result: PASS
     count: 381
-    scope: FINAL_RECONCILED_WORKTREE
+    scope: PRE_LOCAL_ADAPTER_RECONCILIATION
   aggregate_gate:
     result: BLOCKED_LOCAL_SHARED_GIT_OBJECT_DB
     candidate_failure: false

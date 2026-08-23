@@ -47,7 +47,7 @@
         "g2a": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["lifecycle", "state", "request_protocol", "result_protocol", "read_only", "mutation", "operational_freshness", "operations", "state_ref", "evidence_ref"],
+          "required": ["lifecycle", "state", "request_protocol", "result_protocol", "read_only", "mutation", "operational_freshness", "operations", "state_ref", "evidence_ref", "local_context_adapter"],
           "properties": {
             "lifecycle": {"const": "HISTORIC_READ_ONLY_LIVE_REQUIRED"},
             "state": {"const": "PASS_REAL_NODE_01_READ_ONLY_HISTORIC"},
@@ -64,7 +64,32 @@
               "items": {"enum": ["project.list", "project.get", "workspace.stat", "workspace.list", "workspace.read", "git.status", "git.branch", "git.head", "git.diff"]}
             },
             "state_ref": {"const": "state/control-bridge-g2a.yaml"},
-            "evidence_ref": {"const": "docs/52-control-bridge-g2a-implementation-checkpoint.md"}
+            "evidence_ref": {"const": "docs/52-control-bridge-g2a-implementation-checkpoint.md"},
+            "local_context_adapter": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["lifecycle", "transport", "operation", "enabled_by_default", "read_only", "network_access", "external_process", "arbitrary_path", "request_validation", "entrypoint", "config", "result_schema", "unit_tests", "full_regression", "e2e", "repository_fingerprint", "activation", "evidence_ref"],
+              "properties": {
+                "lifecycle": {"const": "IMPLEMENTED_LOCALLY_DISABLED_BY_DEFAULT_E2E_PENDING"},
+                "transport": {"const": "STDIO"},
+                "operation": {"const": "context.get"},
+                "enabled_by_default": {"const": false},
+                "read_only": {"const": true},
+                "network_access": {"const": false},
+                "external_process": {"const": false},
+                "arbitrary_path": {"const": false},
+                "request_validation": {"const": "EXACT_CODE_CONTRACT"},
+                "entrypoint": {"const": "platform/control-bridge/mcf-cloud-context-read"},
+                "config": {"const": "platform/control-bridge/mcf-cloud-context-read-config.yaml"},
+                "result_schema": {"const": "platform/schemas/mcf-cloud-context-read-result.schema.json"},
+                "unit_tests": {"const": "PASS_9_OF_9"},
+                "full_regression": {"const": "PASS_390_OF_390"},
+                "e2e": {"const": "NOT_EXECUTED"},
+                "repository_fingerprint": {"const": "NOT_EXECUTED"},
+                "activation": {"const": "NOT_AUTHORIZED"},
+                "evidence_ref": {"const": "evidence/CONTROL-BRIDGE-G2A/LOCAL-CONTEXT-ADAPTER-CHECKPOINT-20260823.md"}
+              }
+            }
           }
         },
         "g2b": {
@@ -164,7 +189,7 @@
           "properties": {
             "result": {"const": "PASS"},
             "count": {"const": 381},
-            "scope": {"const": "FINAL_RECONCILED_WORKTREE"}
+            "scope": {"const": "PRE_LOCAL_ADAPTER_RECONCILIATION"}
           }
         },
         "aggregate_gate": {

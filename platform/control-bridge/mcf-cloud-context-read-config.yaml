@@ -1,0 +1,27 @@
+schema_version: 1
+enabled_by_default: false
+transport: STDIO
+request_protocol: MCF_CLOUD_CONTEXT_READ_V1
+result_protocol: MCF_CLOUD_CONTEXT_READ_RESULT_V1
+enable_environment:
+  name: MCF_CLOUD_CONTEXT_READ_ENABLE
+  value: DISPOSABLE_LOCAL_LAB_ONLY
+project_id: cloud-infrastructure
+cloud_project_key:
+  tenant: leon337
+  name: g2a-smoke
+  environment: dev
+operation: context.get
+source_paths:
+  - .mcf/project-capsule.yaml
+  - context/mcf-cloud-context.yaml
+  - platform/manifests/g2a-smoke.yaml
+  - platform/schemas/mcf-cloud-context.schema.json
+  - platform/schemas/mcf-project-capsule.schema.json
+  - platform/schemas/project.schema.json
+  - state/control-bridge-g2a.yaml
+  - state/control-bridge-g2b.yaml
+limits:
+  input_bytes: 4096
+  output_bytes: 65536
+  source_bytes_each: 262144
