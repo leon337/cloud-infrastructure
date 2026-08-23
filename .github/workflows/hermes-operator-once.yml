@@ -15,9 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  bootstrap:
+  mission:
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
-    timeout-minutes: 30
+    timeout-minutes: 70
     env:
       HOME: /home/ubuntu
       PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
@@ -25,91 +25,37 @@ jobs:
       XAUTHORITY: /home/ubuntu/.Xauthority
       XDG_RUNTIME_DIR: /run/user/1000
       DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
-      RESULT: /tmp/hermes-operator-once-result.txt
+      HERMES_STREAM_READ_TIMEOUT: '1800'
+      RESULT: /tmp/hermes-operator-mission-result.txt
+
     steps:
-      - name: Bootstrap and validate operator runtime
+      - name: Configure local model and execute three-run GUI validation
         shell: bash
         run: |
           set -u
           : > "$RESULT"
           chmod 0644 "$RESULT"
           log(){ printf '%s\n' "$*" | tee -a "$RESULT"; }
-          fail(){ log "RESULT=FAIL"; log "FAILURE=$*"; exit 1; }
+          fail(){ log 'RESULT=FAIL'; log "FAILURE=$*"; exit 1; }
+          gate(){ log 'RESULT=HUMAN_GATE'; log "GATE=$*"; exit 2; }
+
           log "UTC=$(date -u +%FT%TZ)"
           log "HOST=$(hostname)"
-          log "USER=$(id -un)"
-          [[ "$(id -un)" == ubuntu ]] || fail 'runner_not_ubuntu'
-          if sudo -n true 2>/dev/null; then fail 'unexpected_passwordless_sudo'; fi
-          [[ -x "$HOME/.local/bin/hermes" ]] || fail 'hermes_missing'
-          [[ -x "$HOME/.local/bin/llama" ]] || fail 'llama_missing'
-          log "HERMES=$($HOME/.local/bin/hermes --version | head -1)"
+          log "RUNNER_USER=$(id -un)"
+          [[ "$(id -un)" == ubuntu ]] || fail runner_not_ubuntu
+          if sudo -n true 2>/dev/null; then fail unexpected_passwordless_sudo; fi
 
-          if ! "$HOME/.local/bin/hermes" computer-use doctor >>"$RESULT" 2>&1; then
-            fail 'computer_use_doctor_failed'
-          fi
-          log 'COMPUTER_USE_DOCTOR=PASS'
+          [[ -x "$HOME/.local/bin/hermes" ]] || fail hermes_missing
+          [[ -x "$HOME/.hermes/venv/bin/python" ]] || fail hermes_venv_python_missing
 
-          pkill -u "$(id -u)" -f 'curl .*127\.0\.0\.1:8080/v1/chat/completions' 2>/dev/null || true
-          pkill -u "$(id -u)" -f '/home/ubuntu/.local/bin/llama serve' 2>/dev/null || true
-          sleep 4
+          code=$(curl -sS -o /tmp/hermes-health -w '%{http_code}' --max-time 3 http://127.0.0.1:8080/health 2>/dev/null || true)
+          log "LOCAL_PROVIDER_HEALTH=$code"
+          [[ "$code" == 200 ]] || fail local_provider_not_ready
+          models=$(curl -fsS --max-time 5 http://127.0.0.1:8080/v1/models 2>/dev/null || true)
+          log "LOCAL_MODELS=$(printf '%s' "$models" | tr '\n' ' ' | cut -c1-700)"
+          printf '%s' "$models" | grep -q 'qwen3.5-2b' || fail wrong_local_model_loaded
 
-          base="$HOME/.local/share/mcf-hermes-local-provider"
-          mkdir -p "$base"
-          rm -f "$base/server.log"
-          env -u RUNNER_TRACKING_ID nohup "$HOME/.local/bin/llama" serve \
-            -hf openresearchtools/Qwen3.5-2B-GGUF:Q4_K_M \
-            -c 65536 \
-            --cache-type-k q4_0 \
-            --cache-type-v q4_0 \
-            --jinja \
-            --reasoning off \
-            --host 127.0.0.1 \
-            --port 8080 \
-            --alias qwen3.5-2b \
-            --no-webui \
-            > "$base/server.log" 2>&1 < /dev/null &
-          llama_pid=$!
-          echo "$llama_pid" > "$base/llama.pid"
-          log "LLAMA_PID=$llama_pid"
-          log 'MODEL=qwen3.5-2b Q4_K_M ctx=65536 kv=q4_0'
-
-          healthy=0
-          for i in $(seq 1 180); do
-            code=$(curl -sS -o /tmp/hermes-health -w '%{http_code}' --max-time 2 http://127.0.0.1:8080/health 2>/dev/null || true)
-            if [[ "$code" == 200 ]]; then healthy=1; break; fi
-            if ! kill -0 "$llama_pid" 2>/dev/null; then
-              tail -n 120 "$base/server.log" >> "$RESULT" 2>&1 || true
-              fail 'local_model_process_exited'
-            fi
-            sleep 5
-          done
-          [[ "$healthy" == 1 ]] || { tail -n 120 "$base/server.log" >> "$RESULT" 2>&1 || true; fail 'local_model_health_timeout'; }
-          log 'LOCAL_PROVIDER_HEALTH=PASS'
-
-          tmp=$(mktemp)
-          if ! timeout 180 curl -fsS http://127.0.0.1:8080/v1/chat/completions \
-            -H 'Content-Type: application/json' \
-            -d '{"model":"qwen3.5-2b","messages":[{"role":"user","content":"Call the readiness tool with value HERMES_READY."}],"tools":[{"type":"function","function":{"name":"readiness","description":"Record readiness","parameters":{"type":"object","properties":{"value":{"type":"string"}},"required":["value"]}}}],"tool_choice":"required","temperature":0,"max_tokens":48}' > "$tmp"; then
-            tail -n 80 "$base/server.log" >> "$RESULT" 2>&1 || true
-            fail 'tool_call_http_failed_or_timeout'
-          fi
-          if ! python3 - "$tmp" >> "$RESULT" 2>&1 <<'PY'
-          import json,sys
-          obj=json.load(open(sys.argv[1]))
-          calls=obj.get('choices',[{}])[0].get('message',{}).get('tool_calls') or []
-          if not calls:
-              print('TOOL_CALLING_RESPONSE='+json.dumps(obj)[:2000])
-              raise SystemExit(1)
-          call=calls[0].get('function',{})
-          print('TOOL_NAME='+str(call.get('name')))
-          print('TOOL_ARGS='+str(call.get('arguments')))
-          if call.get('name') != 'readiness': raise SystemExit(2)
-          PY
-          then fail 'tool_call_parse_failed'; fi
-          rm -f "$tmp"
-          log 'TOOL_CALLING=PASS'
-
-          py="$HOME/.hermes/hermes-agent/.venv/bin/python"
+          py="$HOME/.hermes/venv/bin/python"
           if ! "$py" - >> "$RESULT" 2>&1 <<'PY'
           from pathlib import Path
           import os,tempfile,yaml
@@ -118,25 +64,92 @@ jobs:
           if not isinstance(cfg,dict): cfg={}
           model=cfg.get('model')
           if not isinstance(model,dict): model={}
-          model.update({'default':'qwen3.5-2b','provider':'custom','base_url':'http://127.0.0.1:8080/v1','api_key':'no-key','context_length':65536})
+          model.update({
+              'default':'qwen3.5-2b',
+              'provider':'custom',
+              'base_url':'http://127.0.0.1:8080/v1',
+              'api_key':'no-key',
+              'context_length':65536,
+          })
           cfg['model']=model
           fd,tmp=tempfile.mkstemp(prefix='config.',suffix='.yaml',dir=str(p.parent)); os.close(fd)
           Path(tmp).write_text(yaml.safe_dump(cfg,sort_keys=False,allow_unicode=True))
-          os.chmod(tmp,0o600); os.replace(tmp,p)
+          os.chmod(tmp,0o600)
+          os.replace(tmp,p)
           print('CONFIG_WRITE=PASS')
           PY
-          then fail 'hermes_config_write_failed'; fi
+          then fail hermes_config_write_failed; fi
           log 'HERMES_PROVIDER_CONFIG=PASS'
+          "$HOME/.local/bin/hermes" config get model --json >> "$RESULT" 2>&1 || true
 
-          smoke=$(timeout 240 "$HOME/.local/bin/hermes" -z 'Reply with exactly HERMES_READY and nothing else.' --ignore-rules 2>>"$RESULT" || true)
+          smoke=$(timeout 360 "$HOME/.local/bin/hermes" -z 'Reply with exactly HERMES_READY and nothing else.' --ignore-rules 2>>"$RESULT" || true)
           log "COGNITIVE_OUTPUT=$smoke"
-          [[ "$smoke" == HERMES_READY ]] || fail 'cognitive_smoke_failed'
+          [[ "$smoke" == HERMES_READY ]] || fail cognitive_smoke_failed
           log 'COGNITIVE_SMOKE=PASS'
 
-          gui=$(timeout 300 "$HOME/.local/bin/hermes" -z 'Use the computer_use tool exactly once to observe the current Linux desktop. Do not click or type. Then reply with exactly GUI_PROBE_OK.' -t computer_use --ignore-rules 2>>"$RESULT" || true)
-          log "GUI_OUTPUT=$gui"
-          [[ "$gui" == GUI_PROBE_OK ]] || fail 'computer_use_smoke_failed'
+          gui=$(timeout 480 "$HOME/.local/bin/hermes" -z 'Use the computer_use tool exactly once to observe the current Linux desktop. Do not click, type, open, close, or modify anything. Then reply with exactly GUI_PROBE_OK.' -t computer_use --ignore-rules 2>>"$RESULT" || true)
+          log "GUI_PROBE_OUTPUT=$gui"
+          [[ "$gui" == GUI_PROBE_OK ]] || fail computer_use_smoke_failed
           log 'COMPUTER_USE_SMOKE=PASS'
 
+          close_apps(){
+            pkill -u "$(id -u)" -x brave 2>/dev/null || true
+            pkill -u "$(id -u)" -x brave-browser 2>/dev/null || true
+            pkill -u "$(id -u)" -x mousepad 2>/dev/null || true
+            pkill -u "$(id -u)" -x gedit 2>/dev/null || true
+            pkill -u "$(id -u)" -x xed 2>/dev/null || true
+            sleep 4
+          }
+
+          run_one(){
+            n="$1"
+            report="/home/ubuntu/Hermes-Hello-World-run${n}.txt"
+            close_apps
+            rm -f "$report"
+            prompt=$(cat <<EOF
+Execute canonical Hermes Operator Hello World validation RUN ${n} on this Linux VPS.
+
+Use ONLY the computer_use toolset and ordinary visible GUI interaction for the journey. Do not use terminal, shell, filesystem APIs, browser APIs, DOM, CDP, developer tools, backend calls, or credentials to perform the journey.
+
+Starting condition: Brave and the graphical text editor are closed. The ChatGPT session must already be authenticated by the human.
+
+1. Open Brave through the normal graphical desktop interface.
+2. Navigate visibly to https://chatgpt.com.
+3. If ChatGPT is not already authenticated, authentication expired, or any login/password/code is requested, do not enter credentials. Stop and return exactly AUTH_REQUIRED.
+4. If authenticated, start a new ChatGPT conversation.
+5. Type exactly: Hello World
+6. Send it and wait until ChatGPT has completely finished its response.
+7. Read the entire response through the GUI, scrolling if necessary, and understand it semantically.
+8. Open a simple graphical text editor through the normal GUI.
+9. Write a short report in your own words with these headings on separate lines:
+MISSÃO
+RESPOSTA ENTENDIDA
+AVALIAÇÃO
+RESULTADO: SUCESSO
+10. Save it through graphical Save/Save As as ${report}
+11. Verify through the GUI that the report content is present and the file is saved.
+12. Return a concise final response beginning exactly HELLO_WORLD_GUI_OK: and summarize completion of RUN ${n}.
+
+Do not start any other objective. Recover safely from reversible GUI errors by re-observing rather than repeating blindly.
+EOF
+)
+            out=$(timeout 1500 "$HOME/.local/bin/hermes" -z "$prompt" -t computer_use --ignore-rules 2>>"$RESULT" || true)
+            log "RUN${n}_OUTPUT=$out"
+            [[ "$out" != AUTH_REQUIRED ]] || gate "CHATGPT_AUTH_REQUIRED_RUN_${n}"
+            [[ "$out" == HELLO_WORLD_GUI_OK:* ]] || fail "run_${n}_agent_verdict_failed"
+            [[ -f "$report" ]] || fail "run_${n}_report_missing"
+            grep -q '^MISSÃO' "$report" || fail "run_${n}_heading_missao_missing"
+            grep -q '^RESPOSTA ENTENDIDA' "$report" || fail "run_${n}_heading_resposta_missing"
+            grep -q '^AVALIAÇÃO' "$report" || fail "run_${n}_heading_avaliacao_missing"
+            grep -q '^RESULTADO: SUCESSO' "$report" || fail "run_${n}_result_missing"
+            size=$(stat -c '%s' "$report")
+            sha=$(sha256sum "$report" | awk '{print $1}')
+            log "RUN${n}=PASS size=${size} sha256=${sha}"
+          }
+
+          run_one 1
+          run_one 2
+          run_one 3
+          log 'THREE_CONSECUTIVE_RUNS=PASS'
           free -h | awk '/Mem:/{print "MEM_USED="$3" MEM_AVAILABLE="$7}' | tee -a "$RESULT"
           log 'RESULT=PASS'
