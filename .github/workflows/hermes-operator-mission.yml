@@ -1,0 +1,153 @@
+name: hermes-operator-mission
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+    paths:
+      - .github/workflows/hermes-operator-mission.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hermes-operator-mission-node01
+  cancel-in-progress: true
+
+jobs:
+  hello-world:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 60
+    env:
+      HOME: /home/ubuntu
+      PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+      DISPLAY: ':10'
+      XAUTHORITY: /home/ubuntu/.Xauthority
+      XDG_RUNTIME_DIR: /run/user/1000
+      DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
+      HERMES_STREAM_READ_TIMEOUT: '1800'
+      RESULT: /tmp/hermes-operator-mission-result.txt
+
+    steps:
+      - name: Configure, probe, and run canonical Hello World three times
+        shell: bash
+        run: |
+          set -u
+          : > "$RESULT"
+          chmod 0644 "$RESULT"
+          log(){ printf '%s\n' "$*" | tee -a "$RESULT"; }
+          fail(){ log 'RESULT=FAIL'; log "FAILURE=$*"; exit 1; }
+          gate(){ log 'RESULT=HUMAN_GATE'; log "GATE=$*"; exit 2; }
+
+          log "UTC=$(date -u +%FT%TZ)"
+          log "HOST=$(hostname)"
+          log "USER=$(id -un)"
+          [[ "$(id -un)" == ubuntu ]] || fail runner_not_ubuntu
+          if sudo -n true 2>/dev/null; then fail unexpected_passwordless_sudo; fi
+          [[ -x "$HOME/.local/bin/hermes" ]] || fail hermes_missing
+
+          health=$(curl -sS -o /tmp/hermes-health -w '%{http_code}' --max-time 3 http://127.0.0.1:8080/health 2>/dev/null || true)
+          log "LOCAL_PROVIDER_HEALTH=$health"
+          [[ "$health" == 200 ]] || fail local_provider_not_ready
+
+          py="$HOME/.hermes/venv/bin/python"
+          [[ -x "$py" ]] || fail hermes_venv_python_missing
+          if ! "$py" - >> "$RESULT" 2>&1 <<'PY'
+          from pathlib import Path
+          import os,tempfile,yaml
+          p=Path('/home/ubuntu/.hermes/config.yaml')
+          cfg=yaml.safe_load(p.read_text()) if p.exists() else {}
+          if not isinstance(cfg,dict): cfg={}
+          model=cfg.get('model')
+          if not isinstance(model,dict): model={}
+          model.update({
+              'default':'qwen3.5-2b',
+              'provider':'custom',
+              'base_url':'http://127.0.0.1:8080/v1',
+              'api_key':'no-key',
+              'context_length':65536,
+          })
+          cfg['model']=model
+          fd,tmp=tempfile.mkstemp(prefix='config.',suffix='.yaml',dir=str(p.parent)); os.close(fd)
+          Path(tmp).write_text(yaml.safe_dump(cfg,sort_keys=False,allow_unicode=True))
+          os.chmod(tmp,0o600); os.replace(tmp,p)
+          print('CONFIG_WRITE=PASS')
+          PY
+          then fail hermes_config_write_failed; fi
+          log 'HERMES_PROVIDER_CONFIG=PASS'
+          "$HOME/.local/bin/hermes" config get model --json >> "$RESULT" 2>&1 || true
+
+          smoke=$(timeout 300 "$HOME/.local/bin/hermes" -z 'Reply with exactly HERMES_READY and nothing else.' --ignore-rules 2>>"$RESULT" || true)
+          log "COGNITIVE_OUTPUT=$smoke"
+          [[ "$smoke" == HERMES_READY ]] || fail cognitive_smoke_failed
+          log 'COGNITIVE_SMOKE=PASS'
+
+          gui=$(timeout 420 "$HOME/.local/bin/hermes" -z 'Use the computer_use tool exactly once to observe the current Linux desktop. Do not click, type, open, close, or modify anything. Then reply with exactly GUI_PROBE_OK.' -t computer_use --ignore-rules 2>>"$RESULT" || true)
+          log "GUI_PROBE_OUTPUT=$gui"
+          [[ "$gui" == GUI_PROBE_OK ]] || fail computer_use_smoke_failed
+          log 'COMPUTER_USE_SMOKE=PASS'
+
+          close_apps(){
+            pkill -u "$(id -u)" -x brave 2>/dev/null || true
+            pkill -u "$(id -u)" -x brave-browser 2>/dev/null || true
+            pkill -u "$(id -u)" -x mousepad 2>/dev/null || true
+            pkill -u "$(id -u)" -x gedit 2>/dev/null || true
+            pkill -u "$(id -u)" -x xed 2>/dev/null || true
+            sleep 3
+          }
+
+          run_mission(){
+            n="$1"
+            report="/home/ubuntu/Hermes-Hello-World-run${n}.txt"
+            close_apps
+            rm -f "$report"
+            prompt=$(cat <<EOF
+Execute canonical Hermes Operator Hello World validation RUN ${n} on this Linux VPS.
+
+Use ONLY the computer_use toolset and ordinary visible GUI interaction for the user journey. Do not use terminal, shell, filesystem APIs, browser APIs, DOM, CDP, developer tools, backend calls, or credentials to perform the journey.
+
+Starting condition: Brave and the graphical text editor are closed. The ChatGPT session must already be authenticated by the human.
+
+Mission:
+1. Open Brave through the normal graphical desktop interface.
+2. Navigate visibly to https://chatgpt.com.
+3. If ChatGPT is not already authenticated, authentication expired, or any login/password/code is requested, do not enter credentials. Stop and return exactly AUTH_REQUIRED.
+4. If authenticated, start a new ChatGPT conversation.
+5. Type exactly: Hello World
+6. Send it and wait until ChatGPT has completely finished its response.
+7. Read the entire response through the GUI, scrolling if necessary, and understand it semantically.
+8. Open a simple graphical text editor through the normal GUI.
+9. Write a short report in your own words with exactly these headings on separate lines:
+MISSÃO
+RESPOSTA ENTENDIDA
+AVALIAÇÃO
+RESULTADO: SUCESSO
+10. Save it through the graphical Save/Save As interface as:
+${report}
+11. Verify through the GUI that the report content is present and the file is saved.
+12. Return a concise final response beginning exactly with HELLO_WORLD_GUI_OK: and summarize the completion of RUN ${n}.
+
+Do not start any other objective. If a reversible GUI problem occurs, re-observe and recover safely rather than repeating blindly.
+EOF
+)
+            out=$(timeout 1200 "$HOME/.local/bin/hermes" -z "$prompt" -t computer_use --ignore-rules 2>>"$RESULT" || true)
+            log "RUN${n}_OUTPUT=$out"
+            if [[ "$out" == AUTH_REQUIRED ]]; then gate "CHATGPT_AUTH_REQUIRED_RUN_${n}"; fi
+            [[ "$out" == HELLO_WORLD_GUI_OK:* ]] || fail "run_${n}_agent_verdict_failed"
+            [[ -f "$report" ]] || fail "run_${n}_report_missing"
+            grep -q '^MISSÃO' "$report" || fail "run_${n}_heading_missao_missing"
+            grep -q '^RESPOSTA ENTENDIDA' "$report" || fail "run_${n}_heading_resposta_missing"
+            grep -q '^AVALIAÇÃO' "$report" || fail "run_${n}_heading_avaliacao_missing"
+            grep -q '^RESULTADO: SUCESSO' "$report" || fail "run_${n}_result_heading_missing"
+            size=$(stat -c '%s' "$report")
+            sha=$(sha256sum "$report" | awk '{print $1}')
+            log "RUN${n}=PASS size=${size} sha256=${sha}"
+          }
+
+          run_mission 1
+          run_mission 2
+          run_mission 3
+
+          log 'THREE_CONSECUTIVE_RUNS=PASS'
+          free -h | awk '/Mem:/{print "MEM_USED="$3" MEM_AVAILABLE="$7}' | tee -a "$RESULT"
+          log 'RESULT=PASS'
