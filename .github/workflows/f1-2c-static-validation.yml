@@ -1,0 +1,112 @@
+name: f1-2c-static-validation
+
+on:
+  pull_request:
+    branches:
+      - fix/f1-2c-systemd-runtime-lock
+
+permissions:
+  contents: read
+
+concurrency:
+  group: f1-2c-static-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  static-validate:
+    if: github.head_ref == 'team/f1-2c-network-recovery-20260822'
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out exact validation state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify unprivileged boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          id
+          if sudo -n true 2>/dev/null; then
+            echo 'F1_2C_STATIC_REFUSED reason=unexpected_passwordless_sudo' >&2
+            exit 1
+          fi
+          if [[ -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then
+            echo 'F1_2C_STATIC_REFUSED reason=writable_docker_socket' >&2
+            exit 1
+          fi
+          echo 'F1_2C_STATIC_BOUNDARY=PASS'
+
+      - name: Provision pinned ShellCheck in runner temp
+        shell: bash
+        env:
+          SHELLCHECK_VERSION: v0.11.0
+          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}.tar.xz"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            --output "${archive}" \
+            "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          printf '%s  %s\n' "${SHELLCHECK_SHA256}" "${archive}" | sha256sum --check
+          tar -xJf "${archive}" -C "${RUNNER_TEMP}"
+          printf '%s\n' "${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}" >> "${GITHUB_PATH}"
+
+      - name: Run focused F1.2c regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v \
+            tests.test_kvm_compose_dependency \
+            tests.test_network_services_systemd_sandbox \
+            tests.test_post_restart_diagnostics
+
+      - name: Run static validations excluding pre-existing history-only secret gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/check_markdown_links.py
+          python3 scripts/validate_yaml.py
+          python3 scripts/validate_manifests.py
+          python3 scripts/validate_state.py
+          python3 scripts/generate_project_status.py --check-readme
+          python3 - <<'PY'
+          import unittest
+          suite = unittest.defaultTestLoader.discover('tests', pattern='test_*.py')
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          if not result.wasSuccessful():
+              raise SystemExit(1)
+          print(f'UNIT_TESTS_PASS count={result.testsRun}')
+          PY
+          python3 -m compileall -q scripts tests
+
+          shell_scripts=()
+          shell_script_count=0
+          while IFS= read -r -d '' path; do
+            if [[ ! -f "$path" ]] || ! head -c 2 -- "$path" | cmp -s - <(printf '#!'); then
+              continue
+            fi
+            IFS= read -r first_line < "$path" || true
+            case "$first_line" in
+              '#!'*bash*) bash -n "$path" ;;
+              '#!'*/sh | '#!'*' sh') sh -n "$path" ;;
+              *) continue ;;
+            esac
+            shell_scripts+=("$path")
+            shell_script_count=$((shell_script_count + 1))
+          done < <(git ls-files --cached --others --exclude-standard -z)
+          printf 'SHELL_SYNTAX_PASS count=%s\n' "$shell_script_count"
+          shellcheck "${shell_scripts[@]}"
+          printf 'SHELLCHECK_PASS count=%s\n' "$shell_script_count"
+          echo 'F1_2C_STATIC_ACCEPTANCE=PASS historical_secret_gate=excluded_preexisting'
+
+      - name: Confirm repository workspace stayed clean
+        if: always()
+        shell: bash
+        run: |
+          git status --short
+          test -z "$(git status --porcelain)"

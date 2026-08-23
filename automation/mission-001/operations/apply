@@ -101,7 +101,7 @@ else
 fi
 
 declare -A source_digests=(
-  [platform/network/cloud-platform-network-services]=9c060295c4702f773c4e5c61b8b966437d73537e6b15ec0346b9fa1cdb60275b
+  [platform/network/cloud-platform-network-services]=b69f41cd1c66000da239f39c09a46681afd5098a311065adf76b3c7aae35b9a3
   [platform/network/node-01/compose.yaml]=704154f06c2e72d0a0243d0c4618a3d46320f6321cf9f17955a402e8985ab7d0
   [platform/network/node-01/cp00000002/Corefile]=52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa
   [platform/network/node-01/cp00000002/records.hosts]=a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703
@@ -109,7 +109,7 @@ declare -A source_digests=(
   [platform/network/node-01/cp00000003/Corefile]=52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa
   [platform/network/node-01/cp00000003/records.hosts]=a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703
   [platform/network/node-01/cp00000003/squid.conf]=1820d5eac816259597f8cb8c3551daa6e400a13390cafbadd9a47c99ba0056dc
-  [platform/systemd/cloud-platform-network-services.service]=562d226d4eb7c776d0d1d24bbdbf2d9ec51eba57ff5b6399ab155e1243e19029
+  [platform/systemd/cloud-platform-network-services.service]=c8297e4e88572a9fee9393960f7896e1ba27d9650f5643d595388878f059a57b
   [platform/sysctl/90-cloud-platform-network-forwarding.conf]=a2a00688b6f566d94ad43cebd13da2f4abcec76815b9fce11dab36b137be0c39
 )
 for relative in "${!source_digests[@]}"; do

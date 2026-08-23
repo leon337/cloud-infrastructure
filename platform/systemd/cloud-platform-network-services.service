@@ -15,7 +15,7 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectHome=yes
 ProtectSystem=strict
-ReadWritePaths=/run/lock
+ReadWritePaths=/run/lock/cloud-platform-network-enforcement.lock
 RuntimeDirectory=cloud-platform-network-services
 RuntimeDirectoryMode=0700
 
