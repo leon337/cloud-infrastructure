@@ -1,0 +1,141 @@
+name: hermes-relay-bootstrap
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hermes-relay-bootstrap-node01
+  cancel-in-progress: true
+
+jobs:
+  bootstrap:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    steps:
+      - name: Verify unprivileged boundary and Hermes install
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "RUNNER_USER=$(id -un)"
+          echo "RUNNER_UID=$(id -u)"
+          test "$(id -un)" = "ubuntu"
+          if sudo -n true 2>/dev/null; then
+            echo 'REFUSED: runner unexpectedly has passwordless sudo' >&2
+            exit 1
+          fi
+          test -x /home/ubuntu/.local/bin/hermes
+          /home/ubuntu/.local/bin/hermes --version || true
+
+      - name: Install narrow user-space relay
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=/home/ubuntu/.local/share/mcf-hermes-relay
+          mkdir -p "$base"
+          cat > "$base/relay.py" <<'PY'
+          import json, os, socket, struct, subprocess
+
+          SOCK = "/tmp/mcf-hermes-relay.sock"
+          HERMES = "/home/ubuntu/.local/bin/hermes"
+          ALLOWED_UIDS = {994, 1000}  # sentinelx, ubuntu on this host
+          ENV = os.environ.copy()
+          ENV.update({
+              "HOME": "/home/ubuntu",
+              "USER": "ubuntu",
+              "LOGNAME": "ubuntu",
+              "PATH": "/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin",
+              "DISPLAY": ":10",
+              "XAUTHORITY": "/home/ubuntu/.Xauthority",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
+          })
+
+          OPS = {
+              "version": [HERMES, "--version"],
+              "help": [HERMES, "--help"],
+              "doctor": [HERMES, "doctor"],
+              "computer_use_help": [HERMES, "computer-use", "--help"],
+              "computer_use_status": [HERMES, "computer-use", "status"],
+              "computer_use_doctor": [HERMES, "computer-use", "doctor"],
+          }
+
+          def run_op(req):
+              op = req.get("op")
+              if op not in OPS:
+                  return {"ok": False, "error": "op_not_allowed"}
+              try:
+                  cp = subprocess.run(OPS[op], env=ENV, text=True, stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT, timeout=120)
+                  return {"ok": cp.returncode == 0, "returncode": cp.returncode,
+                          "output": cp.stdout[-30000:]}
+              except subprocess.TimeoutExpired as e:
+                  return {"ok": False, "error": "timeout", "output": (e.stdout or "")[-30000:]}
+
+          try:
+              os.unlink(SOCK)
+          except FileNotFoundError:
+              pass
+
+          srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+          srv.bind(SOCK)
+          os.chmod(SOCK, 0o666)  # authorization is enforced with SO_PEERCRED below
+          srv.listen(8)
+
+          while True:
+              conn, _ = srv.accept()
+              try:
+                  pid, uid, gid = struct.unpack("3i", conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
+                  if uid not in ALLOWED_UIDS:
+                      conn.sendall(b'{"ok":false,"error":"peer_not_allowed"}\n')
+                      continue
+                  data = b""
+                  while b"\n" not in data and len(data) < 65536:
+                      chunk = conn.recv(4096)
+                      if not chunk:
+                          break
+                      data += chunk
+                  try:
+                      req = json.loads(data.split(b"\n", 1)[0].decode("utf-8"))
+                      result = run_op(req)
+                  except Exception as exc:
+                      result = {"ok": False, "error": type(exc).__name__, "detail": str(exc)[:500]}
+                  conn.sendall((json.dumps(result) + "\n").encode("utf-8"))
+              finally:
+                  conn.close()
+          PY
+          chmod 700 "$base/relay.py"
+
+          if [[ -f "$base/relay.pid" ]] && kill -0 "$(cat "$base/relay.pid")" 2>/dev/null; then
+            kill "$(cat "$base/relay.pid")" || true
+            sleep 1
+          fi
+          rm -f /tmp/mcf-hermes-relay.sock
+          env -u RUNNER_TRACKING_ID nohup python3 "$base/relay.py" > "$base/relay.log" 2>&1 < /dev/null &
+          echo $! > "$base/relay.pid"
+          sleep 2
+          test -S /tmp/mcf-hermes-relay.sock
+          echo "RELAY_PID=$(cat "$base/relay.pid")"
+          echo "RELAY_SOCKET=/tmp/mcf-hermes-relay.sock"
+
+      - name: Smoke relay as ubuntu
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, socket
+          s=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+          s.connect('/tmp/mcf-hermes-relay.sock')
+          s.sendall(b'{"op":"version"}\n')
+          out=b''
+          while b'\n' not in out:
+              out += s.recv(4096)
+          print(out.decode().strip())
+          obj=json.loads(out)
+          if not obj.get('ok'):
+              raise SystemExit('relay version smoke failed')
+          PY
