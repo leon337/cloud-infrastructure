@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo 'G2B_TASK8_REPRO_PR_V1'
+          echo 'G2B_TASK8_REPRO_PR_V2'
           candidate='fbef3d407dbd9b7947b6c100a63d098eaebe2b6a'
           qemu_pid="$(pgrep -f 'qemu-system-x86_64.*g2b-disposable-task8-vm3' | head -1 || true)"
           if [[ -z "$qemu_pid" ]]; then
@@ -44,8 +44,9 @@ jobs:
           echo "attempt3_qemu=ALIVE pid=$qemu_pid"
           echo "candidate_archive_sha256=$(sha256sum "$archive" | awk '{print $1}')"
           ssh_opts=(-i "$key" -p 22284 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5)
+          scp_opts=(-i "$key" -P 22284 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5)
           remote_archive="/tmp/g2b-task8-repro-pr-${GITHUB_RUN_ID}.tar.gz"
-          scp "${ssh_opts[@]}" "$archive" "ubuntu@127.0.0.1:$remote_archive" >/dev/null
+          scp "${scp_opts[@]}" "$archive" "ubuntu@127.0.0.1:$remote_archive" >/dev/null
 
           set +e
           ssh "${ssh_opts[@]}" ubuntu@127.0.0.1 /bin/bash -s -- "$candidate" "$remote_archive" <<'GUEST'
