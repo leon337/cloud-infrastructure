@@ -55,26 +55,55 @@ jobs:
               "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
           })
 
+          PROBE = "Reply with exactly HERMES_READY and nothing else."
+          HELLO_WORLD = '''Execute the first canonical Hermes Operator GUI validation on this Linux VPS.
+
+Use ONLY the computer_use toolset and normal visible GUI interaction. Do not use terminal, shell, filesystem APIs, browser APIs, DOM, CDP, backend calls, developer tools, or credentials.
+
+Mission:
+1. Ensure Brave is open. If it is closed, open Brave through the normal graphical interface.
+2. In Brave, navigate to https://chatgpt.com through normal GUI interaction.
+3. If ChatGPT is not already authenticated, if authentication expired, or if any login/code/password is requested, STOP without entering credentials and return exactly AUTH_REQUIRED.
+4. If authenticated, start a new ChatGPT conversation.
+5. Type exactly: Hello World
+6. Send it and wait until ChatGPT has completely finished responding.
+7. Read the entire response, scrolling as necessary, and understand it semantically.
+8. Open a simple graphical text editor through the normal GUI. Do not use terminal or filesystem tools.
+9. Write a short report in your own words using exactly these headings:
+MISSÃO
+RESPOSTA ENTENDIDA
+AVALIAÇÃO
+RESULTADO: SUCESSO
+10. Save the report as /home/ubuntu/Hermes-Hello-World.txt using the editor's graphical Save/Save As flow.
+11. Verify through the GUI that the file is saved and the report content is present.
+12. Return a concise final response beginning with HELLO_WORLD_GUI_OK: and summarize the result. If a reversible GUI problem occurs, re-observe and recover safely. Do not start any other objective.'''
+
           OPS = {
-              "version": [HERMES, "--version"],
-              "help": [HERMES, "--help"],
-              "doctor": [HERMES, "doctor"],
-              "computer_use_help": [HERMES, "computer-use", "--help"],
-              "computer_use_status": [HERMES, "computer-use", "status"],
-              "computer_use_doctor": [HERMES, "computer-use", "doctor"],
+              "version": ([HERMES, "--version"], 120),
+              "help": ([HERMES, "--help"], 120),
+              "doctor": ([HERMES, "doctor"], 120),
+              "computer_use_help": ([HERMES, "computer-use", "--help"], 120),
+              "computer_use_status": ([HERMES, "computer-use", "status"], 120),
+              "computer_use_doctor": ([HERMES, "computer-use", "doctor"], 120),
+              "cognitive_probe": ([HERMES, "-z", PROBE, "--ignore-rules"], 180),
+              "hello_world_gui": ([HERMES, "-z", HELLO_WORLD, "-t", "computer_use", "--ignore-rules"], 480),
           }
 
           def run_op(req):
               op = req.get("op")
               if op not in OPS:
                   return {"ok": False, "error": "op_not_allowed"}
+              cmd, timeout = OPS[op]
               try:
-                  cp = subprocess.run(OPS[op], env=ENV, text=True, stdout=subprocess.PIPE,
-                                      stderr=subprocess.STDOUT, timeout=120)
+                  cp = subprocess.run(cmd, env=ENV, text=True, stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT, timeout=timeout)
                   return {"ok": cp.returncode == 0, "returncode": cp.returncode,
                           "output": cp.stdout[-30000:]}
               except subprocess.TimeoutExpired as e:
-                  return {"ok": False, "error": "timeout", "output": (e.stdout or "")[-30000:]}
+                  out = e.stdout or ""
+                  if isinstance(out, bytes):
+                      out = out.decode("utf-8", "replace")
+                  return {"ok": False, "error": "timeout", "output": out[-30000:]}
 
           try:
               os.unlink(SOCK)
