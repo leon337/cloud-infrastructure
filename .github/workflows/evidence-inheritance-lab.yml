@@ -1,0 +1,116 @@
+name: evidence-inheritance-lab
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evidence-inheritance-lab-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-inheritance:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+    env:
+      ANCHOR_SHA: f771cfd09f1824562ddfdaea507fb3cb0781f6ac
+      CANDIDATE_SHA: c9f909945b544d22dbabc619252456f7190f7ae9
+      SHELLCHECK_VERSION: v0.11.0
+      SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+
+    steps:
+      - name: Check out validation laboratory
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify unprivileged boundary
+        run: |
+          if sudo -n true 2>/dev/null; then
+            echo 'EVIDENCE_LAB_REFUSED unexpected_passwordless_sudo' >&2
+            exit 1
+          fi
+          if [[ -S /var/run/docker.sock && -r /var/run/docker.sock && -w /var/run/docker.sock ]]; then
+            echo 'EVIDENCE_LAB_REFUSED docker_socket_read_write' >&2
+            exit 1
+          fi
+          echo 'EVIDENCE_LAB_BOUNDARY_PASS no_passwordless_sudo no_docker_socket_rw'
+
+      - name: Run classifier regression tests
+        run: python3 -m unittest -v tests.test_evidence_inheritance
+
+      - name: Run complete laboratory static suite
+        env:
+          PYTHON: python3
+          REQUIRE_ANSIBLE: "0"
+          REQUIRE_SHELLCHECK: "0"
+        run: scripts/test.sh
+
+      - name: Prepare exact frozen candidate worktree
+        run: |
+          candidate_root="${RUNNER_TEMP}/f1-2c-candidate"
+          git worktree prune
+          if [[ -e "${candidate_root}" ]]; then
+            echo 'EVIDENCE_LAB_REFUSED stale_candidate_worktree' >&2
+            exit 1
+          fi
+          git cat-file -e "${ANCHOR_SHA}^{commit}"
+          git cat-file -e "${CANDIDATE_SHA}^{commit}"
+          git merge-base --is-ancestor "${ANCHOR_SHA}" "${CANDIDATE_SHA}"
+          git worktree add --detach "${candidate_root}" "${CANDIDATE_SHA}"
+          actual_sha=$(git -C "${candidate_root}" rev-parse HEAD)
+          [[ "${actual_sha}" == "${CANDIDATE_SHA}" ]]
+          echo "FROZEN_CANDIDATE_READY sha=${actual_sha}"
+
+      - name: Provision pinned ShellCheck in runner temp
+        run: |
+          archive="${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}.tar.xz"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            --output "${archive}" \
+            "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          printf '%s  %s\n' "${SHELLCHECK_SHA256}" "${archive}" | sha256sum --check
+          tar -xJf "${archive}" -C "${RUNNER_TEMP}"
+          printf '%s\n' "${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}" >> "${GITHUB_PATH}"
+
+      - name: Run fresh static validation on exact frozen candidate
+        env:
+          PYTHON: python3
+          REQUIRE_ANSIBLE: "0"
+          REQUIRE_SHELLCHECK: "1"
+        run: |
+          candidate_root="${RUNNER_TEMP}/f1-2c-candidate"
+          cd "${candidate_root}"
+          scripts/test.sh
+          if [[ -n "$(git status --short)" ]]; then
+            echo 'EVIDENCE_LAB_REFUSED candidate_checkout_mutated' >&2
+            git status --short >&2
+            exit 1
+          fi
+          [[ "$(git rev-parse HEAD)" == "${CANDIDATE_SHA}" ]]
+          echo "FROZEN_CANDIDATE_STATIC_PASS sha=${CANDIDATE_SHA}"
+
+      - name: Emit evidence inheritance decision
+        run: |
+          evidence_path="${RUNNER_TEMP}/evidence-inheritance.json"
+          python3 scripts/classify_evidence_inheritance.py \
+            --anchor "${ANCHOR_SHA}" \
+            --candidate "${CANDIDATE_SHA}" \
+            --static-run-id "${GITHUB_RUN_ID}" \
+            --static-conclusion PASS \
+            --output "${evidence_path}"
+          echo 'EVIDENCE_INHERITANCE_RECORD_BEGIN'
+          cat "${evidence_path}"
+          echo 'EVIDENCE_INHERITANCE_RECORD_END'
+
+      - name: Remove frozen candidate worktree
+        if: always()
+        run: |
+          candidate_root="${RUNNER_TEMP}/f1-2c-candidate"
+          git worktree remove --force "${candidate_root}" 2>/dev/null || true
+          git worktree prune
+          [[ ! -e "${candidate_root}" ]]
+          echo 'FROZEN_CANDIDATE_CLEANUP_PASS'
