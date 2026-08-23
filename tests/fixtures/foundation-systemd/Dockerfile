@@ -7,6 +7,7 @@ COPY requirements-dev.lock /tmp/requirements-dev.lock
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
         ca-certificates \
+        lsof \
         passwd \
         procps \
         python3 \

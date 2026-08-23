@@ -1,0 +1,44 @@
+mission: G2-B Task 8
+repository: leon337/cloud-infrastructure
+state: BLOCKED
+objective_met: false
+source:
+  branch: codex/control-bridge-g2b
+  sha: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+work:
+  branch: team/g2b-task8-20260822
+  pr: 21
+attempt3:
+  result: FAIL
+  exit: 2
+  stage: apply_g2b
+  acceptance_markers: 0
+  inner_cleanup_exit: 0
+  root_cause: NOT_VERIFIED
+  observability_gap: ansible_stdout_redirected_to_dev_null
+  qemu:
+    name: g2b-disposable-task8-vm3
+    latest_verified_state: ALIVE
+    latest_verified_at_utc: 2026-08-22T14:09:03Z
+    current_state: NOT_VERIFIED
+boundaries:
+  real_node01_g2b_write: NOT_EXECUTED
+  task9: NOT_STARTED
+  task10: NOT_STARTED
+  human_gate_crossed: false
+  final_merge: NOT_EXECUTED
+changes:
+  functional_code: NONE
+  temporary_diagnostic_workflow_final_tree: REMOVED
+next_action:
+  - verify GitHub and disposable VM state live before any action
+  - preserve any remaining attempt-3 forensic state before cleanup
+  - if the failed task remains unrecoverable, reproduce only in a fresh disposable boundary with stdout/stderr captured separately for apply invocation 1 and 2
+  - fix only a proven cause
+  - then run focused, regression, and complete disposable lifecycle validation
+  - do not start Tasks 9/10 until Task 8 has reproducible PASS evidence
+rollback:
+  functional: NAO_APLICAVEL
+  branch: close PR 21 and delete child branch only after audit if the checkpoint is superseded
+  evidence: NEVER_DELETE
+checkpoint_recipient: MESTRE CENTRAL

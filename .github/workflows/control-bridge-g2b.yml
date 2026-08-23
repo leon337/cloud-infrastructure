@@ -1,0 +1,62 @@
+name: control-bridge-g2b
+
+on:
+  push:
+    branches:
+      - codex/control-bridge-g2b
+    paths:
+      - control/dispatch/g2b.json
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: control-bridge-g2b-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  mutate:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out exact G2-B state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Execute bounded request
+        id: execute
+        continue-on-error: true
+        env:
+          CONTROL_BRIDGE_EVENT_NAME: ${{ github.event_name }}
+          CONTROL_BRIDGE_ACTOR_LOGIN: ${{ github.actor }}
+          CONTROL_BRIDGE_ACTOR_ID: ${{ github.actor_id }}
+        run: |
+          python3 scripts/control_bridge_g2b.py \
+            --event-name "${CONTROL_BRIDGE_EVENT_NAME}" \
+            --event-path "${GITHUB_EVENT_PATH}" \
+            --dispatch-file control/dispatch/g2b.json \
+            --request-output "${RUNNER_TEMP}/g2b-request.json" \
+            --result-output "${RUNNER_TEMP}/g2b-result.json" \
+            --actor-login "${CONTROL_BRIDGE_ACTOR_LOGIN}" \
+            --actor-id "${CONTROL_BRIDGE_ACTOR_ID}"
+
+      - name: Publish compact allowlisted result
+        id: publish
+        if: always()
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/control_bridge_g2b_publish.py \
+            --dispatch-file control/dispatch/g2b.json \
+            --result-file "${RUNNER_TEMP}/g2b-result.json" \
+            --summary-file "${GITHUB_STEP_SUMMARY}"
+
+      - name: Preserve executor outcome
+        id: preserve-executor-outcome
+        if: always() && steps.execute.outcome == 'failure'
+        run: exit 1

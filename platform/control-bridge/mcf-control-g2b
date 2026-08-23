@@ -1,0 +1,400 @@
+#!/usr/bin/python3 -I
+"""Immutable G2-B installed executor boundary."""
+from __future__ import annotations
+
+from contextlib import redirect_stderr, redirect_stdout
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import pwd
+import sys
+import sysconfig
+from typing import Any
+
+
+_SERVICE_ACCOUNT = "mcf-workspace"
+_INSTALLED_ROOT = Path("/usr/local/lib/mcf-control-bridge")
+_GRANT_PATH = Path("/etc/mcf-control-bridge/g2b-grant.json")
+_WORKSPACE_ROOT = Path(
+    "/var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev"
+)
+_STATE_ROOT = Path("/var/lib/mcf-control-bridge/state/g2b")
+_LOCK_PATH = Path("/run/lock/mcf-control-bridge-g2b.lock")
+_MAX_STDIN_BYTES = 131_072
+_MAX_STDOUT_BYTES = 8192
+_COMMAND_OPERATIONS = {
+    "execute": "workspace.write",
+    "rollback": "rollback",
+    "status": "status",
+    "revoke": "revoke",
+}
+_PUBLIC_BOUNDARY_CODES = frozenset(
+    {
+        "invalid_input_envelope",
+        "invalid_invocation",
+        "invalid_json",
+        "invalid_result",
+        "invalid_service_account_uid",
+        "invalid_transport_principal",
+        "input_must_be_object",
+        "operation_mismatch",
+        "result_too_large",
+        "root_execution_refused",
+        "service_account_missing",
+        "service_account_resolution_failed",
+        "stdin_too_large",
+        "execution_uid_mismatch",
+    }
+)
+_BOOTSTRAP_RESULT = b'{"error":"bootstrap_failure","status":"REFUSED"}\n'
+
+
+class _BoundaryError(Exception):
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+class _BootstrapFailure(BaseException):
+    pass
+
+
+class _DiscardOutput:
+    def write(self, value: str) -> int:
+        return len(value)
+
+    def flush(self) -> None:
+        return None
+
+
+class _SuppressedDescriptors:
+    def __init__(self) -> None:
+        self.saved_stdout: int | None = None
+        self.saved_stderr: int | None = None
+        self.null_fd: int | None = None
+        self.stdout_redirected = False
+        self.stderr_redirected = False
+        self.stdout_restored = True
+
+    @staticmethod
+    def _close(descriptor: int) -> bool:
+        try:
+            os.close(descriptor)
+            return True
+        except BaseException:
+            try:
+                os.close(descriptor)
+            except BaseException:
+                pass
+            return False
+
+    def suppress(self) -> None:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.saved_stdout = os.dup(1)
+        self.saved_stderr = os.dup(2)
+        self.null_fd = os.open(os.devnull, os.O_WRONLY)
+        self.stdout_redirected = True
+        self.stdout_restored = False
+        os.dup2(self.null_fd, 1)
+        self.stderr_redirected = True
+        os.dup2(self.null_fd, 2)
+
+    def restore(self) -> bool:
+        clean = True
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.flush()
+            except BaseException:
+                clean = False
+        if self.stdout_redirected and self.saved_stdout is not None:
+            try:
+                os.dup2(self.saved_stdout, 1)
+                self.stdout_restored = True
+            except BaseException:
+                clean = False
+        if self.stderr_redirected and self.saved_stderr is not None:
+            try:
+                os.dup2(self.saved_stderr, 2)
+            except BaseException:
+                clean = False
+        for attribute in ("null_fd", "saved_stderr"):
+            descriptor = getattr(self, attribute)
+            if descriptor is None:
+                continue
+            if not self._close(descriptor):
+                clean = False
+            setattr(self, attribute, None)
+        return clean
+
+    def emit(self, encoded: bytes) -> None:
+        try:
+            if self.stdout_restored:
+                try:
+                    sys.stdout.write(encoded.decode("utf-8"))
+                    return
+                except BaseException:
+                    encoded = _BOOTSTRAP_RESULT
+            if self.saved_stdout is None:
+                return
+            view = memoryview(encoded)
+            while view:
+                written = os.write(self.saved_stdout, view)
+                if not isinstance(written, int) or written <= 0:
+                    return
+                view = view[written:]
+        except BaseException:
+            return
+        finally:
+            if self.saved_stdout is not None:
+                self._close(self.saved_stdout)
+                self.saved_stdout = None
+
+
+def _is_within(candidate: Path, root: Path) -> bool:
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def _constrain_application_imports() -> None:
+    installed = str(_INSTALLED_ROOT)
+    stdlib_roots = {
+        Path(sysconfig.get_path(name)).resolve()
+        for name in ("stdlib", "platstdlib")
+        if sysconfig.get_path(name)
+    }
+    stdlib_archives = {
+        root.parent / f"python{sys.version_info.major}{sys.version_info.minor}.zip"
+        for root in stdlib_roots
+    }
+    retained: list[str] = []
+    for value in sys.path:
+        if not value or value == installed:
+            continue
+        candidate = Path(value).resolve()
+        if {"site-packages", "dist-packages"}.intersection(candidate.parts):
+            continue
+        if candidate in stdlib_archives or any(
+            _is_within(candidate, root) for root in stdlib_roots
+        ):
+            retained.append(value)
+    sys.path[:] = [installed, *retained]
+
+
+def _verify_application_origins() -> None:
+    try:
+        installed = _INSTALLED_ROOT.resolve(strict=True)
+    except OSError:
+        raise _BootstrapFailure() from None
+    application_modules = {
+        name: module
+        for name, module in sys.modules.items()
+        if name == "control_plane" or name.startswith("control_plane.")
+    }
+    if not application_modules:
+        raise _BootstrapFailure()
+    for module in application_modules.values():
+        spec = getattr(module, "__spec__", None)
+        origin = getattr(spec, "origin", None)
+        if not isinstance(origin, str) or origin in {"built-in", "frozen"}:
+            raise _BootstrapFailure()
+        try:
+            resolved = Path(origin).resolve(strict=True)
+        except OSError:
+            raise _BootstrapFailure() from None
+        if not _is_within(resolved, installed):
+            raise _BootstrapFailure()
+
+
+def _load_execute_request():
+    _constrain_application_imports()
+    if any(
+        name == "control_plane" or name.startswith("control_plane.")
+        for name in sys.modules
+    ):
+        raise _BootstrapFailure()
+    from control_plane.g2b.executor import execute_request
+    from control_plane.g2b.grant import TransportPrincipal
+
+    _verify_application_origins()
+    return execute_request, TransportPrincipal
+
+
+def _read_input() -> dict[str, Any]:
+    raw = sys.stdin.buffer.read(_MAX_STDIN_BYTES + 1)
+    if len(raw) > _MAX_STDIN_BYTES:
+        raise _BoundaryError("stdin_too_large")
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise _BoundaryError("invalid_json") from None
+    if not isinstance(value, dict):
+        raise _BoundaryError("input_must_be_object")
+    if set(value) != {"transport_principal", "request"}:
+        raise _BoundaryError("invalid_input_envelope")
+    if not isinstance(value["transport_principal"], dict) or not isinstance(value["request"], dict):
+        raise _BoundaryError("invalid_input_envelope")
+    return value
+
+
+def _resolve_service_uid() -> int:
+    try:
+        account = pwd.getpwnam(_SERVICE_ACCOUNT)
+    except KeyError:
+        raise _BoundaryError("service_account_missing") from None
+    except Exception:
+        raise _BoundaryError("service_account_resolution_failed") from None
+    expected_uid = account.pw_uid
+    effective_uid = os.geteuid()
+    if expected_uid == 0 or effective_uid == 0:
+        raise _BoundaryError("root_execution_refused")
+    if not isinstance(expected_uid, int) or isinstance(expected_uid, bool) or expected_uid < 1:
+        raise _BoundaryError("invalid_service_account_uid")
+    if effective_uid != expected_uid:
+        raise _BoundaryError("execution_uid_mismatch")
+    return expected_uid
+
+
+def _parse_principal(value: dict[str, Any], principal_type):
+    if set(value) != {"login", "actor_id"}:
+        raise _BoundaryError("invalid_transport_principal")
+    login = value["login"]
+    actor_id = value["actor_id"]
+    if (
+        not isinstance(login, str)
+        or not login
+        or len(login) > 128
+        or not isinstance(actor_id, int)
+        or isinstance(actor_id, bool)
+        or not 0 < actor_id <= 2**63 - 1
+    ):
+        raise _BoundaryError("invalid_transport_principal")
+    try:
+        return principal_type(login=login, actor_id=actor_id)
+    except BaseException:
+        raise _BootstrapFailure() from None
+
+
+def _render_result(result: dict[str, Any]) -> bytes:
+    if not isinstance(result, dict):
+        raise _BoundaryError("invalid_result")
+    try:
+        rendered = json.dumps(
+            result,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        encoded = (rendered + "\n").encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError):
+        raise _BoundaryError("invalid_result") from None
+    except BaseException:
+        raise _BootstrapFailure() from None
+    if len(encoded) > _MAX_STDOUT_BYTES:
+        raise _BoundaryError("result_too_large")
+    return encoded
+
+
+def _failure(code: str) -> dict[str, str]:
+    return {"error": code, "status": "REFUSED"}
+
+
+def _run() -> dict[str, Any]:
+    if len(sys.argv) != 2 or sys.argv[1] not in _COMMAND_OPERATIONS:
+        raise _BoundaryError("invalid_invocation")
+    command = sys.argv[1]
+    value = _read_input()
+    operation = value["request"].get("operation")
+    if operation != _COMMAND_OPERATIONS[command]:
+        raise _BoundaryError("operation_mismatch")
+    expected_uid = _resolve_service_uid()
+    try:
+        execute_request, principal_type = _load_execute_request()
+    except BaseException:
+        raise _BootstrapFailure() from None
+    principal = _parse_principal(value["transport_principal"], principal_type)
+    try:
+        return execute_request(
+            value["request"],
+            transport_principal=principal,
+            grant_path=_GRANT_PATH,
+            installed_root=_INSTALLED_ROOT,
+            workspace_root=_WORKSPACE_ROOT,
+            state_root=_STATE_ROOT,
+            lock_path=_LOCK_PATH,
+            expected_uid=expected_uid,
+            now=lambda: datetime.now(timezone.utc),
+        )
+    except BaseException:
+        raise _BootstrapFailure() from None
+
+
+def _protected_run() -> tuple[int, bytes]:
+    try:
+        try:
+            os.environ.clear()
+        except BaseException:
+            raise _BootstrapFailure() from None
+        try:
+            result = _run()
+            exit_code = 0
+        except _BoundaryError as error:
+            code = (
+                error.code
+                if error.code in _PUBLIC_BOUNDARY_CODES
+                else "bootstrap_failure"
+            )
+            result = _failure(code)
+            exit_code = 2
+        except BaseException:
+            result = _failure("bootstrap_failure")
+            exit_code = 2
+        try:
+            return exit_code, _render_result(result)
+        except _BoundaryError as error:
+            code = (
+                error.code
+                if error.code in _PUBLIC_BOUNDARY_CODES
+                else "bootstrap_failure"
+            )
+            return 2, _render_result(_failure(code))
+        except BaseException:
+            return 2, _BOOTSTRAP_RESULT
+    except BaseException:
+        return 2, _BOOTSTRAP_RESULT
+
+
+def main() -> int:
+    descriptors = _SuppressedDescriptors()
+    exit_code = 2
+    encoded = _BOOTSTRAP_RESULT
+    clean = False
+    try:
+        descriptors.suppress()
+        discard = _DiscardOutput()
+        with redirect_stdout(discard), redirect_stderr(discard):
+            exit_code, encoded = _protected_run()
+    except BaseException:
+        exit_code, encoded = 2, _BOOTSTRAP_RESULT
+    try:
+        clean = descriptors.restore()
+    except BaseException:
+        clean = False
+    if not clean:
+        exit_code, encoded = 2, _BOOTSTRAP_RESULT
+    if not descriptors.stdout_restored:
+        exit_code, encoded = 2, _BOOTSTRAP_RESULT
+    try:
+        descriptors.emit(encoded)
+    except BaseException:
+        pass
+    return exit_code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

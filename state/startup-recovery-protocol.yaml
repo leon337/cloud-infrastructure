@@ -1,0 +1,109 @@
+protocol_version: CLOUD_INFRA_AI_STARTUP_RECOVERY_V1
+updated_at: 2026-08-21
+status: ACTIVE_REQUIRED
+scope:
+  repository: leon337/cloud-infrastructure
+  applies_to:
+    - CHATGPT
+    - CODEX
+    - OTHER_AUTHORIZED_AI
+    - HUMAN_OPERATOR_WHEN_RECOVERING_CONTEXT
+canonical_document: governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+entrypoint: CONTEXT.md
+principle: NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
+required_checks:
+  - REPOSITORY_IDENTITY
+  - ACTIVE_MISSION
+  - ACTIVE_BRANCH_AND_BASE
+  - REMOTE_HEAD_AND_OPEN_PR
+  - CANONICAL_STATE
+  - TASK_AND_BLOCKER_STATE
+  - TEST_AND_EVIDENCE_STATE
+  - OWNERSHIP_AND_PARALLEL_WORK
+  - HUMAN_GATES
+  - NEXT_EXACT_STEP
+local_access_checks:
+  required_when_local_access_exists:
+    - GIT_TOPLEVEL
+    - WORKTREE
+    - CURRENT_BRANCH
+    - HEAD
+    - UPSTREAM
+    - LOCAL_REMOTE_DIVERGENCE
+    - STAGED_CHANGES
+    - UNSTAGED_CHANGES
+    - UNTRACKED_FILES
+  unavailable_policy: REPORT_LOCAL_STATE_UNVERIFIED
+remote_only_policy:
+  context_reconstruction: ALLOWED
+  planning_and_review: ALLOWED
+  code_or_state_mutation_with_possible_local_competitor: BLOCK_UNTIL_RECONCILED
+  production_or_node01_mutation: REQUIRES_SEPARATE_HUMAN_GATE
+source_precedence:
+  - CURRENT_EXPLICIT_LEANDRO_INSTRUCTION
+  - VERIFIED_LIVE_INFRASTRUCTURE_FOR_HOST_FACTS
+  - LIVE_GIT_GITHUB_FOR_APPLICABLE_BRANCH_PR_SHA
+  - STATE_ACTIVE_MISSION
+  - STATE_CURRENT_AND_CAPABILITY_STATE
+  - CHECKPOINT
+  - APPROVED_DECISIONS_AND_SPECS
+  - DOCS_RUNBOOKS_FINDINGS_EVIDENCE
+  - HISTORY
+  - PRIOR_CHATS
+fail_closed_conditions:
+  - REPOSITORY_IDENTITY_MISMATCH
+  - ACTIVE_BRANCH_MISMATCH
+  - LOCAL_REMOTE_DIVERGENCE_UNEXPLAINED
+  - UNCOMMITTED_OR_UNTRACKED_WORK_WITH_UNKNOWN_OWNERSHIP
+  - CANONICAL_SOURCE_CONTRADICTION
+  - TASK_STATUS_CONTRADICTION
+  - PASS_CLAIM_WITHOUT_APPLICABLE_EVIDENCE
+  - HUMAN_GATE_AMBIGUOUS_OR_CLOSED
+  - NEXT_EXACT_STEP_MISSING_OR_CONFLICTING
+  - ACTIVE_PR_OR_HEAD_MISMATCH
+verdicts:
+  PASS:
+    meaning: CONTEXT_RECONSTRUCTED_AND_SCOPE_CONSISTENT
+    implementation_allowed: true
+  PASS_READ_ONLY:
+    meaning: CONTEXT_SUFFICIENT_FOR_ANALYSIS_BUT_MUTATION_PRECONDITIONS_NOT_PROVEN
+    implementation_allowed: false
+  BLOCKED_RECONCILIATION:
+    meaning: SOURCES_OR_GIT_STATE_DISAGREE
+    implementation_allowed: false
+  WAITING_HUMAN_GATE:
+    meaning: REQUIRED_HUMAN_AUTHORIZATION_IS_NOT_OPEN
+    implementation_allowed: false
+required_recovery_report:
+  - REPOSITORY
+  - MODE
+  - ACTIVE_MISSION
+  - ACTIVE_BRANCH
+  - BASE_BRANCH
+  - REMOTE_HEAD
+  - LOCAL_HEAD_OR_UNVERIFIED
+  - LOCAL_REMOTE_DIVERGENCE_OR_UNVERIFIED
+  - WORKTREE_STATUS_OR_UNVERIFIED
+  - ACTIVE_PR
+  - TASK_STATE
+  - TEST_STATE
+  - BLOCKERS
+  - PARALLEL_WORK_DO_NOT_TOUCH
+  - HUMAN_GATES
+  - NEXT_EXACT_STEP
+  - CONTRADICTIONS
+  - RECOVERY_VERDICT
+startup_gate:
+  implementation_must_not_begin_before_report: true
+  pass_required_for_mutation: true
+  human_gate_still_applies_after_pass: true
+current_mission_binding:
+  mission_id: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+  issue: 10
+  active_branch: codex/control-bridge-g2b
+  pull_request: 11
+  r3_status: COMPLETE
+  r4_status: COMPLETE
+  persistence_policy: state/mission-persistence-policy.yaml
+  next_roadmap_stage: R5
+  next_exact_step: R5_CREATE_INSTITUTIONAL_PROJECT_MEMORY_AND_FIRST_INCIDENT_MEMO
