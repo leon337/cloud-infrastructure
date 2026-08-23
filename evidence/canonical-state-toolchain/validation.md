@@ -165,9 +165,14 @@ TEMP_DIAGNOSTIC_NON_SECRET_ASSIGNMENT=EXACT_LINE_HASH_ALLOWLISTED
 FUNCTIONAL_G2B_F1_2C_IMPORT_BOUNDARY=PASS
 PRODUCTION_BOUNDARY=PASS
 PROTECTED_LINE_MUTATION=PASS_NONE_PERFORMED
-REPOSITORY_HYGIENE_SECRET_BLOCKER=RESOLVED_PR19_REVALIDATION_REQUIRED
+REPOSITORY_HYGIENE_REVALIDATION=PASS_AGAINST_CANONICAL_TOOLCHAIN
 HOSTED_EXECUTOR=EXTERNAL_PRE_STEP_FAILURE
 PR22=DRAFT_DO_NOT_MERGE_PENDING_EXACT_HEAD_AND_HUMAN_REVIEW
 ```
 
 Current classification: `CONCLUDED_STATE_TOOLCHAIN_VALIDATED_LOCAL_FULL_HISTORY`.
+## Repository Hygiene revalidation handoff
+
+PR #19 final published head `f34aec6c641fb577d620446df4a743df3ff3fa5d` was revalidated against this canonical toolchain head `f39464daf4a4c5508d891e61f4ddd6394afd08fd`. A local-only synthetic integration candidate `3a6b040c67334aeb7f0411f3d6b7c712ed52987b` resolved exactly `CHECKPOINT.md` and `CONTEXT.md` in favor of the newer canonical projections and passed `git diff --check`, secret policy, Markdown/YAML/state/consistency, 15/15 unit tests, Python/shell syntax, and the canonical validation suite with a clean worktree before and after.
+
+Repository Hygiene is therefore `REPOSITORY_HYGIENE_REVALIDATED`. Branch cleanup remains a separate lifecycle operation and is not required for content integration.

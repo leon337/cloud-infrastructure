@@ -40,7 +40,7 @@ Fatos que não podem ser promovidos além da evidência:
 - G2-B Task 8: último terminal comprovado `FAILED_ATTEMPT_3_NOT_ACCEPTED`; causa `NOT_VERIFIED`; diagnóstico isolado `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
 - G2-B Tasks 9–10: `NOT_STARTED`;
 - produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`;
-- Repository Hygiene: `REPOSITORY_HYGIENE_BLOCKED` até state/toolchain executarem e os blockers reais de higiene serem tratados.
+- Repository Hygiene: `REPOSITORY_HYGIENE_REVALIDATED`; a compatibilidade do PR #19 com a toolchain canônica foi comprovada e o blocker histórico de secrets foi resolvido.
 
 ## Toolchain canônica
 
@@ -79,4 +79,4 @@ O executor canônico de integração também preserva o boundary F1.1: GitHub-ho
 
 ## Próximo passo exato
 
-**EXECUTE_HOSTED_CANONICAL_CI_AND_MAINTENANCE_PROOF_THEN_HANDOFF_HYGIENE_FINDINGS**.
+**RESUME_OPEN_F1_2C_AND_G2B_FRONTS_WITH_PRODUCTION_GATE_CLOSED**.

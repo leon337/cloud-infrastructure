@@ -41,7 +41,7 @@ def main() -> int:
             "DOCUMENTATION_AND_INTEGRATION_DRIFT",
             "REQUIRES_REVIEW",
             "IN_PROGRESS_DIAGNOSTIC_REPRODUCTION",
-            "REPOSITORY_HYGIENE_BLOCKED",
+            "REPOSITORY_HYGIENE_REVALIDATED",
         ):
             require_token(path, token)
 

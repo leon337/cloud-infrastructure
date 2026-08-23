@@ -2,13 +2,13 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: team/canonical-state-toolchain-20260822
-updated_at: "2026-08-23T03:30:00-03:00"
-state_classification: CURRENT_RECONCILED_CANDIDATE_VALIDATED_LOCAL_FULL_HISTORY
+updated_at: "2026-08-23T04:02:00-03:00"
+state_classification: CURRENT_RECONCILED_INTEGRATION_CANDIDATE_REVALIDATED
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 continuity:
   historical_validations_preserved: true
-  current_state_independent_validation: PASS_LOCAL_FULL_HISTORY_CANONICAL_SUITE
+  current_state_independent_validation: PASS_LOCAL_FULL_HISTORY_CANONICAL_SUITE_WITH_HYGIENE_REVALIDATION
   canonical_entrypoint: CONTEXT.md
   checkpoint: CHECKPOINT.md
   validation_entrypoint: scripts/test.sh
@@ -51,7 +51,7 @@ project:
     platform_s0: COMPLETE
     platform_f1_1: COMPLETE
     platform_f1_2b: COMPLETE
-  next_exact_step: REVALIDATE_REPOSITORY_HYGIENE_PR19_AND_REVIEW_PR22_WITH_RESOLVED_SECRET_BLOCKER
+  next_exact_step: RESUME_OPEN_F1_2C_AND_G2B_FRONTS_WITH_PRODUCTION_GATE_CLOSED
 
 execution:
   authority: LEANDRO
@@ -127,17 +127,28 @@ remote_vps:
     clean: true
 
 repository_hygiene:
-  status: REPOSITORY_HYGIENE_BLOCKED
+  status: REPOSITORY_HYGIENE_REVALIDATED
   pr: 19
-  blockers:
-    canonical_state: RECONCILED_WITH_FULL_EXECUTABLE_EVIDENCE
-    canonical_toolchain: CANONICAL_SUITE_PASS_LOCAL_FULL_HISTORY
-    historical_credential_uri_findings: 0
-    historical_symbolic_runtime_credential_uri_references: 9
-    historical_findings_classification: COMPLETE_NON_SECRET_RUNTIME_REFERENCES
-    historical_diagnostic_non_secret_assignment: EXACT_LINE_HASH_ALLOWLISTED
+  revalidation:
+    status: PASS_AGAINST_CANONICAL_TOOLCHAIN
+    head: f34aec6c641fb577d620446df4a743df3ff3fa5d
+    canonical_toolchain_head: f39464daf4a4c5508d891e61f4ddd6394afd08fd
+    synthetic_integration_sha: 3a6b040c67334aeb7f0411f3d6b7c712ed52987b
+    conflicts_resolved:
+      - CHECKPOINT.md
+      - CONTEXT.md
+    conflict_resolution: PR22_CANONICAL_PROJECTIONS_PRESERVED
+    git_diff_check: PASS
+    secret_policy: PASS
+    canonical_suite: PASS
+    unit_tests: 15_OF_15_PASS
+    worktree_clean_before_after: true
+  historical_credential_uri_findings: 0
+  historical_symbolic_runtime_credential_uri_references: 9
+  historical_findings_classification: COMPLETE_NON_SECRET_RUNTIME_REFERENCES
+  historical_diagnostic_non_secret_assignment: EXACT_LINE_HASH_ALLOWLISTED
   attribution: NINE_PREEXISTING_SYMBOLIC_RUNTIME_REFS_PLUS_ONE_EXTRACTION_DIAGNOSTIC_NON_SECRET_LINE
-  unblock_condition: REVALIDATE_PR19_WITH_GREEN_SECRET_POLICY_AND_CURRENT_BRANCH_HYGIENE
+  branch_cleanup_required_for_content_integration: false
 
 toolchain:
   canonical_entrypoint: scripts/test.sh

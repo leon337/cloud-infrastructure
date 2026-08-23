@@ -52,7 +52,7 @@ def main() -> int:
         ("control_bridge", "g2b", "task_8", "acceptance_markers_proven"): False,
         ("control_bridge", "g2b", "tasks_9_10"): "NOT_STARTED",
         ("control_bridge", "g2b", "merge_status"): "NOT_ELIGIBLE",
-        ("repository_hygiene", "status"): "REPOSITORY_HYGIENE_BLOCKED",
+        ("repository_hygiene", "status"): "REPOSITORY_HYGIENE_REVALIDATED",
         ("toolchain", "canonical_entrypoint"): "scripts/test.sh",
         ("toolchain", "package"): "CANONICAL_MAINLINE_NEUTRAL_V2",
         ("toolchain", "functional_lineage_code_imported"): False,

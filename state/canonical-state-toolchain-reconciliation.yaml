@@ -1,11 +1,11 @@
 protocol_version: CLOUD_INFRA_CANONICAL_STATE_TOOLCHAIN_RECONCILIATION_V2
-updated_at: "2026-08-23T03:30:00-03:00"
+updated_at: "2026-08-23T04:02:00-03:00"
 repository: leon337/cloud-infrastructure
 mission:
   id: CANONICAL_STATE_TOOLCHAIN_RECONCILIATION
   authority: LEANDRO
   orchestrator: MESTRE_MCF
-  status: CONCLUDED_STATE_TOOLCHAIN_VALIDATED_LOCAL_FULL_HISTORY
+  status: CONCLUDED_STATE_TOOLCHAIN_AND_HYGIENE_REVALIDATED
   investigation_conclusion_class: C
   human_gate_resolution: AUTHORIZE_MAINLINE_NEUTRAL_EXTRACTION
 branch:
@@ -101,14 +101,14 @@ validation:
     restored_strict_yaml: true
     restored_hosted_ci_boundary: true
     weakening_to_force_green: FORBIDDEN
-  current_status: PASS_LOCAL_FULL_HISTORY_CANONICAL_SUITE
+  current_status: PASS_LOCAL_FULL_HISTORY_CANONICAL_SUITE_AND_HYGIENE_REVALIDATION
 boundaries:
   protected_branches_modified: false
   node_01_privileged_operations: false
   production_promoted: false
   branch_deletion_performed: false
 repository_hygiene:
-  current_verdict: SECRET_POLICY_BLOCKER_RESOLVED_PR19_REVALIDATION_REQUIRED
+  current_verdict: REVALIDATED_PASS_AGAINST_CANONICAL_TOOLCHAIN
   attribution: NINE_PREEXISTING_SYMBOLIC_RUNTIME_REFS_PLUS_ONE_EXTRACTION_DIAGNOSTIC_NON_SECRET_LINE
   classification_complete: true
   historical_credential_uri_findings: 0
@@ -117,3 +117,12 @@ repository_hygiene:
   destructive_history_remediation_authorized: false
   destructive_history_remediation_required: false
   history_rewrite_performed: false
+  revalidation:
+    pr: 19
+    head: f34aec6c641fb577d620446df4a743df3ff3fa5d
+    canonical_toolchain_head: f39464daf4a4c5508d891e61f4ddd6394afd08fd
+    synthetic_integration_sha: 3a6b040c67334aeb7f0411f3d6b7c712ed52987b
+    status: PASS
+    canonical_suite: PASS
+    unit_tests: 15_OF_15_PASS
+    conflicts_resolved: CHECKPOINT_AND_CONTEXT_PRESERVE_PR22_CANONICAL

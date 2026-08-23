@@ -20,7 +20,7 @@ Atualizado em 22/08/2026 após autorização explícita de LEANDRO para uma extr
 - G2-B Task 8: `FAILED_ATTEMPT_3_NOT_ACCEPTED`, causa `NOT_VERIFIED`, diagnóstico `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
 - G2-B Tasks 9–10: `NOT_STARTED`;
 - produção: fechada;
-- Repository Hygiene: `REPOSITORY_HYGIENE_BLOCKED` até execução canônica e tratamento de findings reais.
+- Repository Hygiene: `REPOSITORY_HYGIENE_REVALIDATED`; PR #19 foi validado contra a toolchain canônica, sem credencial literal histórica detectada.
 
 ## Toolchain canônica
 
@@ -59,4 +59,4 @@ Auditoria posterior restaurou o scanner histórico, links Markdown, YAML estrito
 
 `state/active-mission.yaml` e `ROADMAP-CHECKLIST.md` continuam `NOT_ADOPTED`; nenhum código funcional G2-B/F1.2c foi importado; nenhuma ação privilegiada/produção/branch cleanup foi executada.
 
-Próximo passo: **EXECUTE_CANONICAL_AND_PROOF_VALIDATION**.
+Próximo passo após integração: **retomar as frentes F1.2c e G2-B preservando o HUMAN_GATE de produção**.

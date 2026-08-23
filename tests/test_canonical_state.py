@@ -32,6 +32,13 @@ class CanonicalStateTests(unittest.TestCase):
         )
         self.assertFalse(self.state["boundaries"]["production_promoted"])
 
+    def test_repository_hygiene_revalidation_is_recorded(self):
+        hygiene = self.state["repository_hygiene"]
+        self.assertEqual(hygiene["status"], "REPOSITORY_HYGIENE_REVALIDATED")
+        self.assertEqual(hygiene["revalidation"]["status"], "PASS_AGAINST_CANONICAL_TOOLCHAIN")
+        self.assertEqual(hygiene["pr"], 19)
+        self.assertEqual(hygiene["revalidation"]["head"], "f34aec6c641fb577d620446df4a743df3ff3fa5d")
+
     def test_neutral_package_boundary(self):
         toolchain = self.state["toolchain"]
         self.assertFalse(toolchain["functional_lineage_code_imported"])
