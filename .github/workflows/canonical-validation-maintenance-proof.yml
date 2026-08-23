@@ -66,7 +66,9 @@ jobs:
           tar -xJf "$archive" -C "$RUNNER_TEMP"
           printf '%s\n' "$RUNNER_TEMP/shellcheck-${SHELLCHECK_VERSION}" >> "$GITHUB_PATH"
 
-      - name: Run exact canonical suite as maintenance proof
+      - name: Run exact canonical suite
+        id: canonical_suite
+        continue-on-error: true
         shell: bash
         env:
           PYTHON: python3
@@ -74,9 +76,69 @@ jobs:
           VALIDATION_BASE_REF: ${{ github.event.pull_request.base.sha }}
         run: ./scripts/test.sh
 
+      - name: Collect targeted state and consistency evidence
+        if: always()
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$BASE_SHA" ]]; then
+            git diff --check "$BASE_SHA"...HEAD
+            echo "TARGETED_GIT_DIFF_CHECK_PASS base=$BASE_SHA"
+          else
+            git diff --check
+            echo 'TARGETED_GIT_DIFF_CHECK_PASS base=working-tree'
+          fi
+
+          python3 scripts/check_markdown_links.py
+          python3 scripts/validate_yaml.py
+          python3 scripts/validate_state.py
+          python3 scripts/check_canonical_consistency.py
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          paths = subprocess.check_output(["git", "ls-files", "*.py"], text=True).splitlines()
+          for path_text in paths:
+              compile(Path(path_text).read_text(encoding="utf-8"), path_text, "exec")
+          print(f"TARGETED_PYTHON_SYNTAX_PASS count={len(paths)}")
+          PY
+
+          shell_scripts=()
+          shell_script_count=0
+          while IFS= read -r -d '' path; do
+            [[ -f "$path" ]] || continue
+            IFS= read -r first_line < "$path" || true
+            case "$first_line" in
+              '#!'*bash*) bash -n "$path" ;;
+              '#!'*/sh | '#!'*' sh') sh -n "$path" ;;
+              *) continue ;;
+            esac
+            shell_scripts+=("$path")
+            shell_script_count=$((shell_script_count + 1))
+          done < <(git ls-files -z)
+          if ((${#shell_scripts[@]} > 0)); then
+            shellcheck "${shell_scripts[@]}"
+          fi
+          echo "TARGETED_SHELL_VALIDATION_PASS count=$shell_script_count"
+          echo 'TARGETED_STATE_CONSISTENCY_PASS'
+
       - name: Confirm workspace stayed clean
         if: always()
         shell: bash
         run: |
           git status --short
           test -z "$(git status --porcelain)"
+
+      - name: Preserve canonical suite verdict
+        if: always()
+        shell: bash
+        run: |
+          if [[ '${{ steps.canonical_suite.outcome }}' != 'success' ]]; then
+            echo 'CANONICAL_SUITE_FINAL=FAIL'
+            exit 1
+          fi
+          echo 'CANONICAL_SUITE_FINAL=PASS'
