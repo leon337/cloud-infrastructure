@@ -67,6 +67,11 @@ class G2BDisposableIntegrationTests(unittest.TestCase):
         self.assertNotIn("cat /etc/mcf-control-bridge/g2b-grant.json", text)
         self.assertNotIn("set -x", text)
         self.assertIn('if ! docker exec "$CONTAINER" id -u ubuntu', text)
+        self.assertIn(
+            'observed = {"status": v.get("status"), "error": v.get("error")}',
+            text,
+        )
+        self.assertNotIn("assert v ==", text)
 
     def test_disposable_inventory_does_not_override_task_become(self) -> None:
         self.assertTrue(TEST_INVENTORY_PATH.is_file(), "missing G2-B disposable inventory")

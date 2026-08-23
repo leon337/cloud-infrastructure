@@ -114,7 +114,7 @@ g2b_install_payloads:
     owner: root
     group: root
     mode: "0555"
-    sha256: ec96c2213240712e2dab95a8ae3e809d5714c91c5d03f14d17c41b0f72542c9a
+    sha256: ed0a8cb6e4d2546c751d4d64f94bd05d0911b7d6905e1ced23e1152d4b663aa8
   - source: platform/sudoers/mcf-control-g2b
     destination: /etc/sudoers.d/mcf-control-g2b
     owner: root

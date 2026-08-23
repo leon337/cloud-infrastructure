@@ -16,7 +16,9 @@ from typing import Any
 _SERVICE_ACCOUNT = "mcf-workspace"
 _INSTALLED_ROOT = Path("/usr/local/lib/mcf-control-bridge")
 _GRANT_PATH = Path("/etc/mcf-control-bridge/g2b-grant.json")
-_WORKSPACE_ROOT = Path("/var/lib/mcf-control-bridge/workspaces")
+_WORKSPACE_ROOT = Path(
+    "/var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev"
+)
 _STATE_ROOT = Path("/var/lib/mcf-control-bridge/state/g2b")
 _LOCK_PATH = Path("/run/lock/mcf-control-bridge-g2b.lock")
 _MAX_STDIN_BYTES = 131_072

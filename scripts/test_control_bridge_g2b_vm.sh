@@ -221,9 +221,10 @@ expect_result() {
 import json,os,sys
 v=json.loads(os.environ["JSON_VALUE"])
 status,error,replayed,sha=sys.argv[1:]
-assert v["status"] == status, v.get("status")
-if error == "null": assert v.get("error") is None, v.get("error")
-else: assert v.get("error") == error, v.get("error")
+observed = {"status": v.get("status"), "error": v.get("error")}
+assert v["status"] == status, observed
+if error == "null": assert v.get("error") is None, observed
+else: assert v.get("error") == error, observed
 if replayed != "any": assert v.get("replayed") is (replayed == "true"), v.get("replayed")
 if sha != "any": assert v.get("after",{}).get("sha256") == sha, v.get("after")
 PY
