@@ -8,6 +8,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 HARNESS_PATH = ROOT / "scripts/test_control_bridge_g2b_vm.sh"
 WORKFLOW_PATH = ROOT / ".github/workflows/control-bridge-g2b-ci.yml"
 TEST_INVENTORY_PATH = ROOT / "automation/ansible/inventory/test-container/hosts.yml"
+FIXTURE_DOCKERFILE_PATH = ROOT / "tests/fixtures/foundation-systemd/Dockerfile"
 
 MARKERS = [
     "G2B_DISPOSABLE_IDENTITY_PASS",
@@ -80,6 +81,11 @@ class G2BDisposableIntegrationTests(unittest.TestCase):
         self.assertTrue(TEST_INVENTORY_PATH.is_file(), "missing G2-B disposable inventory")
         text = TEST_INVENTORY_PATH.read_text(encoding="utf-8")
         self.assertNotIn("ansible_become:", text)
+
+    def test_fixture_provides_the_bounded_rollback_inspection_tool(self) -> None:
+        self.assertTrue(FIXTURE_DOCKERFILE_PATH.is_file(), "missing disposable Dockerfile")
+        text = FIXTURE_DOCKERFILE_PATH.read_text(encoding="utf-8")
+        self.assertRegex(text, r"(?m)^\s+lsof \\$")
 
     def test_workflow_is_commit_bound_github_hosted_and_pinned(self) -> None:
         self.assertTrue(WORKFLOW_PATH.is_file(), "missing G2-B CI workflow")
