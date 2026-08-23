@@ -51,6 +51,26 @@ diagnose_post_restart_failure() {
   sudo "$SERVICE" check >&2 || true
 }
 
+wait_for_unit_active() {
+  local unit=$1
+  local timeout_seconds=$2
+  local started=$SECONDS
+
+  while (( SECONDS - started < timeout_seconds )); do
+    if sudo systemctl is-active --quiet "$unit"; then
+      return 0
+    fi
+
+    if sudo systemctl is-failed --quiet "$unit"; then
+      return 1
+    fi
+
+    sleep 1
+  done
+
+  return 1
+}
+
 verify_github_hosted_identity() {
   [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]] || return 1
   [[ ${ImageOS:-} == ubuntu24 && $(id -un) == runner ]] || return 1
@@ -170,7 +190,7 @@ if ! sudo systemctl is-active --quiet cloud-platform-network-enforcement.service
   diagnose_post_restart_failure
   fail base_inactive_after_docker_restart
 fi
-if ! sudo systemctl is-active --quiet cloud-platform-network-services.service; then
+if ! wait_for_unit_active cloud-platform-network-services.service 90; then
   diagnose_post_restart_failure
   fail services_inactive_after_docker_restart
 fi
