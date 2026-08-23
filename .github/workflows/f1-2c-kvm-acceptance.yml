@@ -1,0 +1,74 @@
+name: F1.2c disposable KVM acceptance
+
+on:
+  push:
+    branches:
+      - team/f1-2c-kvm-gate-20260822
+
+permissions:
+  contents: read
+
+jobs:
+  disposable-kvm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CANDIDATE_SHA: 4a88c038736cd20013fa0ec3b20ba63fb2e01f6a
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: 4a88c038736cd20013fa0ec3b20ba63fb2e01f6a
+          fetch-depth: 0
+
+      - name: Prepare disposable KVM host
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'host=%s\n' "$(hostname --short)"
+          printf 'head=%s\n' "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain)"
+          if [[ ! -e /dev/kvm ]]; then
+            echo 'KVM_ACCEPTANCE_REFUSED reason=/dev/kvm_missing' >&2
+            exit 2
+          fi
+          sudo chmod 0666 /dev/kvm
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 qemu-utils cloud-image-utils
+          # The lab requires >=30 GiB free. Remove only preinstalled caches/toolchains
+          # that are irrelevant to this isolated disposable runner if needed.
+          free_kib=$(df -Pk "${TMPDIR:-/tmp}" | awk 'NR==2 {print $4}')
+          if (( free_kib < 30 * 1024 * 1024 )); then
+            sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache || true
+          fi
+          ls -l /dev/kvm
+          free -h
+          df -h "${TMPDIR:-/tmp}"
+
+      - name: Run exact-head disposable KVM lifecycle
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          scripts/run_f1_2c_kvm_lab.sh "$CANDIDATE_SHA"
+
+      - name: Collect KVM evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/kvm-evidence"
+          evidence_root="${XDG_STATE_HOME:-$HOME/.local/state}/mcf-kvm-lab/evidence"
+          if [[ -d "$evidence_root" ]]; then
+            cp -a "$evidence_root"/. "$GITHUB_WORKSPACE/kvm-evidence/"
+          fi
+          find "$GITHUB_WORKSPACE/kvm-evidence" -maxdepth 3 -type f -print || true
+
+      - name: Upload KVM evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-2c-kvm-evidence-${{ github.run_id }}
+          path: kvm-evidence/
+          if-no-files-found: warn
+          retention-days: 14
