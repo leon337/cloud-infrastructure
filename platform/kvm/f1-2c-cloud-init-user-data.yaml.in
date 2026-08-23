@@ -1,0 +1,30 @@
+#cloud-config
+ssh_pwauth: false
+disable_root: true
+users:
+  - default
+  - name: mcf-lab
+    gecos: MCF disposable KVM laboratory
+    groups: [adm, sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      - __MCF_KVM_SSH_PUBLIC_KEY__
+packages:
+  - docker.io
+  - docker-compose-v2
+  - git
+  - curl
+  - ca-certificates
+  - iptables
+  - dnsutils
+write_files:
+  - path: /etc/mcf-f1-2c-kvm-lab
+    owner: root:root
+    permissions: '0400'
+    content: |
+      MCF_F1_2C_KVM_LAB_V1
+      run_id=__MCF_KVM_RUN_ID__
+runcmd:
+  - [systemctl, enable, --now, docker.service]

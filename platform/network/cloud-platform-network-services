@@ -5,7 +5,8 @@ readonly VERSION=SLICE-002C-NODE-01-SERVICES-V1
 readonly ROOT=/etc/cloud-platform/network-services
 readonly COMPOSE=$ROOT/compose.yaml
 readonly MARKER=/etc/cloud-platform-network-services.managed
-readonly LOCK=/run/lock/cloud-platform-network-services.lock
+readonly LOCK_DIR=/run/cloud-platform-network-services
+readonly LOCK=$LOCK_DIR/lock
 readonly SCOPE_LABEL=cloud.platform.managed=mission-001-f1-2c
 readonly EGRESS_NETWORK=cloud-platform-egress
 readonly EGRESS_INTERFACE=cpeg0001
@@ -23,10 +24,24 @@ refuse() {
 [[ $EUID -eq 0 ]] || refuse root_required
 [[ $# -eq 1 ]] || refuse exactly_one_operation_required
 case $1 in apply | check | rollback) operation=$1 ;; *) refuse operation_not_allowlisted ;; esac
-for command in diff docker flock ip iptables ip6tables iptables-restore ip6tables-restore \
+for command in diff docker flock install ip iptables ip6tables iptables-restore ip6tables-restore \
   sha256sum ss stat sysctl systemctl; do
   command -v "$command" >/dev/null 2>&1 || refuse "missing_command_$command"
 done
+
+ensure_lock_dir() {
+  if [[ -e $LOCK_DIR || -L $LOCK_DIR ]]; then
+    [[ -d $LOCK_DIR && ! -L $LOCK_DIR ]] || refuse lock_dir_invalid_type
+    [[ $(stat -c '%U:%G:%a' "$LOCK_DIR") == root:root:700 ]] || refuse lock_dir_drift
+    return
+  fi
+
+  install -d -o root -g root -m 0700 "$LOCK_DIR"
+  [[ $(stat -c '%U:%G:%a' "$LOCK_DIR") == root:root:700 ]] ||
+    refuse lock_dir_postcreate_drift
+}
+
+ensure_lock_dir
 exec 9>"$LOCK"
 flock -n 9 || refuse concurrent_operation
 
