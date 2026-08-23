@@ -105,9 +105,10 @@ class NodeNetworkServicesTests(unittest.TestCase):
         self.assertIn("RuntimeDirectory=cloud-platform-network-services", unit)
         self.assertIn("RuntimeDirectoryMode=0700", unit)
         self.assertIn(
-            "readonly LOCK=/run/cloud-platform-network-services/lock",
+            "readonly LOCK_DIR=/run/cloud-platform-network-services",
             runtime,
         )
+        self.assertIn("readonly LOCK=$LOCK_DIR/lock", runtime)
         self.assertNotIn("/run/lock/cloud-platform-network-services.lock", runtime)
         self.assertIn(
             "ReadWritePaths=/run/lock/cloud-platform-network-enforcement.lock",

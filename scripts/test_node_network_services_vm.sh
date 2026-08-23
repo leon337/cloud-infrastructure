@@ -51,6 +51,26 @@ diagnose_post_restart_failure() {
   sudo "$SERVICE" check >&2 || true
 }
 
+wait_for_unit_active() {
+  local unit=$1
+  local timeout_seconds=$2
+  local started=$SECONDS
+
+  while (( SECONDS - started < timeout_seconds )); do
+    if sudo systemctl is-active --quiet "$unit"; then
+      return 0
+    fi
+
+    if sudo systemctl is-failed --quiet "$unit"; then
+      return 1
+    fi
+
+    sleep 1
+  done
+
+  return 1
+}
+
 verify_github_hosted_identity() {
   [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]] || return 1
   [[ ${ImageOS:-} == ubuntu24 && $(id -un) == runner ]] || return 1
@@ -142,7 +162,7 @@ if ! sudo systemctl is-active --quiet cloud-platform-network-services.service; t
   fail systemd_service_inactive
 fi
 sudo journalctl -u cloud-platform-network-services.service -n 120 --no-pager | \
-  grep -q 'NETWORK_SERVICES_APPLY=PASS changed=1' || fail systemd_first_apply_evidence_missing
+  grep -F 'NETWORK_SERVICES_APPLY=PASS changed=1' >/dev/null || fail systemd_first_apply_evidence_missing
 
 sudo "$SERVICE" apply | grep -q 'changed=0' || fail idempotence_failed
 sudo "$SERVICE" check | grep -q 'NETWORK_SERVICES_CHECK=PASS' || fail check_failed
@@ -170,7 +190,7 @@ if ! sudo systemctl is-active --quiet cloud-platform-network-enforcement.service
   diagnose_post_restart_failure
   fail base_inactive_after_docker_restart
 fi
-if ! sudo systemctl is-active --quiet cloud-platform-network-services.service; then
+if ! wait_for_unit_active cloud-platform-network-services.service 90; then
   diagnose_post_restart_failure
   fail services_inactive_after_docker_restart
 fi
@@ -179,7 +199,7 @@ if ! sudo "$SERVICE" check >/dev/null; then
   fail post_restart_check_failed
 fi
 if ! sudo journalctl -u cloud-platform-network-services.service -n 160 --no-pager | \
-  grep -q 'NETWORK_SERVICES_APPLY=PASS changed=1'; then
+  grep -F 'NETWORK_SERVICES_APPLY=PASS changed=1' >/dev/null; then
   diagnose_post_restart_failure
   fail post_restart_reconcile_evidence_missing
 fi
