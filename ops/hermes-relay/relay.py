@@ -7,20 +7,18 @@ import subprocess
 
 SOCK = "/tmp/mcf-hermes-relay.sock"
 HERMES = "/home/ubuntu/.local/bin/hermes"
-ALLOWED_UIDS = {994, 1000}  # sentinelx, ubuntu on vmi3506102
+ALLOWED_UIDS = {994, 1000}
 ENV = os.environ.copy()
-ENV.update(
-    {
-        "HOME": "/home/ubuntu",
-        "USER": "ubuntu",
-        "LOGNAME": "ubuntu",
-        "PATH": "/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin",
-        "DISPLAY": ":10",
-        "XAUTHORITY": "/home/ubuntu/.Xauthority",
-        "XDG_RUNTIME_DIR": "/run/user/1000",
-        "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
-    }
-)
+ENV.update({
+    "HOME": "/home/ubuntu",
+    "USER": "ubuntu",
+    "LOGNAME": "ubuntu",
+    "PATH": "/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin",
+    "DISPLAY": ":10",
+    "XAUTHORITY": "/home/ubuntu/.Xauthority",
+    "XDG_RUNTIME_DIR": "/run/user/1000",
+    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
+})
 
 PROBE = "Reply with exactly HERMES_READY and nothing else."
 HELLO = """Execute the first canonical Hermes Operator GUI validation on this Linux VPS.
@@ -41,10 +39,12 @@ Use ONLY the computer_use toolset and normal visible GUI interaction. Do not use
 OPS = {
     "version": ([HERMES, "--version"], 120),
     "doctor": ([HERMES, "doctor"], 120),
+    "status": ([HERMES, "status"], 120),
+    "config_model": ([HERMES, "config", "get", "model", "--json"], 120),
     "computer_use_status": ([HERMES, "computer-use", "status"], 120),
     "computer_use_doctor": ([HERMES, "computer-use", "doctor"], 120),
-    "cognitive_probe": ([HERMES, "-z", PROBE, "--ignore-rules"], 180),
-    "hello_world_gui": ([HERMES, "-z", HELLO, "-t", "computer_use", "--ignore-rules"], 480),
+    "cognitive_probe": ([HERMES, "-z", PROBE, "--ignore-rules"], 300),
+    "hello_world_gui": ([HERMES, "-z", HELLO, "-t", "computer_use", "--ignore-rules"], 900),
 }
 
 
@@ -53,42 +53,28 @@ def execute(op):
         return {"ok": False, "error": "op_not_allowed"}
     cmd, timeout = OPS[op]
     try:
-        cp = subprocess.run(
-            cmd,
-            env=ENV,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            timeout=timeout,
-        )
-        return {
-            "ok": cp.returncode == 0,
-            "returncode": cp.returncode,
-            "output": cp.stdout[-30000:],
-        }
+        cp = subprocess.run(cmd, env=ENV, text=True, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, timeout=timeout)
+        return {"ok": cp.returncode == 0, "returncode": cp.returncode,
+                "output": cp.stdout[-30000:]}
     except subprocess.TimeoutExpired as exc:
         out = exc.stdout or ""
         if isinstance(out, bytes):
             out = out.decode("utf-8", "replace")
         return {"ok": False, "error": "timeout", "output": out[-30000:]}
 
-
 try:
     os.unlink(SOCK)
 except FileNotFoundError:
     pass
-
 srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 srv.bind(SOCK)
-os.chmod(SOCK, 0o666)  # SO_PEERCRED below is the authorization boundary.
+os.chmod(SOCK, 0o666)
 srv.listen(8)
-
 while True:
     conn, _ = srv.accept()
     try:
-        _, uid, _ = struct.unpack(
-            "3i", conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12)
-        )
+        _, uid, _ = struct.unpack("3i", conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
         if uid not in ALLOWED_UIDS:
             conn.sendall(b'{"ok":false,"error":"peer_not_allowed"}\n')
             continue
@@ -102,11 +88,7 @@ while True:
             req = json.loads(data.split(b"\n", 1)[0].decode("utf-8"))
             result = execute(req.get("op"))
         except Exception as exc:
-            result = {
-                "ok": False,
-                "error": type(exc).__name__,
-                "detail": str(exc)[:500],
-            }
+            result = {"ok": False, "error": type(exc).__name__, "detail": str(exc)[:500]}
         conn.sendall((json.dumps(result) + "\n").encode("utf-8"))
     finally:
         conn.close()
