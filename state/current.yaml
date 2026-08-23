@@ -1,188 +1,174 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-18
-documentation_state: MANUAL_EXECUTION_CONTINGENCY_ACTIVE
+candidate_branch: team/canonical-state-toolchain-20260822
+updated_at: "2026-08-22T22:08:00-03:00"
+state_classification: CURRENT_RECONCILED_CANDIDATE
+documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
+
 continuity:
   historical_validations_preserved: true
-  current_state_independent_validation: NOT_EXECUTED
-  future_state_validation_policy: PUC_REVALIDATION_REQUIRED
+  current_state_independent_validation: PENDING_CANONICAL_TOOLCHAIN_VALIDATION
   canonical_entrypoint: CONTEXT.md
   checkpoint: CHECKPOINT.md
+  validation_entrypoint: scripts/test.sh
   platform_discovery_state: state/platform-discovery.yaml
-  codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
+  active_mission_model:
+    file: state/active-mission.yaml
+    status: NOT_ADOPTED
+    reason: SINGLE_ACTIVE_MISSION_MODEL_NOT_PROVEN_FOR_PARALLEL_MAINLINE_FRONTS
+  roadmap_checklist:
+    file: ROADMAP-CHECKLIST.md
+    status: NOT_ADOPTED
+    reason: G2B_TASK8_SPECIFIC_SURFACE_NOT_MAINLINE_NEUTRAL
+
+source_snapshot:
+  main:
+    sha: f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b
+    merged_reconciliation_pr: 18
+    executive_projection: README.md
+  executable_evidence:
+    node01_read_only_audit_run: 32577551012
+    g2b_attempt3_read_only_audit_run: 32577815107
+  open_fronts:
+    repository_hygiene_pr: 19
+    f1_2c_recovery_pr: 20
+    g2b_task8_diagnostic_pr: 21
+    canonical_state_toolchain_pr: 22
+    f1_2c_kvm_gate_pr: 23
+
 project:
   name: IMPLEMENTACAO_DA_VPS
-  status: ACTIVE
-  phases:
-    phase_0: DONE
-    phase_1: DONE
+  status: ACTIVE_WITH_OPEN_INCIDENTS_AND_PARALLEL_RECOVERY
+  integration_status: DOCUMENTATION_AND_INTEGRATION_DRIFT
+  durable_completed:
+    phase_0_inventory: DONE
+    phase_1_access_recovery_security: DONE
     phase_2_cloud_workstation: DONE
-    future_platform_implementation: AUTHORIZED_INCREMENTAL_DEV_LAB
-  cloud_workstation_status: FUNCTIONAL_AND_VALIDATED
-  credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_exact_step: MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
+    platform_s0: COMPLETE
+    platform_f1_1: COMPLETE
+    platform_f1_2b: COMPLETE
+  next_exact_step: VALIDATE_CANONICAL_STATE_TOOLCHAIN_THEN_REVALIDATE_REPOSITORY_HYGIENE
+
 execution:
-  original_q40_delegate: CODEX
-  codex_availability: UNAVAILABLE_REPORTED_BY_LEANDRO_2026_08_18
-  current_mode: LEANDRO_MANUAL_EXECUTION_GUIDED_BY_MESTRE
   authority: LEANDRO
   orchestrator: MESTRE
-  execution_contract: docs/CODEX-EXECUTION-MISSION-001.md
-  q1_to_q40_reopened: false
-  scope_expanded: false
-platform_discovery:
-  status: HANDOFF_TO_CODEX_AUTHORIZED
-  decision_source: state/platform-discovery.yaml
-  checkpoint: docs/39-platform-discovery-checkpoint-028.md
-  q1_to_q39: BINDING_ARCHITECTURAL_REQUIREMENTS
-  q40:
-    status: DECIDED
-    choice: D
-    decision: DELEGATE_TECHNOLOGY_SELECTION_AND_INCREMENTAL_DEV_LAB_IMPLEMENTATION_TO_CODEX
-  implementation_authorized: true
-  codex_implementation_mission_authorized: true
+  mode: MCF_ISOLATED_PARALLEL_FRONTS
+  single_active_mission_projection: NOT_CANONICAL_FOR_MAIN
   production_promotion_authorized: false
-  execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
-  next_question: NONE
-  target_artifacts:
-    - CONSOLIDATED_REQUIREMENTS
-    - TARGET_ARCHITECTURE
-    - THREAT_MODEL_AND_AUTONOMY_BOUNDARIES
-    - INFRASTRUCTURE_BLUEPRINT_V1
-    - REVISED_IMPLEMENTATION_ROADMAP
-    - CODEX_EXECUTION_MISSION
+
+platform:
+  f1_2c:
+    status: REQUIRES_REVIEW
+    accepted: false
+    recovery_branch: team/f1-2c-network-recovery-20260822
+    recovery_candidate_sha: 4a88c038736cd20013fa0ec3b20ba63fb2e01f6a
+    static_validation:
+      status: PASS
+      run: 32605115252
+      exact_head: true
+    disposable_kvm:
+      status: NOT_EXECUTED_EXTERNAL_RUNNER_PRE_STEP_FAILURE
+      gate_pr: 23
+      run: 32607458396
+      upstream_cause: NOT_VERIFIED
+    node01_reapply_authorized: false
+
+control_bridge:
+  g1: PASS_REAL_NODE_01_ROUNDTRIP
+  g2a: PASS_REAL_NODE_01_READ_ONLY
+  g2b:
+    accepted: false
+    base_branch: codex/control-bridge-g2b
+    base_candidate_sha: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+    tasks_1_7: COMPLETE
+    task_8:
+      last_terminal_attempt: FAILED_ATTEMPT_3_NOT_ACCEPTED
+      terminal_evidence_run: 32577815107
+      terminal_exit: 2
+      acceptance_markers_proven: false
+      diagnostic_branch: team/g2b-task8-20260822
+      diagnostic_head: 5769acc08d296e0ae4434d46729ebff9a3dfea68
+      diagnostic_status: IN_PROGRESS_DIAGNOSTIC_REPRODUCTION
+      root_cause: NOT_VERIFIED
+      functional_correction: NONE_AS_OF_SNAPSHOT
+    tasks_9_10: NOT_STARTED
+    merge_status: NOT_ELIGIBLE
+
 remote_vps:
-  snapshot_at_utc: "2026-08-16T01:58:02Z"
-  provider: Contabo
-  product: Cloud VPS 8
-  ipv4: 169.58.171.192
+  observation_class: READ_ONLY_SNAPSHOT
+  observed_at_utc: "2026-08-22T14:03:22Z"
+  source_run: 32577551012
+  status: OPERATIONAL_WITH_OPEN_INCIDENTS
   hostname: vmi3506102
   os: Ubuntu 24.04.4 LTS
-  kernel: Linux 6.8.0-137-generic
-  architecture: x86-64
-  virtualization: KVM_QEMU
+  kernel: 6.8.0-137-generic
   cpu_logical: 8
   ram_total_gib_approx: 23
-  ram_used_after_desktop_gib_approx: 2.2
+  ram_used_gib_approx: 9.5
   swap_bytes: 0
-  storage:
-    primary_disk: /dev/sda
-    size_gib: 300
-    root_filesystem_size_gib_approx: 290
-    root_used_gib_approx: 7.5
-    root_available_gib_approx: 283
-  network:
-    primary_interface: eth0
-    manager: systemd-networkd
-    listeners_external:
-      - "0.0.0.0:22/tcp"
-      - "[::]:22/tcp"
-    xrdp_listener: "127.0.0.1:3389/tcp"
-    xrdp_sesman_listener: "[::1]:3350/tcp"
-    provider_firewall: NOT_CONFIGURED
-  firewall:
-    ufw_status: active
-    default_incoming: deny
-    default_outgoing: allow
-    allowed_inbound: [OpenSSH_22_TCP_IPV4, OpenSSH_22_TCP_IPV6]
-    fail2ban_sshd: active
-  ssh:
-    host_fingerprint_ed25519: SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4
-    root_password_login_historical: VALIDATED
-    root_login_current: DISABLED_BY_POLICY
-    permit_root_login_effective: "no"
-    password_authentication_effective: "no"
-    keyboard_interactive_authentication_effective: "no"
-    publickey_authentication_effective: "yes"
-    allow_tcp_forwarding_effective: "yes"
-    allow_users: [ubuntu]
-    max_auth_tries: 3
-    login_grace_time_seconds: 30
-    ubuntu_login_current: VALIDATED
-    ubuntu_login_method: PUBLICKEY_ONLY
-    automated_attack_activity_historical: CONFIRMED_NOT_COMPROMISE
-  accounts:
-    ubuntu:
-      uid: 1000
-      groups: [ubuntu, adm, cdrom, sudo, dip]
-      sudo_effective: true
-      sudo_requires_password: true
-      nopasswd_all: false
-      member_of_lxd: false
-      authorized_keys:
-        owner: ubuntu:ubuntu
-        permissions: "600"
-        previous_key_preserved: true
-        validated_key:
-          type: ED25519
-          local_private_key_path: ~/.ssh/id_ed25519_contabo_vps_ubuntu_20260815
-          fingerprint: SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg
-          public_key_installed: true
-          login_validated: true
-  lxd:
-    installed_snap_version: 5.21.6-78b046a
-    instances_total_before_disable: 0
-    instances_running_before_disable: 0
-    ubuntu_group_membership_removed: true
-    daemon_service: disabled_inactive
-    unix_socket: disabled_inactive
-    root_equivalent_path_current: REMOVED
-  updates:
-    upgradable_count: 0
-    unattended_upgrades: active_enabled
-    reboot_executed: true
-  cloud_workstation:
-    architecture: XFCE_LIGHTDM_XRDP_OVER_SSH_TUNNEL
-    role: OPTIONAL_HUMAN_COCKPIT_NOT_PLATFORM_DEPENDENCY
-    desktop_session: PASS
-    remote_graphical_login: PASS
-    browser: PASS
-    browser_package: Mozilla_Firefox_DEB_153.0.4
-    vscode: PASS
-    vscode_version: "1.133.0"
-    terminal: PASS
-    vscode_integrated_terminal: PASS
-    file_manager: PASS
-    clipboard_bidirectional: PASS
-    multi_window: PASS
-    resolution_dynamic: PASS
-    resolutions_validated: [1100x700, 1280x720]
-    disconnect_reconnect: PASS
-    session_persistence: PASS
-    logout_login: PASS
-    post_reboot_login: PASS
-  recovery:
-    provider_vnc: VALIDATED_CURRENTLY
-    provider_rescue: AVAILABLE_CONFIRMED
-    provider_snapshots: NOT_CONFIGURED
-    provider_backups: NOT_CONTRACTED
-    provider_firewall: NOT_CONFIGURED
-    config_backup:
-      timer: active_enabled
-      directory_persistence: systemd_tmpfiles
-      remote_path: /var/backups/cloud-infrastructure
-      offhost_path: /home/leo/Backups/cloud-infrastructure
-      remote_local_sha256_match: true
-      extraction_restore_test: PASS
-      restored_files_tested: 24
-    full_data_backup: PENDING
-findings:
-  resolved: [FND-SSH-001, FND-SSH-002, FND-SSH-003, FND-LXD-001, FND-SUDO-001, FND-DOC-001, FND-AUDIT-001]
-  mitigated_open: [FND-BACKUP-001]
-  open_other: [FND-CPU-001, FND-CLOUDINIT-001]
+  root_disk_total_gib_approx: 290
+  root_disk_used_gib_approx: 23
+  core_units:
+    ssh: active
+    ufw: active
+    docker: active
+    containerd: active
+  failed_units:
+    - cloud-platform-network-services.service
+  repository:
+    path: /home/ubuntu/cloud-infrastructure
+    branch: codex/control-bridge-g2b
+    head: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+    clean: true
+
+repository_hygiene:
+  status: REPOSITORY_HYGIENE_BLOCKED
+  pr: 19
+  blockers:
+    canonical_state: CANDIDATE_RECONCILED_PENDING_VALIDATION
+    canonical_toolchain: CANDIDATE_RESTORED_PENDING_VALIDATION
+  unblock_condition: MERGED_CANONICAL_STATE_AND_EXECUTABLE_CANONICAL_TEST_ENTRYPOINT_WITH_GREEN_EVIDENCE
+
+toolchain:
+  canonical_entrypoint: scripts/test.sh
+  lineage_origin:
+    commit: edd2497d657cc9bc35952f5dfc71090a18dade53
+    branch: codex/mission-001-foundations-f1-1
+    pull_request: 2
+  package: CANONICAL_MAINLINE_NEUTRAL_V1
+  validation_status: PENDING
+  validators:
+    - scripts/check_current_tree_secrets.py
+    - scripts/validate_yaml.py
+    - scripts/validate_state.py
+    - scripts/check_canonical_consistency.py
+    - tests/test_canonical_state.py
+    - tests/test_toolchain_contract.py
+  functional_lineage_code_imported: false
+  g2b_functional_code_imported: false
+  f1_2c_functional_code_imported: false
+
+boundaries:
+  protected_branches_modified: false
+  node01_privileged_operations: false
+  production_promoted: false
+  branch_deletion_performed: false
+
 authorization:
   authority: LEANDRO
-  phase_1_and_2_full_access: EXECUTED
-  credential_rotation: DEFERRED_BY_HUMAN_DECISION
-  next_step: MISSION_ACCEPTANCE_AND_RECOVERY_REPORT
-  platform_dev_lab_implementation: AUTHORIZED_BY_Q40_D
-  codex_technology_selection: AUTHORIZED_BY_Q40_D
-  codex_implementation_mission: AUTHORIZED_BY_Q40_D
-  manual_execution_contingency: ACTIVE_BY_CURRENT_LEANDRO_INSTRUCTION
+  canonical_neutral_extraction: AUTHORIZED_2026_08_22
   production_promotion: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
-  future_scope_expansion: HUMAN_GATE_REQUIRED
-  historical_executed:
-    AUTH-SSH-KEEPALIVE-001: EXECUTED_AND_VALIDATED
+  g2b_real_write: NOT_AUTHORIZED
+  f1_2c_node01_reapply: NOT_AUTHORIZED
+
 secrets_policy:
-  never_version: [passwords, passphrases, private_ssh_keys, tokens, api_keys, two_factor_codes, real_connection_strings, provider_credentials]
+  never_version:
+    - passwords
+    - passphrases
+    - private_ssh_keys
+    - tokens
+    - api_keys
+    - two_factor_codes
+    - real_connection_strings
+    - provider_credentials

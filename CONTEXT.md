@@ -1,94 +1,80 @@
 # CONTEXT — Porta de entrada canônica
 
-Este arquivo é a entrada obrigatória para qualquer IA, agente ou humano que assuma `cloud-infrastructure`.
+Este arquivo é a entrada obrigatória para qualquer IA, agente ou humano que assuma `leon337/cloud-infrastructure`.
 
-## Protocolo
+## Regra de verdade
 
-PUC v1.0. As validações independentes existentes continuam históricas e vinculadas aos snapshots em que foram executadas. O estado pós-Cloud Workstation foi reconciliado e validado localmente; qualquer executor deve distinguir estado observado atual de baseline histórica.
+Use esta precedência para qualquer decisão operacional:
 
-## Regra zero
+1. instrução explícita atual de LEANDRO;
+2. GitHub e infraestrutura verificáveis ao vivo;
+3. testes/evidências executáveis vinculados a SHA;
+4. `state/current.yaml` e este checkpoint;
+5. documentação canônica;
+6. histórico.
 
-Antes de agir: verificar a `main` real, ler `CONTEXT.md`, `CHECKPOINT.md`, `state/current.yaml`, `state/platform-discovery.yaml`, o checkpoint Q40 e a missão de execução; distinguir fatos atuais de baselines históricas; não repetir coleta já suficiente; nunca pedir ou versionar secrets; respeitar HUMAN_GATEs aplicáveis.
+Nunca transforme estado desejado em estado observado.
 
-Precedência: instrução atual de LEANDRO → infraestrutura verificável → GitHub `main` → CHECKPOINT/state → decisões → docs → findings/runbooks → history → chats.
-
-## Mapa canônico
+## Mapa canônico atual
 
 | Pergunta | Fonte |
 |---|---|
-| Estado exato de continuidade | `CHECKPOINT.md` |
-| Estado operacional estruturado | `state/current.yaml` |
+| Estado estruturado reconciliado | `state/current.yaml` |
+| Checkpoint de continuidade | `CHECKPOINT.md` |
+| Painel executivo | `README.md` |
 | Decisões Platform Discovery Q1–Q40 | `state/platform-discovery.yaml` |
-| Q40 / delegação original ao Codex | `docs/39-platform-discovery-checkpoint-028.md` |
-| Contrato de execução autorizado | `docs/CODEX-EXECUTION-MISSION-001.md` |
-| Missão e arquitetura histórica | `docs/02-missao-e-escopo.md`, `docs/03-arquitetura-e-principios.md` |
-| Plano e estado anterior | `docs/04-plano-mestre.md`, `docs/05-roadmap.md` |
-| Infraestrutura observada | `docs/06-inventario.md` |
-| Cloud Workstation | `docs/07-cloud-workstation.md`, `DEC-003`, `DEC-004` |
-| Segurança e acesso | `docs/08-seguranca-e-governanca.md`, `runbooks/acesso-e-recuperacao.md` |
-| Recovery | `recovery/RECOVERY-PLAYBOOK.md`, `findings/FND-BACKUP-001.md` |
-| Histórico | `history/` |
-| Evidências visuais | `assets/README.md` |
+| Contrato de execução histórico/vinculante | `docs/CODEX-EXECUTION-MISSION-001.md` |
+| Validação canônica do repositório | `scripts/test.sh` |
 
-## Estado operacional atual
+## Estado reconciliado em 22/08/2026
 
-- Ubuntu 24.04.4 LTS, kernel `6.8.0-137-generic`, KVM/QEMU, 8 CPUs, ~23 GiB RAM, sem swap.
-- F0 `DONE`; F1 `DONE`; F2 Cloud Workstation `DONE` e `FUNCTIONAL_AND_VALIDATED`.
-- SSH público somente em TCP 22. Login permitido: `ubuntu` por chave dedicada; `PermitRootLogin no`, `PasswordAuthentication no`, `KbdInteractiveAuthentication no`.
-- UFW ativo, default deny incoming, somente OpenSSH; fail2ban/sshd ativo.
-- sudo autenticado validado; NOPASSWD removido. `ubuntu` não pertence mais a `lxd`; daemon e socket LXD estão desabilitados/inativos.
-- Provider VNC `VALIDATED_CURRENTLY`; Rescue `AVAILABLE_CONFIRMED`; snapshots `NOT_CONFIGURED`; backups `NOT_CONTRACTED`; firewall Contabo `NOT_CONFIGURED`.
-- Backup diário sanitizado de configurações ativo, cópia off-host validada por SHA-256 e extração de recuperação testada. Backup amplo de dados continua pendente.
-- XFCE/LightDM + XRDP somente em loopback; acesso gráfico pelo túnel SSH `127.0.0.1:13389 → VPS 127.0.0.1:3389`.
-- Firefox DEB oficial Mozilla, VS Code, terminal XFCE e Thunar validados; clipboard bidirecional, resolução dinâmica, múltiplas janelas, reconnect, logout/login, persistência e reboot passaram.
-- Pós-desktop na validação final com sessão ativa: ~2,2 GiB de 23 GiB usados; ~7,5 GiB de 290 GiB usados; zero updates pendentes no snapshot documentado.
+`main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b` está em `DOCUMENTATION_AND_INTEGRATION_DRIFT`: o README consolidou evidência posterior às antigas projeções de `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml`.
 
-## Direção arquitetônica atual
+Fatos que não podem ser promovidos além da evidência:
 
-A Platform Discovery definiu Q1–Q39 como arquitetura vinculante da plataforma privada de computação, desenvolvimento e execução de agentes. O estado completo das decisões está em `state/platform-discovery.yaml`.
+- S0, F1.1 e F1.2b: concluídos conforme a reconciliação integrada;
+- F1.2c: `REQUIRES_REVIEW`; existe recovery candidate com validação estática verde, mas a aceitação KVM continua não executada por falha externa pré-step do runner e NODE-01 não recebeu reapply;
+- Control Bridge G1: `PASS_REAL_NODE_01_ROUNDTRIP`;
+- Control Bridge G2-A: `PASS_REAL_NODE_01_READ_ONLY`;
+- G2-B Tasks 1–7: `COMPLETE`;
+- G2-B Task 8: último resultado terminal comprovado `FAILED_ATTEMPT_3_NOT_ACCEPTED`; a causa do `exit=2` continua `NOT_VERIFIED` e há uma reprodução diagnóstica isolada `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
+- G2-B Tasks 9–10: `NOT_STARTED`;
+- produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`;
+- Repository Hygiene: `REPOSITORY_HYGIENE_BLOCKED` até state + toolchain canônicos terem evidência verde no caminho de integração.
 
-Q40 = `D` por decisão explícita de LEANDRO:
+## Toolchain canônica
 
-- o Codex recebeu originalmente a seleção tecnológica;
-- o Codex recebeu originalmente autorização para implementação incremental da plataforma DEV/lab;
-- Q1–Q39 permanecem obrigatórias;
-- produção externa continua sujeita a HUMAN_GATE;
-- secrets continuam proibidos no Git;
-- rotação de credenciais continua `DEFERRED_BY_HUMAN_DECISION`.
+`scripts/test.sh` é o entrypoint canônico, preservando o contrato estabelecido originalmente na lineage F1.1. A implementação atual é uma extração mainline-neutral: valida somente contratos que pertencem ao `main` atual e não importa implementação funcional de G2-B ou F1.2c.
 
-O contrato vinculante de execução continua sendo `docs/CODEX-EXECUTION-MISSION-001.md`.
+A suíte cobre:
 
-## Executor atual — contingência 18/08/2026
+- `git diff --check` quando executada com uma base de integração;
+- padrões de secrets de alta confiança na árvore rastreada atual;
+- parse de YAML;
+- invariantes de `state/current.yaml`;
+- consistência entre README, CONTEXT, CHECKPOINT e state;
+- testes unitários do contrato;
+- sintaxe de scripts shell;
+- ShellCheck quando exigido pelo CI.
 
-LEANDRO informou indisponibilidade do Codex e assumiu temporariamente a execução manual das ações na VPS. MESTRE assume a orquestração técnica, análise dos resultados, definição de microtarefas, prechecks, rollback, validação e checkpoints.
+## Modelo de missão ativa
 
-Essa contingência:
+`state/active-mission.yaml` não faz parte do pacote mainline-neutral neste checkpoint. O arquivo recuperado surgiu na continuidade G2-B e modela uma missão ativa única, enquanto o projeto possui frentes isoladas paralelas. Adotá-lo agora exigiria inventar governança não formalizada.
 
-- muda apenas o executor atual;
-- não reabre Q1–Q40;
-- não amplia o escopo autorizado;
-- não altera os HUMAN_GATEs vigentes;
-- preserva `docs/CODEX-EXECUTION-MISSION-001.md` como contrato incremental de execução.
+`ROADMAP-CHECKLIST.md` também não é promovido: sua origem comprovada é um checkpoint específico da Task 8 G2-B. O `README.md` permanece a projeção executiva.
 
-## Guardrails centrais
+## Guardrails
 
 - LEANDRO é autoridade humana final.
-- MCF governa missões/autoridade; Capability Core autoriza; Workflow Engine executa duravelmente.
-- Agentes operam por capacidades escopadas, não por autoridade administrativa irrestrita.
-- Management Plane é privado.
-- Cloud Workstation é cockpit humano opcional, não dependência da plataforma.
-- DEV/staging podem ser automatizados dentro do escopo; promoção para produção exige HUMAN_GATE.
-- Mudanças críticas exigem impacto/rollback/evidência.
-- Nunca versionar passwords, passphrases, private SSH keys, tokens, API keys, 2FA, real connection strings ou provider credentials.
+- MESTRE orquestra a missão.
+- nenhuma conclusão desta reconciliação autoriza merge final, produção ou escrita real G2-B;
+- nenhuma conclusão autoriza reapply F1.2c no NODE-01;
+- nenhuma operação privilegiada no NODE-01 pertence a esta frente;
+- branches G2-B/F1.2c permanecem isoladas;
+- secrets nunca são versionados.
 
-## Findings
+## Próximo passo exato
 
-Resolvidos: `FND-SSH-001`, `FND-SSH-002`, `FND-SSH-003`, `FND-LXD-001`, `FND-SUDO-001`, `FND-DOC-001`, `FND-AUDIT-001`.
+**VALIDATE_CANONICAL_STATE_TOOLCHAIN_THEN_REVALIDATE_REPOSITORY_HYGIENE**.
 
-`FND-BACKUP-001` está mitigado, mas aberto até existir backup amplo de dados e teste de reconstrução. `FND-CPU-001` e `FND-CLOUDINIT-001` continuam abertos para análise.
-
-## Ponto exato
-
-**MISSION ACCEPTANCE + RECOVERY REPORT**.
-
-O próximo executor é temporariamente LEANDRO, sob orquestração do MESTRE. Antes de qualquer implementação ampla, deve recuperar o estado real do GitHub e da VPS, confirmar branch/HEAD, divergências, riscos, Technology Mapping inicial e o primeiro incremento com rollback. A partir daí, a implementação autorizada por Q40-D deve avançar em slices pequenos, reversíveis, testados e checkpointados.
+Após evidência verde da suíte canônica em SHA exato, esta frente retorna ao MESTRE CENTRAL para auditoria. Merge final continua fora desta missão.

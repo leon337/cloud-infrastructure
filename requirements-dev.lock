@@ -1,0 +1,3 @@
+# Mainline-neutral canonical validation dependency.
+# Pin intentionally; do not update implicitly.
+PyYAML==6.0.3
