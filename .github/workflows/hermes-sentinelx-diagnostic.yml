@@ -45,6 +45,10 @@ jobs:
             echo "RELAY_PROCESS=$(pgrep -af 'mcf-hermes-relay/relay.py' | head -1 || true)"
             echo "RELAY_HAS_BOUNDED_HELLO=$([[ -f /home/ubuntu/.local/share/mcf-hermes-relay/relay.py ]] && grep -q 'hello_world_gui' /home/ubuntu/.local/share/mcf-hermes-relay/relay.py && echo yes || echo no)"
             echo "HERMES_VERSION=$(/home/ubuntu/.local/bin/hermes --version 2>/dev/null | head -1 || true)"
+            echo "--- SENTINELX_LOG_TAIL_SANITIZED ---"
+            journalctl -u sentinelx-cloud-core -n 30 --no-pager 2>/dev/null \
+              | sed -E 's/(token|jwt|authorization|bearer|secret|password)([=: ]+)[^ ]+/\1\2REDACTED/Ig; s/host_[A-Za-z0-9_-]+/HOST_ID_REDACTED/g' \
+              | tail -30 || true
           } > "$out"
           cat "$out"
 
