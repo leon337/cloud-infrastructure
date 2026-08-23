@@ -1,13 +1,13 @@
-UTC=2026-08-23T21:06:50Z
+UTC=2026-08-23T21:14:16Z
 RUNNER_USER=ubuntu
 HOST=vmi3506102
 SENTINELX_ACTIVE=active
-SENTINELX_ENABLED=enabled
 LOCAL_PROVIDER_HEALTH=200
-LLAMA_PROCESS=861597 /home/ubuntu/.local/bin/llama serve -hf bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF:Q4_K_M -c 65536 --cache-type-k q8_0 --cache-type-v q8_0 --jinja --reasoning off --host 127.0.0.1 --port 8080 --alias qwen3-4b-instruct-2507 --no-webui
+LLAMA_PROCESS=862534 /home/ubuntu/.local/bin/llama serve -hf bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF:Q4_K_M -c 65536 --cache-type-k q8_0 --cache-type-v q8_0 --jinja --reasoning off --host 127.0.0.1 --port 8080 --alias qwen3-4b-instruct-2507 --no-webui
 RELAY_SOCKET=yes
-RELAY_PROCESS=861585 python3 /home/ubuntu/.local/share/mcf-hermes-relay/relay.py
+RELAY_PROCESS=863264 python3 /home/ubuntu/.local/share/mcf-hermes-relay/relay.py
 RELAY_HAS_BOUNDED_HELLO=yes
 HERMES_VERSION=Hermes Agent v0.20.5 (2026.8.19) · upstream 98110123
+HERMES_MODEL={"default": "anthropic/claude-opus-4.6", "provider": "auto", "base_url": "https://openrouter.ai/api/v1"} 
 MEM=17Gi used, 5.9Gi available
 DISK=29G used, 261G available
