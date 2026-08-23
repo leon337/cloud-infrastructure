@@ -362,7 +362,9 @@
 
     - name: Verify ubuntu direct write is denied by the protected parent
       ansible.builtin.command:
-        argv: [sudo, -n, -u, ubuntu, --, test, '!', -w, "{{ g2b_workspace_path }}"]
+        argv: [test, '!', -w, "{{ g2b_workspace_path }}"]
+      become: true
+      become_user: ubuntu
       changed_when: false
       check_mode: false
 
