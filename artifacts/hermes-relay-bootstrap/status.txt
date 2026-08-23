@@ -1,4 +1,4 @@
-UTC=2026-08-23T20:50:24Z
+UTC=2026-08-23T20:51:10Z
 RUNNER_USER=ubuntu
 HOST=vmi3506102
 SENTINELX_ACTIVE=active
@@ -8,7 +8,7 @@ IDENTITY_META=sentinelx:sentinelx mode=600 bytes=676
 SENTINELX_PROCESS=853413 /opt/sentinelx-cloud-core/.venv/bin/python3.12 /opt/sentinelx-cloud-core/.venv/bin/sentinelx-cloud-core --hub https://mcp.sentinelx.app --identity REDACTED --config REDACTED
 HUB_HTTP=200
 RELAY_SOCKET=yes
-RELAY_PROCESS=859408 python3 /home/ubuntu/.local/share/mcf-hermes-relay/relay.py
+RELAY_PROCESS=859753 python3 /home/ubuntu/.local/share/mcf-hermes-relay/relay.py
 RELAY_HAS_BOUNDED_HELLO=yes
 HERMES_VERSION=Hermes Agent v0.20.5 (2026.8.19) · upstream 98110123
 --- SENTINELX_LOG_TAIL_SANITIZED ---
