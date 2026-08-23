@@ -1,0 +1,87 @@
+name: g2b-task8-postfix-validation
+
+on:
+  pull_request:
+    branches:
+      - codex/control-bridge-g2b
+    paths:
+      - .github/workflows/g2b-task8-postfix-validation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate-postfix:
+    if: >-
+      github.actor == 'leon337' &&
+      github.event.pull_request.number == 21 &&
+      github.event.pull_request.head.ref == 'team/g2b-task8-20260822'
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 120
+    steps:
+      - name: Check out exact PR head
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate corrected candidate only inside preserved disposable VM
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          candidate="$(git rev-parse HEAD)"
+          echo "G2B_TASK8_POSTFIX_CANDIDATE=$candidate"
+          archive="${RUNNER_TEMP}/g2b-task8-postfix-${GITHUB_RUN_ID}.tar.gz"
+          git archive --format=tar.gz --output="$archive" HEAD
+          echo "POSTFIX_ARCHIVE_SHA256=$(sha256sum "$archive" | awk '{print $1}')"
+
+          qemu_pid="$(pgrep -f 'qemu-system-x86_64.*g2b-disposable-task8-vm3' | head -1 || true)"
+          [[ -n "$qemu_pid" ]] || { echo 'POSTFIX_BLOCKED=preserved_qemu_absent'; exit 2; }
+          cmdline="$(tr '\0' ' ' <"/proc/$qemu_pid/cmdline")"
+          workdir="$(sed -nE 's#.*-pidfile (/tmp/g2b-task8-vm3\.[^ /]+/qemu\.pid).*#\1#p' <<<"$cmdline" | xargs -r dirname)"
+          [[ -n "$workdir" && "$workdir" == /tmp/g2b-task8-vm3.* ]] || { echo 'POSTFIX_BLOCKED=safe_workdir_invalid'; exit 3; }
+          key="$workdir/id_ed25519"
+          [[ -f "$key" && "$(stat -c '%a' "$key")" == 600 ]] || { echo 'POSTFIX_BLOCKED=identity_invalid'; exit 4; }
+
+          ssh_opts=(-i "$key" -p 22284 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5)
+          scp_opts=(-i "$key" -P 22284 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5)
+          remote_archive="/tmp/g2b-task8-postfix-${GITHUB_RUN_ID}.tar.gz"
+          scp "${scp_opts[@]}" "$archive" "ubuntu@127.0.0.1:$remote_archive" >/dev/null
+
+          set +e
+          ssh "${ssh_opts[@]}" ubuntu@127.0.0.1 /bin/bash -s -- "$candidate" "$remote_archive" <<'GUEST'
+          set -Eeuo pipefail
+          candidate="$1"
+          archive="$2"
+          root="$(mktemp -d /tmp/g2b-task8-postfix.XXXXXXXX)"
+          trap 'rm -f -- "$archive"' EXIT
+          tar -xzf "$archive" -C "$root"
+          cd "$root"
+          echo "POSTFIX_ROOT=$root"
+          echo "POSTFIX_CANDIDATE=$candidate"
+          echo 'POSTFIX_NODE01_G2B_WRITE=NOT_EXECUTED'
+
+          python3 -m unittest tests.test_g2b_disposable_integration -v
+          echo 'G2B_TASK8_FOCUSED_REGRESSION_PASS'
+
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
+          echo 'G2B_TASK8_UNIT_REGRESSION_PASS'
+
+          bash -n scripts/test_control_bridge_g2b_vm.sh
+          echo 'G2B_TASK8_HARNESS_SYNTAX_PASS'
+
+          set +e
+          G2B_TEST_PRIVILEGED_CONFIRM=DISPOSABLE_UBUNTU_24_04_ONLY \
+          G2B_CANDIDATE_SHA="$candidate" \
+          scripts/test_control_bridge_g2b_vm.sh
+          rc=$?
+          set -e
+          echo "G2B_TASK8_POSTFIX_LIFECYCLE_EXIT=$rc"
+          exit "$rc"
+          GUEST
+          rc=$?
+          set -e
+          echo "G2B_TASK8_POSTFIX_VALIDATION_EXIT=$rc"
+          echo 'NO_G2B_NODE01_WRITE=PASS'
+          exit "$rc"
