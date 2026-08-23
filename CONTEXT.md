@@ -74,8 +74,8 @@ CONTINUITY_MISSION_STATUS=COMPLETE
 CONTINUITY_MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 AUTHORITY=LEANDRO
 ORCHESTRATOR=MESTRE_MCF
-ACTIVE_BRANCH=codex/control-bridge-g2b
-ACTIVE_PR=11_DRAFT_DO_NOT_MERGE
+ACTIVE_BRANCH=codex/context-bridge-reconcile-20260823
+ACTIVE_PR=NONE_LOCAL_ONLY_NO_PUSH
 ROADMAP_R1=COMPLETE
 ROADMAP_R2=COMPLETE
 ROADMAP_R3=COMPLETE
@@ -85,7 +85,7 @@ ROADMAP_R6=COMPLETE
 ROADMAP_R7=COMPLETE
 ROADMAP_R8=COMPLETE
 R7_VERDICT=PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION_HISTORICAL_SNAPSHOT
-NEXT_EXACT_STEP=LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
+NEXT_EXACT_STEP=REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
 ```
 
 A missão de continuidade concluiu R1–R8 e devolveu a missão ativa ao G2-B. Os controles criados continuam obrigatórios. O R7 permanece evidência histórica do estado pré-R8 e não deve ser reescrito.
@@ -93,14 +93,16 @@ A missão de continuidade concluiu R1–R8 e devolveu a missão ativa ao G2-B. O
 ## G2-B — estado atual
 
 ```text
-G1=PASS_REAL_NODE_01_ROUNDTRIP
-G2A=PASS_REAL_NODE_01_READ_ONLY
+G1=PASS_REAL_NODE_01_ROUNDTRIP_HISTORIC_LIVE_REQUIRED
+G2A=PASS_REAL_NODE_01_READ_ONLY_HISTORIC_LIVE_REQUIRED
 G2B_TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
 G2B_TASK_7=COMPLETE
 G2B_TASK_7_TESTS=7_PASS_0_FAIL
 G2B_KNOWN_RED=RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
 G2B_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
-G2B_TASK_8=BLOCKED_EXTERNAL
+G2B_TASK_8=PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+G2B_TASK_8_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
+G2B_LIFECYCLE=LAB_VALIDATED_INACTIVE
 TASKS_9_10=NOT_STARTED
 G2B_REAL_WRITE=NOT_EXECUTED
 G2B_REAL_ROLLBACK=NOT_EXECUTED
@@ -109,7 +111,9 @@ NODE01_G2B_GATE=CLOSED
 MERGE_G2B=NO
 ```
 
-Fontes atuais: `state/control-bridge-g2b.yaml`, `state/active-mission.yaml`, Issue #10, PR #11 e o plano G2-B. O checkpoint `docs/54-control-bridge-g2b-recovery-checkpoint.md` permanece histórico e contém um adendo pós-R8.
+Fontes atuais: `.mcf/project-capsule.yaml`, `context/mcf-cloud-context.yaml`, `state/control-bridge-g2b.yaml`, `state/active-mission.yaml` e `evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md`. O checkpoint `docs/54-control-bridge-g2b-recovery-checkpoint.md`, Issue #10 e PR #11 permanecem históricos.
+
+Task 8 passou apenas no laboratório Docker descartável do notebook (`--network none`) com 13/13 marcadores e cleanup. Esse resultado não ativa G2-B e não autoriza Tasks 9/10, transporte mutante pelo Context, NODE-01, grant real, escrita real, publicação, merge ou produção. G2-A preserva evidência histórica read-only, mas todo uso material requer verificação live.
 
 ## Trabalho paralelo isolado
 

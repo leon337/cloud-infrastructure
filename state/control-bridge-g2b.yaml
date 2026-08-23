@@ -1,13 +1,22 @@
 protocol_version: MCF_CONTROL_BRIDGE_G2B_STATE_V1
-updated_at: 2026-08-22
+updated_at: 2026-08-23
 scope: TRANSVERSAL_CONTROL_PLANE
 priority: P0
 repository: leon337/cloud-infrastructure
-branch: codex/control-bridge-g2b
+branch: codex/context-bridge-reconcile-20260823
 base_branch: mcf/mission-001-control-bridge-g1
-base_sha: 8ee1fd719a50d0c9440a10a11a372dda8af1f457
-status: TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY
+base_sha: 3e34044c0fb10429fe2f7a262dec21932479f143
+status: TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED
+candidate:
+  branch: codex/context-bridge-reconcile-20260823
+  safe_pull_request_target: mcf/mission-001-control-bridge-g1
+  reconciliation_merge_sha: 9359450742020d1c99b298379b8a29fefce6294f
+  validated_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
+  push_executed: false
+  pull_request: null
+  merge_authorized: false
 recovery_checkpoint:
+  classification: HISTORICAL_WIP_CHECKPOINT
   sha: 7205a647f918580d09c87ed44f38b0a433552a51
   document: docs/54-control-bridge-g2b-recovery-checkpoint.md
   commits_ahead_of_base: 25
@@ -34,21 +43,28 @@ implementation:
     post_r8_publication_foundation_run: 32549668020
     post_r8_publication_hosted_validation: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS
     review_mode: SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
-  task_8: BLOCKED_EXTERNAL
+  task_8: PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
   task_8_validation:
-    candidate_sha: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
-    contract_tests: PASS_4_OF_4
-    local_regression: PASS_371_TESTS_16_SHELL_SYNTAX
+    candidate_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
+    contract_tests: PASS_6_OF_6
+    local_regression: PASS_372_TESTS_AT_RECONCILIATION_MERGE
+    final_reconciled_regression: PASS_381_TESTS
+    disposable_environment: NOTEBOOK_DOCKER_UBUNTU24_SYSTEMD_NETWORK_NONE
+    disposable_markers_pass: 13
+    disposable_markers_required: 13
+    disposable_cleanup: PASS
+    evidence: evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md
     hosted_workflow: control-bridge-g2b-ci
     hosted_run: 32551353362
     hosted_validate_attempt_1_job: 96978527344
     hosted_validate_attempt_2_job: 96978618226
     hosted_validate_steps: 0
     hosted_logs: BLOB_NOT_FOUND
-    disposable_lifecycle: SKIPPED_DEPENDENCY_VALIDATE_FAILED_PRE_STEP
-    boundary_rule: NEVER_NODE01_GITHUB_HOSTED_OR_EQUIVALENT_APPROVED_UBUNTU24_SYSTEMD_ONLY
+    historical_hosted_classification: INCONCLUSIVE_PRE_STEP_SUPERSEDED_ONLY_FOR_LOCAL_TASK8_BY_EXACT_LAB_PASS
+    disposable_lifecycle: PASS_13_OF_13
+    boundary_rule: DISPOSABLE_NOTEBOOK_DOCKER_NETWORK_NONE_NEVER_NODE01
   tasks_9_10: NOT_STARTED
-  tasks_8_10: TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED
+  tasks_8_10: TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED
 pilot:
   project: leon337/g2a-smoke/dev
   path: G2B-PILOT.txt
@@ -70,7 +86,7 @@ evidence:
   real_rollback: false
   real_revocation: false
   mcf_effective_use: false
-  disposable_lifecycle: false
+  disposable_lifecycle: true
 continuity:
   mission_issue: 10
   mission_status: COMPLETE
@@ -93,12 +109,12 @@ continuity:
   roadmap_stage: R8_COMPLETE
   f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
   f1_2c_rule: ISOLATED_DO_NOT_MODIFY
-technical_next_exact_step: LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
-technical_next_step_gate: BLOCKED_EXTERNAL_TASK8_DISPOSABLE_BOUNDARY_REQUIRED_NEVER_NODE01
-task_8_remediation_plan: docs/56-g2b-task8-vps-qemu-tcg-disposable-boundary-plan.md
-task_8_remediation_strategy: VPS_QEMU_TCG_DISPOSABLE_UBUNTU24_SYSTEMD
-task_8_host_package_gate: AUTHORIZED_BY_LEANDRO_WAITING_DIRECT_PRIVILEGED_EXECUTION
-next_exact_step: LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
+technical_next_exact_step: REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+technical_next_step_gate: REVIEW_REQUIRED_TASK8_LAB_ONLY_G2B_INACTIVE
+task_8_historical_remediation_plan: docs/56-g2b-task8-vps-qemu-tcg-disposable-boundary-plan.md
+task_8_historical_remediation_strategy: VPS_QEMU_TCG_DISPOSABLE_UBUNTU24_SYSTEMD
+task_8_host_package_gate: CLOSED_NOT_REQUIRED_AFTER_LOCAL_LAB_PASS
+next_exact_step: REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
 r8_does_not_authorize:
   - NODE01_G2B_BOOTSTRAP
   - REAL_GRANT_ISSUE_OR_REISSUE

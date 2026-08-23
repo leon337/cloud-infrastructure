@@ -1,9 +1,9 @@
 protocol_version: CLOUD_INFRA_ACTIVE_MISSION_V1
-updated_at: 2026-08-22
+updated_at: 2026-08-23
 mission:
   id: CONTROL_BRIDGE_G2B
   title: Control Bridge G2-B bounded write
-  status: BLOCKED_EXTERNAL
+  status: REVIEW_REQUIRED
   priority: P0
   authority: LEANDRO
   orchestrator: MESTRE_MCF
@@ -18,10 +18,13 @@ continuity_mission:
   completed_at: 2026-08-22
 repository:
   name: leon337/cloud-infrastructure
-  active_branch: codex/control-bridge-g2b
+  active_branch: codex/context-bridge-reconcile-20260823
   base_branch: mcf/mission-001-control-bridge-g1
-  pull_request: 11
-  pull_request_state: DRAFT_DO_NOT_MERGE
+  pull_request: null
+  pull_request_state: LOCAL_ONLY_NO_PUSH
+  safe_pull_request_target: mcf/mission-001-control-bridge-g1
+  reconciliation_merge_sha: 9359450742020d1c99b298379b8a29fefce6294f
+  validated_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
   recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
   recovered_commits_ahead_of_base: 25
 startup_recovery_protocol:
@@ -65,7 +68,7 @@ cold_start_validation:
   verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
   independent_fresh_model_process: NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
 control_bridge_g2b:
-  status: TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY
+  status: TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED
   recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
   task_7: COMPLETE
@@ -77,12 +80,16 @@ control_bridge_g2b:
   ansible_syntax: PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
   task_7_candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
   task_7_evidence_issue_comment: https://github.com/leon337/cloud-infrastructure/issues/10#issuecomment-5377605173
-  task_8: BLOCKED_EXTERNAL
-  task_8_candidate_sha: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
+  task_8: PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+  task_8_candidate_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
+  task_8_markers: PASS_13_OF_13
+  task_8_cleanup: PASS
+  task_8_evidence: evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md
   task_8_hosted_run: 32551353362
-  task_8_hosted_validation: BLOCKED_EXTERNAL_ZERO_STEPS_BLOB_NOT_FOUND_RETRY_CONFIRMED
+  task_8_hosted_validation: HISTORICAL_INCONCLUSIVE_ZERO_STEPS_BLOB_NOT_FOUND
   tasks_9_10: NOT_STARTED
-  tasks_8_10: TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED
+  tasks_8_10: TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED
+  lifecycle: LAB_VALIDATED_INACTIVE
   real_write: NOT_EXECUTED
   real_rollback: NOT_EXECUTED
   real_revocation: NOT_EXECUTED
@@ -97,8 +104,9 @@ human_gates:
   real_grant_issue_or_reissue: CLOSED_NOT_AUTHORIZED
   real_bounded_write: CLOSED_NOT_AUTHORIZED
   production_mutation: CLOSED_NOT_AUTHORIZED
-  merge_g2b: AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE
-  task8_qemu_tcg_host_packages: AUTHORIZED_BY_LEANDRO_WAITING_DIRECT_PRIVILEGED_EXECUTION
+  merge_g2b: CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED
+  publication_g2b: CLOSED_NOT_AUTHORIZED
+  task8_qemu_tcg_host_packages: CLOSED_NOT_REQUIRED_AFTER_LOCAL_LAB_PASS
 continuity_roadmap:
   R1: COMPLETE
   R2: COMPLETE
@@ -125,9 +133,15 @@ validation:
   r8_role_review: PASS_SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
   r8_github_hosted_validation: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS_OBSERVED_AFTER_R8_PUBLICATION
   historical_evidence_preservation_check: PASS
-next_exact_step: LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
+  task8_local_disposable_lifecycle: PASS_13_OF_13_TARGET_SHA_570779B
+  task8_local_cleanup: PASS
+  current_full_unit_suite: PASS_372_OF_372_AT_RECONCILIATION_MERGE
+  final_reconciled_unit_suite: PASS_381_OF_381
+  aggregate_gate: BLOCKED_LOCAL_SHARED_GIT_OBJECT_DB_NOT_CANDIDATE_RESULT
+next_exact_step: REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
 recovery_rule: NEW_AGENT_MUST_EXECUTE_STARTUP_RECOVERY_PROTOCOL_BEFORE_IMPLEMENTATION
 persistence_rule: LONG_RUNNING_WORK_MUST_FOLLOW_MISSION_PERSISTENCE_POLICY
 memory_rule: MATERIAL_PROJECT_HISTORY_MUST_USE_APPEND_ORIENTED_INSTITUTIONAL_MEMOS
 drift_rule: CANONICAL_DRIFT_MUST_FAIL_CLOSED_UNTIL_RECONCILED
-r8_rule: R8_COMPLETE_DOES_NOT_OPEN_ANY_HUMAN_GATE_OR_START_TASK_8
+r8_rule: R8_COMPLETE_DID_NOT_OPEN_ANY_HUMAN_GATE
+task8_rule: LOCAL_LAB_PASS_DOES_NOT_ACTIVATE_G2B_OR_OPEN_PUBLICATION_NODE01_TASK9_TASK10_MERGE_OR_PRODUCTION

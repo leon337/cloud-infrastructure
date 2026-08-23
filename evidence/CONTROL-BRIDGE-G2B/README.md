@@ -1,10 +1,21 @@
 # CONTROL BRIDGE G2-B — Evidence
 
-Status: `TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY`
+Current status: `TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED`
 
 ## Scope
 
 This directory records sanitized G2-B lifecycle evidence. It must never contain request content, credentials, snapshots, environment dumps, `/etc/shadow`, private keys, tokens, or unrelated host state.
+
+## Current exact candidate
+
+- lifecycle: `LAB_VALIDATED_INACTIVE`
+- candidate: `570779b75ba41ac3725ef16bc65a163e01631a1c`
+- boundary: disposable notebook Docker, Ubuntu 24.04/systemd, `--network none`
+- Task 8: `PASS_13_OF_13`, cleanup `PASS`
+- evidence: `TASK-8-RECONCILED-LAB-20260823.md`
+- Tasks 9/10, mutating Context transport, activation, real host use, publication, merge, and production: not executed / not authorized
+
+The sections below preserve earlier attempts as historical evidence; their then-current blockers are not silently rewritten.
 
 ## Task 7 accepted baseline
 
@@ -13,7 +24,7 @@ This directory records sanitized G2-B lifecycle evidence. It must never contain 
 - R8 completion commit: `047495c5c4215fc82d9e52d30114608af56deee5`
 - reconciled pre-Task-8 head: `945052dc2503ba18a0e96ef03237c620ef336f9f`
 
-## Task 8 pre-publication evidence
+## Historical Task 8 pre-publication evidence
 
 - local command: `./scripts/test.sh`
 - local unit/static result: `371 PASS`
@@ -29,7 +40,7 @@ This directory records sanitized G2-B lifecycle evidence. It must never contain 
 
 The privileged lifecycle harness explicitly refuses `node-01` and `vmi3506102`. The plan requires a disposable Ubuntu 24.04/systemd proof before Task 9. This evidence must not be relabeled as a code failure and must not be rerouted to NODE-01.
 
-## Task 8 VPS QEMU/TCG attempt 1 and authorized retry
+## Historical Task 8 VPS QEMU/TCG attempt 1 and authorized retry
 
 - boundary: `QEMU_TCG_UBUNTU_24_04` on NODE-01 host, with no host checkout mount
 - host packages authorized and installed: `qemu-system-x86`, `qemu-utils`, `cloud-image-utils`
@@ -45,7 +56,7 @@ The privileged lifecycle harness explicitly refuses `node-01` and `vmi3506102`. 
 - retry resource decision: `6 vCPU / 12 GiB RAM / TCG multi-thread`; 14 GiB was rejected to preserve host safety margin
 
 Attempt 1 is a real disposable-harness compatibility failure, not a G2-B executor acceptance failure and not an authorized-resize abort. Task 8 remains unaccepted until a fresh exact candidate completes all 13 lifecycle markers and cleanup in the resized disposable VM.
-## Task 8 VPS QEMU/TCG attempt 2
+## Historical Task 8 VPS QEMU/TCG attempt 2
 
 - candidate: `e6aba995cbee69e1cb1e37ea954b94d4fa92082c`
 - VM resources: `6 vCPU / 12 GiB RAM / TCG multi-thread`

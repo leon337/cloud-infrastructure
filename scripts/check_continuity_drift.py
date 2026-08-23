@@ -73,7 +73,7 @@ def collect_errors() -> list[str]:
     check(mission.get("continuity_origin_issue") == 10, "STALE_ACTIVE_MISSION_REFERENCE", "continuity origin issue must be #10")
     check(repository.get("name") == "leon337/cloud-infrastructure", "STALE_ACTIVE_MISSION_REFERENCE", "repository mismatch")
     check(repository.get("active_branch") == bridge.get("branch"), "MISSION_BRANCH_OR_PR_MISMATCH", "active branch differs from G2-B state")
-    check(repository.get("pull_request") == bridge.get("recovery_checkpoint", {}).get("pull_request"), "MISSION_BRANCH_OR_PR_MISMATCH", "PR differs from G2-B state")
+    check(repository.get("pull_request") == bridge.get("candidate", {}).get("pull_request"), "MISSION_BRANCH_OR_PR_MISMATCH", "current candidate PR differs from G2-B state")
     check(mission.get("continuity_origin_issue") == bridge.get("continuity", {}).get("mission_issue"), "MISSION_BRANCH_OR_PR_MISMATCH", "continuity origin issue differs from G2-B state")
 
     check(set(ROADMAP_KEYS).issubset(roadmap), "ROADMAP_STATE_REGRESSION_OR_INVALID_TRANSITION", "R1-R8 must all be present")
@@ -109,24 +109,30 @@ def collect_errors() -> list[str]:
     check(bridge.get("implementation", {}).get("task_7_focused_tests", {}).get("fail") == 0, "G2B_TASK_STATE_DRIFT", "Task 7 fail count must remain 0 after R8")
     check(str(bridge.get("implementation", {}).get("ansible_syntax", "")).startswith("PASS_3_"), "PASS_WITHOUT_EVIDENCE", "Task 7 completion lacks Ansible syntax evidence")
     check(bool(bridge.get("implementation", {}).get("task_7_validation", {}).get("candidate_sha")), "PASS_WITHOUT_EVIDENCE", "Task 7 completion lacks candidate SHA")
-    check(bridge.get("implementation", {}).get("task_8") == "BLOCKED_EXTERNAL", "G2B_TASK_STATE_DRIFT", "Task 8 must remain BLOCKED_EXTERNAL until disposable proof exists")
-    check(bridge.get("implementation", {}).get("tasks_9_10") == "NOT_STARTED", "G2B_TASK_STATE_DRIFT", "Tasks 9-10 advanced before Task 8 proof")
-    check(bridge.get("implementation", {}).get("tasks_8_10") == "TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED", "G2B_TASK_STATE_DRIFT", "combined Task 8-10 state mismatch")
+    check(bridge.get("implementation", {}).get("task_8") == "PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13", "G2B_TASK_STATE_DRIFT", "Task 8 local disposable result mismatch")
+    check(bridge.get("implementation", {}).get("task_8_validation", {}).get("disposable_markers_pass") == 13, "PASS_WITHOUT_EVIDENCE", "Task 8 PASS lacks 13 acceptance markers")
+    check(bridge.get("implementation", {}).get("task_8_validation", {}).get("disposable_cleanup") == "PASS", "PASS_WITHOUT_EVIDENCE", "Task 8 PASS lacks bounded cleanup")
+    check(bridge.get("implementation", {}).get("tasks_9_10") == "NOT_STARTED", "G2B_TASK_STATE_DRIFT", "Tasks 9-10 advanced without separate authorization")
+    check(bridge.get("implementation", {}).get("tasks_8_10") == "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED", "G2B_TASK_STATE_DRIFT", "combined Task 8-10 state mismatch")
     check(current_bridge.get("g2b_task_7") == "COMPLETE_7_PASS_0_FAIL", "CURRENT_STATE_DRIFT", "state/current.yaml G2-B Task 7 mismatch")
-    check(current_bridge.get("g2b_task_8") == "BLOCKED_EXTERNAL", "CURRENT_STATE_DRIFT", "state/current.yaml Task 8 mismatch")
+    check(current_bridge.get("g2b_task_8") == "PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13", "CURRENT_STATE_DRIFT", "state/current.yaml Task 8 mismatch")
     check(current_bridge.get("g2b_tasks_9_10") == "NOT_STARTED", "CURRENT_STATE_DRIFT", "state/current.yaml Tasks 9-10 mismatch")
-    check(current_bridge.get("g2b_tasks_8_10") == "TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED", "CURRENT_STATE_DRIFT", "state/current.yaml combined Task 8-10 mismatch")
+    check(current_bridge.get("g2b_tasks_8_10") == "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED", "CURRENT_STATE_DRIFT", "state/current.yaml combined Task 8-10 mismatch")
+    check(current_bridge.get("g2b_lifecycle") == "LAB_VALIDATED_INACTIVE", "CURRENT_STATE_DRIFT", "state/current.yaml must not activate G2-B from lab evidence")
 
     for gate, value in active.get("human_gates", {}).items():
         if gate == "merge_g2b":
-            check(value == "AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE", "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "merge authorization must remain conditional on acceptance")
+            check(value == "CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED", "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "merge must remain closed for the local candidate")
         elif gate == "task8_qemu_tcg_host_packages":
-            check(value == "AUTHORIZED_BY_LEANDRO_WAITING_DIRECT_PRIVILEGED_EXECUTION", "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "Task 8 QEMU host package gate is authorized but awaits direct privileged execution")
+            check(value == "CLOSED_NOT_REQUIRED_AFTER_LOCAL_LAB_PASS", "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "obsolete Task 8 QEMU package gate must remain closed")
         else:
             check(isinstance(value, str) and "NOT_AUTHORIZED" in value, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", f"{gate} is not fail-closed")
     check(bridge.get("evidence", {}).get("real_write") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "real write evidence unexpectedly true")
     check(bridge.get("evidence", {}).get("real_rollback") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "real rollback evidence unexpectedly true")
     check(bridge.get("evidence", {}).get("real_revocation") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "real revocation evidence unexpectedly true")
+    check(bridge.get("evidence", {}).get("mcf_effective_use") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "MCF effective-use evidence unexpectedly true")
+    check(bridge.get("candidate", {}).get("push_executed") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "candidate unexpectedly claims push")
+    check(bridge.get("candidate", {}).get("merge_authorized") is False, "HUMAN_GATE_BYPASS_OR_AMBIGUITY", "candidate unexpectedly claims merge authorization")
 
     parallel = active.get("parallel_work", {}).get("f1_2c_systemd_runtime_lock", {})
     current_parallel = current.get("work_ownership", {}).get("f1_2c_systemd_runtime_lock", {})

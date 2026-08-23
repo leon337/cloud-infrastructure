@@ -6,8 +6,8 @@ Prioridade: **P0 transversal**
 Autoridade humana: **LEANDRO**  
 Orquestração: **MESTRE / MCF**  
 Issue remota: **#10**  
-Branch ativa: `codex/control-bridge-g2b`  
-PR: **#11 — DRAFT / DO NOT MERGE**
+Branch histórica da missão: `codex/control-bridge-g2b`
+PR histórica: **#11 — DRAFT / DO NOT MERGE**
 
 ## Objetivo
 
@@ -221,7 +221,7 @@ ROLE_REVIEW=PASS_SAME_SESSION_MCF_ROLE_NOT_EXTERNAL_INDEPENDENT
 
 A prova self-hosted foi limitada a testes e `--syntax-check`; não executou apply, bootstrap, emissão de grant ou escrita real. A falha do GitHub-hosted runner foi classificada como infraestrutura pré-step e não como falha de conteúdo.
 
-Após o encerramento da missão de continuidade, Task 8 foi iniciada pela missão G2-B. O harness e os contratos estáticos foram implementados e validados, mas a prova privilegiada em boundary Ubuntu 24.04/systemd está `BLOCKED_EXTERNAL`: o run `32551353362` e sua reexecução falharam antes de qualquer step (`steps=0`, logs `BlobNotFound`). O plano proíbe reroteamento para NODE-01.
+Após o encerramento da missão de continuidade, Task 8 foi iniciada pela missão G2-B. Naquele checkpoint, o harness e os contratos estáticos estavam implementados, mas a prova privilegiada em boundary Ubuntu 24.04/systemd estava `BLOCKED_EXTERNAL`: o run `32551353362` e sua reexecução falharam antes de qualquer step (`steps=0`, logs `BlobNotFound`). Esse registro permanece histórico e o plano proibia reroteamento para NODE-01.
 
 ## Limites atuais
 
@@ -235,7 +235,7 @@ Continuam fechados:
 - alteração ou tomada de ownership da branch `fix/f1-2c-systemd-runtime-lock`;
 - marcação da Task 7 como concluída sem evidência.
 
-## Próximo passo exato
+## Próximo passo exato naquele checkpoint histórico
 
 A missão de continuidade está concluída e a missão ativa retorna ao Control Bridge G2-B:
 
@@ -244,6 +244,23 @@ LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
 ```
 
 Task 8 deve respeitar o plano aprovado: boundary Ubuntu 24.04/systemd descartável, nunca NODE-01.
+
+## Adendo corrente — reconciliação local de 2026-08-23
+
+Após o encerramento desta missão histórica, um candidato local reconciliou a base madura G1/G2-A e a linha Task 8. O lifecycle descartável passou no notebook, sem VPS, SSH ou rede do container:
+
+```text
+ACTIVE_BRANCH=codex/context-bridge-reconcile-20260823
+ACTIVE_PR=NONE_LOCAL_ONLY_NO_PUSH
+RECONCILIATION_MERGE_SHA=9359450742020d1c99b298379b8a29fefce6294f
+TASK_8_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
+TASK_8=PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+G2B_LIFECYCLE=LAB_VALIDATED_INACTIVE
+TASKS_9_10=NOT_STARTED
+NEXT_EXACT_STEP=REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+```
+
+Esse PASS é restrito à Task 8 no laboratório. O contrato atual está em `context/mcf-cloud-context.yaml`, a Capsule em `.mcf/project-capsule.yaml` e a evidência em `evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md`. Ativação, transporte mutante pelo Context, NODE-01, prova real de write/rollback/revoke, uso efetivo pelo MCF, publicação, merge e produção continuam fechados.
 
 ## Encerramento da missão de continuidade
 

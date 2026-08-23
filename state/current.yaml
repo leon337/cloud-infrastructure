@@ -1,8 +1,8 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-updated_at: 2026-08-22
-documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK8_BLOCKED_EXTERNAL_CONTINUITY_R8_COMPLETE
+updated_at: 2026-08-23
+documentation_state: SLICE_001_DONE_F1_2B_DONE_F1_2C_MAINLINE_PRESERVED_CONTROL_BRIDGE_G2B_TASK8_LAB_PASS_INACTIVE_CONTINUITY_R8_COMPLETE
 continuity:
   historical_validations_preserved: true
   current_state_independent_validation: PASS_WITH_OPEN_HUMAN_GATE
@@ -32,12 +32,12 @@ continuity:
   continuity_mission_doc: docs/53-repository-continuity-context-recovery-mission.md
   continuity_mission_issue: 10
   continuity_mission_status: COMPLETE
-  active_pull_request: 11
-  active_branch: codex/control-bridge-g2b
+  active_pull_request: null
+  active_branch: codex/context-bridge-reconcile-20260823
   g2b_recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
-  active_roadmap_stage: R8_COMPLETE_RETURNED_TO_G2B
-  next_exact_step: LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
+  active_roadmap_stage: R8_COMPLETE_G2B_TASK8_LAB_PASS_REVIEW_REQUIRED
+  next_exact_step: REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
   checkpoint: CHECKPOINT.md
   platform_discovery_state: state/platform-discovery.yaml
   codex_execution_mission: docs/CODEX-EXECUTION-MISSION-001.md
@@ -52,7 +52,7 @@ continuity:
   component_inventory: state/components.yaml
 active_mission:
   id: CONTROL_BRIDGE_G2B
-  status: BLOCKED_EXTERNAL
+  status: REVIEW_REQUIRED
   priority: P0
   authority: LEANDRO
   orchestrator: MESTRE_MCF
@@ -60,8 +60,8 @@ active_mission:
   continuity_origin_issue: 10
   state: state/active-mission.yaml
   document: docs/superpowers/plans/2026-08-20-control-bridge-g2b-bounded-write.md
-  branch: codex/control-bridge-g2b
-  pull_request: 11
+  branch: codex/context-bridge-reconcile-20260823
+  pull_request: null
   roadmap:
     R1: COMPLETE
     R2: COMPLETE
@@ -73,19 +73,23 @@ active_mission:
     R8: COMPLETE
 control_bridge:
   priority: P0
-  g1: PASS_REAL_NODE_01_ROUNDTRIP
-  g2a: PASS_REAL_NODE_01_READ_ONLY
-  g2b: TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY
+  g1: PASS_REAL_NODE_01_ROUNDTRIP_HISTORIC_LIVE_REQUIRED
+  g2a: PASS_REAL_NODE_01_READ_ONLY_HISTORIC_LIVE_REQUIRED
+  g2b: TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED
   g2b_tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
   g2b_task_7: COMPLETE_7_PASS_0_FAIL
-  g2b_task_8: BLOCKED_EXTERNAL
-  g2b_task_8_candidate_sha: 8e696288cb8f02b79ee130ac7cc5eca42ab6c961
+  g2b_task_8: PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+  g2b_task_8_candidate_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
+  g2b_task_8_markers: PASS_13_OF_13
+  g2b_task_8_cleanup: PASS
+  g2b_final_reconciled_unit_suite: PASS_381_OF_381
   g2b_task_8_hosted_run: 32551353362
-  g2b_task_8_hosted_validation: BLOCKED_EXTERNAL_ZERO_STEPS_BLOB_NOT_FOUND_RETRY_CONFIRMED
+  g2b_task_8_hosted_validation: HISTORICAL_INCONCLUSIVE_ZERO_STEPS_BLOB_NOT_FOUND
   g2b_tasks_9_10: NOT_STARTED
-  g2b_tasks_8_10: TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED
+  g2b_tasks_8_10: TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED
   g2b_real_write: NOT_EXECUTED
-  g2b_pr: 11_DRAFT_DO_NOT_MERGE
+  g2b_pr: NONE_LOCAL_ONLY_NO_PUSH
+  g2b_lifecycle: LAB_VALIDATED_INACTIVE
   g2b_recovery_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
   g2b_task_7_candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
   g2b_task_7_ansible_syntax: PASS_3_SELF_HOSTED
@@ -99,7 +103,7 @@ work_ownership:
     frozen_for_codex: true
     rule_for_active_continuity_mission: ISOLATED_DO_NOT_MODIFY
   control_bridge_g2b:
-    branch: codex/control-bridge-g2b
+    branch: codex/context-bridge-reconcile-20260823
     historical_executor: CODEX
     current_orchestrator: MESTRE_MCF
     final_authority: LEANDRO

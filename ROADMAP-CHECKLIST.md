@@ -1,9 +1,9 @@
 # ROADMAP CHECKLIST — ESTADO CANÔNICO ATUAL
 
-Atualizado em: **2026-08-22**
+Atualizado em: **2026-08-23**
 Repositório: `leon337/cloud-infrastructure`
-Branch de trabalho G2-B: `codex/control-bridge-g2b`
-PR: `#11`
+Branch de trabalho G2-B: `codex/context-bridge-reconcile-20260823`
+PR: `NONE_LOCAL_ONLY_NO_PUSH`
 Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 
 > Regra: um item só recebe `[x]` quando sua evidência aplicável sustenta conclusão. `BLOCKED_EXTERNAL`, `WAITING_HUMAN_GATE`, `PARTIAL`, `CONDITIONAL` e `PLANNED` permanecem `[ ]`.
@@ -21,29 +21,30 @@ Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 
 ## Control Bridge
 
-- [x] G1 — roundtrip real NODE-01 — `PASS_REAL_NODE_01_ROUNDTRIP`
-- [x] G2-A — leitura real NODE-01 — `PASS_REAL_NODE_01_READ_ONLY`
+- [x] G1 — roundtrip real NODE-01 histórico — `PASS_REAL_NODE_01_ROUNDTRIP_HISTORIC_LIVE_REQUIRED`
+- [x] G2-A — leitura real NODE-01 histórica — `PASS_REAL_NODE_01_READ_ONLY_HISTORIC_LIVE_REQUIRED`
 - [x] G2-B Tasks 1–6 — `COMPLETE_MATERIALLY_REVIEWED`
 - [x] G2-B Task 7 — `COMPLETE_7_PASS_0_FAIL`; Ansible `3/3 PASS`
-- [ ] G2-B Task 8 — `BLOCKED_EXTERNAL` — código/harness e testes estáticos prontos; prova Ubuntu 24.04/systemd descartável não executou
-- [ ] G2-B Task 9 — `NOT_STARTED` — exige disposable proof da Task 8
+- [x] G2-B Task 8 — `PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13` — laboratório local Ubuntu 24.04/systemd, `--network none`, cleanup completo
+- [ ] G2-B lifecycle — `LAB_VALIDATED_INACTIVE` — ativação não autorizada
+- [ ] G2-B Task 9 — `NOT_STARTED` — exige revisão/publicação separada e não é autorizada pelo PASS da Task 8
 - [ ] G2-B Task 10 — `NOT_STARTED` — exige HUMAN_GATE explícito para NODE-01 bootstrap/grant/write
-- [ ] G2-B merge — `AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE`
+- [ ] G2-B merge — `CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED`
 
-### Plano de remediação recomendado
+### Evidência atual e plano histórico
 
 - `docs/56-g2b-task8-vps-qemu-tcg-disposable-boundary-plan.md`
-- estratégia: VM Ubuntu 24.04 descartável em QEMU/TCG na própria VPS; nunca executar o harness privilegiado diretamente no NODE-01.
-- gate atual: autorização humana para instalar `qemu-system-x86`, `qemu-utils` e `cloud-image-utils`.
+- o plano QEMU/TCG permanece histórico; o gate de pacotes está fechado e não é necessário após o PASS local descartável.
+- evidência atual: `evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md`.
 
-### Bloqueio G2-B atual
+### Limite G2-B atual
 
-`control-bridge-g2b-ci` run `32551353362` falhou antes de executar steps; a reexecução repetiu `steps=0` e logs `BlobNotFound`. O lifecycle descartável foi `SKIPPED`. O plano proíbe rerotear essa prova privilegiada para NODE-01.
+Task 8 passou no candidato local `570779b...`; Tasks 9/10, ativação, transporte mutante pelo Context, NODE-01, staging, produção, publicação e merge permanecem não executados/não autorizados. O resultado hosted anterior (`steps=0`, `BlobNotFound`) continua evidência histórica inconclusiva e não é reescrito.
 
 Próximo passo exato:
 
 ```text
-LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
+REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
 ```
 
 ## Roadmap principal da plataforma
@@ -87,5 +88,6 @@ LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
 - grant real G2-B: `CLOSED_NOT_AUTHORIZED`
 - bounded write real: `CLOSED_NOT_AUTHORIZED`
 - produção: `CLOSED_NOT_AUTHORIZED`
-- merge G2-B: `AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE`
+- publicação G2-B: `CLOSED_NOT_AUTHORIZED`
+- merge G2-B: `CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED`
 - F1.2c parallel branch: `ISOLATED_DO_NOT_MODIFY`

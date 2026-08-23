@@ -2,7 +2,7 @@
 
 Checklist canônico de leitura rápida: `ROADMAP-CHECKLIST.md`.
 
-Atualizado em 2026-08-22 após concluir R8 e aceitar a Task 7 com evidência.
+Atualizado em 2026-08-23 após reconciliar G1/G2-A e comprovar a Task 8 somente em laboratório local descartável.
 
 ## Missão ativa
 
@@ -19,7 +19,7 @@ R8_MEMO=history/memos/2026-08-22-r8-task7-completion.md
 DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
 COLD_START_R7_SNAPSHOT=state/cold-start-validation.yaml
 G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
-STATUS=ACTIVE
+STATUS=REVIEW_REQUIRED
 AUTHORITY=LEANDRO
 ORCHESTRATOR=MESTRE_MCF
 ROADMAP_R1=COMPLETE
@@ -32,12 +32,16 @@ ROADMAP_R7=COMPLETE
 ROADMAP_R8=COMPLETE
 TASK_7=COMPLETE_7_PASS_0_FAIL
 TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
-TASK_8=BLOCKED_EXTERNAL
+ACTIVE_BRANCH=codex/context-bridge-reconcile-20260823
+ACTIVE_PR=NONE_LOCAL_ONLY_NO_PUSH
+TASK_8=PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+TASK_8_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
+G2B_LIFECYCLE=LAB_VALIDATED_INACTIVE
 TASKS_9_10=NOT_STARTED
-NEXT_EXACT_STEP=LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL
+NEXT_EXACT_STEP=REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
 ```
 
-A missão transversal de continuidade foi concluída. Seus controles permanecem ativos; a execução retorna ao Control Bridge G2-B. R8 não abriu NODE-01, grant real, escrita real, produção ou merge.
+A missão transversal de continuidade foi concluída. Seus controles permanecem ativos. O laboratório Task 8 passou com 13/13 marcadores e cleanup, mas G2-B permanece inativo e não abriu Tasks 9/10, transporte mutante pelo Context, NODE-01, grant real, escrita real, produção, publicação ou merge.
 
 ## Regras obrigatórias de retomada, persistência, memória e drift
 
@@ -199,8 +203,8 @@ A base de enforcement foi aplicada e testada historicamente; o trabalho posterio
 ### Control Bridge G1/G2-A
 
 ```text
-G1=PASS_REAL_NODE_01_ROUNDTRIP
-G2A=PASS_REAL_NODE_01_READ_ONLY
+G1=PASS_REAL_NODE_01_ROUNDTRIP_HISTORIC_LIVE_REQUIRED
+G2A=PASS_REAL_NODE_01_READ_ONLY_HISTORIC_LIVE_REQUIRED
 SHELL=NOT_IMPLEMENTED
 SUDO=NOT_GRANTED
 DOCKER_SOCKET=NOT_GRANTED

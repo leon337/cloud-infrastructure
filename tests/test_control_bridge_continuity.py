@@ -16,10 +16,10 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         mission = state["active_mission"]
 
         self.assertEqual(mission["id"], "CONTROL_BRIDGE_G2B")
-        self.assertEqual(mission["status"], "BLOCKED_EXTERNAL")
+        self.assertEqual(mission["status"], "REVIEW_REQUIRED")
         self.assertIsNone(mission["issue"])
         self.assertEqual(mission["continuity_origin_issue"], 10)
-        self.assertEqual(mission["pull_request"], 11)
+        self.assertIsNone(mission["pull_request"])
         for key in ("R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"):
             self.assertEqual(mission["roadmap"][key], "COMPLETE")
         self.assertEqual(
@@ -60,17 +60,18 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         )
         self.assertEqual(
             state["continuity"]["next_exact_step"],
-            "LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL",
+            "REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9",
         )
 
         self.assertEqual(bridge["priority"], "P0")
-        self.assertEqual(bridge["g1"], "PASS_REAL_NODE_01_ROUNDTRIP")
-        self.assertEqual(bridge["g2a"], "PASS_REAL_NODE_01_READ_ONLY")
-        self.assertEqual(bridge["g2b"], "TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY")
+        self.assertEqual(bridge["g1"], "PASS_REAL_NODE_01_ROUNDTRIP_HISTORIC_LIVE_REQUIRED")
+        self.assertEqual(bridge["g2a"], "PASS_REAL_NODE_01_READ_ONLY_HISTORIC_LIVE_REQUIRED")
+        self.assertEqual(bridge["g2b"], "TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED")
         self.assertEqual(bridge["g2b_task_7"], "COMPLETE_7_PASS_0_FAIL")
-        self.assertEqual(bridge["g2b_task_8"], "BLOCKED_EXTERNAL")
+        self.assertEqual(bridge["g2b_task_8"], "PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13")
         self.assertEqual(bridge["g2b_tasks_9_10"], "NOT_STARTED")
-        self.assertEqual(bridge["g2b_tasks_8_10"], "TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED")
+        self.assertEqual(bridge["g2b_tasks_8_10"], "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED")
+        self.assertEqual(bridge["g2b_lifecycle"], "LAB_VALIDATED_INACTIVE")
         self.assertEqual(
             state["work_ownership"]["f1_2c_systemd_runtime_lock"]["owner"],
             "MESTRE_MCF_AND_LEANDRO",
@@ -94,13 +95,13 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             self.assertIn("state/institutional-memory.yaml", text)
             self.assertIn("state/continuity-drift-controls.yaml", text)
             self.assertIn("state/cold-start-validation.yaml", text)
-            self.assertIn("LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL", text)
-            self.assertIn("codex/control-bridge-g2b", text)
+            self.assertIn("REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9", text)
+            self.assertIn("codex/context-bridge-reconcile-20260823", text)
             self.assertIn("docs/54-control-bridge-g2b-recovery-checkpoint.md", text)
 
     def test_g2b_state_preserves_task7_completion_and_fail_closed_boundaries(self):
         state = yaml.safe_load((ROOT / "state/control-bridge-g2b.yaml").read_text())
-        self.assertEqual(state["status"], "TASK_8_BLOCKED_EXTERNAL_DISPOSABLE_BOUNDARY")
+        self.assertEqual(state["status"], "TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED")
         self.assertEqual(
             state["recovery_checkpoint"]["document"],
             "docs/54-control-bridge-g2b-recovery-checkpoint.md",
@@ -111,11 +112,13 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(state["implementation"]["task_7_focused_tests"]["fail"], 0)
         self.assertTrue(state["implementation"]["ansible_syntax"].startswith("PASS_3_"))
         self.assertEqual(state["implementation"]["task_7_validation"]["candidate_sha"], "604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390")
-        self.assertEqual(state["implementation"]["task_8"], "BLOCKED_EXTERNAL")
+        self.assertEqual(state["implementation"]["task_8"], "PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13")
         self.assertEqual(state["implementation"]["tasks_9_10"], "NOT_STARTED")
-        self.assertEqual(state["implementation"]["tasks_8_10"], "TASK_8_BLOCKED_EXTERNAL_TASKS_9_10_NOT_STARTED")
+        self.assertEqual(state["implementation"]["tasks_8_10"], "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED")
         self.assertEqual(state["implementation"]["task_8_validation"]["hosted_run"], 32551353362)
         self.assertEqual(state["implementation"]["task_8_validation"]["hosted_validate_steps"], 0)
+        self.assertEqual(state["implementation"]["task_8_validation"]["disposable_markers_pass"], 13)
+        self.assertEqual(state["implementation"]["task_8_validation"]["disposable_cleanup"], "PASS")
         self.assertEqual(state["pilot"]["project"], "leon337/g2a-smoke/dev")
         self.assertEqual(state["pilot"]["path"], "G2B-PILOT.txt")
         self.assertEqual(state["pilot"]["grant_duration_hours"], 24)
@@ -131,6 +134,9 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertFalse(state["evidence"]["real_write"])
         self.assertFalse(state["evidence"]["real_rollback"])
         self.assertFalse(state["evidence"]["real_revocation"])
+        self.assertTrue(state["evidence"]["disposable_lifecycle"])
+        self.assertFalse(state["candidate"]["push_executed"])
+        self.assertFalse(state["candidate"]["merge_authorized"])
 
     def test_active_mission_state_points_to_task8_and_closed_human_gates(self):
         state = yaml.safe_load((ROOT / "state/active-mission.yaml").read_text())
@@ -163,13 +169,13 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         )
         self.assertEqual(
             state["next_exact_step"],
-            "LEANDRO_INSTALL_QEMU_TCG_HOST_PACKAGES_DIRECT_PRIVILEGED_TERMINAL",
+            "REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9",
         )
         for gate, value in state["human_gates"].items():
             if gate == "merge_g2b":
-                self.assertEqual(value, "AUTHORIZED_POST_ACCEPTANCE_NOT_YET_ELIGIBLE")
+                self.assertEqual(value, "CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED")
             elif gate == "task8_qemu_tcg_host_packages":
-                self.assertEqual(value, "AUTHORIZED_BY_LEANDRO_WAITING_DIRECT_PRIVILEGED_EXECUTION")
+                self.assertEqual(value, "CLOSED_NOT_REQUIRED_AFTER_LOCAL_LAB_PASS")
             else:
                 self.assertIn("NOT_AUTHORIZED", value)
 
