@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leon337/cloud-infrastructure/platform/schemas/mcf-cloud-context.schema.json",
+  "title": "MCF Context project to Cloud project mapping",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "contract_id", "observed_at", "mapping", "capabilities", "lineage", "validation", "publication"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "contract_id": {"const": "MCF_CONTEXT_TO_CLOUD_PROJECT_V1"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "canonical_cloud_key", "source_manifest", "source_schema", "identity_authority", "duplicate_registry"],
+      "properties": {
+        "from": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["context_project_id"],
+          "properties": {"context_project_id": {"const": "cloud-infrastructure"}}
+        },
+        "to": {"$ref": "#/$defs/cloud_project_key"},
+        "canonical_cloud_key": {"const": "leon337/g2a-smoke/dev"},
+        "source_manifest": {"const": "platform/manifests/g2a-smoke.yaml"},
+        "source_schema": {"const": "platform/schemas/project.schema.json"},
+        "identity_authority": {"const": "CLOUD_PROJECT_MANIFEST"},
+        "duplicate_registry": {"const": false}
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["g1", "g2a", "g2b"],
+      "properties": {
+        "g1": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lifecycle", "state", "operational_freshness", "evidence_ref"],
+          "properties": {
+            "lifecycle": {"const": "HISTORIC_EVIDENCE"},
+            "state": {"const": "PASS_REAL_NODE_01_ROUNDTRIP_HISTORIC"},
+            "operational_freshness": {"const": "LIVE_REQUIRED"},
+            "evidence_ref": {"const": "docs/50-control-bridge-g1-handshake-checkpoint.md"}
+          }
+        },
+        "g2a": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lifecycle", "state", "request_protocol", "result_protocol", "read_only", "mutation", "operational_freshness", "operations", "state_ref", "evidence_ref"],
+          "properties": {
+            "lifecycle": {"const": "HISTORIC_READ_ONLY_LIVE_REQUIRED"},
+            "state": {"const": "PASS_REAL_NODE_01_READ_ONLY_HISTORIC"},
+            "request_protocol": {"const": "MCF_WORKSPACE_CONTROL_V1"},
+            "result_protocol": {"const": "MCF_WORKSPACE_CONTROL_RESULT_V1"},
+            "read_only": {"const": true},
+            "mutation": {"const": false},
+            "operational_freshness": {"const": "LIVE_REQUIRED"},
+            "operations": {
+              "type": "array",
+              "minItems": 9,
+              "maxItems": 9,
+              "uniqueItems": true,
+              "items": {"enum": ["project.list", "project.get", "workspace.stat", "workspace.list", "workspace.read", "git.status", "git.branch", "git.head", "git.diff"]}
+            },
+            "state_ref": {"const": "state/control-bridge-g2a.yaml"},
+            "evidence_ref": {"const": "docs/52-control-bridge-g2a-implementation-checkpoint.md"}
+          }
+        },
+        "g2b": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lifecycle", "state", "request_protocol", "result_protocol", "task_8", "tasks_9_10", "real_evidence", "activation", "transport_from_context", "production_authorized"],
+          "properties": {
+            "lifecycle": {"const": "LAB_VALIDATED_INACTIVE"},
+            "state": {"const": "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED"},
+            "request_protocol": {"const": "MCF_WORKSPACE_MUTATION_V1"},
+            "result_protocol": {"const": "MCF_WORKSPACE_MUTATION_RESULT_V1"},
+            "task_8": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["result", "boundary", "network", "candidate_revision", "marker_count", "acceptance_markers", "evidence_ref"],
+              "properties": {
+                "result": {"const": "PASS_13_OF_13"},
+                "boundary": {"const": "DISPOSABLE_NOTEBOOK_DOCKER"},
+                "network": {"const": "NONE"},
+                "candidate_revision": {"$ref": "#/$defs/git_sha"},
+                "marker_count": {"const": 13},
+                "acceptance_markers": {
+                  "type": "array",
+                  "minItems": 13,
+                  "maxItems": 13,
+                  "prefixItems": [
+                    {"const": "G2B_DISPOSABLE_IDENTITY_PASS"},
+                    {"const": "G2B_TRANSPORT_DIRECT_WRITE_REFUSED"},
+                    {"const": "G2B_GRANT_24H_PASS"},
+                    {"const": "G2B_WRITE_PASS"},
+                    {"const": "G2B_REPLAY_PASS"},
+                    {"const": "G2B_REQUEST_ID_CONFLICT_PASS"},
+                    {"const": "G2B_CONCURRENCY_PASS"},
+                    {"const": "G2B_AUDIT_PASS"},
+                    {"const": "G2B_ROLLBACK_PASS"},
+                    {"const": "G2B_FINAL_STATE_PASS"},
+                    {"const": "G2B_REVOKE_PASS"},
+                    {"const": "G2B_POST_REVOKE_REFUSAL_PASS"},
+                    {"const": "G2B_BOUNDED_CLEANUP_PASS"}
+                  ],
+                  "items": false
+                },
+                "evidence_ref": {"const": "evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md"}
+              }
+            },
+            "tasks_9_10": {"const": "NOT_STARTED"},
+            "real_evidence": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["write", "rollback", "revocation", "mcf_effective_use"],
+              "properties": {
+                "write": {"const": false},
+                "rollback": {"const": false},
+                "revocation": {"const": false},
+                "mcf_effective_use": {"const": false}
+              }
+            },
+            "activation": {"const": "NOT_AUTHORIZED"},
+            "transport_from_context": {"const": "NOT_IMPLEMENTED"},
+            "production_authorized": {"const": false}
+          }
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mature_base_branch", "mature_base_revision", "task_8_input_branch", "task_8_input_revision", "reconciliation_merge_revision", "lab_validated_revision"],
+      "properties": {
+        "mature_base_branch": {"const": "mcf/mission-001-control-bridge-g1"},
+        "mature_base_revision": {"$ref": "#/$defs/git_sha"},
+        "task_8_input_branch": {"const": "team/g2b-task8-20260822"},
+        "task_8_input_revision": {"$ref": "#/$defs/git_sha"},
+        "reconciliation_merge_revision": {"$ref": "#/$defs/git_sha"},
+        "lab_validated_revision": {"$ref": "#/$defs/git_sha"}
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reconciliation_unit_suite", "current_unit_suite", "aggregate_gate"],
+      "properties": {
+        "reconciliation_unit_suite": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["result", "count", "revision"],
+          "properties": {
+            "result": {"const": "PASS"},
+            "count": {"const": 372},
+            "revision": {"$ref": "#/$defs/git_sha"}
+          }
+        },
+        "current_unit_suite": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["result", "count", "scope"],
+          "properties": {
+            "result": {"const": "PASS"},
+            "count": {"const": 381},
+            "scope": {"const": "FINAL_RECONCILED_WORKTREE"}
+          }
+        },
+        "aggregate_gate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["result", "candidate_failure", "evidence_ref"],
+          "properties": {
+            "result": {"const": "BLOCKED_LOCAL_SHARED_GIT_OBJECT_DB"},
+            "candidate_failure": {"const": false},
+            "evidence_ref": {"const": "evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md"}
+          }
+        }
+      }
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["local_branch", "safe_pull_request_target", "push_executed", "pull_request", "merge_authorized"],
+      "properties": {
+        "local_branch": {"const": "codex/context-bridge-reconcile-20260823"},
+        "safe_pull_request_target": {"const": "mcf/mission-001-control-bridge-g1"},
+        "push_executed": {"const": false},
+        "pull_request": {"type": "null"},
+        "merge_authorized": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "git_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "cloud_project_key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenant", "name", "environment"],
+      "properties": {
+        "tenant": {"const": "leon337"},
+        "name": {"const": "g2a-smoke"},
+        "environment": {"const": "dev"}
+      }
+    }
+  }
+}

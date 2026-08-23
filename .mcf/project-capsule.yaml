@@ -1,0 +1,15 @@
+schema_version: 1
+project_id: cloud-infrastructure
+purpose: Govern and reproduce the development and lab infrastructure that can host MCF agents without making historical host evidence current by implication.
+lifecycle: ACTIVE
+snapshot:
+  current_workstream: control-bridge-context-reconciliation
+  current_status: G2A_HISTORIC_READ_ONLY_LIVE_REQUIRED__G2B_TASK8_LAB_VALIDATED_INACTIVE__TASKS9_10_NOT_STARTED
+  next_action: Review the local reconciled candidate before any publication, Task 9 work, NODE-01 action, or activation of G2-B.
+  blockers:
+    - G2-A operational state is historical and requires live verification before material use.
+    - G2-B Tasks 9 and 10 are not started; real write, rollback, revocation, and MCF effective use are not proven.
+    - G2-B activation, NODE-01 access, publication, merge, and production mutation are not authorized by this capsule.
+sources:
+  current_state: context/mcf-cloud-context.yaml
+observed_at: "2026-08-23T04:06:14-03:00"
