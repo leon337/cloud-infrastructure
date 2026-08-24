@@ -148,26 +148,35 @@ print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()
             raise RuntimeError('provider_config_failed')
 
     def discover_codex_brain(self):
-        """Use Hermes' own credential resolver. Never print or persist tokens."""
+        """Resolve Codex; recover a valid local Codex CLI session when needed."""
         py = self.discover_hermes_python()
         code = r'''
 import json
-from hermes_cli.auth import get_codex_auth_status
+from hermes_cli.auth import resolve_codex_runtime_credentials, _recover_codex_tokens_from_cli
 from hermes_cli.codex_models import get_codex_model_ids
-out={'logged_in':False,'model':None,'models':[],'error':None}
+out={'usable':False,'model':None,'models':[],'source':None,'recovered_cli':False,'error':None}
 try:
-    s=get_codex_auth_status() or {}
-    out['logged_in']=bool(s.get('logged_in'))
-    token=s.get('api_key') or s.get('access_token')
-    if out['logged_in'] and token:
+    try:
+        creds=resolve_codex_runtime_credentials(refresh_if_expiring=True)
+    except Exception:
+        imported=_recover_codex_tokens_from_cli('mcf-hermes-resident-bootstrap')
+        if not imported:
+            raise
+        out['recovered_cli']=True
+        creds=resolve_codex_runtime_credentials(refresh_if_expiring=True)
+    token=str(creds.get('api_key') or '').strip()
+    out['source']=str(creds.get('source') or '')[:80]
+    if token:
         models=list(get_codex_model_ids(access_token=token) or [])
         out['models']=models[:30]
-        prefs=['gpt-5.5','gpt-5.4','gpt-5.3-codex','gpt-5.2-codex']
-        for p in prefs:
-            if p in models:
-                out['model']=p; break
+        prefs=['gpt-5.6-codex','gpt-5.5-codex','gpt-5.5','gpt-5.4','gpt-5.3-codex','gpt-5.2-codex','gpt-5.1-codex-max']
+        for pref in prefs:
+            if pref in models:
+                out['model']=pref
+                break
         if not out['model'] and models:
             out['model']=models[0]
+        out['usable']=bool(out['model'])
 except Exception as e:
     out['error']=type(e).__name__+':'+str(e)[:180]
 print(json.dumps(out))
@@ -185,9 +194,16 @@ print(json.dumps(out))
         except Exception:
             self.log('codex_discovery=parse_failed')
             return None
-        safe = {k:v for k,v in obj.items() if k != 'token'}
+        safe = {
+            'usable': bool(obj.get('usable')),
+            'model': obj.get('model'),
+            'models': obj.get('models', [])[:30] if isinstance(obj.get('models'), list) else [],
+            'source': obj.get('source'),
+            'recovered_cli': bool(obj.get('recovered_cli')),
+            'error': obj.get('error'),
+        }
         self.log('codex_discovery=' + json.dumps(safe, ensure_ascii=False)[:3000])
-        if cp.returncode == 0 and obj.get('logged_in') and obj.get('model'):
+        if cp.returncode == 0 and obj.get('usable') and obj.get('model'):
             return str(obj['model'])
         return None
 
