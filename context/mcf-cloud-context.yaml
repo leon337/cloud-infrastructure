@@ -1,6 +1,6 @@
 schema_version: 1
 contract_id: MCF_CONTEXT_TO_CLOUD_PROJECT_V1
-observed_at: "2026-08-23T19:08:16-03:00"
+observed_at: "2026-08-24T03:22:59Z"
 mapping:
   from:
     context_project_id: cloud-infrastructure
@@ -40,7 +40,11 @@ capabilities:
     state_ref: state/control-bridge-g2a.yaml
     evidence_ref: docs/52-control-bridge-g2a-implementation-checkpoint.md
     local_context_adapter:
-      lifecycle: LAB_E2E_WITH_MCF_FIXTURE_VERIFIED_DISABLED_BY_DEFAULT
+      lifecycle: REAL_MCF_APPMODULE_WITH_DISPOSABLE_CLOUD_PROCESS_HISTORICALLY_VERIFIED_DISABLED_BY_DEFAULT
+      connection_state: DISCONNECTED
+      runtime_state: INACTIVE
+      verification_state: HISTORICALLY_VERIFIED
+      operational_freshness: LIVE_REQUIRED
       transport: STDIO
       operation: context.get
       enabled_by_default: false
@@ -54,10 +58,41 @@ capabilities:
       result_schema: platform/schemas/mcf-cloud-context-read-result.schema.json
       unit_tests: PASS_12_OF_12
       full_regression: PASS_396_OF_396
-      e2e: PASS_13_OF_13
-      e2e_client: DISPOSABLE_MCF_FIXTURE
+      e2e: PASS_3_OF_3
+      e2e_client: REAL_MCF_APPMODULE_WITH_DISPOSABLE_CLOUD_PROCESS
+      provider_fixture_e2e:
+        result: PASS_13_OF_13
+        client: DISPOSABLE_MCF_FIXTURE
+        cloud_feature_revision: cb97df4bcc0bb374c7524e6aa395309af8967297
+        evidence_ref: evidence/CONTROL-BRIDGE-G2A/LOCAL-CONTEXT-ADAPTER-CHECKPOINT-20260823.md
+      mcf_appmodule_e2e:
+        result: PASS_3_OF_3
+        boundary: REAL_MCF_APPMODULE_LOCAL_DISPOSABLE_LAB
+        route: /v1/mcf/context/cloud/g2a
+        cloud_feature_revision: cb97df4bcc0bb374c7524e6aa395309af8967297
+        cloud_safe_merge_revision: dbd772a6c37452008b7c8debd58d2782127514db
+        mcf_main_merge_revision: efe5164290d56f22023f07de073e2ad7c027fb95
+        mcf_pull_request: https://github.com/leon337/multiagent-collaboration-framework/pull/160
+        mcf_staging_result: PASS_EXACT_MCF_MAIN_SHA_PROVIDER_DISCONNECTED
+        mcf_staging_run: https://github.com/leon337/multiagent-collaboration-framework/actions/runs/32685810702
+        mcf_staging_revision: efe5164290d56f22023f07de073e2ad7c027fb95
+        staging_provider_connection: NOT_ACTIVATED
+        rate_limit_policy: mcf-cloud-context-local-read
+        rate_limit_per_minute: 10
+        rate_limit_subject: HMAC_SHA256_DIRECT_SOCKET_PEER
+        rotating_bearer_attempts: 11
+        provider_payload_persisted_by_mcf: false
+        paid_api: false
+        evidence_ref: repo://leon337/multiagent-collaboration-framework/docs/integrations/evidence/MCF-CLOUD-CONTEXT-LOCAL-READ-E2E-20260824.md
       repository_fingerprint: PASS_GIT_AND_FILESYSTEM_UNCHANGED
       audit_boundary: ENFORCED_READ_ONLY_IN_CLI
+      python_tcb:
+        executable_integrity: HASH_BOUND_COPIED_VENV_ELF
+        repository_execution_closure: PASS_16_FILES_HASH_BOUND
+        copied_venv_integrity: PASS_FINGERPRINT_UNCHANGED
+        residual_scope: STDLIB_SITE_PACKAGES_NATIVE_EXTENSIONS_AND_TRANSITIVE_DEPENDENCIES
+        audit_hook: DEFENSE_IN_DEPTH_NOT_OS_SANDBOX
+        production_attestation: false
       vps_freshness: NOT_OBSERVED_LIVE_REQUIRED
       activation: NOT_AUTHORIZED
       evidence_ref: evidence/CONTROL-BRIDGE-G2A/LOCAL-CONTEXT-ADAPTER-CHECKPOINT-20260823.md
@@ -125,4 +160,7 @@ publication:
   safe_pull_request_target: mcf/mission-001-control-bridge-g1
   push_executed: true
   pull_request: https://github.com/leon337/cloud-infrastructure/pull/26
-  merge_authorized: false
+  merge_state: MERGED_SAFE_TARGET
+  merge_revision: dbd772a6c37452008b7c8debd58d2782127514db
+  merge_authorized: true
+  production_authorized: false
