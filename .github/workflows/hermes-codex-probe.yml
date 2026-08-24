@@ -1,0 +1,112 @@
+name: hermes-codex-probe
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+    paths:
+      - .github/workflows/hermes-codex-probe.yml
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+    env:
+      HOME: /home/ubuntu
+      PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+      DISPLAY: ':10'
+      XAUTHORITY: /home/ubuntu/.Xauthority
+      XDG_RUNTIME_DIR: /run/user/1000
+      DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+      - name: Stop stale qualification process only
+        shell: bash
+        run: |
+          set -euo pipefail
+          pkill -u "$(id -u)" -f 'hermes -z Execute Hermes Operator qualification attempt' 2>/dev/null || true
+          sleep 2
+          echo 'STALE_QUALIFICATION_CLEANUP=PASS'
+      - name: Probe Codex credential recovery and models
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/hermes-resident
+          out=artifacts/hermes-resident/codex-probe.txt
+          py="$HOME/.hermes/hermes-agent/venv/bin/python"
+          test -x "$py"
+          cd "$HOME/.hermes/hermes-agent"
+          "$py" - > "$out" <<'PY'
+          from hermes_cli.auth import get_codex_auth_status
+          from hermes_cli.codex_models import get_codex_model_ids
+          s=get_codex_auth_status()
+          print('CODEX_LOGGED_IN='+str(bool(s.get('logged_in'))).lower())
+          print('AUTH_STORE='+str(s.get('auth_store') or 'none'))
+          token=s.get('api_key') or s.get('access_token')
+          print('TOKEN_PRESENT='+str(bool(token)).lower())
+          models=[]
+          if token:
+              try:
+                  models=list(get_codex_model_ids(access_token=token) or [])
+              except Exception as e:
+                  print('MODEL_DISCOVERY_ERROR='+type(e).__name__+':'+str(e)[:160])
+          print('MODELS='+','.join(models[:20]))
+          PY
+          cat "$out"
+      - name: Run temporary Codex cognitive probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=artifacts/hermes-resident/codex-probe.txt
+          models=$(awk -F= '/^MODELS=/{print $2}' "$out")
+          model=''
+          IFS=',' read -ra arr <<< "$models"
+          for preferred in gpt-5.5 gpt-5.4 gpt-5.3-codex gpt-5.2-codex; do
+            for m in "${arr[@]}"; do [[ "$m" == "$preferred" ]] && model="$m"; done
+            [[ -n "$model" ]] && break
+          done
+          if [[ -z "$model" && ${#arr[@]} -gt 0 ]]; then model="${arr[0]}"; fi
+          if [[ -z "$model" ]]; then echo 'CODEX_COGNITIVE=SKIP_NO_MODEL' | tee -a "$out"; exit 0; fi
+          echo "SELECTED_MODEL=$model" | tee -a "$out"
+          cfg="$HOME/.hermes/config.yaml"
+          backup=$(mktemp)
+          cp "$cfg" "$backup"
+          restore(){ cp "$backup" "$cfg"; rm -f "$backup"; }
+          trap restore EXIT
+          py="$HOME/.hermes/hermes-agent/venv/bin/python"
+          "$py" - "$cfg" "$model" <<'PY'
+          import sys,yaml
+          from pathlib import Path
+          p=Path(sys.argv[1]); model=sys.argv[2]
+          cfg=yaml.safe_load(p.read_text()) or {}
+          cfg['model']={'provider':'openai-codex','default':model}
+          p.write_text(yaml.safe_dump(cfg,sort_keys=False,allow_unicode=True))
+          PY
+          set +e
+          probe=$(timeout 180 "$HOME/.local/bin/hermes" -z 'Reply with exactly CODEX_READY and nothing else.' --ignore-rules 2>&1)
+          rc=$?
+          set -e
+          printf 'CODEX_RC=%s\n' "$rc" | tee -a "$out"
+          printf 'CODEX_OUTPUT=%s\n' "$probe" | sed -E 's/(Bearer|token|api[_-]?key)[=: ]+[^ ]+/\1 REDACTED/Ig' | tail -c 4000 | tee -a "$out"
+          if [[ "$rc" == 0 && "$probe" == *CODEX_READY* ]]; then
+            echo 'CODEX_COGNITIVE=PASS' | tee -a "$out"
+          else
+            echo 'CODEX_COGNITIVE=FAIL' | tee -a "$out"
+          fi
+      - name: Persist sanitized probe evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'mcf-hermes-codex-probe'
+          git config user.email 'mcf-hermes-codex-probe@users.noreply.github.com'
+          git add artifacts/hermes-resident/codex-probe.txt
+          git commit -m 'chore: record sanitized Codex probe [skip ci]' || exit 0
+          git pull --rebase origin mcf/hermes-relay-bootstrap-20260823
+          git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
