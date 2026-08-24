@@ -1,0 +1,121 @@
+UTC=2026-08-24T06:57:05Z
+--- PROCESSES ---
+ 880468     452  527 12.6 3115932 /home/ubuntu/.local/bin/llama serve -hf openresearchtools/Qwen3.5-2B-GGUF:Q4_K_M -c 65536 --cache-type-k q4_0 --cache-type-v q4_0 --jinja --reasoning off --host 127.0.0.1 --port 8080 --alias qwen3.5-2b --no-webui
+ 880474     452  0.0  0.0 13564 /usr/bin/python3 /home/ubuntu/.local/share/hermes-resident/controller.py
+--- PROVIDER JOURNAL ---
+Aug 24 03:44:47 vmi3506102 systemd[1498]: Started hermes-provider.service - Hermes Operator local Qwen provider.
+Aug 24 03:44:47 vmi3506102 llama[879188]: 0.00.356.970 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+Aug 24 03:44:47 vmi3506102 llama[879188]: 0.00.357.102 I srv          init: The UI is disabled
+Aug 24 03:44:47 vmi3506102 llama[879188]: 0.00.357.103 I srv          init: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+Aug 24 03:44:47 vmi3506102 llama[879188]: 0.00.357.318 W srv  llama_server: -----------------
+Aug 24 03:44:47 vmi3506102 llama[879188]: 0.00.357.329 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+Aug 24 03:44:47 vmi3506102 llama[879188]: 0.00.357.330 W srv  llama_server: this can be a security risk (cross-origin attacks)
+Aug 24 03:44:47 vmi3506102 llama[879188]: 0.00.357.339 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+Aug 24 03:44:47 vmi3506102 llama[879188]: 0.00.357.340 W srv  llama_server: -----------------
+Aug 24 03:44:47 vmi3506102 llama[879188]: 0.00.359.768 I srv    load_model: loading model 'openresearchtools/Qwen3.5-2B-GGUF:Q4_K_M'
+Aug 24 03:44:55 vmi3506102 llama[879188]: 0.08.655.565 W load_hparams: Qwen-VL models require at minimum 1024 image tokens to function correctly on grounding tasks
+Aug 24 03:44:55 vmi3506102 llama[879188]: 0.08.655.585 W load_hparams: if you encounter problems with accuracy, try adding --image-min-tokens 1024
+Aug 24 03:44:55 vmi3506102 llama[879188]: 0.08.655.587 W load_hparams: more info: https://github.com/ggml-org/llama.cpp/issues/16842
+Aug 24 03:45:04 vmi3506102 llama[879188]: 0.16.909.098 I srv    load_model: loaded multimodal model, '/home/ubuntu/.cache/huggingface/hub/models--openresearchtools--Qwen3.5-2B-GGUF/snapshots/bc61fcb1c3ca790d262a25e721ddb597352954a9/Qwen3.5-2B-mmproj-f16.gguf'
+Aug 24 03:45:04 vmi3506102 llama[879188]: 0.17.314.677 I srv    load_model: initializing, n_slots = 4, n_ctx_slot = 65536, kv_unified = 'true'
+Aug 24 03:45:04 vmi3506102 llama[879188]: 0.17.342.305 I srv  llama_server: model loaded
+Aug 24 03:45:04 vmi3506102 llama[879188]: 0.17.342.333 I srv  llama_server: listening on http://127.0.0.1:8080
+Aug 24 03:45:07 vmi3506102 llama[879188]: 0.20.282.854 I slot get_availabl: id  3 | task -1 | selected slot by LRU, t_last = -1
+Aug 24 03:45:07 vmi3506102 llama[879188]: 0.20.283.592 I slot launch_slot_: id  3 | task 0 | processing task, is_child = 0
+Aug 24 03:45:10 vmi3506102 llama[879188]: 0.23.419.308 I slot print_timing: id  3 | task 0 | prompt processing, n_tokens =    269, progress = 0.99, t =   3.14 s / 85.80 tokens per second
+Aug 24 03:45:13 vmi3506102 llama[879188]: 0.26.211.382 I slot print_timing: id  3 | task 0 | prompt eval time =    3290.95 ms /   273 tokens (   12.05 ms per token,    82.95 tokens per second)
+Aug 24 03:45:13 vmi3506102 llama[879188]: 0.26.211.403 I slot print_timing: id  3 | task 0 |        eval time =    2636.47 ms /    27 tokens (   97.65 ms per token,    10.24 tokens per second)
+Aug 24 03:45:13 vmi3506102 llama[879188]: 0.26.211.406 I slot print_timing: id  3 | task 0 |       total time =    5927.42 ms /   300 tokens
+Aug 24 03:45:13 vmi3506102 llama[879188]: 0.26.211.408 I slot print_timing: id  3 | task 0 |    graphs reused =         26
+Aug 24 03:45:13 vmi3506102 llama[879188]: 0.26.211.553 I slot      release: id  3 | task 0 | stop processing: n_tokens = 299, truncated = 0
+Aug 24 03:45:56 vmi3506102 llama[879188]: 1.09.682.945 I srv    operator(): operator(): cleaning up before exit...
+Aug 24 03:45:57 vmi3506102 systemd[1498]: hermes-provider.service: Consumed 1min 2.425s CPU time.
+Aug 24 03:46:00 vmi3506102 systemd[1498]: Stopped hermes-provider.service - Hermes Operator local Qwen provider.
+Aug 24 03:46:00 vmi3506102 systemd[1498]: hermes-provider.service: Consumed 1min 2.425s CPU time.
+Aug 24 03:46:00 vmi3506102 systemd[1498]: Started hermes-provider.service - Hermes Operator local Qwen provider.
+Aug 24 03:46:01 vmi3506102 llama[879796]: 0.00.479.737 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+Aug 24 03:46:01 vmi3506102 llama[879796]: 0.00.479.869 I srv          init: The UI is disabled
+Aug 24 03:46:01 vmi3506102 llama[879796]: 0.00.479.871 I srv          init: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+Aug 24 03:46:01 vmi3506102 llama[879796]: 0.00.480.415 W srv  llama_server: -----------------
+Aug 24 03:46:01 vmi3506102 llama[879796]: 0.00.480.439 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+Aug 24 03:46:01 vmi3506102 llama[879796]: 0.00.480.870 W srv  llama_server: this can be a security risk (cross-origin attacks)
+Aug 24 03:46:01 vmi3506102 llama[879796]: 0.00.480.880 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+Aug 24 03:46:01 vmi3506102 llama[879796]: 0.00.480.881 W srv  llama_server: -----------------
+Aug 24 03:46:01 vmi3506102 llama[879796]: 0.00.483.435 I srv    load_model: loading model 'openresearchtools/Qwen3.5-2B-GGUF:Q4_K_M'
+Aug 24 03:46:06 vmi3506102 llama[879796]: 0.06.022.204 W load_hparams: Qwen-VL models require at minimum 1024 image tokens to function correctly on grounding tasks
+Aug 24 03:46:06 vmi3506102 llama[879796]: 0.06.022.228 W load_hparams: if you encounter problems with accuracy, try adding --image-min-tokens 1024
+Aug 24 03:46:06 vmi3506102 llama[879796]: 0.06.022.230 W load_hparams: more info: https://github.com/ggml-org/llama.cpp/issues/16842
+Aug 24 03:46:07 vmi3506102 llama[879796]: 0.07.201.326 I srv    load_model: loaded multimodal model, '/home/ubuntu/.cache/huggingface/hub/models--openresearchtools--Qwen3.5-2B-GGUF/snapshots/bc61fcb1c3ca790d262a25e721ddb597352954a9/Qwen3.5-2B-mmproj-f16.gguf'
+Aug 24 03:46:08 vmi3506102 llama[879796]: 0.07.609.761 I srv    load_model: initializing, n_slots = 4, n_ctx_slot = 65536, kv_unified = 'true'
+Aug 24 03:46:08 vmi3506102 llama[879796]: 0.07.671.771 I srv  llama_server: model loaded
+Aug 24 03:46:08 vmi3506102 llama[879796]: 0.07.672.786 I srv  llama_server: listening on http://127.0.0.1:8080
+Aug 24 03:46:10 vmi3506102 llama[879796]: 0.10.214.750 I slot get_availabl: id  3 | task -1 | selected slot by LRU, t_last = -1
+Aug 24 03:46:10 vmi3506102 llama[879796]: 0.10.215.276 I slot launch_slot_: id  3 | task 0 | processing task, is_child = 0
+Aug 24 03:46:13 vmi3506102 llama[879796]: 0.13.329.128 I slot print_timing: id  3 | task 0 | prompt processing, n_tokens =    269, progress = 0.99, t =   3.11 s / 86.40 tokens per second
+Aug 24 03:46:16 vmi3506102 llama[879796]: 0.15.765.277 I slot print_timing: id  3 | task 0 | prompt eval time =    3254.69 ms /   273 tokens (   11.92 ms per token,    83.88 tokens per second)
+Aug 24 03:46:16 vmi3506102 llama[879796]: 0.15.765.292 I slot print_timing: id  3 | task 0 |        eval time =    2295.05 ms /    27 tokens (   85.00 ms per token,    11.76 tokens per second)
+Aug 24 03:46:16 vmi3506102 llama[879796]: 0.15.765.294 I slot print_timing: id  3 | task 0 |       total time =    5549.74 ms /   300 tokens
+Aug 24 03:46:16 vmi3506102 llama[879796]: 0.15.765.295 I slot print_timing: id  3 | task 0 |    graphs reused =         26
+Aug 24 03:46:16 vmi3506102 llama[879796]: 0.15.765.371 I slot      release: id  3 | task 0 | stop processing: n_tokens = 299, truncated = 0
+Aug 24 03:49:29 vmi3506102 llama[879796]: 3.28.965.315 I srv    operator(): operator(): cleaning up before exit...
+Aug 24 03:49:30 vmi3506102 systemd[1498]: hermes-provider.service: Consumed 51.467s CPU time.
+Aug 24 03:49:33 vmi3506102 systemd[1498]: Stopped hermes-provider.service - Hermes Operator local Qwen provider.
+Aug 24 03:49:33 vmi3506102 systemd[1498]: hermes-provider.service: Consumed 51.467s CPU time.
+Aug 24 03:49:33 vmi3506102 systemd[1498]: Started hermes-provider.service - Hermes Operator local Qwen provider.
+Aug 24 03:49:33 vmi3506102 llama[880468]: 0.00.424.811 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+Aug 24 03:49:33 vmi3506102 llama[880468]: 0.00.424.966 I srv          init: The UI is disabled
+Aug 24 03:49:33 vmi3506102 llama[880468]: 0.00.424.968 I srv          init: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+Aug 24 03:49:33 vmi3506102 llama[880468]: 0.00.425.159 W srv  llama_server: -----------------
+Aug 24 03:49:33 vmi3506102 llama[880468]: 0.00.425.168 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+Aug 24 03:49:33 vmi3506102 llama[880468]: 0.00.425.169 W srv  llama_server: this can be a security risk (cross-origin attacks)
+Aug 24 03:49:33 vmi3506102 llama[880468]: 0.00.425.181 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+Aug 24 03:49:33 vmi3506102 llama[880468]: 0.00.425.182 W srv  llama_server: -----------------
+Aug 24 03:49:33 vmi3506102 llama[880468]: 0.00.429.424 I srv    load_model: loading model 'openresearchtools/Qwen3.5-2B-GGUF:Q4_K_M'
+Aug 24 03:49:41 vmi3506102 llama[880468]: 0.08.229.014 W load_hparams: Qwen-VL models require at minimum 1024 image tokens to function correctly on grounding tasks
+Aug 24 03:49:41 vmi3506102 llama[880468]: 0.08.229.034 W load_hparams: if you encounter problems with accuracy, try adding --image-min-tokens 1024
+Aug 24 03:49:41 vmi3506102 llama[880468]: 0.08.229.035 W load_hparams: more info: https://github.com/ggml-org/llama.cpp/issues/16842
+Aug 24 03:49:44 vmi3506102 llama[880468]: 0.11.188.352 I srv    load_model: loaded multimodal model, '/home/ubuntu/.cache/huggingface/hub/models--openresearchtools--Qwen3.5-2B-GGUF/snapshots/bc61fcb1c3ca790d262a25e721ddb597352954a9/Qwen3.5-2B-mmproj-f16.gguf'
+Aug 24 03:49:44 vmi3506102 llama[880468]: 0.11.532.183 I srv    load_model: initializing, n_slots = 4, n_ctx_slot = 65536, kv_unified = 'true'
+Aug 24 03:49:44 vmi3506102 llama[880468]: 0.11.553.497 I srv  llama_server: model loaded
+Aug 24 03:49:44 vmi3506102 llama[880468]: 0.11.553.519 I srv  llama_server: listening on http://127.0.0.1:8080
+Aug 24 03:49:48 vmi3506102 llama[880468]: 0.15.239.512 I slot get_availabl: id  3 | task -1 | selected slot by LRU, t_last = -1
+Aug 24 03:49:48 vmi3506102 llama[880468]: 0.15.240.057 I slot launch_slot_: id  3 | task 0 | processing task, is_child = 0
+Aug 24 03:49:51 vmi3506102 llama[880468]: 0.18.342.551 I slot print_timing: id  3 | task 0 | prompt processing, n_tokens =    269, progress = 0.99, t =   3.10 s / 86.71 tokens per second
+Aug 24 03:49:54 vmi3506102 llama[880468]: 0.21.199.278 I slot print_timing: id  3 | task 0 | prompt eval time =    3294.68 ms /   273 tokens (   12.07 ms per token,    82.86 tokens per second)
+Aug 24 03:49:54 vmi3506102 llama[880468]: 0.21.199.297 I slot print_timing: id  3 | task 0 |        eval time =    2664.21 ms /    27 tokens (   98.67 ms per token,    10.13 tokens per second)
+Aug 24 03:49:54 vmi3506102 llama[880468]: 0.21.199.299 I slot print_timing: id  3 | task 0 |       total time =    5958.89 ms /   300 tokens
+Aug 24 03:49:54 vmi3506102 llama[880468]: 0.21.199.301 I slot print_timing: id  3 | task 0 |    graphs reused =         26
+Aug 24 03:49:54 vmi3506102 llama[880468]: 0.21.199.588 I slot      release: id  3 | task 0 | stop processing: n_tokens = 299, truncated = 0
+Aug 24 03:50:08 vmi3506102 llama[880468]: 0.34.948.043 I slot get_availabl: id  2 | task -1 | selected slot by LRU, t_last = -1
+Aug 24 03:50:08 vmi3506102 llama[880468]: 0.34.948.363 I slot launch_slot_: id  2 | task 30 | processing task, is_child = 0
+Aug 24 03:50:11 vmi3506102 llama[880468]: 0.37.987.160 I slot get_availabl: id  1 | task -1 | selected slot by LRU, t_last = -1
+Aug 24 03:50:11 vmi3506102 llama[880468]: 0.37.991.361 I slot launch_slot_: id  1 | task 31 | processing task, is_child = 0
+Aug 24 03:50:37 vmi3506102 llama[880468]: 1.04.298.277 I slot print_timing: id  1 | task 31 | prompt processing, n_tokens =   2048, progress = 0.10, t =  26.31 s / 77.85 tokens per second
+Aug 24 03:50:38 vmi3506102 llama[880468]: 1.04.999.022 W srv          stop: cancel task, id_task = 30
+Aug 24 03:51:09 vmi3506102 llama[880468]: 1.36.027.898 W srv          stop: cancel task, id_task = 36
+Aug 24 03:51:14 vmi3506102 llama[880468]: 1.41.785.836 I slot      release: id  2 | task 30 | stop processing: n_tokens = 241, truncated = 0
+Aug 24 03:51:14 vmi3506102 llama[880468]: 1.41.785.918 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, f_sim_best = 0.916 (> 0.100 thold), f_keep = 1.000
+Aug 24 03:51:14 vmi3506102 llama[880468]: 1.41.787.037 I slot launch_slot_: id  2 | task 38 | processing task, is_child = 0
+Aug 24 03:51:14 vmi3506102 llama[880468]: 1.41.788.056 I slot print_timing: id  1 | task 31 | prompt processing, n_tokens =   4096, progress = 0.20, t =  63.80 s / 64.20 tokens per second
+Aug 24 03:51:41 vmi3506102 llama[880468]: 2.08.187.757 W srv          stop: cancel task, id_task = 38
+Aug 24 03:52:02 vmi3506102 llama[880468]: 2.29.721.739 I slot      release: id  2 | task 38 | stop processing: n_tokens = 241, truncated = 0
+Aug 24 03:52:02 vmi3506102 llama[880468]: 2.29.721.851 I slot get_availabl: id  2 | task -1 | selected slot by LCP similarity, f_sim_best = 0.916 (> 0.100 thold), f_keep = 1.000
+Aug 24 03:52:02 vmi3506102 llama[880468]: 2.29.722.439 I slot launch_slot_: id  2 | task 41 | processing task, is_child = 0
+Aug 24 03:52:02 vmi3506102 llama[880468]: 2.29.722.630 I slot print_timing: id  1 | task 31 | prompt processing, n_tokens =   6144, progress = 0.29, t = 111.73 s / 54.99 tokens per second
+Aug 24 03:52:11 vmi3506102 llama[880468]: 2.38.328.099 W srv          stop: cancel task, id_task = 41
+Aug 24 03:52:56 vmi3506102 llama[880468]: 3.23.614.187 I slot      release: id  2 | task 41 | stop processing: n_tokens = 241, truncated = 0
+Aug 24 03:52:56 vmi3506102 llama[880468]: 3.23.614.574 I slot print_timing: id  1 | task 31 | prompt processing, n_tokens =   8192, progress = 0.39, t = 165.62 s / 49.46 tokens per second
+Aug 24 03:54:01 vmi3506102 llama[880468]: 4.28.096.733 I slot print_timing: id  1 | task 31 | prompt processing, n_tokens =  10240, progress = 0.49, t = 230.11 s / 44.50 tokens per second
+Aug 24 03:54:56 vmi3506102 llama[880468]: 5.23.106.063 W srv          stop: cancel task, id_task = 31
+Aug 24 03:55:14 vmi3506102 llama[880468]: 5.41.092.894 I slot      release: id  1 | task 31 | stop processing: n_tokens = 12288, truncated = 0
+--- CONTROLLER JOURNAL ---
+Aug 24 03:44:47 vmi3506102 systemd[1498]: Started hermes-controller.service - Hermes Operator resident controller.
+Aug 24 03:46:00 vmi3506102 systemd[1498]: Stopping hermes-controller.service - Hermes Operator resident controller...
+Aug 24 03:46:00 vmi3506102 systemd[1498]: Stopped hermes-controller.service - Hermes Operator resident controller.
+Aug 24 03:46:00 vmi3506102 systemd[1498]: Started hermes-controller.service - Hermes Operator resident controller.
+Aug 24 03:49:33 vmi3506102 systemd[1498]: Stopping hermes-controller.service - Hermes Operator resident controller...
+Aug 24 03:49:33 vmi3506102 systemd[1498]: Stopped hermes-controller.service - Hermes Operator resident controller.
+Aug 24 03:49:33 vmi3506102 systemd[1498]: Started hermes-controller.service - Hermes Operator resident controller.
+--- HERMES MODEL ---
+{"default": "qwen3.5-2b", "provider": "custom", "base_url": "http://127.0.0.1:8080/v1", "api_key": "REDACTED", "context_length": 65536}
+POST_RESTART_HEALTH=200
