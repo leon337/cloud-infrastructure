@@ -1,0 +1,24 @@
+[Unit]
+Description=Hermes Operator resident controller
+After=hermes-provider.service
+Wants=hermes-provider.service
+
+[Service]
+Type=simple
+Environment=HOME=/home/ubuntu
+Environment=USER=ubuntu
+Environment=LOGNAME=ubuntu
+Environment=PATH=/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=DISPLAY=:10
+Environment=XAUTHORITY=/home/ubuntu/.Xauthority
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+WorkingDirectory=/home/ubuntu
+ExecStart=/usr/bin/python3 /home/ubuntu/.local/share/hermes-resident/controller.py
+Restart=always
+RestartSec=3
+TimeoutStopSec=20
+KillMode=mixed
+
+[Install]
+WantedBy=default.target
