@@ -1,0 +1,12 @@
+JOB_ID=MCF-HERMES-PC-002-20260824T224814Z
+--- computer-use-probe.log ---
+API call failed after 3 retries: HTTP 429: The usage limit has been reached
+
+--- runner.log ---
+2026-08-24T22:48:15.952992+00:00 codex_discovery={"usable": true, "model": "gpt-5.5", "models": ["gpt-5.6-sol", "gpt-5.6-sol-900k", "gpt-5.6-terra", "gpt-5.6-terra-900k", "gpt-5.6-luna", "gpt-5.6-luna-900k", "gpt-5.5", "gpt-5.4", "gpt-5.4-900k", "gpt-5.4-mini"], "source": "hermes-auth-store", "recovered_cli": false, "error": null}
+2026-08-24T22:48:16.155439+00:00 model_config={"default": "gpt-5.5", "provider": "openai-codex"}
+2026-08-24T22:48:16.157571+00:00 brain_selected=openai-codex:gpt-5.5
+2026-08-24T22:48:16.158341+00:00 launch=computer-use-probe toolset=computer_use brain={'provider': 'openai-codex', 'model': 'gpt-5.5', 'reason': 'existing_oauth'}
+2026-08-24T22:48:34.164886+00:00 exit=computer-use-probe rc=0 bytes=76
+2026-08-24T22:48:34.253311+00:00 diagnostic=/home/ubuntu/.local/state/hermes-operator/jobs/MCF-HERMES-PC-002-20260824T224814Z/diagnostic-fatal-1787611714.txt
+2026-08-24T22:48:34.255351+00:00 FINISH status=FAILED result=RUNTIME_FAILURE failure=RuntimeError:computer_use_probe_failed gate=None
