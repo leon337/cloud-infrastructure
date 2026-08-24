@@ -1,0 +1,53 @@
+name: hermes-resident-probe-diagnostic
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+    paths:
+      - .github/workflows/hermes-resident-probe-diagnostic.yml
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+    env:
+      HOME: /home/ubuntu
+      STATE_ROOT: /home/ubuntu/.local/state/hermes-operator
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+
+      - name: Capture bounded non-secret probe evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          job=$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads((Path('/home/ubuntu/.local/state/hermes-operator/current.json')).read_text())
+          print(s['job_id'])
+          PY
+          )
+          dir="$STATE_ROOT/jobs/$job"
+          out='ops/hermes-resident/latest-probe-diagnostic.txt'
+          {
+            echo "JOB_ID=$job"
+            echo '--- computer-use-probe.log ---'
+            tail -c 12000 "$dir/computer-use-probe.log" 2>/dev/null || true
+            echo
+            echo '--- runner.log ---'
+            tail -n 80 "$dir/runner.log" 2>/dev/null || true
+          } > "$out"
+          # Defensive redaction in case an unexpected provider diagnostic contains credential-looking fields.
+          sed -E -i 's/(access_token|refresh_token|api_key|Authorization)[=: ][^ ,}]+/\1=REDACTED/gI' "$out"
+          git config user.name 'MCF Automation'
+          git config user.email 'mcf-automation@users.noreply.github.com'
+          git add "$out"
+          git commit -m 'evidence: capture Hermes computer-use probe diagnostic'
+          git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
