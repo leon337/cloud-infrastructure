@@ -5,7 +5,6 @@ import signal
 import socket
 import struct
 import subprocess
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -15,6 +14,7 @@ STATE_ROOT = HOME / '.local/state/hermes-operator'
 RUNNER = BASE / 'mission_runner.py'
 SOCK = '/tmp/hermes-operator-control.sock'
 ALLOWED_UIDS = {994, 1000}
+MISSION_MARKER = 'Execute Hermes Operator qualification attempt'
 
 
 def now():
@@ -28,6 +28,15 @@ def atomic_json(path: Path, obj):
     os.replace(tmp, path)
 
 
+def pid_alive_non_zombie(pid):
+    try:
+        pid = int(pid)
+        stat = Path(f'/proc/{pid}/stat').read_text().split()
+        return len(stat) > 2 and stat[2] != 'Z'
+    except Exception:
+        return False
+
+
 def load_current():
     p = STATE_ROOT / 'current.json'
     if not p.exists():
@@ -38,16 +47,33 @@ def load_current():
         return {'status':'ERROR','error':'state_unreadable','detail':str(e)[:200]}
     pid = state.get('pid')
     if state.get('status') == 'RUNNING' and pid:
-        try:
-            os.kill(int(pid), 0)
-            state['process_alive'] = True
-        except Exception:
-            state['process_alive'] = False
+        alive = pid_alive_non_zombie(pid)
+        state['process_alive'] = alive
+        if not alive:
             state['status'] = 'FAILED'
             state['failure'] = state.get('failure') or 'runner_process_missing'
             state['updated_at'] = now()
             atomic_json(p, state)
     return state
+
+
+def terminate_group(pgid, sig=signal.SIGTERM):
+    if not pgid:
+        return
+    try:
+        os.killpg(int(pgid), sig)
+    except ProcessLookupError:
+        pass
+
+
+def cleanup_stale_qualification_children():
+    # Narrow cleanup: only stale Hermes processes carrying this mission's unique prompt marker.
+    subprocess.run(
+        ['pkill','-u',str(os.getuid()),'-f',f'hermes -z {MISSION_MARKER}'],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
 
 
 def start_job():
@@ -56,6 +82,7 @@ def start_job():
         return {'ok':False,'error':'job_already_running','state':cur}
     if not RUNNER.exists():
         return {'ok':False,'error':'runner_missing'}
+    cleanup_stale_qualification_children()
     job_id = 'MCF-HERMES-PC-002-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     job_dir = STATE_ROOT / 'jobs' / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
@@ -84,6 +111,8 @@ def start_job():
         'updated_at':now(),
         'pid':proc.pid,
         'pgid':proc.pid,
+        'child_pid':None,
+        'child_pgid':None,
         'result':None,'failure':None,'gate':None,
         'evidence_dir':str(job_dir),
     }
@@ -94,22 +123,19 @@ def start_job():
 
 def stop_job():
     cur = load_current()
-    if cur.get('status') != 'RUNNING':
-        return {'ok':True,'stopped':False,'reason':'no_running_job','state':cur}
     job_id = cur.get('job_id')
     if job_id:
         p = STATE_ROOT / 'jobs' / job_id / 'STOP'
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(now() + '\n')
-    pgid = cur.get('pgid') or cur.get('pid')
-    if pgid:
-        try:
-            os.killpg(int(pgid), signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        except Exception as e:
-            return {'ok':False,'error':'stop_signal_failed','detail':str(e)[:200]}
-    return {'ok':True,'stopped':True,'job_id':job_id}
+    # Child Hermes runs in its own process group. Terminate it before the runner.
+    try:
+        terminate_group(cur.get('child_pgid'))
+        terminate_group(cur.get('pgid') or cur.get('pid'))
+        cleanup_stale_qualification_children()
+    except Exception as e:
+        return {'ok':False,'error':'stop_signal_failed','detail':str(e)[:200]}
+    return {'ok':True,'stopped':True,'job_id':job_id,'previous_status':cur.get('status')}
 
 
 def runtime():
