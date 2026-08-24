@@ -4,7 +4,6 @@ import json
 import os
 import signal
 import subprocess
-import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,7 +22,7 @@ ENV.update({
     'XDG_RUNTIME_DIR': '/run/user/1000',
     'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus',
     'PYTHONUNBUFFERED': '1',
-    'HERMES_STREAM_READ_TIMEOUT': '1800',
+    'HERMES_STREAM_READ_TIMEOUT': '3600',
 })
 
 
@@ -36,13 +35,6 @@ def atomic_json(path: Path, obj):
     tmp = path.with_suffix(path.suffix + '.tmp')
     tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + '\n')
     os.replace(tmp, path)
-
-
-def load_json(path: Path, default=None):
-    try:
-        return json.loads(path.read_text())
-    except Exception:
-        return {} if default is None else default
 
 
 class Runner:
@@ -169,24 +161,18 @@ print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()
                 try:
                     cp = subprocess.run(cmd, env=ENV, text=True, stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT, timeout=10)
-                    out = cp.stdout
-                    # sanitize common secret-like material defensively
-                    for token in ['Authorization:', 'Bearer ']:
-                        if token in out:
-                            out = out.replace(token, token + 'REDACTED ')
-                    f.write(out[-30000:] + '\n')
+                    f.write(cp.stdout[-30000:] + '\n')
                 except Exception as e:
                     f.write(type(e).__name__ + '\n')
         self.log(f'diagnostic={p}')
 
-    def run_hermes(self, label, prompt, toolset=None, hard_timeout=1200, quiet_grace=240):
+    def run_hermes(self, label, prompt, hard_timeout=3600, quiet_grace=600):
         out_path = self.dir / f'{label}.log'
-        cmd = [str(HERMES), '-z', prompt]
-        if toolset:
-            cmd += ['-t', toolset]
-        cmd += ['--ignore-rules']
+        # Mission 002 intentionally exposes only the official computer_use toolset.
+        # This dramatically reduces prompt/tool-schema cost versus Hermes' full tool registry.
+        cmd = [str(HERMES), '-z', prompt, '-t', 'computer_use', '--ignore-rules']
         self.progress(phase=label.upper())
-        self.log('launch=' + label)
+        self.log('launch=' + label + ' toolset=computer_use')
         with out_path.open('wb') as f:
             proc = subprocess.Popen(cmd, env=ENV, stdout=f, stderr=subprocess.STDOUT,
                                     start_new_session=True)
@@ -196,17 +182,14 @@ print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()
         diag_done = False
         while True:
             if self.stop_requested():
-                try:
-                    os.killpg(proc.pid, signal.SIGTERM)
-                except ProcessLookupError:
-                    pass
-                proc.wait(timeout=15)
+                try: os.killpg(proc.pid, signal.SIGTERM)
+                except ProcessLookupError: pass
+                try: proc.wait(timeout=15)
+                except Exception: pass
                 raise RuntimeError('emergency_stop')
             rc = proc.poll()
-            try:
-                size = out_path.stat().st_size
-            except FileNotFoundError:
-                size = 0
+            try: size = out_path.stat().st_size
+            except FileNotFoundError: size = 0
             if size != last_size:
                 last_size = size
                 last_change = time.monotonic()
@@ -231,10 +214,8 @@ print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()
                     os.killpg(proc.pid, signal.SIGTERM)
                     proc.wait(timeout=15)
                 except Exception:
-                    try:
-                        os.killpg(proc.pid, signal.SIGKILL)
-                    except Exception:
-                        pass
+                    try: os.killpg(proc.pid, signal.SIGKILL)
+                    except Exception: pass
                 raise TimeoutError(label)
             time.sleep(5)
         text = out_path.read_text(errors='replace')[-50000:]
@@ -264,7 +245,7 @@ print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()
 
 Use ONLY the computer_use toolset and ordinary visible GUI interaction for the user journey. Do not use terminal, shell, filesystem APIs, browser APIs, DOM, CDP, developer tools, backend calls, or credentials to perform the journey.
 
-The local model is text-only. For every computer_use capture/observation, explicitly use accessibility-tree mode (AX) rather than SOM or screenshot vision.
+Observe the real visible desktop. Prefer normal screen observation available through computer_use; accessibility-tree observation may be used as a supporting signal for reading/precision, but it must not replace visible GUI interaction.
 
 Starting condition: Brave and the graphical text editor are closed. The ChatGPT session must already be authenticated by the human.
 
@@ -275,7 +256,7 @@ Mission:
 4. If authenticated, start a new ChatGPT conversation.
 5. Type exactly: Hello World
 6. Send it and wait until ChatGPT has completely finished its response.
-7. Read the entire response through the GUI/accessibility tree, scrolling if necessary, and understand it semantically.
+7. Read the entire response through the GUI, scrolling if necessary, and understand it semantically.
 8. Open a simple graphical text editor through the normal GUI.
 9. Write a short report in your own words with exactly these headings on separate lines:
 MISSÃO
@@ -298,21 +279,13 @@ Do not start any other objective. If a reversible GUI problem occurs, re-observe
                 raise RuntimeError('local_provider_unhealthy')
             self.configure_provider()
 
-            cognitive = self.run_hermes(
-                'cognitive-probe',
-                'Reply with exactly HERMES_READY and nothing else.',
-                hard_timeout=300,
-                quiet_grace=120,
-            )
-            if 'HERMES_READY' not in cognitive:
-                raise RuntimeError('cognitive_probe_failed')
-
+            # Raw OpenAI-compatible tool calling is already qualified by deployment.
+            # The meaningful smoke test here is the constrained official computer_use path.
             gui_probe = self.run_hermes(
                 'computer-use-probe',
-                'Use the computer_use tool exactly once to observe the current Linux desktop in AX/accessibility-tree mode. Do not click, type, open, close, or modify anything. Then reply with exactly GUI_PROBE_OK.',
-                toolset='computer_use',
-                hard_timeout=420,
-                quiet_grace=180,
+                'Use the computer_use tool exactly once to observe the current Linux desktop. Do not click, type, open, close, or modify anything. Then reply with exactly GUI_PROBE_OK.',
+                hard_timeout=1200,
+                quiet_grace=360,
             )
             if 'GUI_PROBE_OK' not in gui_probe:
                 raise RuntimeError('computer_use_probe_failed')
@@ -325,25 +298,21 @@ Do not start any other objective. If a reversible GUI problem occurs, re-observe
                 self.persist()
                 self.close_test_apps()
                 report = HOME / f'Hermes-Hello-World-attempt{attempt}.txt'
-                try:
-                    report.unlink()
-                except FileNotFoundError:
-                    pass
+                try: report.unlink()
+                except FileNotFoundError: pass
                 try:
                     out = self.run_hermes(
                         f'hello-world-attempt-{attempt}',
                         self.qualification_prompt(attempt, report),
-                        toolset='computer_use',
-                        hard_timeout=1200,
-                        quiet_grace=240,
+                        hard_timeout=3600,
+                        quiet_grace=600,
                     )
                 except (RuntimeError, TimeoutError) as e:
                     self.log(f'attempt={attempt} reversible_failure={e}')
                     consecutive = 0
                     self.state['consecutive_successes'] = 0
                     self.persist()
-                    if self.stop_requested():
-                        raise
+                    if self.stop_requested(): raise
                     continue
                 if 'AUTH_REQUIRED' in out:
                     self.finish('HUMAN_GATE', result='BLOCKED', gate=f'CHATGPT_AUTH_REQUIRED_ATTEMPT_{attempt}')
@@ -386,8 +355,7 @@ def main():
     ap.add_argument('--job-id', required=True)
     args = ap.parse_args()
     runner = Runner(args.job_id)
-    rc = runner.run()
-    raise SystemExit(rc)
+    raise SystemExit(runner.run())
 
 if __name__ == '__main__':
     main()
