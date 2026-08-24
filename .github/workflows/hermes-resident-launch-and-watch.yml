@@ -1,0 +1,127 @@
+name: hermes-resident-launch-and-watch
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+    paths:
+      - .github/workflows/hermes-resident-launch-and-watch.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hermes-resident-qualification-node01
+  cancel-in-progress: false
+
+jobs:
+  launch-and-watch:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 60
+    env:
+      HOME: /home/ubuntu
+      PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+      CONTROL: /tmp/hermes-operator-control.sock
+      LOCAL_RESULT: /tmp/hermes-resident-mission-watch.txt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+
+      - name: Launch resident mission and persist terminal status
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > "$LOCAL_RESULT"
+          chmod 0644 "$LOCAL_RESULT"
+          log(){ printf '%s\n' "$*" | tee -a "$LOCAL_RESULT"; }
+          log "UTC=$(date -u +%FT%TZ)"
+          log "HOST=$(hostname)"
+          log "USER=$(id -un)"
+          [[ "$(id -un)" == ubuntu ]] || { log 'RESULT=FAIL runner_not_ubuntu'; exit 1; }
+          [[ -S "$CONTROL" ]] || { log 'RESULT=FAIL control_socket_missing'; exit 1; }
+
+          cat > /tmp/hermes-control-call.py <<'PY'
+          import json, socket, sys
+          payload=json.loads(sys.argv[1])
+          s=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+          s.settimeout(10)
+          s.connect('/tmp/hermes-operator-control.sock')
+          s.sendall((json.dumps(payload)+'\n').encode())
+          data=b''
+          while b'\n' not in data:
+              chunk=s.recv(65536)
+              if not chunk: break
+              data+=chunk
+          s.close()
+          print(data.decode(errors='replace').strip())
+          PY
+
+          start_json=$(python3 /tmp/hermes-control-call.py '{"op":"start"}')
+          log "START=$start_json"
+          python3 - "$start_json" <<'PY'
+          import json,sys
+          obj=json.loads(sys.argv[1])
+          if not obj.get('ok') and obj.get('error') != 'job_already_running':
+              raise SystemExit('start_failed:'+str(obj.get('error')))
+          PY
+
+          final=''
+          for _ in $(seq 1 350); do
+            status_json=$(python3 /tmp/hermes-control-call.py '{"op":"status"}')
+            status=$(python3 - "$status_json" <<'PY'
+          import json,sys
+          obj=json.loads(sys.argv[1]); print((obj.get('state') or {}).get('status','UNKNOWN'))
+          PY
+          )
+            phase=$(python3 - "$status_json" <<'PY'
+          import json,sys
+          obj=json.loads(sys.argv[1]); print((obj.get('state') or {}).get('phase','UNKNOWN'))
+          PY
+          )
+            log "STATUS=$status PHASE=$phase UTC=$(date -u +%FT%TZ)"
+            case "$status" in
+              SUCCEEDED|FAILED|HUMAN_GATE|ABORTED)
+                final="$status_json"
+                break
+                ;;
+            esac
+            sleep 10
+          done
+
+          if [[ -z "$final" ]]; then
+            final=$(python3 /tmp/hermes-control-call.py '{"op":"status"}')
+          fi
+          evidence=$(python3 /tmp/hermes-control-call.py '{"op":"evidence"}' || true)
+
+          mkdir -p ops/hermes-resident
+          python3 - "$final" "$evidence" > ops/hermes-resident/latest-mission-status.json <<'PY'
+          import json,sys
+          final=json.loads(sys.argv[1])
+          try: evidence=json.loads(sys.argv[2])
+          except Exception: evidence={'ok':False,'error':'evidence_unreadable'}
+          out={'controller':final,'evidence':evidence}
+          print(json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True))
+          PY
+
+          git config user.name 'MCF Automation'
+          git config user.email 'mcf-automation@users.noreply.github.com'
+          git add ops/hermes-resident/latest-mission-status.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'evidence: persist latest Hermes resident mission status'
+            git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
+            log "EVIDENCE_COMMIT=$(git rev-parse HEAD)"
+          fi
+
+          terminal=$(python3 - "$final" <<'PY'
+          import json,sys
+          obj=json.loads(sys.argv[1]); print((obj.get('state') or {}).get('status','UNKNOWN'))
+          PY
+          )
+          log "FINAL_STATUS=$terminal"
+          case "$terminal" in
+            SUCCEEDED) log 'RESULT=PASS'; exit 0 ;;
+            HUMAN_GATE) log 'RESULT=HUMAN_GATE'; exit 2 ;;
+            *) log 'RESULT=FAIL'; exit 1 ;;
+          esac
