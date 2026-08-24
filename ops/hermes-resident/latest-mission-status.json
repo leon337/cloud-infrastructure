@@ -1,0 +1,86 @@
+{
+  "controller": {
+    "ok": true,
+    "state": {
+      "attempt": 0,
+      "brain": {
+        "model": "gpt-5.5",
+        "provider": "openai-codex",
+        "reason": "existing_oauth"
+      },
+      "child_pgid": null,
+      "child_pid": null,
+      "consecutive_successes": 0,
+      "evidence_dir": "/home/ubuntu/.local/state/hermes-operator/jobs/MCF-HERMES-PC-002-20260824T224814Z",
+      "failure": "RuntimeError:computer_use_probe_failed",
+      "finished_at": "2026-08-24T22:48:34.254456+00:00",
+      "gate": null,
+      "job_id": "MCF-HERMES-PC-002-20260824T224814Z",
+      "last_progress_at": "2026-08-24T22:48:34.163273+00:00",
+      "mission_id": "MCF-HERMES-PC-002",
+      "pgid": 945697,
+      "phase": "COMPUTER-USE-PROBE",
+      "pid": 945697,
+      "result": "RUNTIME_FAILURE",
+      "started_at": "2026-08-24T22:48:14.836856+00:00",
+      "status": "FAILED",
+      "updated_at": "2026-08-24T22:48:34.254471+00:00"
+    }
+  },
+  "evidence": {
+    "files": [
+      {
+        "bytes": 76,
+        "mtime": 1787611713.591803,
+        "name": "computer-use-probe.log"
+      },
+      {
+        "bytes": 30516,
+        "mtime": 1787611714.252797,
+        "name": "diagnostic-fatal-1787611714.txt"
+      },
+      {
+        "bytes": 1025,
+        "mtime": 1787611714.253797,
+        "name": "launcher.log"
+      },
+      {
+        "bytes": 1025,
+        "mtime": 1787611714.253797,
+        "name": "runner.log"
+      },
+      {
+        "bytes": 794,
+        "mtime": 1787611714.253797,
+        "name": "state.json"
+      }
+    ],
+    "job_id": "MCF-HERMES-PC-002-20260824T224814Z",
+    "ok": true,
+    "state": {
+      "attempt": 0,
+      "brain": {
+        "model": "gpt-5.5",
+        "provider": "openai-codex",
+        "reason": "existing_oauth"
+      },
+      "child_pgid": null,
+      "child_pid": null,
+      "consecutive_successes": 0,
+      "evidence_dir": "/home/ubuntu/.local/state/hermes-operator/jobs/MCF-HERMES-PC-002-20260824T224814Z",
+      "failure": "RuntimeError:computer_use_probe_failed",
+      "finished_at": "2026-08-24T22:48:34.254456+00:00",
+      "gate": null,
+      "job_id": "MCF-HERMES-PC-002-20260824T224814Z",
+      "last_progress_at": "2026-08-24T22:48:34.163273+00:00",
+      "mission_id": "MCF-HERMES-PC-002",
+      "pgid": 945697,
+      "phase": "COMPUTER-USE-PROBE",
+      "pid": 945697,
+      "result": "RUNTIME_FAILURE",
+      "started_at": "2026-08-24T22:48:14.836856+00:00",
+      "status": "FAILED",
+      "updated_at": "2026-08-24T22:48:34.254471+00:00"
+    }
+  }
+}
