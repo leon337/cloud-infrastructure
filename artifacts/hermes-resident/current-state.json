@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "state": {
+    "mission_id": "MCF-HERMES-PC-002",
+    "job_id": "MCF-HERMES-PC-002-20260824T064954Z",
+    "status": "RUNNING",
+    "phase": "COGNITIVE-PROBE",
+    "started_at": "2026-08-24T06:49:54.748759+00:00",
+    "last_progress_at": "2026-08-24T06:49:54.983603+00:00",
+    "updated_at": "2026-08-24T06:49:54.983630+00:00",
+    "result": null,
+    "failure": null,
+    "gate": null,
+    "attempt": 0,
+    "consecutive_successes": 0,
+    "pid": 880735,
+    "pgid": 880735,
+    "evidence_dir": "/home/ubuntu/.local/state/hermes-operator/jobs/MCF-HERMES-PC-002-20260824T064954Z",
+    "process_alive": true
+  }
+}
