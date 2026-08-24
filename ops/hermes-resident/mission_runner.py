@@ -10,7 +10,9 @@ from pathlib import Path
 
 HOME = Path('/home/ubuntu')
 HERMES = HOME / '.local/bin/hermes'
+HERMES_ROOT = HOME / '.hermes/hermes-agent'
 STATE_ROOT = HOME / '.local/state/hermes-operator'
+LOCAL_PROVIDER_URL = 'http://127.0.0.1:8080'
 ENV = os.environ.copy()
 ENV.update({
     'HOME': str(HOME),
@@ -22,7 +24,7 @@ ENV.update({
     'XDG_RUNTIME_DIR': '/run/user/1000',
     'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus',
     'PYTHONUNBUFFERED': '1',
-    'HERMES_STREAM_READ_TIMEOUT': '3600',
+    'HERMES_STREAM_READ_TIMEOUT': '1800',
 })
 
 
@@ -46,6 +48,8 @@ class Runner:
         self.current_path = STATE_ROOT / 'current.json'
         self.log_path = self.dir / 'runner.log'
         self.stop_path = self.dir / 'STOP'
+        self.brain_provider = None
+        self.brain_model = None
         self.state = {
             'mission_id': 'MCF-HERMES-PC-002',
             'job_id': job_id,
@@ -61,6 +65,9 @@ class Runner:
             'consecutive_successes': 0,
             'pid': os.getpid(),
             'pgid': os.getpgrp(),
+            'child_pid': None,
+            'child_pgid': None,
+            'brain': None,
             'evidence_dir': str(self.dir),
         }
         self.persist()
@@ -90,6 +97,8 @@ class Runner:
             'failure': failure,
             'gate': gate,
             'finished_at': now(),
+            'child_pid': None,
+            'child_pgid': None,
         })
         self.persist()
         self.log(f"FINISH status={status} result={result} failure={failure} gate={gate}")
@@ -97,8 +106,9 @@ class Runner:
     def stop_requested(self):
         return self.stop_path.exists()
 
-    def discover_yaml_python(self):
+    def discover_hermes_python(self):
         candidates = [
+            HOME / '.hermes/hermes-agent/venv/bin/python',
             HOME / '.hermes/venv/bin/python',
             HOME / '.hermes/hermes-agent/.venv/bin/python',
             Path('/usr/bin/python3'),
@@ -107,45 +117,110 @@ class Runner:
             if not p.exists():
                 continue
             cp = subprocess.run([str(p), '-c', 'import yaml'], env=ENV,
+                                cwd=str(HERMES_ROOT) if HERMES_ROOT.exists() else str(HOME),
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if cp.returncode == 0:
                 return str(p)
         raise RuntimeError('no_python_with_yaml')
 
-    def configure_provider(self):
-        py = self.discover_yaml_python()
+    def write_model_config(self, model_cfg):
+        py = self.discover_hermes_python()
+        payload = json.dumps(model_cfg)
         code = r'''
 from pathlib import Path
-import os,tempfile,yaml,json
+import os,tempfile,yaml,json,sys
 p=Path('/home/ubuntu/.hermes/config.yaml')
 cfg=yaml.safe_load(p.read_text()) if p.exists() else {}
 if not isinstance(cfg,dict): cfg={}
-model=cfg.get('model')
-if not isinstance(model,dict): model={}
-model.update({
-  'default':'qwen3.5-2b',
-  'provider':'custom',
-  'base_url':'http://127.0.0.1:8080/v1',
-  'api_key':'no-key',
-  'context_length':65536,
-})
+model=json.loads(sys.argv[1])
 cfg['model']=model
 p.parent.mkdir(parents=True,exist_ok=True)
 fd,tmp=tempfile.mkstemp(prefix='config.',suffix='.yaml',dir=str(p.parent)); os.close(fd)
 Path(tmp).write_text(yaml.safe_dump(cfg,sort_keys=False,allow_unicode=True))
 os.chmod(tmp,0o600); os.replace(tmp,p)
-print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()}))
+print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()},sort_keys=True))
 '''
-        cp = subprocess.run([py, '-c', code], env=ENV, text=True,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
-        self.log('provider_config=' + cp.stdout.strip()[-2000:])
+        cp = subprocess.run([py, '-c', code, payload], env=ENV,
+                            cwd=str(HERMES_ROOT) if HERMES_ROOT.exists() else str(HOME),
+                            text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
+        self.log('model_config=' + cp.stdout.strip()[-2000:])
         if cp.returncode != 0:
             raise RuntimeError('provider_config_failed')
 
-    def provider_health(self):
-        cp = subprocess.run(['curl','-fsS','--max-time','5','http://127.0.0.1:8080/health'],
+    def discover_codex_brain(self):
+        """Use Hermes' own credential resolver. Never print or persist tokens."""
+        py = self.discover_hermes_python()
+        code = r'''
+import json
+from hermes_cli.auth import get_codex_auth_status
+from hermes_cli.codex_models import get_codex_model_ids
+out={'logged_in':False,'model':None,'models':[],'error':None}
+try:
+    s=get_codex_auth_status() or {}
+    out['logged_in']=bool(s.get('logged_in'))
+    token=s.get('api_key') or s.get('access_token')
+    if out['logged_in'] and token:
+        models=list(get_codex_model_ids(access_token=token) or [])
+        out['models']=models[:30]
+        prefs=['gpt-5.5','gpt-5.4','gpt-5.3-codex','gpt-5.2-codex']
+        for p in prefs:
+            if p in models:
+                out['model']=p; break
+        if not out['model'] and models:
+            out['model']=models[0]
+except Exception as e:
+    out['error']=type(e).__name__+':'+str(e)[:180]
+print(json.dumps(out))
+'''
+        try:
+            cp = subprocess.run([py, '-c', code], env=ENV,
+                                cwd=str(HERMES_ROOT) if HERMES_ROOT.exists() else str(HOME),
+                                text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=90)
+        except subprocess.TimeoutExpired:
+            self.log('codex_discovery=timeout')
+            return None
+        raw = cp.stdout.strip().splitlines()[-1] if cp.stdout.strip() else ''
+        try:
+            obj = json.loads(raw)
+        except Exception:
+            self.log('codex_discovery=parse_failed')
+            return None
+        safe = {k:v for k,v in obj.items() if k != 'token'}
+        self.log('codex_discovery=' + json.dumps(safe, ensure_ascii=False)[:3000])
+        if cp.returncode == 0 and obj.get('logged_in') and obj.get('model'):
+            return str(obj['model'])
+        return None
+
+    def local_provider_health(self):
+        cp = subprocess.run(['curl','-fsS','--max-time','5',LOCAL_PROVIDER_URL + '/health'],
                             env=ENV, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         return cp.returncode == 0 and 'ok' in cp.stdout.lower()
+
+    def select_brain(self):
+        self.progress('BRAIN-SELECTION')
+        codex_model = self.discover_codex_brain()
+        if codex_model:
+            self.write_model_config({'provider':'openai-codex','default':codex_model})
+            self.brain_provider = 'openai-codex'
+            self.brain_model = codex_model
+            self.state['brain']={'provider':self.brain_provider,'model':self.brain_model,'reason':'existing_oauth'}
+            self.persist()
+            self.log(f'brain_selected={self.brain_provider}:{self.brain_model}')
+            return
+        if not self.local_provider_health():
+            raise RuntimeError('no_usable_brain_provider')
+        self.write_model_config({
+            'default':'qwen3.5-2b',
+            'provider':'custom',
+            'base_url':LOCAL_PROVIDER_URL + '/v1',
+            'api_key':'no-key',
+            'context_length':65536,
+        })
+        self.brain_provider='custom'
+        self.brain_model='qwen3.5-2b'
+        self.state['brain']={'provider':self.brain_provider,'model':self.brain_model,'reason':'local_fallback'}
+        self.persist()
+        self.log('brain_selected=custom:qwen3.5-2b')
 
     def diagnostics(self, name):
         p = self.dir / f'diagnostic-{name}-{int(time.time())}.txt'
@@ -153,9 +228,10 @@ print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()
             ['ps','-eo','pid,ppid,etimes,%cpu,%mem,stat,args'],
             ['free','-h'],
             ['df','-h','/'],
-            ['curl','-sS','--max-time','3','http://127.0.0.1:8080/health'],
+            ['curl','-sS','--max-time','3',LOCAL_PROVIDER_URL + '/health'],
         ]
         with p.open('w') as f:
+            f.write('brain='+str(self.state.get('brain'))+'\n')
             for cmd in cmds:
                 f.write('$ ' + ' '.join(cmd) + '\n')
                 try:
@@ -166,63 +242,77 @@ print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()
                     f.write(type(e).__name__ + '\n')
         self.log(f'diagnostic={p}')
 
-    def run_hermes(self, label, prompt, hard_timeout=3600, quiet_grace=600):
+    def terminate_child(self, proc, force=False):
+        sig = signal.SIGKILL if force else signal.SIGTERM
+        try:
+            os.killpg(proc.pid, sig)
+        except ProcessLookupError:
+            pass
+
+    def run_hermes(self, label, prompt, hard_timeout, quiet_grace):
         out_path = self.dir / f'{label}.log'
-        # Mission 002 intentionally exposes only the official computer_use toolset.
-        # This dramatically reduces prompt/tool-schema cost versus Hermes' full tool registry.
         cmd = [str(HERMES), '-z', prompt, '-t', 'computer_use', '--ignore-rules']
         self.progress(phase=label.upper())
-        self.log('launch=' + label + ' toolset=computer_use')
+        self.log('launch=' + label + ' toolset=computer_use brain=' + str(self.state.get('brain')))
         with out_path.open('wb') as f:
             proc = subprocess.Popen(cmd, env=ENV, stdout=f, stderr=subprocess.STDOUT,
                                     start_new_session=True)
+        self.state['child_pid']=proc.pid
+        self.state['child_pgid']=proc.pid
+        self.persist()
         start = time.monotonic()
         last_size = 0
         last_change = start
         diag_done = False
-        while True:
-            if self.stop_requested():
-                try: os.killpg(proc.pid, signal.SIGTERM)
-                except ProcessLookupError: pass
-                try: proc.wait(timeout=15)
-                except Exception: pass
-                raise RuntimeError('emergency_stop')
-            rc = proc.poll()
-            try: size = out_path.stat().st_size
-            except FileNotFoundError: size = 0
-            if size != last_size:
-                last_size = size
-                last_change = time.monotonic()
-                self.progress()
-            elapsed = time.monotonic() - start
-            quiet = time.monotonic() - last_change
-            if rc is not None:
-                break
-            if quiet > quiet_grace and not diag_done:
-                self.state['watchdog'] = {
-                    'state': 'WAITING_NO_OUTPUT',
-                    'observed_at': now(),
-                    'quiet_seconds': int(quiet),
-                    'hard_deadline_seconds': hard_timeout,
-                }
-                self.persist()
-                self.diagnostics(label)
-                diag_done = True
-            if elapsed > hard_timeout:
-                self.diagnostics(label + '-timeout')
-                try:
-                    os.killpg(proc.pid, signal.SIGTERM)
-                    proc.wait(timeout=15)
-                except Exception:
-                    try: os.killpg(proc.pid, signal.SIGKILL)
-                    except Exception: pass
-                raise TimeoutError(label)
-            time.sleep(5)
-        text = out_path.read_text(errors='replace')[-50000:]
-        self.log(f'exit={label} rc={rc} bytes={len(text)}')
-        if rc != 0:
-            raise RuntimeError(f'{label}_rc_{rc}')
-        return text.strip()
+        try:
+            while True:
+                if self.stop_requested():
+                    self.terminate_child(proc)
+                    try: proc.wait(timeout=15)
+                    except Exception: self.terminate_child(proc, force=True)
+                    raise RuntimeError('emergency_stop')
+                rc = proc.poll()
+                try: size = out_path.stat().st_size
+                except FileNotFoundError: size = 0
+                if size != last_size:
+                    last_size = size
+                    last_change = time.monotonic()
+                    self.progress()
+                elapsed = time.monotonic() - start
+                quiet = time.monotonic() - last_change
+                if rc is not None:
+                    break
+                if quiet > quiet_grace and not diag_done:
+                    self.state['watchdog'] = {
+                        'state': 'WAITING_NO_OUTPUT',
+                        'observed_at': now(),
+                        'quiet_seconds': int(quiet),
+                        'hard_deadline_seconds': hard_timeout,
+                    }
+                    self.persist()
+                    self.diagnostics(label)
+                    diag_done = True
+                if elapsed > hard_timeout:
+                    self.diagnostics(label + '-timeout')
+                    self.terminate_child(proc)
+                    try: proc.wait(timeout=15)
+                    except Exception: self.terminate_child(proc, force=True)
+                    raise TimeoutError(label)
+                time.sleep(3)
+            text = out_path.read_text(errors='replace')[-50000:]
+            self.log(f'exit={label} rc={rc} bytes={len(text)}')
+            if rc != 0:
+                raise RuntimeError(f'{label}_rc_{rc}')
+            return text.strip()
+        finally:
+            self.state['child_pid']=None
+            self.state['child_pgid']=None
+            self.persist()
+
+    def timeouts(self):
+        if self.brain_provider == 'openai-codex':
+            return {'probe_hard':420,'probe_quiet':150,'mission_hard':1200,'mission_quiet':300}
+        return {'probe_hard':1200,'probe_quiet':360,'mission_hard':3600,'mission_quiet':600}
 
     def close_test_apps(self):
         for pattern in ['brave-browser', '/opt/brave.com/brave/brave', 'mousepad', 'gedit', 'xed']:
@@ -245,7 +335,7 @@ print(json.dumps({k:('REDACTED' if k=='api_key' else v) for k,v in model.items()
 
 Use ONLY the computer_use toolset and ordinary visible GUI interaction for the user journey. Do not use terminal, shell, filesystem APIs, browser APIs, DOM, CDP, developer tools, backend calls, or credentials to perform the journey.
 
-Observe the real visible desktop. Prefer normal screen observation available through computer_use; accessibility-tree observation may be used as a supporting signal for reading/precision, but it must not replace visible GUI interaction.
+Observe the real visible desktop. Screen observation is primary; accessibility-tree observation may be used only as a supporting signal for reading or precision.
 
 Starting condition: Brave and the graphical text editor are closed. The ChatGPT session must already be authenticated by the human.
 
@@ -274,18 +364,14 @@ Do not start any other objective. If a reversible GUI problem occurs, re-observe
         try:
             if not HERMES.exists():
                 raise RuntimeError('hermes_missing')
-            self.progress('PROVIDER_CHECK')
-            if not self.provider_health():
-                raise RuntimeError('local_provider_unhealthy')
-            self.configure_provider()
+            self.select_brain()
+            t = self.timeouts()
 
-            # Raw OpenAI-compatible tool calling is already qualified by deployment.
-            # The meaningful smoke test here is the constrained official computer_use path.
             gui_probe = self.run_hermes(
                 'computer-use-probe',
                 'Use the computer_use tool exactly once to observe the current Linux desktop. Do not click, type, open, close, or modify anything. Then reply with exactly GUI_PROBE_OK.',
-                hard_timeout=1200,
-                quiet_grace=360,
+                hard_timeout=t['probe_hard'],
+                quiet_grace=t['probe_quiet'],
             )
             if 'GUI_PROBE_OK' not in gui_probe:
                 raise RuntimeError('computer_use_probe_failed')
@@ -304,8 +390,8 @@ Do not start any other objective. If a reversible GUI problem occurs, re-observe
                     out = self.run_hermes(
                         f'hello-world-attempt-{attempt}',
                         self.qualification_prompt(attempt, report),
-                        hard_timeout=3600,
-                        quiet_grace=600,
+                        hard_timeout=t['mission_hard'],
+                        quiet_grace=t['mission_quiet'],
                     )
                 except (RuntimeError, TimeoutError) as e:
                     self.log(f'attempt={attempt} reversible_failure={e}')
