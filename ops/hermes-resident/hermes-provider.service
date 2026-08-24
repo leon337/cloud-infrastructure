@@ -1,0 +1,19 @@
+[Unit]
+Description=Hermes Operator local Qwen provider
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=HOME=/home/ubuntu
+Environment=USER=ubuntu
+Environment=LOGNAME=ubuntu
+Environment=PATH=/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=/home/ubuntu
+ExecStart=/home/ubuntu/.local/bin/llama serve -hf openresearchtools/Qwen3.5-2B-GGUF:Q4_K_M -c 65536 --cache-type-k q4_0 --cache-type-v q4_0 --jinja --reasoning off --host 127.0.0.1 --port 8080 --alias qwen3.5-2b --no-webui
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+KillMode=mixed
+
+[Install]
+WantedBy=default.target
