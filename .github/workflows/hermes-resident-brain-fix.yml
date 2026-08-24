@@ -1,0 +1,214 @@
+name: hermes-resident-brain-fix
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+    paths:
+      - .github/workflows/hermes-resident-brain-fix.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hermes-resident-brain-fix-node01
+  cancel-in-progress: true
+
+jobs:
+  fix-and-deploy:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 15
+    env:
+      HOME: /home/ubuntu
+      PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+      RESULT: /tmp/hermes-brain-fix-result.txt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+
+      - name: TDD red, patch, green, deploy and probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > "$RESULT"
+          chmod 0644 "$RESULT"
+          log(){ printf '%s\n' "$*" | tee -a "$RESULT"; }
+          fail(){ log 'RESULT=FAIL'; log "FAILURE=$*"; exit 1; }
+
+          log "UTC=$(date -u +%FT%TZ)"
+          log "HOST=$(hostname)"
+          log "USER=$(id -un)"
+          [[ "$(id -un)" == ubuntu ]] || fail runner_not_ubuntu
+
+          src='ops/hermes-resident/mission_runner.py'
+          test='ops/hermes-resident/test_mission_runner_codex.py'
+          [[ -f "$src" ]] || fail mission_runner_missing
+
+          cat > "$test" <<'PYTEST'
+          import importlib.util
+          import json
+          import pathlib
+          import types
+          import unittest
+          from unittest.mock import patch
+
+          HERE = pathlib.Path(__file__).resolve().parent
+          SPEC = importlib.util.spec_from_file_location("mission_runner_under_test", HERE / "mission_runner.py")
+          MOD = importlib.util.module_from_spec(SPEC)
+          assert SPEC and SPEC.loader
+          SPEC.loader.exec_module(MOD)
+
+          class CodexBrainDiscoveryTest(unittest.TestCase):
+              def test_runtime_resolver_drives_model_selection_without_exposing_token(self):
+                  runner = MOD.Runner.__new__(MOD.Runner)
+                  runner.discover_hermes_python = lambda: "/usr/bin/python3"
+                  logs = []
+                  runner.log = logs.append
+                  payload = {
+                      "usable": True,
+                      "model": "gpt-test-codex",
+                      "models": ["gpt-test-codex"],
+                      "source": "codex-cli-import",
+                      "error": None,
+                  }
+                  cp = types.SimpleNamespace(returncode=0, stdout=json.dumps(payload) + "\n")
+                  with patch.object(MOD.subprocess, "run", return_value=cp) as run:
+                      selected = runner.discover_codex_brain()
+                  self.assertEqual(selected, "gpt-test-codex")
+                  command = run.call_args.args[0]
+                  self.assertIn("resolve_codex_runtime_credentials", command[2])
+                  self.assertNotIn("api_key", "".join(logs))
+
+          if __name__ == "__main__":
+              unittest.main()
+          PYTEST
+
+          set +e
+          python3 "$test" >> "$RESULT" 2>&1
+          red_rc=$?
+          set -e
+          [[ $red_rc -ne 0 ]] || fail tdd_red_unexpectedly_passed
+          log "TDD_RED=PASS expected_failure_rc=$red_rc"
+
+          python3 - "$src" <<'PYPATCH'
+          from pathlib import Path
+          import re, sys
+          p = Path(sys.argv[1])
+          text = p.read_text()
+          pattern = r"    def discover_codex_brain\(self\):.*?\n    def local_provider_health\(self\):"
+          replacement = r'''    def discover_codex_brain(self):
+              """Resolve Hermes Codex runtime credentials without exposing tokens.
+
+              ``get_codex_auth_status`` is intentionally a status-only surface and
+              does not return a bearer token.  Runtime selection must use
+              ``resolve_codex_runtime_credentials``; that resolver can safely adopt
+              a valid ~/.codex/auth.json session into Hermes' own auth store.
+              """
+              py = self.discover_hermes_python()
+              code = r'''\''\''
+          import json
+          from hermes_cli.auth import resolve_codex_runtime_credentials
+          from hermes_cli.codex_models import get_codex_model_ids
+          out={'usable':False,'model':None,'models':[],'source':None,'error':None}
+          try:
+              creds=resolve_codex_runtime_credentials(refresh_if_expiring=True)
+              token=str(creds.get('api_key') or '').strip()
+              out['source']=str(creds.get('source') or '')[:80]
+              if token:
+                  models=list(get_codex_model_ids(access_token=token) or [])
+                  out['models']=models[:30]
+                  prefs=[
+                      'gpt-5.6-codex','gpt-5.5-codex','gpt-5.5','gpt-5.4',
+                      'gpt-5.3-codex','gpt-5.2-codex','gpt-5.1-codex-max'
+                  ]
+                  for pref in prefs:
+                      if pref in models:
+                          out['model']=pref
+                          break
+                  if not out['model'] and models:
+                      out['model']=models[0]
+                  out['usable']=bool(out['model'])
+          except Exception as e:
+              out['error']=type(e).__name__+':'+str(e)[:180]
+          print(json.dumps(out))
+          '''\''\''
+              try:
+                  cp = subprocess.run([py, '-c', code], env=ENV,
+                                      cwd=str(HERMES_ROOT) if HERMES_ROOT.exists() else str(HOME),
+                                      text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=90)
+              except subprocess.TimeoutExpired:
+                  self.log('codex_discovery=timeout')
+                  return None
+              raw = cp.stdout.strip().splitlines()[-1] if cp.stdout.strip() else ''
+              try:
+                  obj = json.loads(raw)
+              except Exception:
+                  self.log('codex_discovery=parse_failed')
+                  return None
+              safe = {
+                  'usable': bool(obj.get('usable')),
+                  'model': obj.get('model'),
+                  'models': obj.get('models', [])[:30] if isinstance(obj.get('models'), list) else [],
+                  'source': obj.get('source'),
+                  'error': obj.get('error'),
+              }
+              self.log('codex_discovery=' + json.dumps(safe, ensure_ascii=False)[:3000])
+              if cp.returncode == 0 and obj.get('usable') and obj.get('model'):
+                  return str(obj['model'])
+              return None
+
+              def local_provider_health(self):'''
+          new, n = re.subn(pattern, replacement, text, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit(f'patch_count={n}')
+          # Fix indentation of the function delimiter intentionally embedded above.
+          new = new.replace('\n              def local_provider_health(self):', '\n    def local_provider_health(self):', 1)
+          p.write_text(new)
+          PYPATCH
+
+          python3 -m py_compile "$src" || fail py_compile_failed
+          python3 "$test" >> "$RESULT" 2>&1 || fail tdd_green_failed
+          log 'TDD_GREEN=PASS'
+
+          install -m 0755 "$src" "$HOME/.local/share/hermes-resident/mission_runner.py"
+          log 'DEPLOY=PASS'
+
+          py="$HOME/.hermes/venv/bin/python"
+          [[ -x "$py" ]] || fail hermes_python_missing
+          set +e
+          "$py" - >> "$RESULT" 2>&1 <<'PYPROBE'
+          import json
+          from hermes_cli.auth import resolve_codex_runtime_credentials
+          from hermes_cli.codex_models import get_codex_model_ids
+          out={'usable':False,'models':[],'source':None,'error':None}
+          try:
+              creds=resolve_codex_runtime_credentials(refresh_if_expiring=True)
+              token=str(creds.get('api_key') or '').strip()
+              out['source']=str(creds.get('source') or '')[:80]
+              if token:
+                  models=list(get_codex_model_ids(access_token=token) or [])
+                  out['models']=models[:30]
+                  out['usable']=bool(models)
+          except Exception as e:
+              out['error']=type(e).__name__+':'+str(e)[:180]
+          print('CODEX_SAFE_PROBE='+json.dumps(out,ensure_ascii=False))
+          raise SystemExit(0 if out['usable'] else 3)
+          PYPROBE
+          probe_rc=$?
+          set -e
+          [[ $probe_rc -eq 0 ]] || fail codex_runtime_probe_failed
+          log 'CODEX_RUNTIME_PROBE=PASS'
+
+          git config user.name 'MCF Automation'
+          git config user.email 'mcf-automation@users.noreply.github.com'
+          git add "$src" "$test"
+          if ! git diff --cached --quiet; then
+            git commit -m 'fix: resolve Hermes Codex runtime credentials'
+            git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
+            log "SOURCE_COMMIT=$(git rev-parse HEAD)"
+          else
+            log 'SOURCE_COMMIT=NO_CHANGE'
+          fi
+          log 'RESULT=PASS'
