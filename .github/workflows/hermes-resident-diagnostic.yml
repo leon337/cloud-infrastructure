@@ -1,0 +1,55 @@
+name: hermes-resident-diagnostic
+
+on:
+  push:
+    branches: [mcf/hermes-relay-bootstrap-20260823]
+    paths: [.github/workflows/hermes-resident-diagnostic.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+    env:
+      HOME: /home/ubuntu
+      PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+      XDG_RUNTIME_DIR: /run/user/1000
+      DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+      - name: Capture sanitized evidence and clear stale inference
+        shell: bash
+        run: |
+          set -u
+          mkdir -p artifacts/hermes-resident
+          out=artifacts/hermes-resident/runtime-diagnostic.txt
+          {
+            echo "UTC=$(date -u +%FT%TZ)"
+            echo '--- PROCESSES ---'
+            ps -eo pid,etimes,%cpu,%mem,rss,args | grep -E '[l]lama serve|[h]ermes -z|[m]ission_runner.py|[c]ontroller.py' || true
+            echo '--- PROVIDER JOURNAL ---'
+            journalctl --user -u hermes-provider.service -n 160 --no-pager 2>&1 || true
+            echo '--- CONTROLLER JOURNAL ---'
+            journalctl --user -u hermes-controller.service -n 80 --no-pager 2>&1 || true
+            echo '--- HERMES MODEL ---'
+            $HOME/.local/bin/hermes config get model --json 2>&1 | sed -E 's/(api_key"[[:space:]]*:[[:space:]]*")[^"]+"/\1REDACTED"/g' || true
+          } > "$out"
+          systemctl --user restart hermes-provider.service
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 3 http://127.0.0.1:8080/health 2>/dev/null || true)
+            [[ "$code" == 200 ]] && break
+            sleep 3
+          done
+          echo "POST_RESTART_HEALTH=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 3 http://127.0.0.1:8080/health 2>/dev/null || true)" >> "$out"
+          cat "$out" | tail -220
+          git config user.name 'mcf-hermes-diagnostic'
+          git config user.email 'mcf-hermes-diagnostic@users.noreply.github.com'
+          git add "$out"
+          git commit -m 'chore: record resident Hermes runtime diagnostic [skip ci]' || exit 0
+          git pull --rebase origin mcf/hermes-relay-bootstrap-20260823
+          git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
