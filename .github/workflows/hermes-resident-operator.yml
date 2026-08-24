@@ -9,7 +9,7 @@ on:
       - ops/hermes-resident/**
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: hermes-resident-operator-node01
@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: mcf/hermes-relay-bootstrap-20260823
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Verify authority boundary and prerequisites
         shell: bash
@@ -159,3 +159,34 @@ jobs:
           systemctl --user is-enabled hermes-provider.service hermes-controller.service
           systemctl --user is-active hermes-provider.service hermes-controller.service
           echo 'DEPLOYMENT=PASS'
+
+      - name: Persist sanitized deployment evidence
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          mkdir -p artifacts/hermes-resident
+          out=artifacts/hermes-resident/deploy-status.txt
+          {
+            echo "UTC=$(date -u +%FT%TZ)"
+            echo "HOST=$(hostname)"
+            echo "USER=$(id -un)"
+            echo "MISSION_ID=MCF-HERMES-PC-002"
+            echo "PROVIDER_ACTIVE=$(systemctl --user is-active hermes-provider.service 2>/dev/null || true)"
+            echo "PROVIDER_ENABLED=$(systemctl --user is-enabled hermes-provider.service 2>/dev/null || true)"
+            echo "CONTROLLER_ACTIVE=$(systemctl --user is-active hermes-controller.service 2>/dev/null || true)"
+            echo "CONTROLLER_ENABLED=$(systemctl --user is-enabled hermes-controller.service 2>/dev/null || true)"
+            echo "PROVIDER_HEALTH=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 3 http://127.0.0.1:8080/health 2>/dev/null || true)"
+            echo "CONTROL_SOCKET=$([[ -S /tmp/hermes-operator-control.sock ]] && echo yes || echo no)"
+            echo "HERMES_VERSION=$($HOME/.local/bin/hermes --version 2>/dev/null | head -1 || true)"
+            free -h | awk '/Mem:/{print "MEM_USED="$3" MEM_AVAILABLE="$7}'
+          } > "$out"
+          cat "$out"
+          git config user.name 'mcf-hermes-resident'
+          git config user.email 'mcf-hermes-resident@users.noreply.github.com'
+          git add "$out"
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: record resident Hermes deployment status [skip ci]'
+            git pull --rebase origin mcf/hermes-relay-bootstrap-20260823
+            git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
+          fi
