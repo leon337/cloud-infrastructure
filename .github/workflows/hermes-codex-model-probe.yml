@@ -1,0 +1,76 @@
+name: hermes-codex-model-probe
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+    paths:
+      - .github/workflows/hermes-codex-model-probe.yml
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 15
+    env:
+      HOME: /home/ubuntu
+      PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+
+      - name: Probe low-cost Codex model availability
+        shell: bash
+        run: |
+          set -euo pipefail
+          out='ops/hermes-resident/latest-codex-model-probe.txt'
+          : > "$out"
+          log(){ printf '%s\n' "$*" | tee -a "$out"; }
+          log "UTC=$(date -u +%FT%TZ)"
+          log "HOST=$(hostname)"
+          py=''
+          for candidate in "$HOME/.hermes/hermes-agent/venv/bin/python" "$HOME/.hermes/venv/bin/python" "$HOME/.hermes/hermes-agent/.venv/bin/python" /usr/bin/python3; do
+            if [[ -x "$candidate" ]] && "$candidate" -c 'import yaml' >/dev/null 2>&1; then py="$candidate"; break; fi
+          done
+          [[ -n "$py" ]] || { log 'RESULT=FAIL no_python_with_yaml'; exit 1; }
+
+          selected=''
+          for model in gpt-5.4-mini gpt-5.6-sol gpt-5.4; do
+            "$py" - "$model" <<'PY'
+          from pathlib import Path
+          import os,sys,tempfile,yaml
+          p=Path('/home/ubuntu/.hermes/config.yaml')
+          cfg=yaml.safe_load(p.read_text()) if p.exists() else {}
+          if not isinstance(cfg,dict): cfg={}
+          cfg['model']={'provider':'openai-codex','default':sys.argv[1]}
+          fd,tmp=tempfile.mkstemp(prefix='config.',suffix='.yaml',dir=str(p.parent)); os.close(fd)
+          Path(tmp).write_text(yaml.safe_dump(cfg,sort_keys=False,allow_unicode=True))
+          os.chmod(tmp,0o600); os.replace(tmp,p)
+          PY
+            tmp=$(mktemp)
+            set +e
+            timeout 90 "$HOME/.local/bin/hermes" -z 'Reply with exactly BRAIN_READY and nothing else.' --ignore-rules >"$tmp" 2>&1
+            rc=$?
+            set -e
+            text=$(tail -c 4000 "$tmp" | tr '\n' ' ' | sed -E 's/(access_token|refresh_token|api_key|Authorization)[=: ][^ ,}]+/\1=REDACTED/gI')
+            rm -f "$tmp"
+            log "MODEL=$model RC=$rc OUTPUT=$text"
+            if [[ "$text" == *BRAIN_READY* ]] && [[ "$text" != *'usage limit has been reached'* ]]; then selected="$model"; break; fi
+          done
+          if [[ -n "$selected" ]]; then
+            log "SELECTED=$selected"
+            log 'RESULT=PASS'
+          else
+            log 'SELECTED=NONE'
+            log 'RESULT=QUOTA_BLOCKED'
+          fi
+
+          git config user.name 'MCF Automation'
+          git config user.email 'mcf-automation@users.noreply.github.com'
+          git add "$out"
+          git commit -m 'evidence: record Codex model availability probe'
+          git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
