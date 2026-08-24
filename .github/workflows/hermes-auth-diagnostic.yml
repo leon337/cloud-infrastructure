@@ -1,0 +1,72 @@
+name: hermes-auth-diagnostic
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+    paths:
+      - .github/workflows/hermes-auth-diagnostic.yml
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    env:
+      HOME: /home/ubuntu
+      PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+      - name: Collect sanitized auth state
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/hermes-resident
+          out=artifacts/hermes-resident/auth-status.txt
+          python3 - > "$out" <<'PY'
+          import json
+          from pathlib import Path
+          def inspect(path):
+              p=Path(path)
+              print(f'FILE={path} EXISTS={p.exists()}')
+              if not p.exists(): return
+              try:
+                  obj=json.loads(p.read_text())
+              except Exception as e:
+                  print('PARSE=ERROR:'+type(e).__name__); return
+              if not isinstance(obj,dict):
+                  print('TYPE='+type(obj).__name__); return
+              print('TOP_KEYS='+','.join(sorted(obj.keys())))
+              if 'active_provider' in obj:
+                  print('ACTIVE_PROVIDER='+str(obj.get('active_provider')))
+              providers=obj.get('providers')
+              if isinstance(providers,dict):
+                  print('PROVIDERS='+','.join(sorted(providers.keys())))
+                  for name,val in sorted(providers.items()):
+                      if isinstance(val,dict):
+                          present=[k for k,v in val.items() if v not in (None,'',False,[],{})]
+                          sensitive={'access_token','refresh_token','id_token','token','api_key','secret'}
+                          safe=[k for k in present if k not in sensitive]
+                          has_secret=any(k in present for k in sensitive)
+                          print(f'PROVIDER={name} PRESENT_KEYS='+','.join(sorted(safe))+f' SECRET_MATERIAL_PRESENT={str(has_secret).lower()}')
+          print('UTC_AUTH_DIAGNOSTIC')
+          inspect('/home/ubuntu/.hermes/auth.json')
+          inspect('/home/ubuntu/.codex/auth.json')
+          PY
+          "$HOME/.local/bin/hermes" --version >> "$out" 2>&1 || true
+          cat "$out"
+      - name: Persist sanitized auth evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'mcf-hermes-auth-diagnostic'
+          git config user.email 'mcf-hermes-auth-diagnostic@users.noreply.github.com'
+          git add artifacts/hermes-resident/auth-status.txt
+          git commit -m 'chore: record sanitized Hermes auth status [skip ci]' || exit 0
+          git pull --rebase origin mcf/hermes-relay-bootstrap-20260823
+          git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
