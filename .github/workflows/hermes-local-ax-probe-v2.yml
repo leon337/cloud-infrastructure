@@ -1,0 +1,83 @@
+name: hermes-local-ax-probe-v2
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+    paths:
+      - .github/workflows/hermes-local-ax-probe-v2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 12
+    env:
+      HOME: /home/ubuntu
+      PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+      DISPLAY: ':10'
+      XAUTHORITY: /home/ubuntu/.Xauthority
+      XDG_RUNTIME_DIR: /run/user/1000
+      DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
+      HERMES_STREAM_READ_TIMEOUT: '420'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+
+      - name: Configure local provider and benchmark mission-equivalent toolset
+        shell: bash
+        run: |
+          set -euo pipefail
+          out='ops/hermes-resident/latest-local-ax-probe-v2.txt'
+          : > "$out"
+          log(){ printf '%s\n' "$*" | tee -a "$out"; }
+          log "UTC=$(date -u +%FT%TZ)"
+          log "HOST=$(hostname)"
+          health=$(curl -sS -o /tmp/hermes-local-health-v2 -w '%{http_code}' --max-time 3 http://127.0.0.1:8080/health 2>/dev/null || true)
+          log "LOCAL_PROVIDER_HEALTH=$health"
+          [[ "$health" == 200 ]] || { log 'RESULT=FAIL provider_unhealthy'; exit 1; }
+
+          py=''
+          for candidate in "$HOME/.hermes/hermes-agent/venv/bin/python" "$HOME/.hermes/venv/bin/python" "$HOME/.hermes/hermes-agent/.venv/bin/python" /usr/bin/python3; do
+            if [[ -x "$candidate" ]] && "$candidate" -c 'import yaml' >/dev/null 2>&1; then py="$candidate"; break; fi
+          done
+          [[ -n "$py" ]] || { log 'RESULT=FAIL no_python_with_yaml'; exit 1; }
+          "$py" - <<'PY'
+          from pathlib import Path
+          import os,tempfile,yaml
+          p=Path('/home/ubuntu/.hermes/config.yaml')
+          cfg=yaml.safe_load(p.read_text()) if p.exists() else {}
+          if not isinstance(cfg,dict): cfg={}
+          cfg['model']={'default':'qwen3.5-2b','provider':'custom','base_url':'http://127.0.0.1:8080/v1','api_key':'no-key','context_length':65536}
+          fd,tmp=tempfile.mkstemp(prefix='config.',suffix='.yaml',dir=str(p.parent)); os.close(fd)
+          Path(tmp).write_text(yaml.safe_dump(cfg,sort_keys=False,allow_unicode=True))
+          os.chmod(tmp,0o600); os.replace(tmp,p)
+          PY
+
+          t0=$(date +%s)
+          text=$(timeout 180 "$HOME/.local/bin/hermes" -z 'Reply with exactly HERMES_READY and nothing else. Do not use any tool.' -t computer_use --ignore-rules 2>&1 || true)
+          t1=$(date +%s)
+          log "RESTRICTED_TEXT_SECONDS=$((t1-t0)) OUTPUT=$(printf '%s' "$text" | tail -c 1800 | tr '\n' ' ')"
+          if [[ "$text" != *HERMES_READY* ]]; then
+            log 'RESULT=FAIL restricted_text_probe_failed'
+          else
+            t2=$(date +%s)
+            gui=$(timeout 300 "$HOME/.local/bin/hermes" -z 'Use the computer_use tool exactly once with accessibility-tree observation (capture mode ax) to inspect the current Linux desktop. Do not use screenshot or vision. Do not click, type, open, close, or modify anything. Then reply with exactly GUI_PROBE_OK.' -t computer_use --ignore-rules 2>&1 || true)
+            t3=$(date +%s)
+            log "AX_SECONDS=$((t3-t2)) OUTPUT=$(printf '%s' "$gui" | tail -c 3000 | tr '\n' ' ')"
+            if [[ "$gui" == *GUI_PROBE_OK* ]] && [[ $((t3-t2)) -le 300 ]]; then
+              log 'RESULT=PASS'
+            else
+              log 'RESULT=FAIL ax_probe_failed_or_slow'
+            fi
+          fi
+
+          git config user.name 'MCF Automation'
+          git config user.email 'mcf-automation@users.noreply.github.com'
+          git add "$out"
+          git commit -m 'evidence: benchmark local Hermes restricted AX path'
+          git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
