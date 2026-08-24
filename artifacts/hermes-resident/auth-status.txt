@@ -1,0 +1,10 @@
+UTC_AUTH_DIAGNOSTIC
+FILE=/home/ubuntu/.hermes/auth.json EXISTS=False
+FILE=/home/ubuntu/.codex/auth.json EXISTS=True
+TOP_KEYS=OPENAI_API_KEY,auth_mode,last_refresh,tokens
+Hermes Agent v0.20.5 (2026.8.19) · upstream 98110123
+Install directory: /home/ubuntu/.hermes/hermes-agent
+Install method: git
+Python: 3.11.16
+OpenAI SDK: 2.24.0
+Up to date
