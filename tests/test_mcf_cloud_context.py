@@ -105,6 +105,14 @@ class McfCloudContextTests(unittest.TestCase):
             "G2B_TASK8_LAB_VALIDATED_INACTIVE",
             self.capsule["snapshot"]["current_status"],
         )
+        self.assertIn(
+            "REAL_MCF_APPMODULE_LAB_E2E_HISTORICALLY_VERIFIED_DISCONNECTED_INACTIVE",
+            self.capsule["snapshot"]["current_status"],
+        )
+        self.assertNotIn(
+            "MCF_FIXTURE",
+            self.capsule["snapshot"]["current_status"],
+        )
 
     def test_context_project_id_maps_exactly_to_cloud_manifest_key(self):
         mapping = self.context["mapping"]
@@ -133,10 +141,39 @@ class McfCloudContextTests(unittest.TestCase):
         local = g2a["local_context_adapter"]
         self.assertEqual(
             local["lifecycle"],
-            "LAB_E2E_WITH_MCF_FIXTURE_VERIFIED_DISABLED_BY_DEFAULT",
+            "REAL_MCF_APPMODULE_WITH_DISPOSABLE_CLOUD_PROCESS_HISTORICALLY_VERIFIED_DISABLED_BY_DEFAULT",
         )
-        self.assertEqual(local["e2e"], "PASS_13_OF_13")
-        self.assertEqual(local["e2e_client"], "DISPOSABLE_MCF_FIXTURE")
+        self.assertEqual(local["connection_state"], "DISCONNECTED")
+        self.assertEqual(local["runtime_state"], "INACTIVE")
+        self.assertEqual(local["verification_state"], "HISTORICALLY_VERIFIED")
+        self.assertEqual(local["operational_freshness"], "LIVE_REQUIRED")
+        self.assertEqual(local["e2e"], "PASS_3_OF_3")
+        self.assertEqual(
+            local["e2e_client"],
+            "REAL_MCF_APPMODULE_WITH_DISPOSABLE_CLOUD_PROCESS",
+        )
+        self.assertEqual(local["provider_fixture_e2e"]["result"], "PASS_13_OF_13")
+        self.assertEqual(
+            local["provider_fixture_e2e"]["client"],
+            "DISPOSABLE_MCF_FIXTURE",
+        )
+        mcf_e2e = local["mcf_appmodule_e2e"]
+        self.assertEqual(mcf_e2e["result"], "PASS_3_OF_3")
+        self.assertEqual(
+            mcf_e2e["mcf_main_merge_revision"],
+            "efe5164290d56f22023f07de073e2ad7c027fb95",
+        )
+        self.assertEqual(mcf_e2e["mcf_staging_revision"], mcf_e2e["mcf_main_merge_revision"])
+        self.assertEqual(mcf_e2e["staging_provider_connection"], "NOT_ACTIVATED")
+        self.assertEqual(mcf_e2e["rate_limit_subject"], "HMAC_SHA256_DIRECT_SOCKET_PEER")
+        self.assertEqual(mcf_e2e["rotating_bearer_attempts"], 11)
+        self.assertFalse(mcf_e2e["provider_payload_persisted_by_mcf"])
+        self.assertFalse(mcf_e2e["paid_api"])
+        self.assertEqual(
+            local["python_tcb"]["residual_scope"],
+            "STDLIB_SITE_PACKAGES_NATIVE_EXTENSIONS_AND_TRANSITIVE_DEPENDENCIES",
+        )
+        self.assertFalse(local["python_tcb"]["production_attestation"])
         self.assertEqual(
             local["repository_fingerprint"],
             "PASS_GIT_AND_FILESYSTEM_UNCHANGED",
@@ -159,7 +196,7 @@ class McfCloudContextTests(unittest.TestCase):
         self.assertFalse(g2b["production_authorized"])
         self.assertTrue(all(value is False for value in g2b["real_evidence"].values()))
 
-    def test_publication_and_lineage_are_explicit_without_merge_authority(self):
+    def test_publication_records_only_the_authorized_safe_target_merge(self):
         publication = self.context["publication"]
         self.assertEqual(
             publication["safe_pull_request_target"],
@@ -170,7 +207,13 @@ class McfCloudContextTests(unittest.TestCase):
             publication["pull_request"],
             "https://github.com/leon337/cloud-infrastructure/pull/26",
         )
-        self.assertFalse(publication["merge_authorized"])
+        self.assertEqual(publication["merge_state"], "MERGED_SAFE_TARGET")
+        self.assertEqual(
+            publication["merge_revision"],
+            "dbd772a6c37452008b7c8debd58d2782127514db",
+        )
+        self.assertTrue(publication["merge_authorized"])
+        self.assertFalse(publication["production_authorized"])
 
     def test_shared_git_object_database_recovery_is_attributed_to_parallel_mission(self):
         gate = self.context["validation"]["aggregate_gate"]
@@ -207,6 +250,28 @@ class McfCloudContextTests(unittest.TestCase):
         mutated_identity = copy.deepcopy(self.context)
         mutated_identity["mapping"]["from"]["context_project_id"] = "g2a-smoke"
         self.assertTrue(list(validator.iter_errors(mutated_identity)))
+
+        falsely_connected = copy.deepcopy(self.context)
+        falsely_connected["capabilities"]["g2a"]["local_context_adapter"][
+            "connection_state"
+        ] = "CONNECTED"
+        self.assertTrue(list(validator.iter_errors(falsely_connected)))
+
+        fixture_repromoted = copy.deepcopy(self.context)
+        fixture_repromoted["capabilities"]["g2a"]["local_context_adapter"][
+            "e2e_client"
+        ] = "DISPOSABLE_MCF_FIXTURE"
+        self.assertTrue(list(validator.iter_errors(fixture_repromoted)))
+
+        unbound_mcf_revision = copy.deepcopy(self.context)
+        unbound_mcf_revision["capabilities"]["g2a"]["local_context_adapter"][
+            "mcf_appmodule_e2e"
+        ]["mcf_main_merge_revision"] = "0" * 40
+        self.assertTrue(list(validator.iter_errors(unbound_mcf_revision)))
+
+        unmerged_publication = copy.deepcopy(self.context)
+        unmerged_publication["publication"]["merge_state"] = "NOT_MERGED"
+        self.assertTrue(list(validator.iter_errors(unmerged_publication)))
 
     def test_strict_yaml_loader_rejects_duplicate_keys(self):
         with self.assertRaises(yaml.constructor.ConstructorError):
