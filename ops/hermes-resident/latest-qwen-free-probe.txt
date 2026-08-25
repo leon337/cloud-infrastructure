@@ -1,0 +1,7 @@
+UTC=2026-08-25T01:54:00Z
+HOST=vmi3506102
+USER=ubuntu
+OPENROUTER_CREDENTIAL={"env": false, "pool": false, "usable": false, "error": null}
+MODEL=qwen/qwen3-next-80b-a3b-instruct:free
+RESULT=HUMAN_GATE
+GATE=OPENROUTER_API_KEY_REQUIRED
