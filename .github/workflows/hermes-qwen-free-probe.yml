@@ -1,0 +1,115 @@
+name: hermes-qwen-free-probe
+
+on:
+  push:
+    branches:
+      - mcf/hermes-relay-bootstrap-20260823
+    paths:
+      - .github/workflows/hermes-qwen-free-probe.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hermes-qwen-free-probe-node01
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 15
+    env:
+      HOME: /home/ubuntu
+      PATH: /home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+      RESULT: ops/hermes-resident/latest-qwen-free-probe.txt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mcf/hermes-relay-bootstrap-20260823
+          fetch-depth: 0
+
+      - name: Detect credential and probe free Qwen model
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > "$RESULT"
+          log(){ printf '%s\n' "$*" | tee -a "$RESULT"; }
+          log "UTC=$(date -u +%FT%TZ)"
+          log "HOST=$(hostname)"
+          log "USER=$(id -un)"
+          [[ "$(id -un)" == ubuntu ]] || { log 'RESULT=FAIL wrong_user'; exit 1; }
+          [[ -x "$HOME/.local/bin/hermes" ]] || { log 'RESULT=FAIL hermes_missing'; exit 1; }
+
+          py=''
+          for candidate in "$HOME/.hermes/hermes-agent/venv/bin/python" "$HOME/.hermes/venv/bin/python" "$HOME/.hermes/hermes-agent/.venv/bin/python" /usr/bin/python3; do
+            if [[ -x "$candidate" ]] && "$candidate" -c 'import yaml' >/dev/null 2>&1; then py="$candidate"; break; fi
+          done
+          [[ -n "$py" ]] || { log 'RESULT=FAIL no_python_with_yaml'; exit 1; }
+
+          set +e
+          credential_json=$("$py" - <<'PY'
+          import json, os
+          out={'env':False,'pool':False,'usable':False,'error':None}
+          try:
+              out['env']=bool((os.getenv('OPENROUTER_API_KEY') or '').strip())
+              from agent.credential_pool import load_pool
+              pool=load_pool('openrouter')
+              out['pool']=bool(pool and pool.has_credentials())
+              out['usable']=out['env'] or out['pool']
+          except Exception as e:
+              out['error']=type(e).__name__+':'+str(e)[:160]
+          print(json.dumps(out))
+          PY
+          )
+          cred_rc=$?
+          set -e
+          log "OPENROUTER_CREDENTIAL=$credential_json"
+          [[ $cred_rc -eq 0 ]] || { log 'RESULT=FAIL credential_probe_error'; exit 1; }
+
+          usable=$(printf '%s' "$credential_json" | "$py" -c 'import json,sys; print("yes" if json.load(sys.stdin).get("usable") else "no")')
+          if [[ "$usable" != yes ]]; then
+            log 'MODEL=qwen/qwen3-next-80b-a3b-instruct:free'
+            log 'RESULT=HUMAN_GATE'
+            log 'GATE=OPENROUTER_API_KEY_REQUIRED'
+          else
+            "$py" - <<'PY'
+          from pathlib import Path
+          import os,tempfile,yaml
+          p=Path('/home/ubuntu/.hermes/config.yaml')
+          cfg=yaml.safe_load(p.read_text()) if p.exists() else {}
+          if not isinstance(cfg,dict): cfg={}
+          cfg['model']={
+              'provider':'openrouter',
+              'default':'qwen/qwen3-next-80b-a3b-instruct:free',
+              'context_length':262144,
+          }
+          p.parent.mkdir(parents=True,exist_ok=True)
+          fd,tmp=tempfile.mkstemp(prefix='config.',suffix='.yaml',dir=str(p.parent)); os.close(fd)
+          Path(tmp).write_text(yaml.safe_dump(cfg,sort_keys=False,allow_unicode=True))
+          os.chmod(tmp,0o600); os.replace(tmp,p)
+          PY
+            tmp=$(mktemp)
+            set +e
+            timeout 120 "$HOME/.local/bin/hermes" -z 'Reply with exactly QWEN_FREE_READY and nothing else.' --ignore-rules >"$tmp" 2>&1
+            rc=$?
+            set -e
+            text=$(tail -c 6000 "$tmp" | tr '\n' ' ' | sed -E 's/(access_token|refresh_token|api_key|Authorization|OPENROUTER_API_KEY)[=: ][^ ,}]+/\1=REDACTED/gI')
+            rm -f "$tmp"
+            log "MODEL=qwen/qwen3-next-80b-a3b-instruct:free"
+            log "PROBE_RC=$rc"
+            log "PROBE_OUTPUT=$text"
+            if [[ $rc -eq 0 && "$text" == *QWEN_FREE_READY* ]]; then
+              log 'RESULT=PASS'
+            else
+              log 'RESULT=FAIL'
+              log 'FAILURE=qwen_free_probe_failed'
+            fi
+          fi
+
+          git config user.name 'MCF Automation'
+          git config user.email 'mcf-automation@users.noreply.github.com'
+          git add "$RESULT"
+          if ! git diff --cached --quiet; then
+            git commit -m 'evidence: record free Qwen API probe'
+            git push origin HEAD:mcf/hermes-relay-bootstrap-20260823
+          fi
