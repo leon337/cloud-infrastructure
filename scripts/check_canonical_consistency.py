@@ -19,6 +19,7 @@ def main() -> int:
         Path("README.md"),
         Path("CONTEXT.md"),
         Path("CHECKPOINT.md"),
+        Path("ROADMAP-CHECKLIST.md"),
         Path("state/current.yaml"),
         Path("scripts/test.sh"),
     ]
@@ -50,8 +51,15 @@ def main() -> int:
         raise AssertionError("state/active-mission.yaml exists despite NOT_ADOPTED decision")
 
     roadmap = state["continuity"]["roadmap_checklist"]
-    if roadmap["status"] == "NOT_ADOPTED" and Path(roadmap["file"]).exists():
+    roadmap_path = Path(roadmap["file"])
+    if roadmap["status"] == "NOT_ADOPTED" and roadmap_path.exists():
         raise AssertionError("ROADMAP-CHECKLIST.md exists despite NOT_ADOPTED decision")
+    if roadmap["status"] == "ADOPTED":
+        if not roadmap_path.is_file():
+            raise AssertionError("adopted ROADMAP-CHECKLIST.md is missing")
+        require_token(roadmap_path, "CANONICAL_OPERATIONAL_CHECKLIST")
+    elif roadmap["status"] != "NOT_ADOPTED":
+        raise AssertionError(f"unexpected roadmap checklist status: {roadmap['status']!r}")
 
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

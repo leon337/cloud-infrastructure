@@ -1,10 +1,16 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: team/canonical-state-toolchain-20260822
-updated_at: "2026-08-23T04:02:00-03:00"
-state_classification: CURRENT_RECONCILED_INTEGRATION_CANDIDATE_REVALIDATED
+candidate_branch: governance/canonical-roadmap-checklist-20260828
+updated_at: "2026-08-28T07:40:00-03:00"
+state_classification: CURRENT_CHECKLIST_ADOPTED_WITH_LEGACY_SUBSECTIONS
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
+
+freshness:
+  canonical_operational_checklist: ROADMAP-CHECKLIST.md
+  checklist_status: CURRENT_AS_OF_UPDATED_AT
+  legacy_subsections: HISTORICAL_UNTIL_RECONCILED
+  github_live_overrides_mutable_fields: true
 
 continuity:
   historical_validations_preserved: true
@@ -19,14 +25,16 @@ continuity:
     reason: SINGLE_ACTIVE_MISSION_MODEL_NOT_PROVEN_FOR_PARALLEL_MAINLINE_FRONTS
   roadmap_checklist:
     file: ROADMAP-CHECKLIST.md
-    status: NOT_ADOPTED
-    reason: G2B_TASK8_SPECIFIC_SURFACE_NOT_MAINLINE_NEUTRAL
+    status: ADOPTED
+    reason: CANONICAL_OPERATIONAL_CHECKLIST_ADOPTED_2026_08_28
+    update_rule: EACH_STATE_CHANGING_MISSION_UPDATES_CHECKLIST_BEFORE_CLOSEOUT
 
 source_snapshot:
   main:
-    sha: f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b
-    merged_reconciliation_pr: 18
-    executive_projection: README.md
+    sha: bbdc7b2a3874af75424680c49aed3cbcb8d63bcb
+    baseline_before_checklist_adoption: true
+    latest_integrated_pr: 28
+    executive_projection: ROADMAP-CHECKLIST.md
   executable_evidence:
     node01_read_only_audit_run: 32577551012
     g2b_attempt3_read_only_audit_run: 32577815107
@@ -42,7 +50,7 @@ source_snapshot:
 
 project:
   name: IMPLEMENTACAO_DA_VPS
-  status: ACTIVE_WITH_OPEN_INCIDENTS_AND_PARALLEL_RECOVERY
+  status: ACTIVE_WITH_P1_RISK_REDUCTION
   integration_status: DOCUMENTATION_AND_INTEGRATION_DRIFT
   durable_completed:
     phase_0_inventory: DONE
@@ -51,7 +59,9 @@ project:
     platform_s0: COMPLETE
     platform_f1_1: COMPLETE
     platform_f1_2b: COMPLETE
-  next_exact_step: RESUME_OPEN_F1_2C_AND_G2B_FRONTS_WITH_PRODUCTION_GATE_CLOSED
+    recovery_p1: COMPLETE
+    recovery_p2: COMPLETE
+  next_exact_step: RUNNER_ISOLATION_P1
 
 execution:
   authority: LEANDRO
@@ -100,7 +110,8 @@ control_bridge:
     merge_status: NOT_ELIGIBLE
 
 remote_vps:
-  observation_class: READ_ONLY_SNAPSHOT
+  observation_class: HISTORICAL_READ_ONLY_SNAPSHOT
+  superseded_for_current_operations_by: ROADMAP-CHECKLIST.md
   observed_at_utc: "2026-08-22T14:03:22Z"
   source_run: 32577551012
   status: OPERATIONAL_WITH_OPEN_INCIDENTS
