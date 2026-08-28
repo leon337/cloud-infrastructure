@@ -69,17 +69,20 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 
 ## 3. Runner isolation — P1
 
-- [x] `mcf-mission2-terminal.py` persistente identificado.
-- [x] Shell filho e Unix socket persistentes confirmados.
-- [x] Reuso do mesmo workspace por branch posterior confirmado.
-- [x] Não foram observados nomes explícitos de tokens sensíveis no ambiente preservado.
-- [ ] Confirmar se alguma missão ativa ainda depende do daemon.
-- [ ] Encerrar daemon/shell de forma controlada.
-- [ ] Remover socket residual.
-- [ ] Implementar cleanup obrigatório ao final de jobs.
-- [ ] Testar que nenhum processo de job atravessa execuções futuras.
+- [x] `mcf-mission2-terminal.py` persistente identificado e provenance exata preservada.
+- [x] Causa raiz confirmada: workflow histórico executava `unset RUNNER_TRACKING_ID` + `nohup setsid`.
+- [x] Lineage atual do Control Bridge já não contém o passo persistente; runner estava idle antes da limpeza.
+- [x] Não foram observados nomes explícitos de tokens sensíveis no ambiente preservado; valores não foram coletados.
+- [x] Daemon legado encerrado de forma controlada; socket, PID file e source live removidos.
+- [x] `scripts/check_runner_isolation.py` bloqueia manipulação de `RUNNER_TRACKING_ID` e self-hosted workflow sem guard.
+- [x] Guard obrigatório aplicado aos workflows self-hosted canônicos.
+- [x] Prova real em dois jobs no mesmo `node--1-mcf-control`: `RUNNER_ISOLATION_CROSS_JOB=PASS`.
+- [x] Recovery off-host revalidado sem preservar o daemon legado (`RECOVERY_P2=PASS`).
+- [ ] Ativar hooks globais `ACTIONS_RUNNER_HOOK_JOB_STARTED/COMPLETED` após restart autorizado do serviço; configuração já instalada, mas ainda não carregada.
 
-**Próximo passo exato:** `RUNNER_ISOLATION_P1`.
+**Estado:** `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`.
+
+**Próximo passo exato da missão:** `SSH_KEY_GOVERNANCE_P1`.
 
 ## 4. Governança de chaves SSH — P1
 
@@ -203,8 +206,8 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 ```text
 RECOVERY-P1                         DONE
 RECOVERY-P2                         DONE
-RUNNER_ISOLATION_P1                 NEXT
-SSH_KEY_GOVERNANCE_P1               PENDING
+RUNNER_ISOLATION_P1                 DONE_CROSS_JOB / GLOBAL_HOOK_HARDENING_PENDING
+SSH_KEY_GOVERNANCE_P1               NEXT
 F1_2C_NODE01_ROLLOUT                PENDING / HUMAN_GATE
 NETWORK_CONVERGENCE_P2              PENDING
 UPDATE_AND_CONTROLLED_REBOOT        BLOCKED_BY_PRECONDITIONS

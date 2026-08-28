@@ -28,7 +28,7 @@ Nunca transforme estado desejado em estado observado.
 | Contrato de execução histórico/vinculante | `docs/CODEX-EXECUTION-MISSION-001.md` |
 | Validação canônica do repositório | `scripts/test.sh` + `.github/workflows/canonical-validation.yml` |
 
-## Estado reconciliado em 22/08/2026
+## Estado reconciliado em 22/08/2026 + atualização operacional de 28/08/2026
 
 `main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b` está em `DOCUMENTATION_AND_INTEGRATION_DRIFT`.
 
@@ -43,6 +43,7 @@ Fatos que não podem ser promovidos além da evidência:
 - G2-B Tasks 9–10: `NOT_STARTED`;
 - produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`;
 - Repository Hygiene: `REPOSITORY_HYGIENE_REVALIDATED`; a compatibilidade do PR #19 com a toolchain canônica foi comprovada e o blocker histórico de secrets foi resolvido.
+- Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`; PoC legado removido, policy/guard canônicos ativos e prova cross-job real PASS; hook global configurado, não carregado até restart autorizado.
 
 ## Toolchain canônica
 
@@ -56,11 +57,12 @@ Fatos que não podem ser promovidos além da evidência:
 - consistência README/CONTEXT/CHECKPOINT/state;
 - testes unitários;
 - sintaxe Python/shell;
-- ShellCheck.
+- ShellCheck;
+- policy de isolamento do runner, incluindo recusa de manipulação de `RUNNER_TRACKING_ID` e exigência de guard nos workflows self-hosted.
 
 O executor canônico de integração também preserva o boundary F1.1: GitHub-hosted `ubuntu-24.04`, Python 3.12 e dependências lockadas em `requirements-dev.lock`. O lock neutro contém somente `PyYAML==6.0.3`, pois dependências F1.1 acopladas a Ansible/manifests não pertencem a esta extração.
 
-`.github/workflows/canonical-validation-maintenance-proof.yml` é uma prova alternativa restrita às branches `team/canonical-state-toolchain-*` ou disparo manual. Ela usa NODE-01 somente como executor não privilegiado e recusa passwordless sudo ou Docker socket gravável. Não substitui o CI hospedado canônico.
+`.github/workflows/canonical-validation-maintenance-proof.yml` é uma prova alternativa restrita às branches `team/canonical-state-toolchain-*`, `runner/isolation-*` ou disparo manual. Ela usa NODE-01 somente como executor não privilegiado e recusa passwordless sudo ou Docker socket gravável. Não substitui o CI hospedado canônico.
 
 `validate_manifests.py` não é importado porque depende de schemas/manifests da implementação F1.1. A toolchain neutra não enfraquece o secret gate para fabricar resultado verde.
 
@@ -81,4 +83,4 @@ O executor canônico de integração também preserva o boundary F1.1: GitHub-ho
 
 ## Próximo passo exato
 
-**RESUME_OPEN_F1_2C_AND_G2B_FRONTS_WITH_PRODUCTION_GATE_CLOSED**.
+**SSH_KEY_GOVERNANCE_P1**. O hardening de hooks globais do runner permanece pendente até restart autorizado do serviço; não contornar `systemd`/sudo.

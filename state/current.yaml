@@ -1,9 +1,9 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: governance/fix-readme-authority-20260828
-updated_at: "2026-08-28T08:00:00-03:00"
-state_classification: CURRENT_MISSION_DOCUMENT_HIERARCHY_RECONCILED_WITH_LEGACY_SUBSECTIONS
+candidate_branch: runner/isolation-p1-20260828
+updated_at: "2026-08-28T09:15:00-03:00"
+state_classification: CURRENT_RUNNER_ISOLATION_VERIFIED_WITH_GLOBAL_HOOK_RESTART_PENDING
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 freshness:
@@ -34,9 +34,9 @@ continuity:
 
 source_snapshot:
   main:
-    sha: f06cebd1998300e2b85126ffc88349b4253ea3b3
-    baseline_before_hierarchy_correction: true
-    latest_integrated_pr: 29
+    sha: 5a39737ce27ef81945f19cc0d0e8118c28a1ab08
+    baseline_before_runner_isolation_closeout: true
+    latest_integrated_pr: 30
     executive_projection: README.md
     operational_checklist: ROADMAP-CHECKLIST.md
   executable_evidence:
@@ -44,7 +44,10 @@ source_snapshot:
     g2b_attempt3_read_only_audit_run: 32577815107
     canonical_maintenance_proof_run: 32610484209
     canonical_maintenance_proof_job: 97122604465
-    hosted_canonical_latest_run: 32618609069
+    hosted_canonical_latest_run: 33170001586
+    runner_isolation_maintenance_proof_run: 33170001656
+    runner_isolation_cross_job_proof_run: 33170001699
+    runner_isolation_implementation_candidate: cf96f258f517ea1e520f989ca321e7c24e4aaf24
   open_fronts:
     repository_hygiene_pr: 19
     f1_2c_recovery_pr: 20
@@ -65,7 +68,23 @@ project:
     platform_f1_2b: COMPLETE
     recovery_p1: COMPLETE
     recovery_p2: COMPLETE
-  next_exact_step: RUNNER_ISOLATION_P1
+    runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
+  next_exact_step: SSH_KEY_GOVERNANCE_P1
+
+runner_isolation:
+  status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
+  legacy_poc: RETIRED
+  live_cleanup: PASS
+  cross_job_proof: PASS
+  workflow_policy: PASS
+  recovery_regression: PASS
+  global_hook: CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE
+  global_hook_restart_required: true
+  service_boundary_bypassed: false
+  provenance_workflow_sha: 025a3f784e4f984e10c9cbf087682c43304394d8
+  provenance_run: 32576011235
+  implementation_candidate_sha: cf96f258f517ea1e520f989ca321e7c24e4aaf24
+  cross_job_proof_run: 33170001699
 
 execution:
   authority: LEANDRO

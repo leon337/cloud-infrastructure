@@ -14,9 +14,14 @@ Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 
 ## Painel consolidado
 
-Reconciliação executada em **22/08/2026, 11:09 BRT (14:09 UTC)** a partir do
+Reconciliação-base executada em **22/08/2026, 11:09 BRT (14:09 UTC)** a partir do
 GitHub, worktrees locais, evidências do Control Bridge e uma auditoria curta e
 somente leitura no NODE-01.
+
+**Atualização operacional de 28/08/2026:** RECOVERY-P1/P2 concluídos e
+`RUNNER_ISOLATION_P1` comprovado no NODE-01. O PoC persistente foi retirado e a
+prova real entre dois jobs passou; o hook global do runner está configurado, mas
+permanece `CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE` até restart autorizado do serviço.
 
 | Área | Estado reconciliado | Resumo |
 |---|---|---|
@@ -25,7 +30,7 @@ somente leitura no NODE-01.
 | Control Bridge G1 | `PASS_REAL_NODE_01_ROUNDTRIP` | transporte curto pelo runner comprovado |
 | Control Bridge G2-A | `PASS_REAL_NODE_01_READ_ONLY` | leitura confinada e recusa de escape comprovadas |
 | Control Bridge G2-B | `TASK_8_FAILED_ATTEMPT_3` | Tasks 1–7 concluídas; prova descartável completa ainda não passou |
-| Acesso persistente | `PROOF_OF_CONCEPT_ONLY` | PTY/socket persistiu entre jobs, mas não é coordenador de missões aceito |
+| Runner isolation | `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING` | PoC persistente retirado; policy + guard canônicos e prova cross-job real passaram; hook global aguarda restart autorizado |
 | GitHub `main` | `DOCUMENTATION_AND_INTEGRATION_DRIFT` | não contém ainda as linhagens completas da plataforma e do bridge |
 | Produção externa | `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` | nenhuma promoção para produção está autorizada |
 | Credenciais | `ROTATION_DEFERRED_BY_HUMAN_DECISION` | política anterior permanece vigente |
@@ -33,11 +38,12 @@ somente leitura no NODE-01.
 ### Próxima ação exata
 
 ```text
-PRESERVE_G2B_ATTEMPT3_EVIDENCE_THEN_DIAGNOSE_EXIT_2_AND_CLEAN_DISPOSABLE_VM
+SSH_KEY_GOVERNANCE_P1
 ```
 
-Em paralelo, a unit `cloud-platform-network-services.service` deve receber
-diagnóstico somente leitura antes de qualquer restart ou reaplicação da F1.2c.
+Hardening pendente separado: ativar os hooks globais STARTED/COMPLETED do runner
+somente em uma janela de restart autorizada do serviço. Não contornar o boundary de
+`systemd`/sudo para isso. F1.2c e network convergence continuam em suas frentes próprias.
 
 ## Estado observado da VPS
 
@@ -48,6 +54,8 @@ e inspeção confinada do guest nas execuções
 e
 [`32577815107`](https://github.com/leon337/cloud-infrastructure/actions/runs/32577815107).
 Os probes temporários foram removidos imediatamente depois da coleta.
+
+Atualização live de **28/08/2026**: o PID `783478`, socket, PID file e source do PoC foram removidos de forma controlada. O runner permaneceu ativo. A prova `runner-isolation-proof` no mesmo `node--1-mcf-control` produziu `RUNNER_ISOLATION_CROSS_JOB=PASS`; evidência sanitizada em [`evidence/runner-isolation/RUNNER-ISOLATION-P1-20260828.md`](evidence/runner-isolation/RUNNER-ISOLATION-P1-20260828.md).
 
 | Item | Estado em 22/08/2026 14:09 UTC |
 |---|---|
@@ -63,7 +71,7 @@ Os probes temporários foram removidos imediatamente depois da coleta.
 | Repositório MCF na VPS | ausente em `/home/ubuntu/multiagent-collaboration-framework` |
 | QEMU host | `qemu-system-x86`, `qemu-utils` e `cloud-image-utils` instalados |
 | VM descartável G2-B | ainda ligada como `g2b-disposable-task8-vm3`, 6 vCPU/12 GiB, SSH local `127.0.0.1:22284` |
-| PTY persistente experimental | PID `783478`, processo vivo, socket modo `0600` |
+| PTY persistente experimental | **histórico em 22/08:** PID `783478`, processo vivo, socket modo `0600`; retirado em 28/08 |
 
 ### Incidentes abertos
 
@@ -199,6 +207,10 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
   ocupavam o único runner e criavam latência artificial.
 - [x] **22/08 — Reconciliação atual:** GitHub, computador local e VPS auditados;
   worktrees divergentes e incidentes abertos registrados neste painel.
+- [x] **28/08 — RUNNER-ISOLATION-P1:** causa raiz confirmada (`unset RUNNER_TRACKING_ID`
+  + `nohup setsid` na lineage histórica), PoC live retirado, recovery ajustado, policy/guard
+  canônicos adicionados e prova real cross-job `PASS`. Hook global configurado, mas ainda
+  não carregado por restart privilegiado pendente.
 
 ## Roadmap operacional
 

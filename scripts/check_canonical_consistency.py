@@ -45,8 +45,14 @@ def main() -> int:
             "REQUIRES_REVIEW",
             "IN_PROGRESS_DIAGNOSTIC_REPRODUCTION",
             "REPOSITORY_HYGIENE_REVALIDATED",
+            "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING",
+            "SSH_KEY_GOVERNANCE_P1",
         ):
             require_token(path, token)
+
+    for path in (Path("README.md"), Path("ROADMAP-CHECKLIST.md")):
+        require_token(path, "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING")
+        require_token(path, "SSH_KEY_GOVERNANCE_P1")
 
     active = state["continuity"]["active_mission_model"]
     if active["status"] == "NOT_ADOPTED" and Path(active["file"]).exists():
@@ -80,6 +86,14 @@ def main() -> int:
         raise AssertionError("mission checklist scope drift")
     if state["source_snapshot"]["main"].get("executive_projection") != "README.md":
         raise AssertionError("source snapshot executive projection must remain README.md")
+
+    runner = state.get("runner_isolation", {})
+    if runner.get("status") != "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING":
+        raise AssertionError("runner isolation state drift")
+    if runner.get("global_hook") != "CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE":
+        raise AssertionError("runner global hook boundary drift")
+    if state["project"].get("next_exact_step") != "SSH_KEY_GOVERNANCE_P1":
+        raise AssertionError("next exact step drift after runner isolation")
 
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

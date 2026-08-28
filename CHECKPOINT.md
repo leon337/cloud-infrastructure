@@ -1,6 +1,6 @@
 # CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **28/08/2026** após correção da hierarquia documental.
+Atualizado em **28/08/2026** após validação do `RUNNER_ISOLATION_P1`.
 
 ## Hierarquia documental
 
@@ -20,8 +20,9 @@ continua tendo precedência para fatos mutáveis.
 - Inventário/base: concluído.
 - RECOVERY-P1: concluído.
 - RECOVERY-P2: concluído, off-host automático + restore smoke verificados.
-- Próxima prioridade: `RUNNER_ISOLATION_P1`.
-- Governança da chave `dsh-tunnel...`: pendente.
+- RUNNER-ISOLATION-P1: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`; PoC legado retirado; hook global configurado e aguardando restart privilegiado autorizado.
+- Próxima prioridade: `SSH_KEY_GOVERNANCE_P1`.
+- Governança da chave `dsh-tunnel...`: pendente e agora é a próxima frente exata.
 - F1.2c no NODE-01: rollout pendente e `REQUIRES_REVIEW`.
 - Network convergence: pendente antes de reboot.
 - Reboot/kernel: bloqueado por precondições.
@@ -54,11 +55,12 @@ A validação continua em `scripts/test.sh`, incluindo:
 - state/consistência;
 - unit tests;
 - sintaxe Python/shell;
-- ShellCheck no CI hospedado.
+- ShellCheck no CI hospedado;
+- policy de isolamento do runner (`scripts/check_runner_isolation.py`).
 
 O contrato agora também exige que, quando
 `continuity.roadmap_checklist.status == ADOPTED`, `ROADMAP-CHECKLIST.md` exista e
-contenha o marcador `CANONICAL_OPERATIONAL_CHECKLIST`.
+contenha o marcador `IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST` e permaneça subordinado ao README.
 
 ## Boundaries
 
@@ -69,4 +71,4 @@ contenha o marcador `CANONICAL_OPERATIONAL_CHECKLIST`.
 
 ## Próximo passo
 
-Executar `RUNNER_ISOLATION_P1` conforme `ROADMAP-CHECKLIST.md`.
+Executar `SSH_KEY_GOVERNANCE_P1` conforme `ROADMAP-CHECKLIST.md`; manter a ativação do hook global do runner como hardening pendente sujeito a restart autorizado.

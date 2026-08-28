@@ -70,3 +70,15 @@ O allowlist RECOVERY-P2 foi alterado para não preservar automaticamente `mcf-mi
 O guard foi instalado em `/home/ubuntu/.local/libexec/cloud-infrastructure-runner-isolation-guard` e executado manualmente com PASS. `~/actions-runner/.env` foi configurado com `ACTIONS_RUNNER_HOOK_JOB_STARTED` e `ACTIONS_RUNNER_HOOK_JOB_COMPLETED`.
 
 A ativação global está **BLOCKED_PRIVILEGE** até um restart autorizado do runner: `systemctl --no-ask-password restart ...` retornou `Interactive authentication required`; o serviço permaneceu `active`. Nenhum bypass de sudo/systemd foi tentado. Até a ativação global, workflows self-hosted canônicos executam o guard explicitamente e o CI proíbe workflows self-hosted sem o guard.
+
+## Prova cross-job real
+
+No candidato funcional `cf96f258f517ea1e520f989ca321e7c24e4aaf24`, três gates independentes passaram:
+
+- `canonical-validation` run `33170001586`: SUCCESS;
+- `canonical-validation-maintenance-proof` run `33170001656`: SUCCESS no NODE-01;
+- `runner-isolation-proof` run `33170001699`: SUCCESS.
+
+A prova cross-job executou dois jobs sequenciais no mesmo runner `node--1-mcf-control`. O job `seed` lançou um processo benigno desacoplado com `nohup + setsid`, sem remover o tracking do runner. O job `verify` confirmou `RUNNER_ISOLATION_CROSS_JOB=PASS`, seguido de `RUNNER_ISOLATION_GUARD_PASS`.
+
+Classificação operacional: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`. O hook global permanece `CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE` até restart autorizado do serviço.
