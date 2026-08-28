@@ -2,7 +2,7 @@
 
 <!-- IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST -->
 
-Atualizado em **28/08/2026 08:00 -03:00**.
+Atualizado em **28/08/2026 14:03 -03:00**.
 
 Este arquivo é o checklist operacional detalhado da missão **IMPLEMENTAÇÃO DA VPS** no
 repositório `leon337/cloud-infrastructure`. Ele é **subordinado ao `README.md`**, que
@@ -105,14 +105,19 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 
 - [x] `cloud-platform-network-services.service` confirmado em FAILED no live audit.
 - [x] Falha de runtime lock sob filesystem protegido observada.
-- [x] Lineage de correção validada em KVM localizada no GitHub.
-- [x] Confirmado que o rollout no NODE-01 permaneceu separado da validação.
-- [ ] Fixar SHA exato do rollout autorizado.
-- [ ] Executar precheck live e checkpoint/rollback.
-- [!] Reapply NODE-01 requer gate próprio antes de alteração privilegiada/material.
-- [ ] Validar serviço e `systemctl --failed` pós-apply.
+- [x] Estado live classificado como `PARTIAL_FIRST_APPLY`: marker presente, helper/unit históricos conhecidos e árvore `/etc/cloud-platform/network-services` ausente.
+- [x] Recovery fail-closed específico para esse estado parcial implementado sem alterar o `apply`/`rollback` normais.
+- [x] Candidato exato do recovery fixado em `81a5f3571d66d9764d9c70f8071367f5094fbc05`.
+- [x] GitHub-hosted static + ShellCheck: run `33191612674` = PASS no SHA exato.
+- [x] GitHub-hosted KVM: run `33191612729` = PASS no SHA exato, incluindo `historical_failure`, `precheck`, `apply`, `check`, idempotência, rollback e cleanup.
+- [x] Artifact KVM `9694059362`, SHA-256 `1aced1e4e786859dd9faa3f0d700a7a35ccd815a06f7ec79311a6557e9b718da`.
+- [x] PR #35 integrada na lineage `fix/f1-2c-systemd-runtime-lock`; merge `2575bdaa99b195d756386ff9e923e05231b9aa17`.
+- [!] `foundation-ci` run `33191612766` e `docker-boundary-ci` run `33191612669` permanecem `FAIL — PREEXISTING_HISTORY_ONLY_GATE`; não contam como CI verde desta frente.
+- [ ] Reconfirmar preflight live imediatamente antes de qualquer apply material.
+- [!] Reapply NODE-01 requer autorização humana explícita antes de alteração privilegiada/material.
+- [ ] Validar serviço, redes privadas e `systemctl --failed` pós-apply, se autorizado.
 
-**Estado:** `REQUIRES_REVIEW`; rollout live pendente.
+**Estado:** `REQUIRES_REVIEW`; recovery técnico validado e integrado, rollout live pendente de `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
 
 ## 6. Rede / systemd-networkd — P2
 

@@ -1,6 +1,6 @@
 # CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **28/08/2026** após correção da dependência real do `SSH_KEY_GOVERNANCE_P1`.
+Atualizado em **28/08/2026** após validação exact-head e integração do recovery parcial `F1_2C`.
 
 ## Hierarquia documental
 
@@ -24,7 +24,7 @@ continua tendo precedência para fatos mutáveis.
 - SSH_KEY_GOVERNANCE_P1: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso notebook→VPS, chave preservada e `authorized_keys` inalterado.
 - Próxima prioridade: `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
 - Qualquer hardening futuro da `dsh-tunnel...` deve preservar o acesso interativo atual.
-- F1.2c no NODE-01: rollout pendente e `REQUIRES_REVIEW`.
+- F1.2c no NODE-01: `REQUIRES_REVIEW`; recovery do estado `PARTIAL_FIRST_APPLY` validado no candidato `81a5f357...`, integrado pela PR #35 (`2575bdaa...`), mas nenhum write live foi executado.
 - Network convergence: pendente antes de reboot.
 - Reboot/kernel: bloqueado por precondições.
 - Full-image/provider disaster recovery: NÃO VERIFICADO.
@@ -38,7 +38,7 @@ de dívida documental, não como negação da adoção do checklist.
 
 Marcadores históricos ainda preservados até reconciliação específica:
 
-- F1.2c: `REQUIRES_REVIEW`;
+- F1.2c: `REQUIRES_REVIEW` até o rollout live; recovery técnico exact-head já validado e integrado;
 - G2-B legado: `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
 - Repository Hygiene histórico: `REPOSITORY_HYGIENE_REVALIDATED`.
 
@@ -66,7 +66,7 @@ contenha o marcador `IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST` e permaneça su
 ## Boundaries
 
 - `state/active-mission.yaml` continua `NOT_ADOPTED`.
-- adoção do checklist não autoriza produção, sudo, Docker write ou reapply F1.2c;
+- adoção do checklist e validação do recovery não autorizam produção, sudo, Docker write ou reapply F1.2c;
 - mudanças materiais no NODE-01 continuam sujeitas aos gates aplicáveis;
 - secrets nunca são versionados.
 

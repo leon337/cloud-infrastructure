@@ -1,9 +1,9 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: security/ssh-key-governance-user-workflow-20260828
-updated_at: "2026-08-28T12:40:00-03:00"
-state_classification: CURRENT_SSH_KEY_GOVERNANCE_USER_WORKFLOW_CONFIRMED
+candidate_branch: governance/f1-2c-rollout-gate-20260828
+updated_at: "2026-08-28T14:03:00-03:00"
+state_classification: CURRENT_F1_2C_ROLLOUT_GATE_PREPARED
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 freshness:
@@ -34,9 +34,9 @@ continuity:
 
 source_snapshot:
   main:
-    sha: c92d0072a7994f48ce7583c4f52bbc767fecff62
-    baseline_before_ssh_key_governance_user_workflow_correction: true
-    latest_integrated_pr: 33
+    sha: 0549945d91803cced3dfc15d1f96b93c7a0ec2e9
+    baseline_before_f1_2c_rollout_gate_projection: true
+    latest_integrated_pr: 34
     executive_projection: README.md
     operational_checklist: ROADMAP-CHECKLIST.md
   executable_evidence:
@@ -48,6 +48,12 @@ source_snapshot:
     runner_isolation_maintenance_proof_run: 33170001656
     runner_isolation_cross_job_proof_run: 33170001699
     runner_isolation_implementation_candidate: cf96f258f517ea1e520f989ca321e7c24e4aaf24
+    f1_2c_partial_recovery_pr: 35
+    f1_2c_partial_recovery_candidate: 81a5f3571d66d9764d9c70f8071367f5094fbc05
+    f1_2c_partial_recovery_lineage_merge: 2575bdaa99b195d756386ff9e923e05231b9aa17
+    f1_2c_partial_recovery_static_run: 33191612674
+    f1_2c_partial_recovery_kvm_run: 33191612729
+    f1_2c_partial_recovery_kvm_artifact: 9694059362
   open_fronts:
     repository_hygiene_pr: 19
     f1_2c_recovery_pr: 20
@@ -118,17 +124,30 @@ platform:
   f1_2c:
     status: REQUIRES_REVIEW
     accepted: false
-    recovery_branch: team/f1-2c-network-recovery-20260822
-    recovery_candidate_sha: 4a88c038736cd20013fa0ec3b20ba63fb2e01f6a
+    live_partial_state: CONFIRMED_PARTIAL_FIRST_APPLY
+    live_write_performed_by_recovery_prep: false
+    recovery_status: EXACT_HEAD_VALIDATED_AND_MERGED_IN_CORRECTION_LINEAGE
+    recovery_branch: fix/f1-2c-systemd-runtime-lock
+    recovery_pr: 35
+    recovery_candidate_sha: 81a5f3571d66d9764d9c70f8071367f5094fbc05
+    recovery_merge_sha: 2575bdaa99b195d756386ff9e923e05231b9aa17
     static_validation:
       status: PASS
-      run: 32605115252
+      run: 33191612674
       exact_head: true
+      shellcheck: PASS
     disposable_kvm:
-      status: NOT_EXECUTED_EXTERNAL_RUNNER_PRE_STEP_FAILURE
-      gate_pr: 23
-      run: 32607458396
+      status: PASS
+      gate_pr: 35
+      run: 33191612729
+      exact_head: true
+      artifact_id: 9694059362
+      artifact_sha256: 1aced1e4e786859dd9faa3f0d700a7a35ccd815a06f7ec79311a6557e9b718da
       upstream_cause: NOT_VERIFIED
+    generic_ci:
+      status: FAIL_PREEXISTING_HISTORY_ONLY_GATE
+      foundation_run: 33191612766
+      docker_boundary_run: 33191612669
     node01_reapply_authorized: false
 
 control_bridge:
