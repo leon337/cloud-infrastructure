@@ -4,8 +4,17 @@ umask 077
 
 REMOTE_HOST=${CLOUD_RECOVERY_REMOTE_HOST:-ubuntu@169.58.171.192}
 DEST_ROOT=${CLOUD_RECOVERY_DEST_ROOT:-$HOME/Backups/cloud-infrastructure/recovery}
-AUTH_SOCK=${CLOUD_RECOVERY_SSH_AUTH_SOCK:-${SSH_AUTH_SOCK:-/run/user/$(id -u)/gcr/ssh}}
 CONNECT_TIMEOUT=${CLOUD_RECOVERY_CONNECT_TIMEOUT:-15}
+stable_agent=/run/user/$(id -u)/gcr/ssh
+if [[ -n ${CLOUD_RECOVERY_SSH_AUTH_SOCK:-} ]]; then
+  AUTH_SOCK=$CLOUD_RECOVERY_SSH_AUTH_SOCK
+elif [[ -S "$stable_agent" ]]; then
+  AUTH_SOCK=$stable_agent
+elif [[ -n ${SSH_AUTH_SOCK:-} ]]; then
+  AUTH_SOCK=$SSH_AUTH_SOCK
+else
+  AUTH_SOCK=$stable_agent
+fi
 
 [[ -S "$AUTH_SOCK" ]] || { echo "RECOVERY_ABORT=ssh_agent_unavailable path=$AUTH_SOCK" >&2; exit 20; }
 command -v ssh >/dev/null

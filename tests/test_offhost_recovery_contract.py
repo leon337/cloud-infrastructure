@@ -18,6 +18,7 @@ class OffhostRecoveryContract(unittest.TestCase):
         self.assertIn("set -euo pipefail", text)
         self.assertIn("StrictHostKeyChecking=yes", text)
         self.assertIn("BatchMode=yes", text)
+        self.assertIn("/gcr/ssh", text)
         self.assertIn("runtime_paths=(", text)
         self.assertNotIn("authorized_keys", text)
         self.assertNotIn("identity.json", text)
