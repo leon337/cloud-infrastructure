@@ -9,6 +9,7 @@ g2b_service_shell: /usr/sbin/nologin
 g2b_executor_bundle_root: /usr/local/lib/mcf-control-bridge
 g2b_executor_bundle_sha256: 7ed806ee4d73743f3d0ab6f7f5c216494ed0d4f645f5f2bea0b128f2a689d3af
 g2b_entrypoint_path: /usr/local/libexec/mcf-control-g2b
+g2b_ssh_adapter_path: /usr/local/libexec/mcf-control-g2b-ssh
 g2b_sudoers_path: /etc/sudoers.d/mcf-control-g2b
 g2b_tmpfiles_path: /etc/tmpfiles.d/mcf-control-bridge-g2b.conf
 g2b_grant_path: /etc/mcf-control-bridge/g2b-grant.json
@@ -114,6 +115,12 @@ g2b_install_payloads:
     group: root
     mode: "0555"
     sha256: ec96c2213240712e2dab95a8ae3e809d5714c91c5d03f14d17c41b0f72542c9a
+  - source: platform/control-bridge/mcf-control-g2b-ssh
+    destination: /usr/local/libexec/mcf-control-g2b-ssh
+    owner: root
+    group: root
+    mode: "0555"
+    sha256: bb21fd99a65eaa1ec34737904b927ffe84e7c6486355ca8943f6723c21f2aa76
   - source: platform/sudoers/mcf-control-g2b
     destination: /etc/sudoers.d/mcf-control-g2b
     owner: root

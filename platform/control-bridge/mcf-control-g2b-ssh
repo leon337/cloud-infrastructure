@@ -1,0 +1,557 @@
+#!/usr/bin/python3 -I
+"""Direct SSH transport for the immutable G2-B executor boundary."""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+import pwd
+import re
+import select
+import signal
+import subprocess
+import sys
+import threading
+import time
+from typing import Any, NamedTuple
+
+
+_EXPECTED_ACCOUNT = "ubuntu"
+_EXECUTOR = "/usr/local/libexec/mcf-control-g2b"
+_SUDO = "/usr/bin/sudo"
+_MAX_INPUT_BYTES = 131_072
+_MAX_RESULT_BYTES = 8192
+_INPUT_TIMEOUT_SECONDS = 5
+_TIMEOUT_SECONDS = 60
+_TERMINATE_GRACE_SECONDS = 0.25
+_WAIT_SLICE_SECONDS = 0.02
+_EXECUTOR_ENV = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8"}
+_COMMAND_BY_OPERATION = {
+    "workspace.write": "execute",
+    "rollback": "rollback",
+    "status": "status",
+    "revoke": "revoke",
+}
+_PUBLIC_RESULT_FIELDS = frozenset(
+    {
+        "protocol",
+        "request_id",
+        "request_digest",
+        "mission_id",
+        "declared_actor",
+        "authority",
+        "transport_principal",
+        "grant_id",
+        "project",
+        "operation",
+        "path",
+        "started_at",
+        "finished_at",
+        "precondition",
+        "before",
+        "after",
+        "status",
+        "replayed",
+        "rollback_request_id",
+        "revocation_request_id",
+        "error",
+    }
+)
+_PUBLIC_STATUSES = frozenset(
+    {"PASS", "REFUSED", "CONFLICT", "FAILED", "TIMEOUT", "ROLLED_BACK", "REVOKED"}
+)
+_REQUEST_FIELDS = frozenset(
+    {"protocol", "request_id", "mission_id", "declared_actor", "project", "operation", "arguments"}
+)
+_PROJECT_FIELDS = frozenset({"tenant", "name", "environment"})
+_REQUEST_ID = re.compile(r"^[A-Z0-9][A-Z0-9-]{0,127}$")
+_GRANT_ID = re.compile(r"^[A-Z0-9][A-Z0-9-]{0,127}$")
+_ERROR_CODE = re.compile(r"^[a-z0-9_]{1,128}$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+
+
+class ProcessOutcome(NamedTuple):
+    returncode: int | None
+    stdout: bytes
+    stderr: bytes
+    error: str | None
+
+
+def _failure(code: str) -> dict[str, str]:
+    return {"error": code, "status": "REFUSED"}
+
+
+def resolve_posix_principal() -> dict[str, str | int]:
+    """Bind transport attribution to the effective local ubuntu identity."""
+    uid = os.geteuid()
+    gid = os.getegid()
+    if uid <= 0 or gid <= 0:
+        raise ValueError("invalid_posix_principal")
+    try:
+        effective = pwd.getpwuid(uid)
+        expected = pwd.getpwnam("ubuntu")
+    except (KeyError, OSError):
+        raise ValueError("invalid_posix_principal") from None
+    if (
+        effective.pw_name != _EXPECTED_ACCOUNT
+        or effective.pw_uid != uid
+        or effective.pw_gid != gid
+        or expected.pw_name != _EXPECTED_ACCOUNT
+        or expected.pw_uid != uid
+        or expected.pw_gid != gid
+    ):
+        raise ValueError("invalid_posix_principal")
+    return {"login": effective.pw_name, "actor_id": uid}
+
+
+def _encode_json(value: dict[str, Any], maximum_bytes: int) -> bytes:
+    try:
+        encoded = (
+            json.dumps(
+                value,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            )
+            + "\n"
+        ).encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError):
+        raise ValueError("invalid_json") from None
+    if len(encoded) > maximum_bytes:
+        raise ValueError("input_too_large")
+    return encoded
+
+
+def _canonical_request_digest(value: dict[str, Any]) -> str:
+    try:
+        encoded = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError):
+        raise ValueError("invalid_request") from None
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _validate_request(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != _REQUEST_FIELDS:
+        raise ValueError("invalid_request")
+    if (
+        value.get("protocol") != "MCF_WORKSPACE_MUTATION_V1"
+        or not isinstance(value.get("request_id"), str)
+        or _REQUEST_ID.fullmatch(value["request_id"]) is None
+        or value.get("mission_id") != "CONTROL-BRIDGE-G2B-PILOT"
+        or value.get("declared_actor") != "MESTRE_MCF"
+        or not isinstance(value.get("arguments"), dict)
+    ):
+        raise ValueError("invalid_request")
+    project = value.get("project")
+    if (
+        not isinstance(project, dict)
+        or set(project) != _PROJECT_FIELDS
+        or project
+        != {"tenant": "leon337", "name": "g2a-smoke", "environment": "dev"}
+    ):
+        raise ValueError("invalid_request")
+    return value
+
+
+def _read_request() -> dict[str, Any]:
+    try:
+        descriptor = sys.stdin.buffer.fileno()
+    except (AttributeError, OSError, ValueError):
+        raise ValueError("invalid_input_stream") from None
+    raw = bytearray()
+    deadline = time.monotonic() + _INPUT_TIMEOUT_SECONDS
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ValueError("input_timeout")
+        try:
+            readable, _, _ = select.select([descriptor], [], [], remaining)
+        except InterruptedError:
+            continue
+        except (OSError, ValueError):
+            raise ValueError("invalid_input_stream") from None
+        if not readable:
+            raise ValueError("input_timeout")
+        try:
+            chunk = os.read(
+                descriptor,
+                min(4096, (_MAX_INPUT_BYTES + 1) - len(raw)),
+            )
+        except InterruptedError:
+            continue
+        except OSError:
+            raise ValueError("invalid_input_stream") from None
+        if not chunk:
+            break
+        raw.extend(chunk)
+        if len(raw) > _MAX_INPUT_BYTES:
+            raise ValueError("input_too_large")
+    try:
+        value = json.loads(
+            bytes(raw).decode("utf-8"),
+            parse_constant=lambda _value: (_ for _ in ()).throw(ValueError()),
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+        raise ValueError("invalid_json") from None
+    if not isinstance(value, dict):
+        raise ValueError("invalid_request")
+    return value
+
+
+def _drain_pipe(stream: Any, output: bytearray, overflow: threading.Event) -> None:
+    try:
+        descriptor = stream.fileno()
+        while True:
+            chunk = os.read(descriptor, 4096)
+            if not chunk:
+                return
+            remaining = _MAX_RESULT_BYTES - len(output)
+            if remaining > 0:
+                output.extend(chunk[:remaining])
+            if len(chunk) > remaining:
+                overflow.set()
+                return
+    except (OSError, ValueError):
+        return
+
+
+def _write_stdin(stream: Any, payload: bytes) -> None:
+    try:
+        descriptor = stream.fileno()
+        remaining = memoryview(payload)
+        while remaining:
+            written = os.write(descriptor, remaining)
+            if written <= 0:
+                return
+            remaining = remaining[written:]
+    except (BrokenPipeError, OSError, ValueError):
+        pass
+    finally:
+        try:
+            stream.close()
+        except OSError:
+            pass
+
+
+def _signal_process_group(process: subprocess.Popen[bytes], selected_signal: int) -> None:
+    try:
+        os.killpg(process.pid, selected_signal)
+    except (OSError, ProcessLookupError):
+        try:
+            if selected_signal == signal.SIGTERM:
+                process.terminate()
+            else:
+                process.kill()
+        except OSError:
+            pass
+
+
+def _process_group_exists(process: subprocess.Popen[bytes]) -> bool:
+    try:
+        os.killpg(process.pid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return True
+    return True
+
+
+def _terminate_kill_reap(process: subprocess.Popen[bytes]) -> None:
+    _signal_process_group(process, signal.SIGTERM)
+    deadline = time.monotonic() + _TERMINATE_GRACE_SECONDS
+    while _process_group_exists(process) and time.monotonic() < deadline:
+        process.poll()
+        time.sleep(_WAIT_SLICE_SECONDS)
+    if _process_group_exists(process):
+        _signal_process_group(process, signal.SIGKILL)
+    process.wait()
+
+
+def _join_threads_until(threads: list[threading.Thread], deadline: float) -> bool:
+    for thread in threads:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        thread.join(remaining)
+    return all(not thread.is_alive() for thread in threads)
+
+
+def run_bounded_process(
+    argv: list[str], payload: bytes, *, timeout_seconds: float
+) -> ProcessOutcome:
+    if (
+        not isinstance(argv, list)
+        or not argv
+        or any(not isinstance(item, str) or not item for item in argv)
+        or not isinstance(payload, bytes)
+        or not isinstance(timeout_seconds, (int, float))
+        or isinstance(timeout_seconds, bool)
+        or not 0 < timeout_seconds <= _TIMEOUT_SECONDS
+    ):
+        return ProcessOutcome(None, b"", b"", "executor_invocation_failed")
+    try:
+        process = subprocess.Popen(
+            argv,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            env=_EXECUTOR_ENV,
+            start_new_session=True,
+            close_fds=True,
+        )
+    except OSError:
+        return ProcessOutcome(None, b"", b"", "executor_invocation_failed")
+
+    assert process.stdin is not None
+    assert process.stdout is not None
+    assert process.stderr is not None
+    stdout = bytearray()
+    stderr = bytearray()
+    overflow = threading.Event()
+    threads = [
+        threading.Thread(target=_drain_pipe, args=(process.stdout, stdout, overflow), daemon=True),
+        threading.Thread(target=_drain_pipe, args=(process.stderr, stderr, overflow), daemon=True),
+        threading.Thread(target=_write_stdin, args=(process.stdin, payload), daemon=True),
+    ]
+    for thread in threads:
+        thread.start()
+
+    error: str | None = None
+    deadline = time.monotonic() + timeout_seconds
+    try:
+        while process.poll() is None:
+            if overflow.is_set():
+                error = "executor_output_too_large"
+                break
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                error = "executor_timeout"
+                break
+            overflow.wait(min(_WAIT_SLICE_SECONDS, remaining))
+        if error is not None:
+            _terminate_kill_reap(process)
+        else:
+            process.wait()
+    except BaseException:
+        _terminate_kill_reap(process)
+        error = "executor_invocation_failed"
+    finally:
+        join_deadline = deadline if error is None else time.monotonic() + _TERMINATE_GRACE_SECONDS
+        if not _join_threads_until(threads, join_deadline):
+            if error is None:
+                error = "executor_timeout"
+            _terminate_kill_reap(process)
+        for stream in (process.stdin, process.stdout, process.stderr):
+            try:
+                stream.close()
+            except OSError:
+                pass
+        _join_threads_until(threads, time.monotonic() + _TERMINATE_GRACE_SECONDS)
+        if process.poll() is None:
+            _terminate_kill_reap(process)
+
+    if overflow.is_set():
+        error = "executor_output_too_large"
+    return ProcessOutcome(process.returncode, bytes(stdout), bytes(stderr), error)
+
+
+def _validate_public_result(
+    value: Any,
+    request: dict[str, Any],
+    principal: dict[str, str | int],
+) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != _PUBLIC_RESULT_FIELDS:
+        raise ValueError("invalid_executor_result")
+    authority = value.get("authority")
+    grant_id = value.get("grant_id")
+    error = value.get("error")
+    path = value.get("path")
+    if (
+        value.get("protocol") != "MCF_WORKSPACE_MUTATION_RESULT_V1"
+        or value.get("request_id") != request.get("request_id")
+        or value.get("request_digest") != _canonical_request_digest(request)
+        or value.get("mission_id") != request.get("mission_id")
+        or value.get("declared_actor") != request.get("declared_actor")
+        or value.get("transport_principal") != principal
+        or value.get("project") != request.get("project")
+        or value.get("operation") != request.get("operation")
+        or value.get("status") not in _PUBLIC_STATUSES
+        or not isinstance(value.get("replayed"), bool)
+        or authority not in {None, "LEANDRO"}
+        or (
+            grant_id is not None
+            and (
+                not isinstance(grant_id, str)
+                or _GRANT_ID.fullmatch(grant_id) is None
+            )
+        )
+        or (authority is None) != (grant_id is None)
+        or path not in {None, "G2B-PILOT.txt"}
+        or (
+            error is not None
+            and (
+                not isinstance(error, str)
+                or _ERROR_CODE.fullmatch(error) is None
+            )
+        )
+        or not _valid_public_state(value.get("before"))
+        or not _valid_public_state(value.get("after"))
+        or not _valid_precondition(value.get("precondition"))
+        or not _valid_optional_request_id(value.get("rollback_request_id"))
+        or not _valid_optional_request_id(value.get("revocation_request_id"))
+        or not _valid_public_timestamps(
+            value.get("started_at"), value.get("finished_at")
+        )
+    ):
+        raise ValueError("invalid_executor_result")
+    return value
+
+
+def _valid_public_state(value: Any) -> bool:
+    if value is None:
+        return True
+    if not isinstance(value, dict) or set(value) != {"exists", "size", "mode", "sha256"}:
+        return False
+    exists = value.get("exists")
+    if not isinstance(exists, bool):
+        return False
+    if not exists:
+        return all(value.get(field) is None for field in ("size", "mode", "sha256"))
+    size = value.get("size")
+    digest = value.get("sha256")
+    return (
+        isinstance(size, int)
+        and not isinstance(size, bool)
+        and 0 <= size <= 65_536
+        and value.get("mode") in {384, 416, 420}
+        and isinstance(digest, str)
+        and _SHA256.fullmatch(digest) is not None
+    )
+
+
+def _valid_precondition(value: Any) -> bool:
+    if value is None:
+        return True
+    if not isinstance(value, dict):
+        return False
+    if value == {"state": "ABSENT"}:
+        return True
+    digest = value.get("sha256")
+    return (
+        set(value) == {"sha256"}
+        and isinstance(digest, str)
+        and _SHA256.fullmatch(digest) is not None
+    )
+
+
+def _valid_optional_request_id(value: Any) -> bool:
+    return value is None or (
+        isinstance(value, str) and _REQUEST_ID.fullmatch(value) is not None
+    )
+
+
+def _valid_public_timestamps(started: Any, finished: Any) -> bool:
+    if started is None or finished is None:
+        return started is None and finished is None
+    if (
+        not isinstance(started, str)
+        or not isinstance(finished, str)
+        or len(started) > 32
+        or len(finished) > 32
+    ):
+        return False
+    try:
+        parsed_started = datetime.fromisoformat(started)
+        parsed_finished = datetime.fromisoformat(finished)
+    except ValueError:
+        return False
+    return (
+        parsed_started.tzinfo == timezone.utc
+        and parsed_finished.tzinfo == timezone.utc
+        and parsed_started.isoformat() == started
+        and parsed_finished.isoformat() == finished
+        and parsed_started <= parsed_finished
+    )
+
+
+def execute_request_only(
+    request: dict[str, Any], command: str
+) -> tuple[int, dict[str, Any]]:
+    try:
+        request = _validate_request(request)
+    except ValueError:
+        return 2, _failure("invalid_request")
+    operation = request.get("operation")
+    if operation not in _COMMAND_BY_OPERATION:
+        return 2, _failure("unknown_operation")
+    if command != _COMMAND_BY_OPERATION[operation]:
+        return 2, _failure("operation_mismatch")
+    try:
+        principal = resolve_posix_principal()
+        payload = _encode_json(
+            {"transport_principal": principal, "request": request},
+            _MAX_INPUT_BYTES,
+        )
+    except ValueError as error:
+        return 2, _failure(str(error))
+
+    outcome = run_bounded_process(
+        [_SUDO, "-n", "-u", "mcf-workspace", _EXECUTOR, command],
+        payload,
+        timeout_seconds=_TIMEOUT_SECONDS,
+    )
+    if outcome.error is not None:
+        return 2, _failure(outcome.error)
+    if outcome.returncode != 0:
+        return 2, _failure("executor_boundary_failed")
+    if outcome.stderr:
+        return 2, _failure("invalid_executor_result")
+    try:
+        if len(outcome.stdout) > _MAX_RESULT_BYTES:
+            raise ValueError("invalid_executor_result")
+        result = json.loads(
+            outcome.stdout.decode("utf-8"),
+            parse_constant=lambda _value: (_ for _ in ()).throw(ValueError()),
+        )
+        return 0, _validate_public_result(result, request, principal)
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+        return 2, _failure("invalid_executor_result")
+
+
+def _emit(value: dict[str, Any]) -> None:
+    try:
+        encoded = _encode_json(value, _MAX_RESULT_BYTES)
+    except ValueError:
+        encoded = b'{"error":"adapter_failure","status":"REFUSED"}\n'
+    sys.stdout.write(encoded.decode("utf-8"))
+
+
+def main() -> int:
+    try:
+        os.environ.clear()
+        if len(sys.argv) != 2 or sys.argv[1] not in _COMMAND_BY_OPERATION.values():
+            raise ValueError("invalid_invocation")
+        request = _read_request()
+        code, result = execute_request_only(request, sys.argv[1])
+    except ValueError as error:
+        code, result = 2, _failure(str(error))
+    except BaseException:
+        code, result = 2, _failure("adapter_failure")
+    try:
+        _emit(result)
+    except BaseException:
+        return 2
+    return code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

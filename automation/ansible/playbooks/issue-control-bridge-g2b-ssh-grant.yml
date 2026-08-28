@@ -1,0 +1,8 @@
+---
+# Separate HUMAN_GATE entrypoint for the direct SSH transport. The imported
+# issuer still enforces the same fixed 24-hour pilot scope, active-grant gate,
+# irreversible revocation history, exact installed hashes, and atomic grant
+# write. This wrapper changes only the reviewed transport identity profile.
+- ansible.builtin.import_playbook: issue-control-bridge-g2b-grant.yml
+  vars:
+    g2b_grant_transport_profile: ssh-posix-ubuntu
