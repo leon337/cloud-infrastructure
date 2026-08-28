@@ -1,0 +1,98 @@
+name: runner-isolation-proof
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runner-isolation-proof-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  seed:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.head_ref, 'runner/isolation-')
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    steps:
+      - name: Enforce runner isolation before seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
+
+      - name: Launch tracked detached probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          state_dir="$HOME/.local/state/runner-isolation"
+          state_file="$state_dir/cross-job-proof.state"
+          install -d -m 700 "$state_dir"
+          rm -f "$state_file"
+
+          nohup setsid bash -c 'exec -a runner-isolation-probe sleep 120' \
+            > /dev/null 2>&1 < /dev/null &
+          pid=$!
+          sleep 0.5
+          kill -0 "$pid"
+          cmd=$(tr '\0' ' ' < "/proc/$pid/cmdline")
+          [[ "$cmd" == *runner-isolation-probe* ]]
+          start_ticks=$(awk '{print $22}' "/proc/$pid/stat")
+          printf '%s %s\n' "$pid" "$start_ticks" > "$state_file"
+          chmod 600 "$state_file"
+          echo "RUNNER_ISOLATION_SEED=PASS pid=$pid"
+
+  verify:
+    needs: seed
+    if: >-
+      always() &&
+      (github.event_name == 'workflow_dispatch' ||
+       startsWith(github.head_ref, 'runner/isolation-'))
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    steps:
+      - name: Enforce runner isolation before verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
+
+      - name: Verify detached probe did not cross jobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          state_file="$HOME/.local/state/runner-isolation/cross-job-proof.state"
+          [[ -f "$state_file" ]] || { echo 'RUNNER_ISOLATION_CROSS_JOB=FAIL reason=state_missing'; exit 1; }
+          read -r pid expected_ticks < "$state_file"
+          residue=0
+          if kill -0 "$pid" 2>/dev/null && [[ -r "/proc/$pid/stat" ]]; then
+            actual_ticks=$(awk '{print $22}' "/proc/$pid/stat")
+            if [[ "$actual_ticks" == "$expected_ticks" ]]; then
+              cmd=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)
+              if [[ "$cmd" == *runner-isolation-probe* ]]; then
+                residue=1
+                kill -TERM "$pid" 2>/dev/null || true
+                sleep 0.5
+                kill -KILL "$pid" 2>/dev/null || true
+              fi
+            fi
+          fi
+          rm -f "$state_file"
+          if ((residue != 0)); then
+            echo "RUNNER_ISOLATION_CROSS_JOB=FAIL reason=tracked_process_survived pid=$pid"
+            exit 1
+          fi
+          echo 'RUNNER_ISOLATION_CROSS_JOB=PASS'
+
+      - name: Enforce runner isolation after verification
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"

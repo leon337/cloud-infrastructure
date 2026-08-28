@@ -59,6 +59,15 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertFalse(toolchain["g2b_functional_code_imported"])
         self.assertFalse(toolchain["f1_2c_functional_code_imported"])
 
+    def test_runner_isolation_state_is_verified_with_hook_restart_pending(self):
+        runner = self.state["runner_isolation"]
+        self.assertEqual(runner["status"], "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING")
+        self.assertEqual(runner["live_cleanup"], "PASS")
+        self.assertEqual(runner["cross_job_proof"], "PASS")
+        self.assertEqual(runner["workflow_policy"], "PASS")
+        self.assertEqual(runner["global_hook"], "CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE")
+        self.assertEqual(self.state["project"]["next_exact_step"], "SSH_KEY_GOVERNANCE_P1")
+
 
 if __name__ == "__main__":
     unittest.main()

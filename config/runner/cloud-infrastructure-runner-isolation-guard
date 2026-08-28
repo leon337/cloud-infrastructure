@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+home_dir=${RUNNER_ISOLATION_HOME:-$HOME}
+runtime_dir=${RUNNER_ISOLATION_RUNTIME_DIR:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}}
+target="$home_dir/.local/bin/mcf-mission2-terminal.py"
+pid_file="$home_dir/.local/state/mcf-mission2-terminal.pid"
+socket_path="$runtime_dir/mcf-mission2-terminal.sock"
+uid=$(id -u)
+
+is_target_pid() {
+  local pid=$1 cmd=''
+  [[ $pid =~ ^[0-9]+$ ]] || return 1
+  [[ -r "/proc/$pid/cmdline" ]] || return 1
+  cmd=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)
+  [[ "$cmd" == *"$target"* ]]
+}
+
+terminate_target() {
+  local pid=$1
+  if ! is_target_pid "$pid"; then
+    return 0
+  fi
+  kill -TERM "$pid" 2>/dev/null || true
+  for _ in $(seq 1 30); do
+    if ! kill -0 "$pid" 2>/dev/null; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  if is_target_pid "$pid"; then
+    kill -KILL "$pid" 2>/dev/null || true
+  fi
+}
+
+if [[ -f "$pid_file" ]]; then
+  pid=$(cat "$pid_file" 2>/dev/null || true)
+  terminate_target "$pid"
+fi
+
+while IFS= read -r pid; do
+  [[ -n "$pid" ]] || continue
+  if is_target_pid "$pid"; then
+    terminate_target "$pid"
+  fi
+done < <(pgrep -u "$uid" -f 'mcf-mission2-terminal\.py' 2>/dev/null || true)
+
+rm -f -- "$socket_path" "$pid_file"
+
+residual=0
+if [[ -S "$socket_path" ]]; then
+  echo "RUNNER_ISOLATION_GUARD_FAIL reason=socket_residue path=$socket_path" >&2
+  residual=1
+fi
+while IFS= read -r pid; do
+  [[ -n "$pid" ]] || continue
+  if is_target_pid "$pid"; then
+    echo "RUNNER_ISOLATION_GUARD_FAIL reason=process_residue pid=$pid" >&2
+    residual=1
+  fi
+done < <(pgrep -u "$uid" -f 'mcf-mission2-terminal\.py' 2>/dev/null || true)
+
+if ((residual != 0)); then
+  exit 1
+fi
+
+echo 'RUNNER_ISOLATION_GUARD_PASS'

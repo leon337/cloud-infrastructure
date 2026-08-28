@@ -22,6 +22,7 @@ class OffhostRecoveryContract(unittest.TestCase):
         self.assertIn("runtime_paths=(", text)
         self.assertNotIn("authorized_keys", text)
         self.assertNotIn("identity.json", text)
+        self.assertNotIn("mcf-mission2-terminal.py", text)
         self.assertIn("PRIVATE KEY", text)
         self.assertIn("RESTORE_SMOKE=PASS", text)
         self.assertIn("RECOVERY_P2=PASS", text)

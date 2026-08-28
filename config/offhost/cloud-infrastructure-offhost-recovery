@@ -42,7 +42,6 @@ runtime_paths=(
   usr/local/libexec/cloud-platform-network-enforcement
   usr/local/libexec/cloud-platform-network-services
   usr/local/libexec/mcf-hermes-operator
-  home/ubuntu/.local/bin/mcf-mission2-terminal.py
   home/ubuntu/.local/bin/mcf-ox-display10-bridge
   home/ubuntu/.local/bin/mcf-rdp-brave-newest-two
 )
