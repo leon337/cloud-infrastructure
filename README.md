@@ -260,10 +260,10 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
 - [ ] F7 segurança contínua, recovery integrado, rebuild drill e fechamento de
   findings.
 
-O roadmap técnico detalhado atualmente vive na branch de implementação em
-[`docs/45-revised-implementation-roadmap.md`](https://github.com/leon337/cloud-infrastructure/blob/codex/control-bridge-g2b/docs/45-revised-implementation-roadmap.md),
-e o checklist G2-B em
-[`ROADMAP-CHECKLIST.md`](https://github.com/leon337/cloud-infrastructure/blob/codex/control-bridge-g2b/ROADMAP-CHECKLIST.md).
+O estado operacional atual é acompanhado pelo checklist canônico
+[`ROADMAP-CHECKLIST.md`](ROADMAP-CHECKLIST.md). O roadmap técnico detalhado histórico
+continua disponível na lineage de implementação, mas não deve ser usado como fonte de
+estado atual quando divergir do checklist canônico ou de evidência GitHub/live.
 
 ## HUMAN_GATEs vigentes
 
@@ -271,7 +271,7 @@ e o checklist G2-B em
 - qualquer bootstrap/grant/write real da G2-B no NODE-01;
 - promoção para produção externa;
 - rotação de credenciais, enquanto a decisão de adiamento permanecer;
-- Management Network, backup off-host/recovery por classe e DNS/TLS conforme o
+- Management Network, full-image/provider recovery e DNS/TLS conforme o
   roadmap detalhado;
 - qualquer descarte de trabalho local que não esteja preservado por commit,
   patch ou backup verificável.

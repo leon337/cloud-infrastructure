@@ -41,7 +41,7 @@ def main() -> int:
         ("documentation_state",): "DOCUMENTATION_AND_INTEGRATION_DRIFT",
         ("continuity", "validation_entrypoint"): "scripts/test.sh",
         ("continuity", "active_mission_model", "status"): "NOT_ADOPTED",
-        ("continuity", "roadmap_checklist", "status"): "NOT_ADOPTED",
+        ("continuity", "roadmap_checklist", "status"): "ADOPTED",
         ("project", "integration_status"): "DOCUMENTATION_AND_INTEGRATION_DRIFT",
         ("platform", "f1_2c", "status"): "REQUIRES_REVIEW",
         ("platform", "f1_2c", "accepted"): False,

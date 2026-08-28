@@ -13,6 +13,12 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(self.state["canonical_repository"], "leon337/cloud-infrastructure")
         self.assertEqual(self.state["canonical_branch"], "main")
 
+    def test_roadmap_checklist_is_adopted(self):
+        roadmap = self.state["continuity"]["roadmap_checklist"]
+        self.assertEqual(roadmap["status"], "ADOPTED")
+        self.assertEqual(roadmap["file"], "ROADMAP-CHECKLIST.md")
+        self.assertTrue(Path(roadmap["file"]).is_file())
+
     def test_future_state_is_not_promoted(self):
         f1 = self.state["platform"]["f1_2c"]
         self.assertEqual(f1["status"], "REQUIRES_REVIEW")

@@ -66,7 +66,7 @@ O executor canônico de integração também preserva o boundary F1.1: GitHub-ho
 
 `state/active-mission.yaml` permanece `NOT_ADOPTED`: sua lineage G2-B modela uma missão ativa única, enquanto o projeto possui frentes isoladas paralelas.
 
-`ROADMAP-CHECKLIST.md` permanece `NOT_ADOPTED`: sua origem comprovada é um checkpoint específico da Task 8 G2-B. `README.md` permanece a projeção executiva.
+`ROADMAP-CHECKLIST.md` está `ADOPTED` como nova projeção operacional canônica. Ele não importa o antigo checklist G2-B como verdade atual; a superfície foi reconstruída a partir de evidência GitHub/live e deve ser atualizada por toda missão que alterar estado. `state/active-mission.yaml` permanece separado e `NOT_ADOPTED`.
 
 ## Guardrails
 

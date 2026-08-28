@@ -10,9 +10,11 @@ class ToolchainContractTests(unittest.TestCase):
         self.assertTrue(os.access(path, os.X_OK), "scripts/test.sh must be executable")
         self.assertTrue(path.read_text(encoding="utf-8").startswith("#!/usr/bin/env bash\n"))
 
-    def test_mainline_neutral_continuity_decisions(self):
+    def test_mainline_continuity_decisions(self):
         self.assertFalse(Path("state/active-mission.yaml").exists())
-        self.assertFalse(Path("ROADMAP-CHECKLIST.md").exists())
+        roadmap = Path("ROADMAP-CHECKLIST.md")
+        self.assertTrue(roadmap.is_file())
+        self.assertIn("CANONICAL_OPERATIONAL_CHECKLIST", roadmap.read_text(encoding="utf-8"))
 
     def test_canonical_ci_preserves_hosted_integration_boundary(self):
         workflow = Path(".github/workflows/canonical-validation.yml").read_text(encoding="utf-8")
