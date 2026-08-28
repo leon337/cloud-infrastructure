@@ -30,6 +30,8 @@ def main() -> int:
     state = yaml.safe_load(Path("state/current.yaml").read_text(encoding="utf-8"))
 
     for token in (
+        "CANONICAL_EXECUTIVE_PANEL_IMPLEMENTACAO_DA_VPS",
+        "Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**",
         "TASK_8_FAILED_ATTEMPT_3",
         "DOCUMENTATION_AND_INTEGRATION_DRIFT",
         "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED",
@@ -57,9 +59,27 @@ def main() -> int:
     if roadmap["status"] == "ADOPTED":
         if not roadmap_path.is_file():
             raise AssertionError("adopted ROADMAP-CHECKLIST.md is missing")
-        require_token(roadmap_path, "CANONICAL_OPERATIONAL_CHECKLIST")
+        require_token(roadmap_path, "IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST")
+        require_token(roadmap_path, "subordinado ao `README.md`")
+        if "<!-- CANONICAL_OPERATIONAL_CHECKLIST -->" in roadmap_path.read_text(encoding="utf-8"):
+            raise AssertionError("roadmap must not self-declare as canonical executive authority")
+        if roadmap.get("authority") != "SUBORDINATE_TO_README_EXECUTIVE_PANEL":
+            raise AssertionError("roadmap authority must remain subordinate to README executive panel")
+        if roadmap.get("scope") != "IMPLEMENTACAO_DA_VPS_ONLY":
+            raise AssertionError("roadmap scope must remain IMPLEMENTACAO_DA_VPS_ONLY")
     elif roadmap["status"] != "NOT_ADOPTED":
         raise AssertionError(f"unexpected roadmap checklist status: {roadmap['status']!r}")
+
+
+    freshness = state["freshness"]
+    if freshness.get("canonical_executive_panel") != "README.md":
+        raise AssertionError("README.md must remain the canonical executive panel")
+    if freshness.get("mission_operational_checklist") != "ROADMAP-CHECKLIST.md":
+        raise AssertionError("mission operational checklist drift")
+    if freshness.get("checklist_scope") != "IMPLEMENTACAO_DA_VPS_ONLY":
+        raise AssertionError("mission checklist scope drift")
+    if state["source_snapshot"]["main"].get("executive_projection") != "README.md":
+        raise AssertionError("source snapshot executive projection must remain README.md")
 
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

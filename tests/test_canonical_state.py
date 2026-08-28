@@ -13,11 +13,19 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(self.state["canonical_repository"], "leon337/cloud-infrastructure")
         self.assertEqual(self.state["canonical_branch"], "main")
 
-    def test_roadmap_checklist_is_adopted(self):
+    def test_document_authority_hierarchy(self):
+        freshness = self.state["freshness"]
+        self.assertEqual(freshness["canonical_executive_panel"], "README.md")
+        self.assertEqual(freshness["mission_operational_checklist"], "ROADMAP-CHECKLIST.md")
+        self.assertEqual(freshness["checklist_scope"], "IMPLEMENTACAO_DA_VPS_ONLY")
+
         roadmap = self.state["continuity"]["roadmap_checklist"]
         self.assertEqual(roadmap["status"], "ADOPTED")
         self.assertEqual(roadmap["file"], "ROADMAP-CHECKLIST.md")
+        self.assertEqual(roadmap["authority"], "SUBORDINATE_TO_README_EXECUTIVE_PANEL")
+        self.assertEqual(roadmap["scope"], "IMPLEMENTACAO_DA_VPS_ONLY")
         self.assertTrue(Path(roadmap["file"]).is_file())
+        self.assertEqual(self.state["source_snapshot"]["main"]["executive_projection"], "README.md")
 
     def test_future_state_is_not_promoted(self):
         f1 = self.state["platform"]["f1_2c"]

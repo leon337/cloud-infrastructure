@@ -1,14 +1,15 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: governance/canonical-roadmap-checklist-20260828
-updated_at: "2026-08-28T07:40:00-03:00"
-state_classification: CURRENT_CHECKLIST_ADOPTED_WITH_LEGACY_SUBSECTIONS
+candidate_branch: governance/fix-readme-authority-20260828
+updated_at: "2026-08-28T08:00:00-03:00"
+state_classification: CURRENT_MISSION_DOCUMENT_HIERARCHY_RECONCILED_WITH_LEGACY_SUBSECTIONS
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 freshness:
-  canonical_operational_checklist: ROADMAP-CHECKLIST.md
-  checklist_status: CURRENT_AS_OF_UPDATED_AT
+  canonical_executive_panel: README.md
+  mission_operational_checklist: ROADMAP-CHECKLIST.md
+  checklist_scope: IMPLEMENTACAO_DA_VPS_ONLY
   legacy_subsections: HISTORICAL_UNTIL_RECONCILED
   github_live_overrides_mutable_fields: true
 
@@ -26,15 +27,18 @@ continuity:
   roadmap_checklist:
     file: ROADMAP-CHECKLIST.md
     status: ADOPTED
-    reason: CANONICAL_OPERATIONAL_CHECKLIST_ADOPTED_2026_08_28
-    update_rule: EACH_STATE_CHANGING_MISSION_UPDATES_CHECKLIST_BEFORE_CLOSEOUT
+    reason: IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST_ADOPTED_2026_08_28
+    authority: SUBORDINATE_TO_README_EXECUTIVE_PANEL
+    scope: IMPLEMENTACAO_DA_VPS_ONLY
+    update_rule: STATE_CHANGING_SUBMISSIONS_WITHIN_MISSION_UPDATE_CHECKLIST_BEFORE_CLOSEOUT
 
 source_snapshot:
   main:
-    sha: bbdc7b2a3874af75424680c49aed3cbcb8d63bcb
-    baseline_before_checklist_adoption: true
-    latest_integrated_pr: 28
-    executive_projection: ROADMAP-CHECKLIST.md
+    sha: f06cebd1998300e2b85126ffc88349b4253ea3b3
+    baseline_before_hierarchy_correction: true
+    latest_integrated_pr: 29
+    executive_projection: README.md
+    operational_checklist: ROADMAP-CHECKLIST.md
   executable_evidence:
     node01_read_only_audit_run: 32577551012
     g2b_attempt3_read_only_audit_run: 32577815107
@@ -111,7 +115,7 @@ control_bridge:
 
 remote_vps:
   observation_class: HISTORICAL_READ_ONLY_SNAPSHOT
-  superseded_for_current_operations_by: ROADMAP-CHECKLIST.md
+  superseded_for_current_operations_by: GITHUB_PROVIDER_LIVE_EVIDENCE
   observed_at_utc: "2026-08-22T14:03:22Z"
   source_run: 32577551012
   status: OPERATIONAL_WITH_OPEN_INCIDENTS

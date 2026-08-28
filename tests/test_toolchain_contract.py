@@ -10,11 +10,16 @@ class ToolchainContractTests(unittest.TestCase):
         self.assertTrue(os.access(path, os.X_OK), "scripts/test.sh must be executable")
         self.assertTrue(path.read_text(encoding="utf-8").startswith("#!/usr/bin/env bash\n"))
 
-    def test_mainline_continuity_decisions(self):
+    def test_document_authority_hierarchy_is_explicit(self):
         self.assertFalse(Path("state/active-mission.yaml").exists())
-        roadmap = Path("ROADMAP-CHECKLIST.md")
-        self.assertTrue(roadmap.is_file())
-        self.assertIn("CANONICAL_OPERATIONAL_CHECKLIST", roadmap.read_text(encoding="utf-8"))
+        readme = Path("README.md").read_text(encoding="utf-8")
+        roadmap_path = Path("ROADMAP-CHECKLIST.md")
+        self.assertTrue(roadmap_path.is_file())
+        roadmap = roadmap_path.read_text(encoding="utf-8")
+        self.assertIn("CANONICAL_EXECUTIVE_PANEL_IMPLEMENTACAO_DA_VPS", readme)
+        self.assertIn("IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST", roadmap)
+        self.assertIn("subordinado ao `README.md`", roadmap)
+        self.assertNotIn("<!-- CANONICAL_OPERATIONAL_CHECKLIST -->", roadmap)
 
     def test_canonical_ci_preserves_hosted_integration_boundary(self):
         workflow = Path(".github/workflows/canonical-validation.yml").read_text(encoding="utf-8")

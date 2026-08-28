@@ -4,6 +4,8 @@ Este arquivo é a entrada obrigatória para qualquer IA, agente ou humano que as
 
 ## Regra de verdade
 
+Hierarquia documental: `README.md` é o painel executivo canônico da missão; `ROADMAP-CHECKLIST.md` é seu checklist operacional detalhado; `state/current.yaml` é a projeção estruturada; este arquivo fornece contexto e entrada.
+
 Use esta precedência para qualquer decisão operacional:
 
 1. instrução explícita atual de LEANDRO;
@@ -66,7 +68,7 @@ O executor canônico de integração também preserva o boundary F1.1: GitHub-ho
 
 `state/active-mission.yaml` permanece `NOT_ADOPTED`: sua lineage G2-B modela uma missão ativa única, enquanto o projeto possui frentes isoladas paralelas.
 
-`ROADMAP-CHECKLIST.md` está `ADOPTED` como nova projeção operacional canônica. Ele não importa o antigo checklist G2-B como verdade atual; a superfície foi reconstruída a partir de evidência GitHub/live e deve ser atualizada por toda missão que alterar estado. `state/active-mission.yaml` permanece separado e `NOT_ADOPTED`.
+`ROADMAP-CHECKLIST.md` está `ADOPTED` como checklist operacional detalhado da missão **IMPLEMENTAÇÃO DA VPS**, subordinado ao `README.md`. O README permanece o painel executivo canônico e consolidado; o checklist não constitui uma autoridade concorrente nem se estende ao MCF como projeto separado. `state/active-mission.yaml` permanece separado e `NOT_ADOPTED`.
 
 ## Guardrails
 
