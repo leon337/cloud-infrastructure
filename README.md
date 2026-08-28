@@ -28,10 +28,17 @@ por histórico do `ubuntu` e auth log. LEANDRO confirmou que essa chave é usada
 real de abertura/acesso à VPS pelo notebook. O fallback independente permanece apenas
 como contingência; `authorized_keys` segue inalterado e a chave deve ser preservada.
 
+**F1.2c rollout gate em 28/08/2026:** o estado parcial live foi classificado como
+`PARTIAL_FIRST_APPLY`. O recovery fail-closed foi validado no candidato exato
+`81a5f3571d66d9764d9c70f8071367f5094fbc05`: static/ShellCheck run `33191612674` e
+KVM run `33191612729` passaram; a PR #35 foi integrada na lineage de correção em
+`2575bdaa99b195d756386ff9e923e05231b9aa17`. O NODE-01 não foi alterado e o reapply
+continua `NOT_AUTHORIZED`, aguardando `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
+
 | Área | Estado reconciliado | Resumo |
 |---|---|---|
 | VPS / NODE-01 | `OPERATIONAL_WITH_OPEN_INCIDENTS` | host acessível pelo runner, serviços essenciais ativos e uma unit F1.2c em `failed` |
-| Plataforma privada | `IMPLEMENTATION_IN_PROGRESS` | S0, F1.1 e F1.2b concluídos; F1.2c parcial |
+| Plataforma privada | `IMPLEMENTATION_IN_PROGRESS` | S0, F1.1 e F1.2b concluídos; recovery F1.2c validado, rollout live ainda pendente de gate |
 | Control Bridge G1 | `PASS_REAL_NODE_01_ROUNDTRIP` | transporte curto pelo runner comprovado |
 | Control Bridge G2-A | `PASS_REAL_NODE_01_READ_ONLY` | leitura confinada e recusa de escape comprovadas |
 | Control Bridge G2-B | `TASK_8_FAILED_ATTEMPT_3` | Tasks 1–7 concluídas; prova descartável completa ainda não passou |
@@ -84,12 +91,11 @@ Atualização live de **28/08/2026**: o PID `783478`, socket, PID file e source 
 #### INC-001 — F1.2c network services em `failed`
 
 - a base SSH/UFW/Docker/containerd continua ativa;
-- `cloud-platform-network-services.service` é a única unit falha observada;
-- a branch local correspondente contém correções não commitadas para espera
-  pós-restart e para o sandbox do runtime lock;
-- não reiniciar nem reaplicar às cegas: primeiro coletar `systemctl status`,
-  `journalctl`, estado do lock e containers/redes relacionados;
-- preservar o worktree atual antes de qualquer correção.
+- `cloud-platform-network-services.service` permanece `failed` no estado parcial observado;
+- marker F1.2c existe, helper/unit históricos foram reconhecidos e a árvore de configuração de serviços está ausente;
+- recovery fail-closed validado em `81a5f357...` e integrado à lineage em `2575bdaa...`;
+- nenhum write live foi executado durante a preparação;
+- não reaplicar sem preflight fresco e autorização explícita de LEANDRO.
 
 #### INC-002 — G2-B tentativa descartável 3 encerrada, guest ainda ligado
 
