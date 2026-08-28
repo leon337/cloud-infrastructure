@@ -7,6 +7,7 @@ RECOVERY = ROOT / "automation/mission-001/operations/recover-network-services-pa
 KVM_RUNNER = ROOT / "scripts/run_f1_2c_kvm_lab.sh"
 KVM_RECOVERY = ROOT / "scripts/test_node_network_services_partial_recovery_vm.sh"
 CI_WORKFLOW = ROOT / ".github/workflows/f1-2c-rollout-recovery-validation.yml"
+KVM_WORKFLOW = ROOT / ".github/workflows/f1-2c-rollout-recovery-kvm.yml"
 
 
 class F12CPartialRecoveryContractTests(unittest.TestCase):
@@ -59,6 +60,17 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertIn("fix/f1-2c-node01-rollout-recovery-20260828", text)
         self.assertIn("tests.test_f1_2c_partial_recovery_contract", text)
         self.assertNotIn("runs-on: [self-hosted", text)
+
+    def test_recovery_kvm_ci_is_hosted_exact_head_and_collects_evidence(self):
+        self.assertTrue(KVM_WORKFLOW.is_file(), "hosted KVM recovery workflow must exist")
+        text = KVM_WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("runs-on: ubuntu-24.04", text)
+        self.assertIn("github.event.pull_request.head.sha", text)
+        self.assertIn("scripts/run_f1_2c_kvm_lab.sh", text)
+        self.assertIn("/dev/kvm", text)
+        self.assertIn("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", text)
+        self.assertNotIn("self-hosted", text)
+        self.assertNotIn("node-01", text)
 
 
 if __name__ == "__main__":
