@@ -1,11 +1,16 @@
 # Cloud Infrastructure
 
+<!-- CANONICAL_EXECUTIVE_PANEL_IMPLEMENTACAO_DA_VPS -->
+
 Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 
-> Este README é o painel executivo consolidado. Ele separa estado observado,
-> evidência histórica e trabalho ainda não integrado. Para recuperar o contexto
-> completo, leia também [`CONTEXT.md`](CONTEXT.md), [`CHECKPOINT.md`](CHECKPOINT.md)
-> e [`state/current.yaml`](state/current.yaml).
+> Este README é o **painel executivo canônico e consolidado da missão IMPLEMENTAÇÃO DA VPS**.
+> Ele define a visão executiva, o escopo e a hierarquia documental da missão. O
+> [`ROADMAP-CHECKLIST.md`](ROADMAP-CHECKLIST.md) é um checklist operacional detalhado
+> subordinado a este painel — não uma fonte executiva concorrente. Para recuperar o
+> contexto completo, leia também [`CONTEXT.md`](CONTEXT.md), [`CHECKPOINT.md`](CHECKPOINT.md)
+> e [`state/current.yaml`](state/current.yaml). Evidência GitHub/provider/live continua
+> prevalecendo sobre documentação quando fatos mutáveis divergirem.
 
 ## Painel consolidado
 
@@ -260,10 +265,11 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
 - [ ] F7 segurança contínua, recovery integrado, rebuild drill e fechamento de
   findings.
 
-O estado operacional atual é acompanhado pelo checklist canônico
-[`ROADMAP-CHECKLIST.md`](ROADMAP-CHECKLIST.md). O roadmap técnico detalhado histórico
-continua disponível na lineage de implementação, mas não deve ser usado como fonte de
-estado atual quando divergir do checklist canônico ou de evidência GitHub/live.
+O detalhamento operacional da missão **IMPLEMENTAÇÃO DA VPS** é acompanhado em
+[`ROADMAP-CHECKLIST.md`](ROADMAP-CHECKLIST.md), subordinado a este painel executivo.
+O roadmap técnico detalhado histórico continua disponível na lineage de implementação,
+mas não deve ser usado como fonte de estado atual quando divergir deste README, do
+checklist da missão ou de evidência GitHub/provider/live.
 
 ## HUMAN_GATEs vigentes
 

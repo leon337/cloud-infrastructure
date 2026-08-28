@@ -1,27 +1,33 @@
-# ROADMAP-CHECKLIST — Estado operacional canônico da VPS
+# ROADMAP-CHECKLIST — Checklist operacional da missão IMPLEMENTAÇÃO DA VPS
 
-<!-- CANONICAL_OPERATIONAL_CHECKLIST -->
+<!-- IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST -->
 
-Atualizado em **28/08/2026 07:40 -03:00**.
+Atualizado em **28/08/2026 08:00 -03:00**.
 
-Este arquivo é a projeção operacional canônica do projeto `leon337/cloud-infrastructure`.
-Ele substitui, para acompanhamento de estado atual, o antigo checklist específico da
-lineage G2-B. Documentos históricos continuam preservados como evidência, mas não
-devem sobrescrever este checklist quando houver divergência com GitHub/live evidence.
+Este arquivo é o checklist operacional detalhado da missão **IMPLEMENTAÇÃO DA VPS** no
+repositório `leon337/cloud-infrastructure`. Ele é **subordinado ao `README.md`**, que
+permanece o painel executivo canônico e consolidado da missão. Este checklist não cria
+uma autoridade paralela e não se aplica ao MCF como projeto separado.
 
-## Regras de autoridade e atualização
+Ele substitui apenas, para acompanhamento operacional detalhado desta missão, o antigo
+checklist específico da lineage G2-B. Documentos históricos continuam preservados como
+evidência.
 
-Ordem de precedência para estado mutável:
+## Hierarquia e atualização
+
+Para decisões e fatos mutáveis, aplicar esta precedência:
 
 1. instrução atual explícita de LEANDRO;
-2. GitHub/provider/live evidence;
-3. este checklist, atualizado contra essa evidência;
-4. `state/current.yaml` e `CHECKPOINT.md`;
-5. documentos históricos.
+2. GitHub/provider/infraestrutura verificável ao vivo;
+3. evidência executável vinculada ao estado/SHA aplicável;
+4. `README.md` como painel executivo da missão;
+5. este checklist para detalhamento operacional da mesma missão;
+6. `state/current.yaml`, `CHECKPOINT.md` e `CONTEXT.md` como projeções de apoio;
+7. documentos históricos.
 
-**Regra de closeout:** toda missão que mudar o estado de um item deste checklist deve
-atualizar o próprio item e sua evidência no mesmo PR de integração ou em follow-up
-obrigatório antes de declarar o estado consolidado como atual.
+**Regra de closeout:** toda sub-missão da IMPLEMENTAÇÃO DA VPS que mudar o estado de
+um item deste checklist deve atualizar o item e sua evidência antes do closeout. Mudanças
+fora desta missão não devem ser inseridas aqui automaticamente.
 
 Legenda:
 
@@ -30,8 +36,8 @@ Legenda:
 - `[!]` bloqueado ou requer gate;
 - `NÃO VERIFICADO` significa que não há evidência suficiente para afirmar o estado.
 
-Baseline usada nesta reconciliação: `main@bbdc7b2a3874af75424680c49aed3cbcb8d63bcb`
-(PR #28 já integrada). O HEAD atual de `main` deve sempre ser confirmado no GitHub.
+Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88349b4253ea3b3`
+(PR #29 integrada). O HEAD atual de `main` deve sempre ser confirmado no GitHub.
 
 ## 1. Inventário e baseline
 
@@ -172,15 +178,16 @@ Baseline usada nesta reconciliação: `main@bbdc7b2a3874af75424680c49aed3cbcb8d6
 
 ## 12. Estado canônico e documentação
 
-- [x] `ROADMAP-CHECKLIST.md` adotado como projeção operacional canônica.
-- [x] `state/current.yaml` atualizado para reconhecer a adoção.
-- [x] `CHECKPOINT.md` atualizado para apontar este checklist como fonte operacional.
-- [x] CI passa a exigir checklist presente quando status for `ADOPTED`.
+- [x] `README.md` preservado como painel executivo canônico e consolidado da missão **IMPLEMENTAÇÃO DA VPS**.
+- [x] `ROADMAP-CHECKLIST.md` adotado somente como checklist operacional detalhado, subordinado ao README e restrito à missão.
+- [x] `state/current.yaml` codifica `README.md` como `canonical_executive_panel` e o checklist como `SUBORDINATE_TO_README_EXECUTIVE_PANEL`.
+- [x] `CHECKPOINT.md` classificado como checkpoint de continuidade, sem autoridade executiva concorrente.
+- [x] CI exige os marcadores distintos de README/checklist, o escopo `IMPLEMENTACAO_DA_VPS_ONLY` e rejeita a antiga autodeclaração `CANONICAL_OPERATIONAL_CHECKLIST`.
 - [ ] Reconciliar integralmente subseções históricas de `state/current.yaml` que ainda representam frentes antigas.
 - [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
 - [ ] Registrar ownership canônico dos runtimes live não pertencentes ao core Cloud.
 
-**Estado:** `CHECKLIST_CANONICALIZED_LEGACY_STATE_RECONCILIATION_PENDING`.
+**Estado:** `MISSION_DOCUMENT_HIERARCHY_RECONCILED_LEGACY_STATE_RECONCILIATION_PENDING`.
 
 ## 13. PR / branch hygiene
 

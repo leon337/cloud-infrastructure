@@ -1,17 +1,19 @@
-# CHECKPOINT — Estado operacional canônico
+# CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **28/08/2026** após a adoção formal do checklist operacional canônico.
+Atualizado em **28/08/2026** após correção da hierarquia documental.
 
-## Fonte operacional atual
+## Hierarquia documental
 
-- Checklist canônico: `ROADMAP-CHECKLIST.md`.
-- Baseline de reconciliação: `main@bbdc7b2a3874af75424680c49aed3cbcb8d63bcb`.
-- Última integração material antes desta governança: PR #28 / RECOVERY-P2.
+- Painel executivo canônico da missão: `README.md`.
+- Checklist operacional detalhado da missão: `ROADMAP-CHECKLIST.md` (subordinado ao README).
+- Estado estruturado: `state/current.yaml`.
+- Contexto narrativo/entrada: `CONTEXT.md`.
 - Entry point de validação: `scripts/test.sh`.
 - Produção continua fechada e exige `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` quando aplicável.
 
-O checklist deve ser atualizado em toda missão que altere o estado operacional. GitHub/live
-evidence continua tendo precedência sobre snapshots documentais para fatos mutáveis.
+Este arquivo é um **checkpoint de continuidade**. Ele não substitui o painel executivo do
+README nem transforma o checklist em autoridade concorrente. GitHub/provider/live evidence
+continua tendo precedência para fatos mutáveis.
 
 ## Estado atual resumido
 
