@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Cloud Infrastructure off-host recovery pull
+
+[Timer]
+OnCalendar=*-*-* 00:30:00
+Persistent=true
+RandomizedDelaySec=120
+Unit=cloud-infrastructure-offhost-recovery.service
+
+[Install]
+WantedBy=timers.target
