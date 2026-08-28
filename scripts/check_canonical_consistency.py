@@ -46,15 +46,15 @@ def main() -> int:
             "IN_PROGRESS_DIAGNOSTIC_REPRODUCTION",
             "REPOSITORY_HYGIENE_REVALIDATED",
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING",
-            "EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED",
-            "SSH_KEY_GOVERNANCE_P1_HUMAN_GATE",
+            "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
+            "F1_2C_NODE01_ROLLOUT_HUMAN_GATE",
         ):
             require_token(path, token)
 
     for path in (Path("README.md"), Path("ROADMAP-CHECKLIST.md")):
         require_token(path, "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING")
-        require_token(path, "EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED")
-        require_token(path, "SSH_KEY_GOVERNANCE_P1_HUMAN_GATE")
+        require_token(path, "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED")
+        require_token(path, "F1_2C_NODE01_ROLLOUT_HUMAN_GATE")
 
     active = state["continuity"]["active_mission_model"]
     if active["status"] == "NOT_ADOPTED" and Path(active["file"]).exists():
@@ -95,12 +95,16 @@ def main() -> int:
     if runner.get("global_hook") != "CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE":
         raise AssertionError("runner global hook boundary drift")
     ssh = state.get("ssh_key_governance", {})
-    if ssh.get("status") != "EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED":
+    if ssh.get("status") != "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED":
         raise AssertionError("ssh key governance state drift")
+    if ssh.get("dsh_key", {}).get("current_dependency") != "CONFIRMED_BY_LEANDRO_USER_WORKFLOW":
+        raise AssertionError("ssh key governance must preserve LEANDRO-confirmed current dependency")
+    if ssh.get("decision") != "KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW":
+        raise AssertionError("ssh key governance must keep current user workflow")
     if ssh.get("authorized_keys_changed") is not False:
-        raise AssertionError("ssh key governance must preserve authorized_keys before HUMAN_GATE")
-    if state["project"].get("next_exact_step") != "SSH_KEY_GOVERNANCE_P1_HUMAN_GATE":
-        raise AssertionError("next exact step drift at ssh key governance gate")
+        raise AssertionError("ssh key governance must preserve authorized_keys")
+    if state["project"].get("next_exact_step") != "F1_2C_NODE01_ROLLOUT_HUMAN_GATE":
+        raise AssertionError("next exact step drift after ssh key governance")
 
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

@@ -24,9 +24,9 @@ prova real entre dois jobs passou; o hook global do runner está configurado, ma
 permanece `CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE` até restart autorizado do serviço.
 
 **SSH key governance em 28/08/2026:** a provenance da `dsh-tunnel...` foi confirmada
-por histórico do `ubuntu` e auth log; nenhuma dependência atual foi observada e um
-fallback administrativo independente foi comprovado. `authorized_keys` permanece
-inalterado até HUMAN_GATE explícito.
+por histórico do `ubuntu` e auth log. LEANDRO confirmou que essa chave é usada no fluxo
+real de abertura/acesso à VPS pelo notebook. O fallback independente permanece apenas
+como contingência; `authorized_keys` segue inalterado e a chave deve ser preservada.
 
 | Área | Estado reconciliado | Resumo |
 |---|---|---|
@@ -36,7 +36,7 @@ inalterado até HUMAN_GATE explícito.
 | Control Bridge G2-A | `PASS_REAL_NODE_01_READ_ONLY` | leitura confinada e recusa de escape comprovadas |
 | Control Bridge G2-B | `TASK_8_FAILED_ATTEMPT_3` | Tasks 1–7 concluídas; prova descartável completa ainda não passou |
 | Runner isolation | `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING` | PoC persistente retirado; policy + guard canônicos e prova cross-job real passaram; hook global aguarda restart autorizado |
-| SSH key governance | `EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED` | `dsh-tunnel...` tem provenance confirmada e fallback independente; mudança da chave aguarda decisão humana |
+| SSH key governance | `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED` | `dsh-tunnel...` é usada no acesso notebook→VPS; manter a chave e preservar esse fluxo em qualquer hardening futuro |
 | GitHub `main` | `DOCUMENTATION_AND_INTEGRATION_DRIFT` | não contém ainda as linhagens completas da plataforma e do bridge |
 | Produção externa | `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` | nenhuma promoção para produção está autorizada |
 | Credenciais | `ROTATION_DEFERRED_BY_HUMAN_DECISION` | política anterior permanece vigente |
@@ -44,7 +44,7 @@ inalterado até HUMAN_GATE explícito.
 ### Próxima ação exata
 
 ```text
-SSH_KEY_GOVERNANCE_P1_HUMAN_GATE
+F1_2C_NODE01_ROLLOUT_HUMAN_GATE
 ```
 
 Hardening pendente separado: ativar os hooks globais STARTED/COMPLETED do runner
@@ -228,10 +228,10 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
   + `nohup setsid` na lineage histórica), PoC live retirado, recovery ajustado, policy/guard
   canônicos adicionados e prova real cross-job `PASS`. Hook global configurado, mas ainda
   não carregado por restart privilegiado pendente.
-- [ ] **28/08 — SSH_KEY_GOVERNANCE_P1:** provenance da `dsh-tunnel...` e uso histórico
-  confirmados; nenhuma dependência atual observada e fallback administrativo independente
-  comprovado. `authorized_keys` permanece inalterado; remover/restringir/manter depende de
-  `SSH_KEY_GOVERNANCE_P1_HUMAN_GATE`.
+- [x] **28/08 — SSH_KEY_GOVERNANCE_P1:** provenance e uso histórico confirmados; LEANDRO
+  confirmou dependência atual no fluxo notebook→VPS. A chave será mantida, `authorized_keys`
+  permanece inalterado e o fallback independente fica apenas como contingência. Hardening
+  futuro deve preservar o acesso interativo atual.
 
 ## Roadmap operacional
 

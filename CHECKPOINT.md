@@ -1,6 +1,6 @@
 # CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **28/08/2026** após coleta de evidência do `SSH_KEY_GOVERNANCE_P1`.
+Atualizado em **28/08/2026** após correção da dependência real do `SSH_KEY_GOVERNANCE_P1`.
 
 ## Hierarquia documental
 
@@ -21,9 +21,9 @@ continua tendo precedência para fatos mutáveis.
 - RECOVERY-P1: concluído.
 - RECOVERY-P2: concluído, off-host automático + restore smoke verificados.
 - RUNNER-ISOLATION-P1: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`; PoC legado retirado; hook global configurado e aguardando restart privilegiado autorizado.
-- SSH_KEY_GOVERNANCE_P1: `EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED`; provenance/fallback comprovados e `authorized_keys` inalterado.
-- Próxima prioridade: `SSH_KEY_GOVERNANCE_P1_HUMAN_GATE`.
-- Governança da chave `dsh-tunnel...`: pendente e agora é a próxima frente exata.
+- SSH_KEY_GOVERNANCE_P1: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso notebook→VPS, chave preservada e `authorized_keys` inalterado.
+- Próxima prioridade: `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
+- Qualquer hardening futuro da `dsh-tunnel...` deve preservar o acesso interativo atual.
 - F1.2c no NODE-01: rollout pendente e `REQUIRES_REVIEW`.
 - Network convergence: pendente antes de reboot.
 - Reboot/kernel: bloqueado por precondições.
@@ -72,4 +72,4 @@ contenha o marcador `IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST` e permaneça su
 
 ## Próximo passo
 
-Resolver `SSH_KEY_GOVERNANCE_P1_HUMAN_GATE` conforme `ROADMAP-CHECKLIST.md`; manter `authorized_keys` inalterado até decisão explícita e preservar a ativação do hook global do runner como hardening pendente.
+Resolver `F1_2C_NODE01_ROLLOUT_HUMAN_GATE` conforme `ROADMAP-CHECKLIST.md`; manter a `dsh-tunnel...` para o fluxo atual notebook→VPS e preservar a ativação do hook global do runner como hardening pendente.

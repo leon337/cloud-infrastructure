@@ -1,9 +1,9 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: security/ssh-key-governance-p1-20260828
-updated_at: "2026-08-28T12:24:00-03:00"
-state_classification: CURRENT_SSH_KEY_GOVERNANCE_EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED
+candidate_branch: security/ssh-key-governance-user-workflow-20260828
+updated_at: "2026-08-28T12:40:00-03:00"
+state_classification: CURRENT_SSH_KEY_GOVERNANCE_USER_WORKFLOW_CONFIRMED
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 freshness:
@@ -34,9 +34,9 @@ continuity:
 
 source_snapshot:
   main:
-    sha: b0ab31c5d69f9cd72c7a767b61c3022d833da0c6
-    baseline_before_ssh_key_governance_gate: true
-    latest_integrated_pr: 32
+    sha: c92d0072a7994f48ce7583c4f52bbc767fecff62
+    baseline_before_ssh_key_governance_user_workflow_correction: true
+    latest_integrated_pr: 33
     executive_projection: README.md
     operational_checklist: ROADMAP-CHECKLIST.md
   executable_evidence:
@@ -69,7 +69,8 @@ project:
     recovery_p1: COMPLETE
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
-  next_exact_step: SSH_KEY_GOVERNANCE_P1_HUMAN_GATE
+    ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
+  next_exact_step: F1_2C_NODE01_ROLLOUT_HUMAN_GATE
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
@@ -87,7 +88,7 @@ runner_isolation:
   cross_job_proof_run: 33170001699
 
 ssh_key_governance:
-  status: EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED
+  status: CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED
   key_comment: dsh-tunnel-leo-N43SM-to-vmi3506102
   dsh_key:
     fingerprint: SHA256:ugwguEmoX3yxLEc2YC7+8jLMog7ZeEsFNVfOaoZEkvA
@@ -95,13 +96,15 @@ ssh_key_governance:
     provenance: CONFIRMED_UBUNTU_HISTORY_AND_AUTH_LOG
     first_observed_use_date: "2026-08-25"
     source_address_correlation: MATCHES_CURRENT_ADMIN_PATH
-    current_dependency: NOT_OBSERVED
+    current_dependency: CONFIRMED_BY_LEANDRO_USER_WORKFLOW
+    dependency_description: NOTEBOOK_TO_VPS_INTERACTIVE_ACCESS
     present_in_authorized_keys: true
     loaded_in_current_agent: false
   fallback_auth: PASS_INDEPENDENT_KEY
   fallback_key_fingerprint: SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg
+  decision: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
   authorized_keys_changed: false
-  decision_gate: REMOVE_OR_RESTRICT_OR_KEEP
+  future_hardening_gate: PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS
   evidence_file: evidence/ssh-key-governance/SSH-KEY-GOVERNANCE-P1-20260828.md
 
 execution:
@@ -283,7 +286,7 @@ authorization:
   g2b_real_write: NOT_AUTHORIZED
   f1_2c_node01_reapply: NOT_AUTHORIZED
   destructive_history_remediation: NOT_AUTHORIZED
-  ssh_dsh_key_change: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
+  ssh_dsh_key_change: NOT_AUTHORIZED_WITHOUT_PRESERVING_CURRENT_USER_WORKFLOW
 
 secrets_policy:
   current_tree_scan: true
