@@ -1,9 +1,9 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: governance/f1-2c-rollout-gate-20260828
-updated_at: "2026-08-28T14:03:00-03:00"
-state_classification: CURRENT_F1_2C_ROLLOUT_GATE_PREPARED
+candidate_branch: governance/f1-2c-preflight-evidence-20260828
+updated_at: "2026-08-28T14:14:50-03:00"
+state_classification: CURRENT_F1_2C_HUMAN_GATE_READY_WITH_PRIVILEGED_PREFLIGHT_PENDING
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 freshness:
@@ -34,9 +34,9 @@ continuity:
 
 source_snapshot:
   main:
-    sha: 0549945d91803cced3dfc15d1f96b93c7a0ec2e9
-    baseline_before_f1_2c_rollout_gate_projection: true
-    latest_integrated_pr: 34
+    sha: 0069e391eee836b978d748d52fcc91404c80ba8c
+    baseline_before_f1_2c_preflight_evidence_projection: true
+    latest_integrated_pr: 36
     executive_projection: README.md
     operational_checklist: ROADMAP-CHECKLIST.md
   executable_evidence:
@@ -54,6 +54,8 @@ source_snapshot:
     f1_2c_partial_recovery_static_run: 33191612674
     f1_2c_partial_recovery_kvm_run: 33191612729
     f1_2c_partial_recovery_kvm_artifact: 9694059362
+    f1_2c_unprivileged_preflight_utc: "2026-08-28T17:11:31Z"
+    f1_2c_unprivileged_preflight_result: PASS_WITH_PRIVILEGED_ITEMS_PENDING
   open_fronts:
     repository_hygiene_pr: 19
     f1_2c_recovery_pr: 20
@@ -148,6 +150,26 @@ platform:
       status: FAIL_PREEXISTING_HISTORY_ONLY_GATE
       foundation_run: 33191612766
       docker_boundary_run: 33191612669
+    live_preflight:
+      status: PASS_UNPRIVILEGED_WITH_PRIVILEGED_ITEMS_PENDING
+      observed_at_utc: "2026-08-28T17:11:31Z"
+      channel: NOTEBOOK_SSH_GCR_READ_ONLY
+      host_identity: PASS
+      historical_surface_hashes: PASS
+      base_surface_hashes: PASS
+      required_services: PASS
+      lxd_inactive: PASS
+      service_enabled_failed: PASS
+      service_root_and_private_runtime_absent: PASS
+      legacy_lock_metadata: PASS
+      forwarding_zero: PASS
+      docker_socket_boundary: PASS
+      managed_links_routes_public_listeners_absent: PASS
+      marker_files: PRESENT_ROOT_0600_CONTENT_NOT_VERIFIED
+      zero_docker_state: NOT_VERIFIED_REQUIRES_PRIVILEGED_PRECHECK
+      root_owned_exact_candidate_staging: PENDING_HUMAN_GATE
+      privileged_precheck: PENDING_HUMAN_GATE
+      live_write_performed: false
     node01_reapply_authorized: false
 
 control_bridge:

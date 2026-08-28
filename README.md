@@ -35,6 +35,13 @@ KVM run `33191612729` passaram; a PR #35 foi integrada na lineage de correção 
 `2575bdaa99b195d756386ff9e923e05231b9aa17`. O NODE-01 não foi alterado e o reapply
 continua `NOT_AUTHORIZED`, aguardando `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
 
+Preflight live somente leitura em `2026-08-28T17:11:31Z` via fluxo SSH notebook→VPS:
+identidade, hashes antigos/base, serviços requeridos, estado enabled+failed da unit, ausência da
+árvore/runtime privado, lock legado, forwarding, socket Docker e ausência de links/rotas/listeners
+gerenciados passaram. Conteúdo dos markers privados e `zero_docker_state` permanecem
+`NÃO VERIFICADO` até o precheck privilegiado; staging root-owned/precheck/apply continuam
+bloqueados pelo HUMAN_GATE.
+
 | Área | Estado reconciliado | Resumo |
 |---|---|---|
 | VPS / NODE-01 | `OPERATIONAL_WITH_OPEN_INCIDENTS` | host acessível pelo runner, serviços essenciais ativos e uma unit F1.2c em `failed` |
