@@ -27,11 +27,19 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertTrue(Path(roadmap["file"]).is_file())
         self.assertEqual(self.state["source_snapshot"]["main"]["executive_projection"], "README.md")
 
-    def test_future_state_is_not_promoted(self):
+    def test_f1_2c_live_state_and_future_g2b_are_bounded(self):
         f1 = self.state["platform"]["f1_2c"]
-        self.assertEqual(f1["status"], "REQUIRES_REVIEW")
-        self.assertFalse(f1["accepted"])
+        self.assertEqual(f1["status"], "COMPLETE_LIVE_VERIFIED")
+        self.assertTrue(f1["accepted"])
         self.assertFalse(f1["node01_reapply_authorized"])
+        self.assertTrue(f1["one_shot_authorization_consumed"])
+        self.assertEqual(f1["applied_candidate_sha"], "baaf83908e8e83264baafc032434a4df1952450b")
+        self.assertEqual(f1["live_postverify"]["recovery_state"], "RECOVERED")
+        evidence = Path(f1["live_postverify"]["evidence_file"])
+        self.assertTrue(evidence.is_file())
+        evidence_text = evidence.read_text(encoding="utf-8")
+        self.assertIn("VERIFIED_LIVE_RECOVERY", evidence_text)
+        self.assertIn(f1["applied_candidate_sha"], evidence_text)
 
         g2b = self.state["control_bridge"]["g2b"]
         self.assertFalse(g2b["accepted"])
@@ -45,6 +53,7 @@ class CanonicalStateTests(unittest.TestCase):
             "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED",
         )
         self.assertFalse(self.state["boundaries"]["production_promoted"])
+        self.assertFalse(self.state["boundaries"]["node01_privileged_operations_currently_authorized"])
 
     def test_repository_hygiene_revalidation_is_recorded(self):
         hygiene = self.state["repository_hygiene"]
@@ -68,7 +77,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["fallback_auth"], "PASS_INDEPENDENT_KEY")
         self.assertFalse(ssh["authorized_keys_changed"])
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
-        self.assertEqual(self.state["project"]["next_exact_step"], "F1_2C_NODE01_ROLLOUT_HUMAN_GATE")
+        self.assertEqual(self.state["project"]["next_exact_step"], "NETWORK_CONVERGENCE_P2")
 
     def test_runner_isolation_state_is_verified_with_hook_restart_pending(self):
         runner = self.state["runner_isolation"]

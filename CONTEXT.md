@@ -30,12 +30,12 @@ Nunca transforme estado desejado em estado observado.
 
 ## Estado reconciliado em 22/08/2026 + atualização operacional de 28/08/2026
 
-`main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b` está em `DOCUMENTATION_AND_INTEGRATION_DRIFT`.
+Baseline deste closeout: `main@ce829067a9a04eceaa6eaefd9553899b2ce14da1` em `DOCUMENTATION_AND_INTEGRATION_DRIFT`; esta branch projeta o estado live F1.2c posterior sem importar a lineage funcional para `main`.
 
 Fatos que não podem ser promovidos além da evidência:
 
 - S0, F1.1 e F1.2b: concluídos conforme a reconciliação integrada;
-- F1.2c: `REQUIRES_REVIEW`; recovery candidate estático verde, mas KVM acceptance não executado e NODE-01 sem reapply;
+- F1.2c: `COMPLETE_LIVE_VERIFIED`; candidato `baaf839...` passou static/ShellCheck + KVM `ABSENT`/`EXACT_PRESENT` e o rollout autorizado terminou `RECOVERED` com pós-validação root PASS;
 - Control Bridge G1: `PASS_REAL_NODE_01_ROUNDTRIP`;
 - Control Bridge G2-A: `PASS_REAL_NODE_01_READ_ONLY`;
 - G2-B Tasks 1–7: `COMPLETE`;
@@ -77,11 +77,11 @@ O executor canônico de integração também preserva o boundary F1.1: GitHub-ho
 
 - LEANDRO é autoridade humana final.
 - MESTRE orquestra a missão.
-- nenhuma conclusão autoriza merge final, produção, escrita real G2-B ou reapply F1.2c;
-- nenhuma operação privilegiada no NODE-01 pertence a esta frente;
+- conclusão F1.2c não autoriza merge funcional automático, produção, escrita real G2-B, reboot ou novo reapply;
+- a operação privilegiada F1.2c autorizada foi concluída e consumida; novas operações privilegiadas exigem seus próprios gates;
 - branches G2-B/F1.2c permanecem isoladas;
 - secrets nunca são versionados.
 
 ## Próximo passo exato
 
-**F1_2C_NODE01_ROLLOUT_HUMAN_GATE**. `SSH_KEY_GOVERNANCE_P1` foi resolvido preservando a `dsh-tunnel...` porque LEANDRO confirmou dependência no fluxo notebook→VPS. Qualquer hardening futuro deve manter esse acesso. O hardening de hooks globais do runner permanece pendente até restart autorizado do serviço; não contornar `systemd`/sudo.
+**NETWORK_CONVERGENCE_P2**. F1.2c foi concluído no NODE-01 com evidência live; o próximo passo começa read-only e deve fechar `systemd-networkd` / `wait-online` antes de qualquer reboot. `SSH_KEY_GOVERNANCE_P1` continua preservando a `dsh-tunnel...`; o hardening de hooks globais do runner permanece pendente até restart autorizado do serviço.

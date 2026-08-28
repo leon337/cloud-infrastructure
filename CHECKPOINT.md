@@ -1,6 +1,6 @@
 # CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **28/08/2026** após validação exact-head, integração do recovery parcial `F1_2C` e preflight live não privilegiado.
+Atualizado em **28/08/2026** após rollout live autorizado e pós-validação independente do `F1_2C` no NODE-01.
 
 ## Hierarquia documental
 
@@ -22,9 +22,9 @@ continua tendo precedência para fatos mutáveis.
 - RECOVERY-P2: concluído, off-host automático + restore smoke verificados.
 - RUNNER-ISOLATION-P1: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`; PoC legado retirado; hook global configurado e aguardando restart privilegiado autorizado.
 - SSH_KEY_GOVERNANCE_P1: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso notebook→VPS, chave preservada e `authorized_keys` inalterado.
-- Próxima prioridade: `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
+- Próxima prioridade: `NETWORK_CONVERGENCE_P2`.
 - Qualquer hardening futuro da `dsh-tunnel...` deve preservar o acesso interativo atual.
-- F1.2c no NODE-01: `REQUIRES_REVIEW`; recovery do estado `PARTIAL_FIRST_APPLY` validado/integrado e preflight live não privilegiado PASS em `2026-08-28T17:11:31Z`; conteúdo dos markers `0600`, `zero_docker_state`, staging root-owned e precheck privilegiado permanecem pendentes do HUMAN_GATE; nenhum write live foi executado.
+- F1.2c no NODE-01: `COMPLETE_LIVE_VERIFIED`; diagnóstico root corrigiu a classificação para baseline `EXACT_PRESENT`, PRs #39/#40 fecharam os gaps do recovery, candidato `baaf839...` passou static/ShellCheck + KVM nas duas variantes e o rollout autorizado concluiu `RECOVERY_CHECK=PASS` + `F1_2C_POSTVERIFY=PASS`. Checkpoint/backup pré-apply e state `RECOVERED` foram verificados. A autorização one-shot foi consumida.
 - Network convergence: pendente antes de reboot.
 - Reboot/kernel: bloqueado por precondições.
 - Full-image/provider disaster recovery: NÃO VERIFICADO.
@@ -38,7 +38,7 @@ de dívida documental, não como negação da adoção do checklist.
 
 Marcadores históricos ainda preservados até reconciliação específica:
 
-- F1.2c: `REQUIRES_REVIEW` até o rollout live; recovery técnico exact-head já validado e integrado;
+- F1.2c: `COMPLETE_LIVE_VERIFIED`; candidato aplicado `baaf839...`, lineage `2408aed4...`, evidência em `evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`;
 - G2-B legado: `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
 - Repository Hygiene histórico: `REPOSITORY_HYGIENE_REVALIDATED`.
 
@@ -66,10 +66,10 @@ contenha o marcador `IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST` e permaneça su
 ## Boundaries
 
 - `state/active-mission.yaml` continua `NOT_ADOPTED`.
-- adoção do checklist e validação do recovery não autorizam produção, sudo, Docker write ou reapply F1.2c;
+- conclusão F1.2c não autoriza produção, G2-B, reboot ou novo reapply; qualquer nova mutação privilegiada segue seu gate específico;
 - mudanças materiais no NODE-01 continuam sujeitas aos gates aplicáveis;
 - secrets nunca são versionados.
 
 ## Próximo passo
 
-Resolver `F1_2C_NODE01_ROLLOUT_HUMAN_GATE` conforme `ROADMAP-CHECKLIST.md`; após autorização, executar staging root-owned + precheck privilegiado fail-closed antes de qualquer apply; manter a `dsh-tunnel...` para o fluxo atual notebook→VPS e preservar a ativação do hook global do runner como hardening pendente.
+Executar `NETWORK_CONVERGENCE_P2` inicialmente read-only conforme `ROADMAP-CHECKLIST.md`; manter a `dsh-tunnel...` para o fluxo atual notebook→VPS e preservar a ativação do hook global do runner como hardening pendente. Não rebootar antes da convergência de rede e de um checkpoint pré-reboot.
