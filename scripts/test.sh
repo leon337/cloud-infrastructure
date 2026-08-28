@@ -18,6 +18,7 @@ else
 fi
 
 "$PYTHON" scripts/check_repository_secrets.py
+"$PYTHON" scripts/check_runner_isolation.py
 "$PYTHON" scripts/check_markdown_links.py
 "$PYTHON" scripts/validate_yaml.py
 "$PYTHON" scripts/validate_state.py

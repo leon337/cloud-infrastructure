@@ -17,13 +17,20 @@ jobs:
   proof:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      startsWith(github.head_ref, 'team/canonical-state-toolchain-')
+      startsWith(github.head_ref, 'team/canonical-state-toolchain-') ||
+      startsWith(github.head_ref, 'runner/isolation-')
     runs-on: [self-hosted, linux, x64, node-01, mcf-control]
     timeout-minutes: 10
     env:
       PYTHONDONTWRITEBYTECODE: "1"
 
     steps:
+      - name: Enforce runner isolation before checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
+
       - name: Check out exact validation state
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -144,3 +151,10 @@ jobs:
             exit 1
           fi
           echo 'CANONICAL_SUITE_FINAL=PASS'
+
+      - name: Enforce runner isolation after job
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
