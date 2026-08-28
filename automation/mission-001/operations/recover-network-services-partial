@@ -38,6 +38,8 @@ readonly BASE_DROPIN_SHA256=a83bff96d635e0d13227d50e2f34512824e0389d6dd925ba681d
 readonly NEW_HELPER_SHA256=b69f41cd1c66000da239f39c09a46681afd5098a311065adf76b3c7aae35b9a3
 readonly NEW_UNIT_SHA256=c8297e4e88572a9fee9393960f7896e1ba27d9650f5643d595388878f059a57b
 readonly SYSCTL_SHA256=a2a00688b6f566d94ad43cebd13da2f4abcec76815b9fce11dab36b137be0c39
+readonly FOUNDATION_MARKER_SHA256=0ece23dea825d4961bba3ae1af84b1a2dd3814adeca4a4bdbb204928039e3e54
+readonly DOCKER_MARKER_SHA256=c66d8a8033aa095bb9f655666146f7577f2450cec61727b4f19e466128874a60
 
 refuse() {
   printf 'RECOVERY_REFUSED reason=%s\n' "$1" >&2
@@ -159,8 +161,8 @@ validate_base() {
   file_exact "$BASE_UNIT" 644 "$BASE_UNIT_SHA256" || refuse base_unit_drift
   file_exact "$BASE_DROPIN" 644 "$BASE_DROPIN_SHA256" || refuse base_dropin_drift
   marker_exact "$BASE_MARKER" "$BASE_VERSION" || refuse base_marker_drift
-  marker_exact "$FOUNDATION_MARKER" 'slice=SLICE-001' || refuse foundation_marker_drift
-  marker_exact "$DOCKER_MARKER" 'slice=SLICE-002B' || refuse docker_marker_drift
+  file_exact "$FOUNDATION_MARKER" 600 "$FOUNDATION_MARKER_SHA256" || refuse foundation_marker_drift
+  file_exact "$DOCKER_MARKER" 600 "$DOCKER_MARKER_SHA256" || refuse docker_marker_drift
   systemctl is-enabled --quiet cloud-platform-network-enforcement.service || refuse base_not_enabled
   "$BASE_HELPER" check >/dev/null || refuse base_check_failed
 }

@@ -77,8 +77,19 @@ sudo chmod 0600 /var/run/docker.sock
 
 # Previous layers and base enforcement are deliberately recreated before the
 # historical partial network-services start.
-printf '%s\n' 'slice=SLICE-001' | sudo tee /etc/cloud-platform-foundation.managed >/dev/null
-printf '%s\n' 'slice=SLICE-002B' | sudo tee /etc/cloud-platform-docker-runtime.managed >/dev/null
+printf '%s' 'managed_by=cloud-infrastructure
+slice=SLICE-001
+schema=1
+environment=dev
+node=node-01' | sudo tee /etc/cloud-platform-foundation.managed >/dev/null
+printf '%s' 'managed_by=cloud-infrastructure
+slice=SLICE-002B
+schema=1
+environment=dev
+node=node-01
+runtime=docker-ce
+docker_ce=5:29.7.2-1~ubuntu.24.04~noble
+containerd_io=2.3.3-1~ubuntu.24.04~noble' | sudo tee /etc/cloud-platform-docker-runtime.managed >/dev/null
 sudo chown root:root /etc/cloud-platform-foundation.managed /etc/cloud-platform-docker-runtime.managed
 sudo chmod 0600 /etc/cloud-platform-foundation.managed /etc/cloud-platform-docker-runtime.managed
 sudo install -d -o root -g root -m 0755 /usr/local/libexec /etc/systemd/system/docker.service.d
