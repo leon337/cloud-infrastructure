@@ -207,6 +207,17 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
   ocupavam o único runner e criavam latência artificial.
 - [x] **22/08 — Reconciliação atual:** GitHub, computador local e VPS auditados;
   worktrees divergentes e incidentes abertos registrados neste painel.
+- [x] **28/08 — RECOVERY-P1:** backup sanitizado atual sincronizado off-host para o
+  notebook com SHA-256 origem/destino idêntico; path/link safety e restore smoke `PASS`.
+  O escopo cobre os artefatos definidos, não restore integral/bare-metal da VPS.
+- [x] **28/08 — RECOVERY-P2:** pull off-host diário, runtime overlay allowlisted,
+  manifest, hashes, secret scan e restore smoke automatizados; execução real pelo
+  `systemd --user` validada e PR #28 integrada. Full-image/provider DR permanece
+  `NÃO VERIFICADO`.
+- [x] **28/08 — Governança documental:** `README.md` preservado como painel executivo
+  canônico da missão IMPLEMENTAÇÃO DA VPS; `ROADMAP-CHECKLIST.md` adotado como checklist
+  operacional subordinado, com contratos de CI contra inversão da hierarquia; PRs #29/#30
+  integradas.
 - [x] **28/08 — RUNNER-ISOLATION-P1:** causa raiz confirmada (`unset RUNNER_TRACKING_ID`
   + `nohup setsid` na lineage histórica), PoC live retirado, recovery ajustado, policy/guard
   canônicos adicionados e prova real cross-job `PASS`. Hook global configurado, mas ainda
