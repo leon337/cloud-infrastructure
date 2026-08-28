@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""Validate declarative platform manifests and cross-field guardrails."""
+"""Validate declarative platform manifests and expose a reusable catalog."""
 
 from __future__ import annotations
 
 import json
 import pathlib
 import sys
+from dataclasses import dataclass
 from typing import Any
 
 import jsonschema
 import yaml
 
-from yaml_strict import load_strict
+try:
+    from .yaml_strict import load_strict
+except ImportError:  # direct execution: python3 scripts/validate_manifests.py
+    from yaml_strict import load_strict
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -36,6 +40,18 @@ FORBIDDEN_SECRET_KEYS = {
 }
 
 
+@dataclass(frozen=True)
+class ValidatedManifest:
+    path: pathlib.Path
+    value: dict[str, Any]
+
+
+class ManifestValidationError(ValueError):
+    def __init__(self, failures: list[str]):
+        self.failures = list(failures)
+        super().__init__("; ".join(self.failures))
+
+
 def reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
@@ -55,7 +71,25 @@ def iter_keys(value: Any):
             yield from iter_keys(child)
 
 
-def semantic_checks(path: pathlib.Path, manifest: dict[str, Any]) -> list[str]:
+def _display_path(path: pathlib.Path, base: pathlib.Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(base.resolve()).as_posix()
+    except ValueError:
+        return resolved.name
+
+
+def project_key(manifest: dict[str, Any]) -> tuple[str, str, str]:
+    metadata = manifest["metadata"]
+    return metadata["tenant"], metadata["name"], metadata["environment"]
+
+
+def semantic_checks(
+    path: pathlib.Path,
+    manifest: dict[str, Any],
+    *,
+    display_base: pathlib.Path = ROOT,
+) -> list[str]:
     errors: list[str] = []
     normalized_keys = {key.lower().replace("-", "_") for key in iter_keys(manifest)}
     secret_keys = normalized_keys.intersection(FORBIDDEN_SECRET_KEYS)
@@ -93,17 +127,13 @@ def semantic_checks(path: pathlib.Path, manifest: dict[str, Any]) -> list[str]:
             if not reference.startswith("secret://"):
                 errors.append("secrets must be symbolic secret:// references")
 
-    return [f"{path.relative_to(ROOT)}: {message}" for message in errors]
+    rendered = _display_path(path, display_base)
+    return [f"{rendered}: {message}" for message in errors]
 
 
-def main() -> int:
+def _load_schemas() -> tuple[dict[str, dict[str, Any]], list[str]]:
+    loaded: dict[str, dict[str, Any]] = {}
     failures: list[str] = []
-    manifests = sorted(MANIFEST_DIRECTORY.rglob("*.yaml"))
-    if not manifests:
-        print("MANIFEST_VALIDATION_FAIL no manifests found", file=sys.stderr)
-        return 1
-
-    loaded_schemas: dict[str, dict[str, Any]] = {}
     for kind, path in SCHEMAS.items():
         try:
             schema = json.loads(
@@ -111,31 +141,44 @@ def main() -> int:
                 object_pairs_hook=reject_duplicate_json_keys,
             )
             jsonschema.Draft202012Validator.check_schema(schema)
-        except (OSError, ValueError, json.JSONDecodeError, jsonschema.SchemaError) as exc:
-            failures.append(f"{path.relative_to(ROOT)}: invalid schema: {exc}")
+        except (OSError, ValueError, json.JSONDecodeError, jsonschema.SchemaError):
+            failures.append(f"{_display_path(path, ROOT)}: invalid schema")
             continue
-        loaded_schemas[kind] = schema
+        loaded[kind] = schema
+    return loaded, failures
 
+
+def load_validated_manifests(
+    manifest_directory: pathlib.Path = MANIFEST_DIRECTORY,
+) -> list[ValidatedManifest]:
+    manifest_directory = manifest_directory.resolve()
+    manifest_paths = sorted(manifest_directory.rglob("*.yaml"))
+    if not manifest_paths:
+        raise ManifestValidationError(["no manifests found"])
+
+    loaded_schemas, failures = _load_schemas()
     if failures:
-        for failure in failures:
-            print(f"MANIFEST_VALIDATION_FAIL {failure}", file=sys.stderr)
-        return 1
+        raise ManifestValidationError(failures)
 
     format_checker = jsonschema.FormatChecker()
+    records: list[ValidatedManifest] = []
 
-    for path in manifests:
+    for path in manifest_paths:
+        rendered = _display_path(path, manifest_directory)
         try:
             manifest = load_strict(path.read_text(encoding="utf-8"))
-        except (OSError, yaml.YAMLError) as exc:
-            failures.append(f"{path.relative_to(ROOT)}: invalid YAML: {exc}")
+        except (OSError, yaml.YAMLError):
+            failures.append(f"{rendered}: invalid YAML")
             continue
         if not isinstance(manifest, dict):
-            failures.append(f"{path.relative_to(ROOT)}: manifest must be a mapping")
+            failures.append(f"{rendered}: manifest must be a mapping")
             continue
+
         kind = manifest.get("kind")
         if kind not in loaded_schemas:
-            failures.append(f"{path.relative_to(ROOT)}: unsupported kind {kind!r}")
+            failures.append(f"{rendered}: unsupported kind")
             continue
+
         validator = jsonschema.Draft202012Validator(
             loaded_schemas[kind], format_checker=format_checker
         )
@@ -144,15 +187,34 @@ def main() -> int:
         )
         for error in schema_errors:
             location = ".".join(str(item) for item in error.absolute_path) or "<root>"
-            failures.append(f"{path.relative_to(ROOT)}:{location}: {error.message}")
-        if not schema_errors:
-            failures.extend(semantic_checks(path, manifest))
+            failures.append(f"{rendered}:{location}: schema validation failed")
+        if schema_errors:
+            continue
+
+        semantic_failures = semantic_checks(
+            path,
+            manifest,
+            display_base=manifest_directory,
+        )
+        if semantic_failures:
+            failures.extend(semantic_failures)
+            continue
+
+        records.append(ValidatedManifest(path=path.resolve(), value=manifest))
 
     if failures:
-        for failure in failures:
+        raise ManifestValidationError(failures)
+    return records
+
+
+def main() -> int:
+    try:
+        records = load_validated_manifests(MANIFEST_DIRECTORY)
+    except ManifestValidationError as exc:
+        for failure in exc.failures:
             print(f"MANIFEST_VALIDATION_FAIL {failure}", file=sys.stderr)
         return 1
-    print(f"MANIFEST_VALIDATION_PASS count={len(manifests)}")
+    print(f"MANIFEST_VALIDATION_PASS count={len(records)}")
     return 0
 
 

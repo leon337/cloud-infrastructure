@@ -1,0 +1,10 @@
+{
+  "protocol": "MCF_G2A_SMOKE_BOOTSTRAP_V1",
+  "request_id": "G2A-SMOKE-20260819-001",
+  "project": {
+    "tenant": "leon337",
+    "name": "g2a-smoke",
+    "environment": "dev"
+  },
+  "action": "create"
+}

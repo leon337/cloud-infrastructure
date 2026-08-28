@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leon337/cloud-infrastructure/platform/schemas/mcf-cloud-context-read-config.schema.json",
+  "title": "MCF local Cloud context read adapter configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "enabled_by_default", "transport", "request_protocol", "result_protocol", "enable_environment", "project_id", "cloud_project_key", "operation", "source_paths", "limits"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "enabled_by_default": {"const": false},
+    "transport": {"const": "STDIO"},
+    "request_protocol": {"const": "MCF_CLOUD_CONTEXT_READ_V1"},
+    "result_protocol": {"const": "MCF_CLOUD_CONTEXT_READ_RESULT_V1"},
+    "enable_environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value"],
+      "properties": {
+        "name": {"const": "MCF_CLOUD_CONTEXT_READ_ENABLE"},
+        "value": {"const": "DISPOSABLE_LOCAL_LAB_ONLY"}
+      }
+    },
+    "project_id": {"const": "cloud-infrastructure"},
+    "cloud_project_key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenant", "name", "environment"],
+      "properties": {
+        "tenant": {"const": "leon337"},
+        "name": {"const": "g2a-smoke"},
+        "environment": {"const": "dev"}
+      }
+    },
+    "operation": {"const": "context.get"},
+    "source_paths": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "prefixItems": [
+        {"const": ".mcf/project-capsule.yaml"},
+        {"const": "context/mcf-cloud-context.yaml"},
+        {"const": "platform/manifests/g2a-smoke.yaml"},
+        {"const": "platform/schemas/mcf-cloud-context.schema.json"},
+        {"const": "platform/schemas/mcf-project-capsule.schema.json"},
+        {"const": "platform/schemas/project.schema.json"},
+        {"const": "state/control-bridge-g2a.yaml"},
+        {"const": "state/control-bridge-g2b.yaml"}
+      ],
+      "items": false
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_bytes", "output_bytes", "source_bytes_each"],
+      "properties": {
+        "input_bytes": {"const": 4096},
+        "output_bytes": {"const": 65536},
+        "source_bytes_each": {"const": 262144}
+      }
+    }
+  }
+}

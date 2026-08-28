@@ -1,0 +1,45 @@
+G2-B TASK 8 VALIDATION — FULL REFERENCES
+
+Protected source:
+  branch: codex/control-bridge-g2b
+  sha: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+  original PR: #11
+
+Attempt 3 terminal record:
+  UTC=2026-08-22T12:56:11Z
+  TASK8_STATUS=2
+  G2B_DISPOSABLE_TEST_ABORTED stage=apply_g2b exit=2 cleanup=0
+  RESOURCE_UPDATE_PASS container=control-bridge-g2b-test-20260822115505-4579-6146 cpus=5 memory=8g
+  TASK8_ACCEPTANCE=FAIL_OR_NOT_TERMINAL
+
+Existing read-only audits:
+  run 32577551012 / job 97041975190
+    repository exact fbef3d4 and clean
+    QEMU PID 775679 alive
+    no harness/ansible-playbook process remaining
+
+  run 32577659953 / job 97042247009
+    guest SSH reachable at 127.0.0.1:22284
+    QEMU g2b-disposable-task8-vm3
+    outer workdir /tmp/g2b-task8-vm3.4UklnBQQ
+    no outer harness.log/guest.log/result.log/run.log
+
+  run 32577815107 / job 97042636952
+    /home/ubuntu/g2b-task8.status = 2
+    /home/ubuntu/g2b-task8.log = 267 bytes
+    terminal log contains only builder warning plus abort marker
+    run-task8.sh binds exact candidate SHA
+
+Harness localization:
+  CURRENT_STAGE=apply_g2b
+  call 1: ansible-playbook apply-control-bridge-g2b.yml >/dev/null
+  call 2: ansible-playbook apply-control-bridge-g2b.yml >/dev/null
+
+Result:
+  Root cause cannot be reconstructed from the preserved output.
+  No functional correction was made.
+  No fresh lifecycle was run.
+  Task 8 remains unaccepted.
+
+NAO_APLICAVEL:
+  Full post-fix validation is not applicable because no evidence-bound functional fix exists.

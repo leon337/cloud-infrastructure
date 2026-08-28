@@ -8,11 +8,12 @@ REQUIRE_SHELLCHECK=${REQUIRE_SHELLCHECK:-0}
 
 cd "$REPOSITORY_ROOT"
 
-"$PYTHON" scripts/check_repository_secrets.py
+"$PYTHON" scripts/check_repository_secrets.py --revision HEAD
 "$PYTHON" scripts/check_markdown_links.py
 "$PYTHON" scripts/validate_yaml.py
 "$PYTHON" scripts/validate_manifests.py
 "$PYTHON" scripts/validate_state.py
+"$PYTHON" scripts/check_continuity_drift.py
 "$PYTHON" scripts/generate_project_status.py --check-readme
 "$PYTHON" - <<'PY'
 import sys
@@ -24,7 +25,7 @@ if not result.wasSuccessful():
     raise SystemExit(1)
 print(f"UNIT_TESTS_PASS count={result.testsRun}")
 PY
-"$PYTHON" -m compileall -q scripts tests
+"$PYTHON" -m compileall -q scripts tests control_plane
 
 shell_scripts=()
 shell_script_count=0

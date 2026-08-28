@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leon337/cloud-infrastructure/platform/schemas/mcf-cloud-context-read-result.schema.json",
+  "title": "MCF local Cloud context read result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol", "request_id", "project_id", "operation", "status", "result", "error", "freshness", "provenance"],
+  "properties": {
+    "protocol": {"const": "MCF_CLOUD_CONTEXT_READ_RESULT_V1"},
+    "request_id": {"type": "string", "pattern": "^(UNKNOWN|[A-Za-z0-9][A-Za-z0-9._:-]{0,127})$"},
+    "project_id": {"oneOf": [{"const": "cloud-infrastructure"}, {"type": "null"}]},
+    "operation": {"oneOf": [{"const": "context.get"}, {"type": "null"}]},
+    "status": {"enum": ["PASS", "REFUSED", "FAILED"]},
+    "result": {"oneOf": [{"$ref": "#/$defs/success_result"}, {"type": "null"}]},
+    "error": {"oneOf": [{"$ref": "#/$defs/error"}, {"type": "null"}]},
+    "freshness": {"$ref": "#/$defs/freshness"},
+    "provenance": {"$ref": "#/$defs/provenance"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "PASS"}}},
+      "then": {
+        "properties": {
+          "project_id": {"const": "cloud-infrastructure"},
+          "operation": {"const": "context.get"},
+          "result": {"$ref": "#/$defs/success_result"},
+          "error": {"type": "null"},
+          "freshness": {
+            "properties": {
+              "workspace_observation": {"const": "LIVE_LOCAL_DISPOSABLE"},
+              "source_mode": {"const": "READ_AT_REQUEST_TIME"}
+            }
+          },
+          "provenance": {
+            "properties": {
+              "sources": {"minItems": 13, "maxItems": 13}
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "result": {"type": "null"},
+          "error": {"$ref": "#/$defs/error"},
+          "freshness": {
+            "properties": {
+              "workspace_observation": {"const": "NOT_OBSERVED"},
+              "source_mode": {"const": "NOT_READ"}
+            }
+          },
+          "provenance": {
+            "properties": {
+              "sources": {"maxItems": 0}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "cloud_project_key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenant", "name", "environment"],
+      "properties": {
+        "tenant": {"const": "leon337"},
+        "name": {"const": "g2a-smoke"},
+        "environment": {"const": "dev"}
+      }
+    },
+    "success_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapping", "project", "workspace", "control_bridge", "adapter", "capsule"],
+      "properties": {
+        "mapping": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cloud_project_key", "canonical_cloud_key", "identity_authority"],
+          "properties": {
+            "cloud_project_key": {"$ref": "#/$defs/cloud_project_key"},
+            "canonical_cloud_key": {"const": "leon337/g2a-smoke/dev"},
+            "identity_authority": {"const": "CLOUD_PROJECT_MANIFEST"}
+          }
+        },
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["criticality", "source", "workload_capabilities", "production_authorized"],
+          "properties": {
+            "criticality": {"enum": ["critical", "important", "rebuildable", "disposable"]},
+            "source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["repository", "revision"],
+              "properties": {
+                "repository": {"type": "string", "format": "uri", "pattern": "^(https://|ssh://|git@)"},
+                "revision": {"type": "string", "minLength": 1, "maxLength": 200}
+              }
+            },
+            "workload_capabilities": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {"enum": ["build", "test", "deploy-dev", "preview", "database-dev", "object-storage"]}
+            },
+            "production_authorized": {"const": false}
+          }
+        },
+        "workspace": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "mode", "layout"],
+          "properties": {
+            "state": {"const": "PRESENT"},
+            "mode": {"type": "integer", "minimum": 0, "maximum": 511},
+            "layout": {"const": "ALLOWLISTED_CLOUD_PROJECT_KEY"}
+          }
+        },
+        "control_bridge": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["g2a", "g2b"],
+          "properties": {
+            "g2a": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["lifecycle", "state", "operational_freshness", "operations"],
+              "properties": {
+                "lifecycle": {"const": "HISTORIC_READ_ONLY_LIVE_REQUIRED"},
+                "state": {"const": "PASS_REAL_NODE_01_READ_ONLY_HISTORIC"},
+                "operational_freshness": {"const": "LIVE_REQUIRED"},
+                "operations": {
+                  "type": "array",
+                  "minItems": 9,
+                  "maxItems": 9,
+                  "uniqueItems": true,
+                  "prefixItems": [
+                    {"const": "project.list"},
+                    {"const": "project.get"},
+                    {"const": "workspace.stat"},
+                    {"const": "workspace.list"},
+                    {"const": "workspace.read"},
+                    {"const": "git.status"},
+                    {"const": "git.branch"},
+                    {"const": "git.head"},
+                    {"const": "git.diff"}
+                  ],
+                  "items": false
+                }
+              }
+            },
+            "g2b": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["lifecycle", "state", "activation", "tasks_9_10", "production_authorized"],
+              "properties": {
+                "lifecycle": {"const": "LAB_VALIDATED_INACTIVE"},
+                "state": {"const": "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED"},
+                "activation": {"const": "NOT_AUTHORIZED"},
+                "tasks_9_10": {"const": "NOT_STARTED"},
+                "production_authorized": {"const": false}
+              }
+            }
+          }
+        },
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["transport", "operation", "enabled_by_default", "read_only", "network_access", "external_process", "arbitrary_path"],
+          "properties": {
+            "transport": {"const": "STDIO"},
+            "operation": {"const": "context.get"},
+            "enabled_by_default": {"const": false},
+            "read_only": {"const": true},
+            "network_access": {"const": false},
+            "external_process": {"const": false},
+            "arbitrary_path": {"const": false}
+          }
+        },
+        "capsule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lifecycle", "current_status"],
+          "properties": {
+            "lifecycle": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "\\S"},
+            "current_status": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S"}
+          }
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": {
+          "enum": [
+            "adapter_disabled",
+            "invalid_enable_value",
+            "unexpected_arguments",
+            "request_too_large",
+            "invalid_json",
+            "request_must_be_object",
+            "unexpected_request_field",
+            "invalid_request",
+            "invalid_project_id",
+            "unknown_operation",
+            "invalid_arguments",
+            "repository_layout_refused",
+            "source_boundary_refused",
+            "source_contract_invalid",
+            "result_contract_invalid",
+            "internal_error"
+          ]
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed_at", "operational_state", "workspace_observation", "source_mode"],
+      "properties": {
+        "observed_at": {"type": "string", "format": "date-time"},
+        "operational_state": {"const": "LIVE_REQUIRED"},
+        "workspace_observation": {"enum": ["LIVE_LOCAL_DISPOSABLE", "NOT_OBSERVED"]},
+        "source_mode": {"enum": ["READ_AT_REQUEST_TIME", "NOT_READ"]}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "adapter_config", "sources"],
+      "properties": {
+        "repository": {"const": "leon337/cloud-infrastructure"},
+        "adapter_config": {"const": "platform/control-bridge/mcf-cloud-context-read-config.yaml"},
+        "sources": {
+          "type": "array",
+          "maxItems": 13,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": {
+                "enum": [
+                  ".mcf/project-capsule.yaml",
+                  "context/mcf-cloud-context.yaml",
+                  "control_plane/g2a/local_context_adapter.py",
+                  "platform/control-bridge/mcf-cloud-context-read",
+                  "platform/control-bridge/mcf-cloud-context-read-config.yaml",
+                  "platform/manifests/g2a-smoke.yaml",
+                  "platform/schemas/mcf-cloud-context-read-config.schema.json",
+                  "platform/schemas/mcf-cloud-context-read-result.schema.json",
+                  "platform/schemas/mcf-cloud-context.schema.json",
+                  "platform/schemas/mcf-project-capsule.schema.json",
+                  "platform/schemas/project.schema.json",
+                  "state/control-bridge-g2a.yaml",
+                  "state/control-bridge-g2b.yaml"
+                ]
+              },
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

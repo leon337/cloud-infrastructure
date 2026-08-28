@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+import os
+import pathlib
+import sys
+
+
+_FORBIDDEN_AUDIT_EVENTS = frozenset(
+    {
+        "os.chmod",
+        "os.chown",
+        "os.link",
+        "os.mkdir",
+        "os.remove",
+        "os.rename",
+        "os.rmdir",
+        "os.symlink",
+        "os.system",
+        "shutil.copyfile",
+        "shutil.copymode",
+        "shutil.copystat",
+        "shutil.move",
+        "socket.__new__",
+        "socket.bind",
+        "socket.connect",
+        "socket.getaddrinfo",
+        "subprocess.Popen",
+    }
+)
+_FORBIDDEN_AUDIT_PREFIXES = ("os.exec", "os.posix_spawn", "os.spawn")
+_WRITE_OPEN_FLAGS = (
+    os.O_WRONLY
+    | os.O_RDWR
+    | os.O_APPEND
+    | os.O_CREAT
+    | os.O_TRUNC
+    | getattr(os, "O_TMPFILE", 0)
+)
+
+
+def _read_only_audit_hook(event: str, arguments: tuple[object, ...]) -> None:
+    if event in _FORBIDDEN_AUDIT_EVENTS or event.startswith(_FORBIDDEN_AUDIT_PREFIXES):
+        raise PermissionError("adapter_audit_boundary_refused")
+    if event != "open":
+        return
+    mode = arguments[1] if len(arguments) > 1 else None
+    flags = arguments[2] if len(arguments) > 2 else None
+    if isinstance(mode, str) and any(character in mode for character in "wax+"):
+        raise PermissionError("adapter_audit_boundary_refused")
+    if isinstance(flags, int) and flags & _WRITE_OPEN_FLAGS:
+        raise PermissionError("adapter_audit_boundary_refused")
+
+
+sys.dont_write_bytecode = True
+sys.addaudithook(_read_only_audit_hook)
+
+
+REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parents[2]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from control_plane.g2a.local_context_adapter import (
+    MAX_INPUT_BYTES,
+    MAX_OUTPUT_BYTES,
+    AdapterError,
+    decode_request,
+    enabled_from_environment,
+    execute_local_context_read,
+    failure_response,
+)
+
+
+def main() -> int:
+    raw = sys.stdin.buffer.read(MAX_INPUT_BYTES + 1)
+    request = None
+    try:
+        request = decode_request(raw)
+        if sys.argv[1:]:
+            raise AdapterError("unexpected_arguments")
+        enabled = enabled_from_environment(os.environ)
+        response = execute_local_context_read(
+            request,
+            repository_root=REPOSITORY_ROOT,
+            enabled=enabled,
+        )
+    except AdapterError as exc:
+        response = failure_response(request, exc.code, exc.status)
+    except Exception:
+        response = failure_response(request, "internal_error", "FAILED")
+
+    rendered = json.dumps(response, separators=(",", ":"), sort_keys=True)
+    if len(rendered.encode("utf-8")) > MAX_OUTPUT_BYTES:
+        response = failure_response(request, "result_contract_invalid", "FAILED")
+        rendered = json.dumps(
+            response,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+    sys.stdout.write(rendered + "\n")
+    return 0 if response.get("status") == "PASS" else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

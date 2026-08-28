@@ -1,0 +1,286 @@
+---
+- ansible.builtin.import_playbook: controller-preflight.yml
+
+- name: Issue one explicit 24-hour G2-B pilot grant after installation
+  hosts: platform_nodes
+  gather_facts: true
+  become: true
+  serial: 1
+
+  vars_files:
+    - ../roles/control_bridge_g2b/vars/main.yml
+
+  tasks:
+    - name: Require all four explicit non-secret human grant inputs
+      ansible.builtin.assert:
+        that:
+          - g2b_grant_id is defined
+          - g2b_grant_not_before is defined
+          - g2b_grant_not_after is defined
+          - g2b_executor_sha256 is defined
+        fail_msg: >-
+          LEANDRO must supply grant ID, UTC not-before/not-after timestamps, and
+          the reviewed executor bundle SHA-256 explicitly.
+
+    - name: Require exact pilot identifiers and exactly 86400 seconds
+      ansible.builtin.assert:
+        that:
+          - g2b_grant_id is string
+          - g2b_grant_id is regex('^[A-Z0-9][A-Z0-9-]{0,127}$')
+          - g2b_grant_not_before is string
+          - g2b_grant_not_after is string
+          - >-
+            g2b_grant_not_before is
+            regex('^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$')
+          - >-
+            g2b_grant_not_after is
+            regex('^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$')
+          - >-
+            ((g2b_grant_not_after | to_datetime('%Y-%m-%dT%H:%M:%SZ')) -
+             (g2b_grant_not_before | to_datetime('%Y-%m-%dT%H:%M:%SZ'))).
+              total_seconds() == 86400
+          - g2b_executor_sha256 == g2b_executor_bundle_sha256
+        fail_msg: The G2-B grant must be exact, UTC, and exactly 24 hours.
+
+    - name: Verify the exact grant-issuance NODE-01 target
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == 'Ubuntu'
+          - ansible_facts.distribution_version == '24.04'
+          - ansible_facts.service_mgr == 'systemd'
+          - ansible_facts.architecture == 'x86_64'
+          - inventory_hostname == 'node-01'
+          - platform_node_id == 'node-01'
+          - >-
+            (
+              (ansible_connection | default('ssh')) == 'local' and
+              platform_environment == 'test' and
+              platform_repository_root == '/workspace/cloud-infrastructure'
+            ) or (
+              (ansible_connection | default('ssh')) != 'local' and
+              platform_environment == 'dev' and
+              ansible_user == 'ubuntu' and
+              platform_expected_ansible_host == '169.58.171.192' and
+              platform_expected_hostname == 'vmi3506102' and
+              platform_expected_machine_id_sha256 ==
+                '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+              (ansible_host | string) ==
+                (platform_expected_ansible_host | string) and
+              ansible_facts.hostname == platform_expected_hostname and
+              (ansible_facts.machine_id | hash('sha256')) ==
+                platform_expected_machine_id_sha256
+            )
+
+    - name: Select exact installed marker content
+      ansible.builtin.set_fact:
+        g2b_issue_marker_content: >-
+          {{ g2b_marker_content_dev if platform_environment == 'dev'
+             else g2b_marker_content_test }}
+        g2b_issue_marker_sha256: >-
+          {{ g2b_marker_sha256_dev if platform_environment == 'dev'
+             else g2b_marker_sha256_test }}
+
+    - name: Inspect the installation marker without following links
+      ansible.builtin.stat:
+        path: "{{ g2b_marker_path }}"
+        follow: false
+        checksum_algorithm: sha256
+      register: g2b_issue_marker_state
+
+    - name: Require exact installation provenance before granting authority
+      ansible.builtin.assert:
+        that:
+          - g2b_issue_marker_state.stat.exists
+          - g2b_issue_marker_state.stat.isreg | default(false)
+          - not (g2b_issue_marker_state.stat.islnk | default(false))
+          - g2b_issue_marker_state.stat.uid == 0
+          - g2b_issue_marker_state.stat.gid == 0
+          - g2b_issue_marker_state.stat.mode == '0600'
+          - g2b_issue_marker_state.stat.checksum == g2b_issue_marker_sha256
+
+    - name: Read exact installation marker content
+      ansible.builtin.slurp:
+        src: "{{ g2b_marker_path }}"
+      register: g2b_issue_marker_data
+
+    - name: Require exact marker bytes before grant issuance
+      ansible.builtin.assert:
+        that:
+          - >-
+            (g2b_issue_marker_data.content | b64decode) ==
+            g2b_issue_marker_content
+
+    - name: Inspect all installed payloads without following links
+      ansible.builtin.stat:
+        path: "{{ item.destination }}"
+        follow: false
+        checksum_algorithm: sha256
+      loop: "{{ g2b_install_payloads }}"
+      register: g2b_issue_payloads
+
+    - name: Require exact installed hashes before grant issuance
+      ansible.builtin.assert:
+        that:
+          - item.stat.isreg | default(false)
+          - not (item.stat.islnk | default(false))
+          - item.stat.pw_name == item.item.owner
+          - item.stat.gr_name == item.item.group
+          - item.stat.mode == item.item.mode
+          - item.stat.checksum == item.item.sha256
+      loop: "{{ g2b_issue_payloads.results }}"
+
+    - name: Inspect an existing grant without following links
+      ansible.builtin.stat:
+        path: "{{ g2b_grant_path }}"
+        follow: false
+      register: g2b_issue_existing_grant_state
+
+    - name: Require a safe existing grant file before reading it
+      ansible.builtin.assert:
+        that:
+          - g2b_issue_existing_grant_state.stat.isreg | default(false)
+          - not (g2b_issue_existing_grant_state.stat.islnk | default(false))
+          - g2b_issue_existing_grant_state.stat.uid == 0
+          - g2b_issue_existing_grant_state.stat.gid == 0
+          - g2b_issue_existing_grant_state.stat.mode == '0644'
+      when: g2b_issue_existing_grant_state.stat.exists
+
+    - name: Read an existing grant only after metadata validation
+      ansible.builtin.slurp:
+        src: "{{ g2b_grant_path }}"
+      register: g2b_issue_existing_grant_data
+      when: g2b_issue_existing_grant_state.stat.exists
+
+    - name: Parse the existing grant
+      ansible.builtin.set_fact:
+        g2b_issue_existing_grant: >-
+          {{ g2b_issue_existing_grant_data.content | b64decode | from_json }}
+      when: g2b_issue_existing_grant_state.stat.exists
+
+    - name: Require exact schema and safe fields on an existing grant
+      ansible.builtin.assert:
+        that:
+          - g2b_issue_existing_grant is mapping
+          - >-
+            (g2b_issue_existing_grant.keys() | list | sort) ==
+            ([
+              'allowed_operations',
+              'allowed_paths',
+              'authority',
+              'declared_actor',
+              'enabled',
+              'executor_sha256',
+              'grant_id',
+              'max_active_mutations',
+              'max_content_bytes',
+              'mission_id',
+              'not_after',
+              'not_before',
+              'project',
+              'protocol',
+              'transport_principal_id',
+              'transport_principal_login'
+            ] | sort)
+          - g2b_issue_existing_grant.protocol == 'MCF_WORKSPACE_MUTATION_V1'
+          - g2b_issue_existing_grant.grant_id is string
+          - >-
+            g2b_issue_existing_grant.not_before is
+            regex('^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$')
+          - >-
+            g2b_issue_existing_grant.not_after is
+            regex('^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$')
+      when: g2b_issue_existing_grant_state.stat.exists
+
+    - name: Inspect revocation for the requested grant ID
+      ansible.builtin.stat:
+        path: >-
+          {{ g2b_state_path }}/revocations/{{ g2b_grant_id | hash('sha256') }}.json
+        follow: false
+      register: g2b_issue_requested_revocation
+
+    - name: Inspect revocation for the currently installed grant ID
+      ansible.builtin.stat:
+        path: >-
+          {{ g2b_state_path }}/revocations/{{
+             g2b_issue_existing_grant.grant_id | hash('sha256') }}.json
+        follow: false
+      register: g2b_issue_existing_revocation
+      when: g2b_issue_existing_grant_state.stat.exists
+
+    - name: Refuse an active or revoked existing grant and any revoked ID reuse
+      ansible.builtin.assert:
+        that:
+          - not g2b_issue_requested_revocation.stat.exists
+          - >-
+            not g2b_issue_existing_grant_state.stat.exists or
+            not g2b_issue_existing_revocation.stat.exists
+          - >-
+            not g2b_issue_existing_grant_state.stat.exists or
+            not (
+              (g2b_issue_existing_grant.not_before |
+                to_datetime('%Y-%m-%dT%H:%M:%SZ')) <=
+              (ansible_date_time.iso8601 |
+                to_datetime('%Y-%m-%dT%H:%M:%SZ')) and
+              (ansible_date_time.iso8601 |
+                to_datetime('%Y-%m-%dT%H:%M:%SZ')) <
+              (g2b_issue_existing_grant.not_after |
+                to_datetime('%Y-%m-%dT%H:%M:%SZ'))
+            )
+        fail_msg: >-
+          Refusing to extend an active grant or reuse an irreversible revoked
+          grant. Wait for expiry or choose a fresh explicit grant ID.
+
+    - name: Construct only the approved fixed pilot grant fields
+      ansible.builtin.set_fact:
+        g2b_issue_grant_value:
+          protocol: MCF_WORKSPACE_MUTATION_V1
+          grant_id: "{{ g2b_grant_id }}"
+          enabled: true
+          authority: LEANDRO
+          transport_principal_login: leon337
+          transport_principal_id: 25374535
+          declared_actor: MESTRE_MCF
+          mission_id: CONTROL-BRIDGE-G2B-PILOT
+          project:
+            tenant: leon337
+            name: g2a-smoke
+            environment: dev
+          allowed_operations:
+            - workspace.write
+            - rollback
+            - status
+            - revoke
+          allowed_paths:
+            - G2B-PILOT.txt
+          max_content_bytes: 65536
+          max_active_mutations: 1
+          not_before: "{{ g2b_grant_not_before }}"
+          not_after: "{{ g2b_grant_not_after }}"
+          executor_sha256: "{{ g2b_executor_sha256 }}"
+
+    - name: Validate JSON before atomic root-owned grant rename
+      ansible.builtin.copy:
+        dest: "{{ g2b_grant_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: "{{ g2b_issue_grant_value | to_nice_json }}\n"
+        validate: /usr/bin/python3 -m json.tool %s
+      when: not ansible_check_mode
+
+    - name: Reinspect the issued root-owned grant
+      ansible.builtin.stat:
+        path: "{{ g2b_grant_path }}"
+        follow: false
+      register: g2b_issue_final_grant_state
+      when: not ansible_check_mode
+
+    - name: Require the exact issued grant boundary
+      ansible.builtin.assert:
+        that:
+          - g2b_issue_final_grant_state.stat.isreg | default(false)
+          - not (g2b_issue_final_grant_state.stat.islnk | default(false))
+          - g2b_issue_final_grant_state.stat.uid == 0
+          - g2b_issue_final_grant_state.stat.gid == 0
+          - g2b_issue_final_grant_state.stat.mode == '0644'
+      when: not ansible_check_mode

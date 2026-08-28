@@ -1,0 +1,147 @@
+protocol_version: CLOUD_INFRA_ACTIVE_MISSION_V1
+updated_at: 2026-08-23
+mission:
+  id: CONTROL_BRIDGE_G2B
+  title: Control Bridge G2-B bounded write
+  status: REVIEW_REQUIRED
+  priority: P0
+  authority: LEANDRO
+  orchestrator: MESTRE_MCF
+  github_issue: null
+  repository_doc: docs/superpowers/plans/2026-08-20-control-bridge-g2b-bounded-write.md
+  continuity_origin_issue: 10
+continuity_mission:
+  id: REPOSITORY_CONTINUITY_CONTEXT_RECOVERY_HARDENING
+  status: COMPLETE
+  github_issue: 10
+  repository_doc: docs/53-repository-continuity-context-recovery-mission.md
+  completed_at: 2026-08-22
+repository:
+  name: leon337/cloud-infrastructure
+  active_branch: codex/context-bridge-reconcile-20260823
+  base_branch: mcf/mission-001-control-bridge-g1
+  pull_request: null
+  pull_request_state: LOCAL_ONLY_NO_PUSH
+  safe_pull_request_target: mcf/mission-001-control-bridge-g1
+  reconciliation_merge_sha: 9359450742020d1c99b298379b8a29fefce6294f
+  validated_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
+  recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
+  recovered_commits_ahead_of_base: 25
+startup_recovery_protocol:
+  status: ACTIVE_REQUIRED
+  protocol_version: CLOUD_INFRA_AI_STARTUP_RECOVERY_V1
+  document: governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+  machine_state: state/startup-recovery-protocol.yaml
+  mutation_rule: NO_IMPLEMENTATION_BEFORE_RECOVERY_VERDICT_PASS
+  remote_only_local_state: UNVERIFIED_UNLESS_RECONCILED
+mission_persistence_policy:
+  status: ACTIVE_REQUIRED
+  protocol_version: CLOUD_INFRA_LONG_RUNNING_MISSION_PERSISTENCE_V1
+  document: governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
+  machine_state: state/mission-persistence-policy.yaml
+  max_material_work_without_remote_checkpoint_minutes: 30
+  remote_checkpoint_rule: NO_LONG_RUNNING_MISSION_WITHOUT_RECOVERABLE_REMOTE_CHECKPOINTS
+  wip_acceptance_rule: WIP_CHECKPOINT_DOES_NOT_IMPLY_ACCEPTANCE
+institutional_memory:
+  status: ACTIVE_REQUIRED
+  protocol_version: CLOUD_INFRA_INSTITUTIONAL_MEMORY_V1
+  machine_state: state/institutional-memory.yaml
+  directory: history/memos/
+  first_memo: history/memos/2026-08-20-g2b-local-work-recovery-incident.md
+  latest_memo: history/memos/2026-08-22-r8-task7-completion.md
+  preservation_rule: APPEND_ORIENTED_NO_SILENT_REWRITE
+continuity_drift_controls:
+  status: ACTIVE_REQUIRED
+  protocol_version: CLOUD_INFRA_CONTINUITY_DRIFT_CONTROLS_V1
+  document: governance/CONTINUITY-DRIFT-CONTROLS.md
+  machine_state: state/continuity-drift-controls.yaml
+  executable_check: scripts/check_continuity_drift.py
+  integrated_test_entrypoint: scripts/test.sh
+  fail_closed_rule: NO_CONTINUITY_ADVANCE_WITH_UNEXPLAINED_CANONICAL_DRIFT
+cold_start_validation:
+  status: PASS_HISTORICAL_R7_SNAPSHOT
+  protocol_version: CLOUD_INFRA_COLD_START_VALIDATION_V1
+  machine_state: state/cold-start-validation.yaml
+  report: docs/55-cold-start-recovery-validation-2026-08-21.md
+  reconstructor: scripts/reconstruct_cold_start.py
+  contract_test: tests/test_cold_start_recovery.py
+  verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
+  independent_fresh_model_process: NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
+control_bridge_g2b:
+  status: TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED
+  recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
+  tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
+  task_7: COMPLETE
+  task_7_focused_tests:
+    pass: 7
+    fail: 0
+  known_red: RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
+  known_red_literal: g2b_issue_existing_grant.keys()
+  ansible_syntax: PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
+  task_7_candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+  task_7_evidence_issue_comment: https://github.com/leon337/cloud-infrastructure/issues/10#issuecomment-5377605173
+  task_8: PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+  task_8_candidate_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
+  task_8_markers: PASS_13_OF_13
+  task_8_cleanup: PASS
+  task_8_evidence: evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md
+  task_8_hosted_run: 32551353362
+  task_8_hosted_validation: HISTORICAL_INCONCLUSIVE_ZERO_STEPS_BLOB_NOT_FOUND
+  tasks_9_10: NOT_STARTED
+  tasks_8_10: TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED
+  lifecycle: LAB_VALIDATED_INACTIVE
+  real_write: NOT_EXECUTED
+  real_rollback: NOT_EXECUTED
+  real_revocation: NOT_EXECUTED
+  mcf_effective_use: NOT_EXECUTED
+parallel_work:
+  f1_2c_systemd_runtime_lock:
+    branch: fix/f1-2c-systemd-runtime-lock
+    status_for_this_mission: ISOLATED_DO_NOT_MODIFY
+    ownership: MESTRE_MCF_AND_LEANDRO
+human_gates:
+  node_01_g2b_bootstrap: CLOSED_NOT_AUTHORIZED
+  real_grant_issue_or_reissue: CLOSED_NOT_AUTHORIZED
+  real_bounded_write: CLOSED_NOT_AUTHORIZED
+  production_mutation: CLOSED_NOT_AUTHORIZED
+  merge_g2b: CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED
+  publication_g2b: CLOSED_NOT_AUTHORIZED
+  task8_qemu_tcg_host_packages: CLOSED_NOT_REQUIRED_AFTER_LOCAL_LAB_PASS
+continuity_roadmap:
+  R1: COMPLETE
+  R2: COMPLETE
+  R3: COMPLETE
+  R4: COMPLETE
+  R5: COMPLETE
+  R6: COMPLETE
+  R7: COMPLETE
+  R8: COMPLETE
+validation:
+  structural_reconciliation: PASS
+  r3_protocol_contract: PERSISTED
+  r4_persistence_contract: PERSISTED
+  r5_institutional_memory_contract: PERSISTED
+  r5_first_incident_memo: PERSISTED
+  r6_drift_control_contract: PERSISTED
+  r6_executable_checker: INTEGRATED_IN_SCRIPTS_TEST_SH
+  r7_cold_start_validation: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION_HISTORICAL_SNAPSHOT
+  r7_independent_fresh_model_process: NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
+  r8_recovery_verdict: PASS
+  r8_task7_focused_tests: PASS_7_OF_7
+  r8_ansible_syntax: PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
+  r8_local_regression: PASS_367_TESTS_15_SHELL_SYNTAX
+  r8_role_review: PASS_SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
+  r8_github_hosted_validation: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS_OBSERVED_AFTER_R8_PUBLICATION
+  historical_evidence_preservation_check: PASS
+  task8_local_disposable_lifecycle: PASS_13_OF_13_TARGET_SHA_570779B
+  task8_local_cleanup: PASS
+  current_full_unit_suite: PASS_372_OF_372_AT_RECONCILIATION_MERGE
+  final_reconciled_unit_suite: PASS_381_OF_381
+  aggregate_gate: BLOCKED_LOCAL_SHARED_GIT_OBJECT_DB_NOT_CANDIDATE_RESULT
+next_exact_step: REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+recovery_rule: NEW_AGENT_MUST_EXECUTE_STARTUP_RECOVERY_PROTOCOL_BEFORE_IMPLEMENTATION
+persistence_rule: LONG_RUNNING_WORK_MUST_FOLLOW_MISSION_PERSISTENCE_POLICY
+memory_rule: MATERIAL_PROJECT_HISTORY_MUST_USE_APPEND_ORIENTED_INSTITUTIONAL_MEMOS
+drift_rule: CANONICAL_DRIFT_MUST_FAIL_CLOSED_UNTIL_RECONCILED
+r8_rule: R8_COMPLETE_DID_NOT_OPEN_ANY_HUMAN_GATE
+task8_rule: LOCAL_LAB_PASS_DOES_NOT_ACTIVATE_G2B_OR_OPEN_PUBLICATION_NODE01_TASK9_TASK10_MERGE_OR_PRODUCTION

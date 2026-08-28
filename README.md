@@ -1,5 +1,50 @@
 # Cloud Infrastructure
 
+> **Checklist canônico:** [`ROADMAP-CHECKLIST.md`](ROADMAP-CHECKLIST.md) — estado atual do roadmap, G2-B, gates, blocker e próximo passo.
+
+## MISSÃO ATIVA — CONTROL BRIDGE G2-B
+
+A missão de continuidade **Repository Continuity & Context Recovery Hardening** (#10) concluiu R1–R8. O trabalho ativo retorna ao **Control Bridge G2-B**.
+
+```text
+MISSION=CONTROL_BRIDGE_G2B
+MISSION_STATE=state/active-mission.yaml
+CONTINUITY_MISSION_ISSUE=10_COMPLETE
+CONTINUITY_MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
+STARTUP_PROTOCOL=governance/AI-STARTUP-RECOVERY-PROTOCOL.md
+PERSISTENCE_POLICY=governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md
+INSTITUTIONAL_MEMORY=state/institutional-memory.yaml
+R8_MEMO=history/memos/2026-08-22-r8-task7-completion.md
+DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
+COLD_START_R7_SNAPSHOT=state/cold-start-validation.yaml
+ACTIVE_BRANCH=codex/context-bridge-reconcile-20260823
+ACTIVE_PR=NONE_LOCAL_ONLY_NO_PUSH
+TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
+TASK_7=COMPLETE_7_PASS_0_FAIL
+TASK_7_CANDIDATE_SHA=604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
+TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
+TASK_8=PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+TASK_8_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
+G2B_LIFECYCLE=LAB_VALIDATED_INACTIVE
+TASKS_9_10=NOT_STARTED
+ROADMAP_R1_R8=COMPLETE
+NODE01_G2B_GATE=CLOSED
+REAL_GRANT_GATE=CLOSED
+REAL_WRITE_GATE=CLOSED
+PRODUCTION_GATE=CLOSED
+MERGE_G2B_GATE=CLOSED
+F1_2C=PARALLEL_ISOLATED_DO_NOT_MODIFY
+NEXT_EXACT_STEP=REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+```
+
+> Nova IA/agente: execute primeiro [`governance/AI-STARTUP-RECOVERY-PROTOCOL.md`](governance/AI-STARTUP-RECOVERY-PROTOCOL.md), leia `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/control-bridge-g2b.yaml`, e obtenha `RECOVERY_VERDICT=PASS` antes de implementar.
+
+> O R7 permanece como snapshot histórico repository-only do estado anterior à R8. A conclusão de R8 não altera retroativamente essa evidência.
+
+> **Task 8 passou somente no laboratório Docker descartável do notebook, com 13/13 marcadores e cleanup completo.** G2-B permanece `LAB_VALIDATED_INACTIVE`; Tasks 9/10, transporte mutante a partir do Context, NODE-01, grant real, escrita real, produção, publicação e merge continuam fechados.
+
+> A seção `PROJECT_STATUS` abaixo continua sendo a projeção da trilha principal da plataforma e não substitui o estado transversal G2-B acima.
+
 <!-- PROJECT_STATUS:START -->
 ## STATUS ATUAL
 
@@ -16,14 +61,12 @@
 - **GitHub Project:** `BLOCKED_EXTERNAL_MISSING_READ_PROJECT_AND_PROJECT_SCOPES`
 - **Produção:** `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`
 - **Rotação de credenciais:** `DEFERRED_BY_HUMAN_DECISION`
-- **Atualizado em:** `2026-08-18`
+- **Atualizado em:** `2026-08-23`
 
 > Esta seção é gerada das fontes canônicas; não edite manualmente.
 <!-- PROJECT_STATUS:END -->
 
 Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
-
-> Nova IA/agente? Comece por [`CONTEXT.md`](CONTEXT.md).
 
 ## Finalidade
 
@@ -31,7 +74,35 @@ Configurar, proteger, documentar e tornar reproduzível a VPS enquanto LEANDRO a
 
 ## Continuidade
 
-O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` são as portas de entrada; `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats são temporários; o GitHub é a memória canônica após validação e publicação.
+O repositório implementa o PUC v1.0. `governance/AI-STARTUP-RECOVERY-PROTOCOL.md`, `state/startup-recovery-protocol.yaml`, `governance/LONG-RUNNING-MISSION-PERSISTENCE-POLICY.md`, `state/mission-persistence-policy.yaml`, `state/institutional-memory.yaml`, `governance/CONTINUITY-DRIFT-CONTROLS.md`, `state/continuity-drift-controls.yaml`, `state/cold-start-validation.yaml`, `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/current.yaml` formam a entrada de continuidade. `docs/`, `decisions/`, `findings/`, `history/`, `runbooks/`, `recovery/`, `assets/` e `governance/` preservam o contexto por tipo. Chats e sessões de subagentes são temporários; Git/GitHub devem conter o estado recuperável antes de uma missão depender deles.
+
+A capability transversal **MCF VPS Control Plane / Control Bridge** possui continuidade própria para não sobrescrever a trilha principal F1.2c. O estado específico está em `state/control-bridge-g2b.yaml`; o checkpoint técnico recuperado está em `docs/54-control-bridge-g2b-recovery-checkpoint.md`; o estado da missão de recuperação está em `state/active-mission.yaml` e `docs/53-repository-continuity-context-recovery-mission.md`.
+
+GitHub live, branch/PR aplicável, código, testes e evidência do SHA aplicável prevalecem sobre afirmações históricas. Em divergência entre fontes, o agente deve retornar `BLOCKED_RECONCILIATION`; não deve escolher silenciosamente a versão mais conveniente.
+
+## Control Bridge — estado transversal reconciliado
+
+```text
+CONTROL_BRIDGE_G2B=TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED
+G1=PASS_REAL_NODE_01_ROUNDTRIP_HISTORIC_LIVE_REQUIRED
+G2A=PASS_REAL_NODE_01_READ_ONLY_HISTORIC_LIVE_REQUIRED
+G2B_TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
+G2B_TASK_7=COMPLETE_7_PASS_0_FAIL
+G2B_TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
+G2B_TASK_8=PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+TASKS_9_10=NOT_STARTED
+G2B_REAL_WRITE=NOT_EXECUTED
+G2B_PR=NONE_LOCAL_ONLY_NO_PUSH
+MESTRE_MCF=CURRENT_ORCHESTRATOR
+LEANDRO=FINAL_HUMAN_AUTHORITY
+F1_2C_SYSTEMD_RUNTIME_LOCK=PARALLEL_ISOLATED_DO_NOT_MODIFY
+NODE01_G2B_GATE=CLOSED
+NEXT_EXACT_STEP=REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+```
+
+O RED recuperado da Task 7 foi resolvido com validação fail-closed do conjunto exato de chaves de grant existente. O candidato `604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390` obteve 7/7 testes focados e 3/3 syntax-checks Ansible no self-hosted runner, sem apply, grant ou escrita real. No candidato, o GitHub-hosted CI falhou antes dos steps com `BlobNotFound`; no commit de conclusão R8 `047495c5...`, os runs hosted concluíram `action_required` sem criar jobs. Ambos permanecem inconclusivos como prova de conteúdo.
+
+O candidato reconciliado une a base madura G1/G2-A `3e34044...` ao input Task 8 `f116f16...` no merge `9359450...`. Em `570779b...`, `scripts/test_control_bridge_g2b_vm.sh` concluiu localmente em Docker Ubuntu 24.04/systemd com `--network none`, 13/13 marcadores e cleanup. A evidência sanitizada está em `evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md`; o contrato Context `project_id` → chave Cloud está em `context/mcf-cloud-context.yaml`, referenciado por `.mcf/project-capsule.yaml`.
 
 ## Estado operacional — baseline reconciliada em 16/08/2026
 
@@ -47,22 +118,12 @@ O repositório implementa o PUC v1.0. `CONTEXT.md`, `CHECKPOINT.md` e `state/cur
 
 A Cloud Workstation está **FUNCTIONAL_AND_VALIDATED**: XFCE + LightDM, XRDP restrito a `127.0.0.1:3389` e acesso somente por túnel SSH. Firefox oficial em pacote DEB, VS Code, terminal, Thunar, múltiplas janelas, clipboard bidirecional, resolução dinâmica, logout/login, desconexão/reconexão, persistência e reboot foram testados.
 
-Recursos são fatos voláteis. A recuperação da missão observou 8 CPUs, 23 GiB de
-RAM total, sem swap e raiz de 290 GiB; uso atual deve ser medido antes de cada
-slice. Os números de ~2,2 GiB RAM/~7,5 GiB disco pertencem ao snapshot histórico
-da validação final da Workstation.
+Recursos são fatos voláteis. A recuperação da missão observou 8 CPUs, 23 GiB de RAM total, sem swap e raiz de 290 GiB; uso atual deve ser medido antes de cada slice. Os números de ~2,2 GiB RAM/~7,5 GiB disco pertencem ao snapshot histórico da validação final da Workstation.
 
 ## Implementação atual
 
-Q1–Q39 definem a arquitetura vinculante e Q40-D autoriza o Codex a selecionar as
-tecnologias e implementar incrementalmente a plataforma DEV/lab. A missão está em
-[`docs/CODEX-EXECUTION-MISSION-001.md`](docs/CODEX-EXECUTION-MISSION-001.md) e o
-roadmap corrente em
-[`docs/45-revised-implementation-roadmap.md`](docs/45-revised-implementation-roadmap.md).
-A camada de acompanhamento está documentada em
-[`docs/48-status-layer-v1.md`](docs/48-status-layer-v1.md).
+Q1–Q39 definem a arquitetura vinculante e Q40-D autoriza o Codex a selecionar as tecnologias e implementar incrementalmente a plataforma DEV/lab. A missão está em [`docs/CODEX-EXECUTION-MISSION-001.md`](docs/CODEX-EXECUTION-MISSION-001.md) e o roadmap da trilha principal em [`docs/45-revised-implementation-roadmap.md`](docs/45-revised-implementation-roadmap.md). A camada de acompanhamento está documentada em [`docs/48-status-layer-v1.md`](docs/48-status-layer-v1.md).
 
-F1.1 e F1.2b estão concluídos no NODE-01. A base F1.2c também está ativa no host,
-e a matriz de redes/DNS/proxy/grants passou em VM descartável. O estado e o
-próximo passo exatos são projetados automaticamente na seção `STATUS ATUAL`.
+F1.1 e F1.2b estão concluídos no NODE-01. A trilha F1.2c mantém seu próprio estado e evidência, mas está isolada desta missão de continuidade. O `PROJECT_STATUS` continua representando essa trilha principal e não autoriza sua execução enquanto a missão ativa de continuidade estiver sendo trabalhada.
+
 Produção não está autorizada e a rotação permanece adiada por decisão humana.

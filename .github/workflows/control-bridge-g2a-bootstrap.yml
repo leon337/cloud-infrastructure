@@ -1,0 +1,55 @@
+name: control-bridge-g2a-bootstrap
+
+on:
+  push:
+    branches:
+      - mcf/mission-001-control-bridge-g1
+    paths:
+      - control/bootstrap/g2a-smoke.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: control-bridge-g2a-bootstrap-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out exact gated state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Materialize fixed rebuildable smoke workspace
+        id: bootstrap
+        run: |
+          python3 scripts/bootstrap_g2a_smoke_workspace.py \
+            --dispatch-file control/bootstrap/g2a-smoke.json \
+            --source-root "${GITHUB_WORKSPACE}" \
+            --workspace-root /home/ubuntu/mcf-workspaces \
+            --result-file "${RUNNER_TEMP}/g2a-bootstrap-result.json"
+
+      - name: Publish safe bootstrap summary
+        if: always()
+        run: |
+          {
+            printf '%s\n' '## G2-A smoke workspace bootstrap'
+            printf '%s\n' '```json'
+            cat "${RUNNER_TEMP}/g2a-bootstrap-result.json" 2>/dev/null || printf '%s\n' '{"status":"FAILED","error":"result_missing"}'
+            printf '%s\n' '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload bootstrap evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: g2a-bootstrap-${{ github.run_id }}
+          path: ${{ runner.temp }}/g2a-bootstrap-result.json
+          if-no-files-found: warn
+          retention-days: 7

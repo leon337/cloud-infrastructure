@@ -1,0 +1,431 @@
+---
+- name: Select the exact environment-specific G2-B marker
+  ansible.builtin.set_fact:
+    g2b_marker_content: >-
+      {{ g2b_marker_content_dev if platform_environment == 'dev'
+         else g2b_marker_content_test }}
+    g2b_marker_sha256: >-
+      {{ g2b_marker_sha256_dev if platform_environment == 'dev'
+         else g2b_marker_sha256_test }}
+
+- name: Verify the recorded NODE-01 identity and immutable G2-B allowlist
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version == '24.04'
+      - ansible_facts.service_mgr == 'systemd'
+      - ansible_facts.architecture == 'x86_64'
+      - inventory_hostname == 'node-01'
+      - platform_node_id == 'node-01'
+      - platform_environment in ['dev', 'test']
+      - platform_foundation_privileged_groups is defined
+      - g2b_service_account == 'mcf-workspace'
+      - g2b_service_home == '/nonexistent'
+      - g2b_service_shell == '/usr/sbin/nologin'
+      - g2b_entrypoint_path == '/usr/local/libexec/mcf-control-g2b'
+      - g2b_sudoers_path == '/etc/sudoers.d/mcf-control-g2b'
+      - g2b_tmpfiles_path == '/etc/tmpfiles.d/mcf-control-bridge-g2b.conf'
+      - g2b_grant_path == '/etc/mcf-control-bridge/g2b-grant.json'
+      - g2b_marker_path == '/etc/mcf-control-bridge-g2b.managed'
+      - g2b_workspace_path == '/var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev'
+      - g2b_state_path == '/var/lib/mcf-control-bridge/state/g2b'
+      - g2b_log_path == '/var/log/mcf-control-bridge/g2b'
+      - g2b_lock_path == '/run/lock/mcf-control-bridge-g2b.lock'
+      - g2b_executor_bundle_sha256 == '7ed806ee4d73743f3d0ab6f7f5c216494ed0d4f645f5f2bea0b128f2a689d3af'
+      - (g2b_marker_content | hash('sha256')) == g2b_marker_sha256
+      - >-
+        (
+          (ansible_connection | default('ssh')) == 'local' and
+          platform_environment == 'test' and
+          platform_repository_root == '/workspace/cloud-infrastructure'
+        ) or (
+          (ansible_connection | default('ssh')) != 'local' and
+          platform_environment == 'dev' and
+          ansible_user == 'ubuntu' and
+          platform_expected_ansible_host == '169.58.171.192' and
+          platform_expected_hostname == 'vmi3506102' and
+          platform_expected_machine_id_sha256 ==
+            '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+          (ansible_host | string) == (platform_expected_ansible_host | string) and
+          ansible_facts.hostname == platform_expected_hostname and
+          (ansible_facts.machine_id | hash('sha256')) ==
+            platform_expected_machine_id_sha256
+        )
+    fail_msg: >-
+      G2-B supports only the controller-preflight-guarded Ubuntu 24.04
+      NODE-01 target and the explicit disposable test boundary.
+
+- name: Inspect every reviewed G2-B source without following links
+  ansible.builtin.stat:
+    path: "{{ platform_repository_root }}/{{ item.source }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop: "{{ g2b_install_payloads }}"
+  register: g2b_source_files
+  become: false
+  delegate_to: localhost
+
+- name: Require exact reviewed G2-B source hashes
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isreg | default(false)
+      - not (item.stat.islnk | default(false))
+      - item.stat.checksum == item.item.sha256
+    fail_msg: "Reviewed G2-B source drifted: {{ item.item.source }}."
+  loop: "{{ g2b_source_files.results }}"
+
+- name: Inspect the external G2-B marker without following links
+  ansible.builtin.stat:
+    path: "{{ g2b_marker_path }}"
+    follow: false
+    checksum_algorithm: sha256
+  register: g2b_marker_state
+
+- name: Require an exact root-only regular marker when present
+  ansible.builtin.assert:
+    that:
+      - g2b_marker_state.stat.isreg | default(false)
+      - not (g2b_marker_state.stat.islnk | default(false))
+      - g2b_marker_state.stat.uid == 0
+      - g2b_marker_state.stat.gid == 0
+      - g2b_marker_state.stat.mode == '0600'
+      - g2b_marker_state.stat.checksum == g2b_marker_sha256
+    fail_msg: The G2-B marker is not the exact reviewed provenance marker.
+  when: g2b_marker_state.stat.exists
+
+- name: Read the existing G2-B marker
+  ansible.builtin.slurp:
+    src: "{{ g2b_marker_path }}"
+  register: g2b_marker_data
+  when: g2b_marker_state.stat.exists
+
+- name: Validate exact existing G2-B marker content
+  ansible.builtin.assert:
+    that:
+      - (g2b_marker_data.content | b64decode) == g2b_marker_content
+    fail_msg: The G2-B marker does not identify this exact environment and bundle.
+  when: g2b_marker_state.stat.exists
+
+- name: Inspect every managed G2-B directory without following links
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    follow: false
+  loop: "{{ g2b_root_directories + g2b_service_directories }}"
+  register: g2b_existing_directories
+
+- name: Inspect every managed G2-B payload without following links
+  ansible.builtin.stat:
+    path: "{{ item.destination }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop: "{{ g2b_install_payloads }}"
+  register: g2b_existing_payloads
+
+- name: Inspect the separately managed G2-B grant without following links
+  ansible.builtin.stat:
+    path: "{{ g2b_grant_path }}"
+    follow: false
+  register: g2b_existing_grant
+
+- name: Inspect the tmpfiles-managed G2-B lock without following links
+  ansible.builtin.stat:
+    path: "{{ g2b_lock_path }}"
+    follow: false
+  register: g2b_existing_lock
+
+- name: Inspect an existing G2-B service account
+  ansible.builtin.command:
+    argv: [getent, passwd, "{{ g2b_service_account }}"]
+  register: g2b_existing_account
+  changed_when: false
+  failed_when: g2b_existing_account.rc not in [0, 2]
+  check_mode: false
+
+- name: Inspect an existing G2-B service group
+  ansible.builtin.command:
+    argv: [getent, group, "{{ g2b_service_account }}"]
+  register: g2b_existing_group
+  changed_when: false
+  failed_when: g2b_existing_group.rc not in [0, 2]
+  check_mode: false
+
+- name: Inspect existing G2-B service account memberships
+  ansible.builtin.command:
+    argv: [id, -nG, "{{ g2b_service_account }}"]
+  register: g2b_existing_memberships
+  changed_when: false
+  failed_when: g2b_existing_memberships.rc not in [0, 1]
+  check_mode: false
+
+- name: Inspect existing G2-B service account password state
+  ansible.builtin.command:
+    argv: [passwd, -S, "{{ g2b_service_account }}"]
+  register: g2b_existing_password
+  changed_when: false
+  failed_when: g2b_existing_password.rc not in [0, 1]
+  check_mode: false
+  no_log: true
+
+- name: Refuse to adopt any unmarked pre-existing G2-B object
+  ansible.builtin.assert:
+    that:
+      - >-
+        g2b_marker_state.stat.exists or
+        (
+          (g2b_existing_directories.results |
+            selectattr('stat.exists') | list | length) == 0 and
+          (g2b_existing_payloads.results |
+            selectattr('stat.exists') | list | length) == 0 and
+          not g2b_existing_grant.stat.exists and
+          not g2b_existing_lock.stat.exists and
+          g2b_existing_account.rc == 2 and
+          g2b_existing_group.rc == 2
+        )
+    fail_msg: >-
+      A G2-B path, grant, lock, account, or group exists without the exact
+      external marker. Refusing ownership, content, or permission changes.
+
+- name: Validate exact existing G2-B directory provenance
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isdir | default(false)
+      - not (item.stat.islnk | default(false))
+      - item.stat.pw_name == item.item.owner
+      - item.stat.gr_name == item.item.group
+      - item.stat.mode == item.item.mode
+    fail_msg: "Managed G2-B directory drifted: {{ item.item.path }}."
+  loop: "{{ g2b_existing_directories.results }}"
+  when: g2b_marker_state.stat.exists
+
+- name: Validate exact existing G2-B payload provenance
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isreg | default(false)
+      - not (item.stat.islnk | default(false))
+      - item.stat.pw_name == item.item.owner
+      - item.stat.gr_name == item.item.group
+      - item.stat.mode == item.item.mode
+      - item.stat.checksum == item.item.sha256
+    fail_msg: "Managed G2-B payload drifted: {{ item.item.destination }}."
+  loop: "{{ g2b_existing_payloads.results }}"
+  when: g2b_marker_state.stat.exists
+
+- name: Validate any existing separately issued grant boundary
+  ansible.builtin.assert:
+    that:
+      - g2b_existing_grant.stat.isreg | default(false)
+      - not (g2b_existing_grant.stat.islnk | default(false))
+      - g2b_existing_grant.stat.uid == 0
+      - g2b_existing_grant.stat.gid == 0
+      - g2b_existing_grant.stat.mode == '0644'
+    fail_msg: The separate G2-B grant path is linked, non-regular, or writable.
+  when:
+    - g2b_marker_state.stat.exists
+    - g2b_existing_grant.stat.exists
+
+- name: Validate any existing tmpfiles-managed lock
+  ansible.builtin.assert:
+    that:
+      - g2b_existing_lock.stat.isreg | default(false)
+      - not (g2b_existing_lock.stat.islnk | default(false))
+      - g2b_existing_lock.stat.pw_name == g2b_service_account
+      - g2b_existing_lock.stat.gr_name == g2b_service_account
+      - g2b_existing_lock.stat.mode == '0600'
+    fail_msg: The G2-B lock path has unsafe provenance.
+  when:
+    - g2b_marker_state.stat.exists
+    - g2b_existing_lock.stat.exists
+
+- name: Validate the existing locked G2-B service identity
+  ansible.builtin.assert:
+    that:
+      - g2b_existing_account.stdout.split(':') | length >= 7
+      - g2b_existing_account.stdout.split(':')[4] == g2b_service_comment
+      - g2b_existing_account.stdout.split(':')[5] == g2b_service_home
+      - g2b_existing_account.stdout.split(':')[6] == g2b_service_shell
+      - g2b_existing_group.rc == 0
+      - >-
+        g2b_existing_account.stdout.split(':')[3] ==
+        g2b_existing_group.stdout.split(':')[2]
+      - g2b_existing_memberships.stdout.split() == [g2b_service_account]
+      - >-
+        (g2b_existing_memberships.stdout.split() |
+          intersect(platform_foundation_privileged_groups) | length) == 0
+      - g2b_existing_password.stdout.split()[1] == 'L'
+    fail_msg: The marked G2-B service identity is unlocked or over-privileged.
+  when:
+    - g2b_marker_state.stat.exists
+    - g2b_existing_account.rc == 0
+
+- name: Explain the non-mutating initial check-mode preview
+  ansible.builtin.debug:
+    msg: >-
+      Initial check mode validates identity, reviewed hashes, path absence, and
+      immutable variables. It deliberately creates no account, directory,
+      payload, fixture, lock, grant, or marker.
+  when: ansible_check_mode and not g2b_marker_state.stat.exists
+
+- name: Acquire the exact G2-B installation lock
+  ansible.builtin.command:
+    argv: [mkdir, /run/lock/mcf-control-bridge-g2b-install]
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Reconcile the exact G2-B installation while holding its lock
+  when: not ansible_check_mode
+  block:
+    - name: Create the G2-B service group
+      ansible.builtin.group:
+        name: "{{ g2b_service_account }}"
+        system: true
+        state: present
+
+    - name: Create the locked non-login G2-B service account
+      ansible.builtin.user:
+        name: "{{ g2b_service_account }}"
+        comment: "{{ g2b_service_comment }}"
+        group: "{{ g2b_service_account }}"
+        groups: ""
+        append: false
+        home: "{{ g2b_service_home }}"
+        create_home: false
+        shell: "{{ g2b_service_shell }}"
+        password_lock: true
+        system: true
+        state: present
+
+    - name: Create root-owned non-writable G2-B parents
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop: "{{ g2b_root_directories }}"
+
+    - name: Create exact service-owned G2-B leaves
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop: "{{ g2b_service_directories }}"
+
+    - name: Install exact root-owned bundle tmpfiles and smoke fixture payloads
+      ansible.builtin.copy:
+        src: "{{ platform_repository_root }}/{{ item.source }}"
+        dest: "{{ item.destination }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop: "{{ g2b_install_payloads }}"
+      when: item.destination != g2b_sudoers_path
+
+    - name: Validate sudoers before atomic install
+      ansible.builtin.copy:
+        src: "{{ platform_repository_root }}/platform/sudoers/mcf-control-g2b"
+        dest: "{{ g2b_sudoers_path }}"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: /usr/sbin/visudo -cf %s
+
+    - name: Parse the installed exact sudoers boundary
+      ansible.builtin.command:
+        argv: [/usr/sbin/visudo, -cf, "{{ g2b_sudoers_path }}"]
+      changed_when: false
+      check_mode: false
+
+    - name: Apply the exact G2-B tmpfiles declaration
+      ansible.builtin.command:
+        argv: [systemd-tmpfiles, --create, "{{ g2b_tmpfiles_path }}"]
+      changed_when: false
+
+    - name: Verify the service account remains locked and has no privileged groups
+      ansible.builtin.command:
+        argv: [id, -nG, "{{ g2b_service_account }}"]
+      register: g2b_reconciled_memberships
+      changed_when: false
+      check_mode: false
+
+    - name: Prove the exact post-install group boundary
+      ansible.builtin.assert:
+        that:
+          - g2b_reconciled_memberships.stdout.split() == [g2b_service_account]
+          - >-
+            (g2b_reconciled_memberships.stdout.split() |
+              intersect(platform_foundation_privileged_groups) | length) == 0
+
+    - name: Verify ubuntu direct write is denied by the protected parent
+      ansible.builtin.command:
+        argv: [test, '!', -w, "{{ g2b_workspace_path }}"]
+      become: true
+      become_user: ubuntu
+      changed_when: false
+      check_mode: false
+
+    - name: Verify the exact sudo status command reaches the executor as mcf-workspace
+      ansible.builtin.command:
+        argv:
+          - sudo
+          - -n
+          - -u
+          - mcf-workspace
+          - /usr/local/libexec/mcf-control-g2b
+          - status
+        stdin: |-
+          {"transport_principal":{"login":"leon337","actor_id":25374535},"request":{"protocol":"MCF_WORKSPACE_MUTATION_V1","request_id":"G2B-BOOTSTRAP-STATUS-CHECK","mission_id":"CONTROL-BRIDGE-G2B-PILOT","declared_actor":"MESTRE_MCF","project":{"tenant":"leon337","name":"g2a-smoke","environment":"dev"},"operation":"status","arguments":{}}}
+        stdin_add_newline: true
+      become: true
+      become_user: ubuntu
+      register: g2b_status_probe
+      changed_when: false
+      check_mode: false
+
+    - name: Require a bounded status result from the service executor
+      ansible.builtin.assert:
+        that:
+          - g2b_status_probe.rc == 0
+          - (g2b_status_probe.stdout | from_json).operation == 'status'
+          - (g2b_status_probe.stdout | from_json).status in ['PASS', 'REFUSED']
+          - >-
+            (g2b_status_probe.stdout | from_json).status == 'PASS' or
+            (g2b_status_probe.stdout | from_json).error in
+              ['grant_missing', 'grant_not_active', 'grant_revoked']
+
+    - name: Reinspect installed G2-B payloads after reconciliation
+      ansible.builtin.stat:
+        path: "{{ item.destination }}"
+        follow: false
+        checksum_algorithm: sha256
+      loop: "{{ g2b_install_payloads }}"
+      register: g2b_reconciled_payloads
+
+    - name: Require exact installed G2-B payload hashes and permissions
+      ansible.builtin.assert:
+        that:
+          - item.stat.isreg | default(false)
+          - not (item.stat.islnk | default(false))
+          - item.stat.pw_name == item.item.owner
+          - item.stat.gr_name == item.item.group
+          - item.stat.mode == item.item.mode
+          - item.stat.checksum == item.item.sha256
+      loop: "{{ g2b_reconciled_payloads.results }}"
+  always:
+    - name: Release the exact G2-B installation lock
+      ansible.builtin.command:
+        argv: [rmdir, /run/lock/mcf-control-bridge-g2b-install]
+      changed_when: false
+
+- name: Place the G2-B provenance marker last
+  ansible.builtin.copy:
+    dest: "{{ g2b_marker_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+    content: "{{ g2b_marker_content }}"
+  when: not ansible_check_mode

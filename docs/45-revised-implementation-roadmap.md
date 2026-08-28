@@ -3,6 +3,12 @@
 Status: **ACTIVE — Q40-D**
 Substitui como roadmap corrente as antigas fases provisórias F3–F10.
 
+## Checklist canônico de leitura rápida
+
+O checklist consolidado humano/IA está em [`ROADMAP-CHECKLIST.md`](../ROADMAP-CHECKLIST.md). Ele projeta o estado atual de `state/current.yaml` e `state/control-bridge-g2b.yaml`; divergência entre checklist e estado machine-readable é bloqueante até reconciliação.
+
+Estado transversal atual: **G2-B Task 8 `BLOCKED_EXTERNAL`** porque a prova privilegiada Ubuntu 24.04/systemd descartável não iniciou no GitHub-hosted runner (`run 32551353362`, retry confirmado com `steps=0`/`BlobNotFound`). Não rerotear para NODE-01.
+
 ## Estados
 
 - `PLANNED`: desired state ainda não implementado;
@@ -100,3 +106,22 @@ desired state NODE-01 agora está preparado com quatro serviços privados por
 digest, quatro redes exatas, forwarding fail-closed, lifecycle systemd e
 rollback por camada. CI commit-bound passou no run `32131461110`; apply/rollback real e gates de workload
 permanecem necessários.
+
+## Control Bridge — continuidade reconciliada em 2026-08-20
+
+```text
+CONTROL_BRIDGE_G2B=P0_DESIGN_APPROVED_IMPLEMENTATION_PENDING
+G1=PASS_REAL_NODE_01_ROUNDTRIP
+G2A=PASS_REAL_NODE_01_READ_ONLY
+G2B_REAL_WRITE=NOT_EXECUTED
+CODEX=AVAILABLE_PARALLEL_EXECUTOR
+MESTRE_MCF=ORCHESTRATOR
+LEANDRO=FINAL_HUMAN_AUTHORITY
+F1_2C_SYSTEMD_RUNTIME_LOCK=FROZEN_FOR_CODEX_OWNED_BY_MESTRE_MCF_AND_LEANDRO
+GITHUB_HOSTED_CI=BLOCKED_EXTERNAL_BILLING
+SELF_HOSTED_NODE_01_RUNNER=ONLINE_OBSERVED_2026_08_20
+```
+
+O status do runner é observado na GitHub API, não uma observação nova da VPS.
+F1.2c preserva seus fatos/timestamps e a branch paralela permanece congelada
+para Codex. O estado fail-closed de G2-B é `state/control-bridge-g2b.yaml`.
