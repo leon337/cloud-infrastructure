@@ -1,0 +1,13 @@
+[Unit]
+Description=Cloud Infrastructure off-host recovery pull
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/cloud-infrastructure-offhost-recovery
+NoNewPrivileges=yes
+PrivateTmp=yes
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

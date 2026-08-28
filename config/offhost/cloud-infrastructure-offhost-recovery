@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+
+REMOTE_HOST=${CLOUD_RECOVERY_REMOTE_HOST:-ubuntu@169.58.171.192}
+DEST_ROOT=${CLOUD_RECOVERY_DEST_ROOT:-$HOME/Backups/cloud-infrastructure/recovery}
+CONNECT_TIMEOUT=${CLOUD_RECOVERY_CONNECT_TIMEOUT:-15}
+stable_agent=/run/user/$(id -u)/gcr/ssh
+if [[ -n ${CLOUD_RECOVERY_SSH_AUTH_SOCK:-} ]]; then
+  AUTH_SOCK=$CLOUD_RECOVERY_SSH_AUTH_SOCK
+elif [[ -S "$stable_agent" ]]; then
+  AUTH_SOCK=$stable_agent
+elif [[ -n ${SSH_AUTH_SOCK:-} ]]; then
+  AUTH_SOCK=$SSH_AUTH_SOCK
+else
+  AUTH_SOCK=$stable_agent
+fi
+
+[[ -S "$AUTH_SOCK" ]] || { echo "RECOVERY_ABORT=ssh_agent_unavailable path=$AUTH_SOCK" >&2; exit 20; }
+command -v ssh >/dev/null
+command -v scp >/dev/null
+command -v tar >/dev/null
+command -v sha256sum >/dev/null
+command -v python3 >/dev/null
+
+ssh_opts=(
+  -o BatchMode=yes
+  -o StrictHostKeyChecking=yes
+  -o ConnectTimeout="$CONNECT_TIMEOUT"
+  -o "IdentityAgent=$AUTH_SOCK"
+)
+ssh_cmd=(ssh "${ssh_opts[@]}" "$REMOTE_HOST")
+scp_cmd=(scp "${ssh_opts[@]}")
+
+runtime_paths=(
+  etc/systemd/system/cloud-platform-network-enforcement.service
+  etc/systemd/system/cloud-platform-network-services.service
+  etc/systemd/system/cloud-infrastructure-config-backup.service
+  etc/systemd/system/cloud-infrastructure-config-backup.timer
+  etc/systemd/system/actions.runner.leon337-cloud-infrastructure.node--1-mcf-control.service
+  etc/systemd/system/sentinelx-cloud-core.service
+  usr/local/libexec/cloud-platform-network-enforcement
+  usr/local/libexec/cloud-platform-network-services
+  usr/local/libexec/mcf-hermes-operator
+  home/ubuntu/.local/bin/mcf-mission2-terminal.py
+  home/ubuntu/.local/bin/mcf-ox-display10-bridge
+  home/ubuntu/.local/bin/mcf-rdp-brave-newest-two
+)
+
+required_runtime_paths=(
+  etc/systemd/system/cloud-platform-network-enforcement.service
+  etc/systemd/system/cloud-platform-network-services.service
+  etc/systemd/system/cloud-infrastructure-config-backup.service
+  etc/systemd/system/cloud-infrastructure-config-backup.timer
+  etc/systemd/system/sentinelx-cloud-core.service
+  usr/local/libexec/cloud-platform-network-enforcement
+  usr/local/libexec/cloud-platform-network-services
+  usr/local/libexec/mcf-hermes-operator
+)
+
+mkdir -p "$DEST_ROOT"
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+tmp=$(mktemp -d "$DEST_ROOT/.recovery-p2-$stamp.XXXXXX")
+final="$DEST_ROOT/$stamp"
+trap 'rm -rf "$tmp"' EXIT
+
+# shellcheck disable=SC2016  # expansion is intentionally evaluated by the remote shell
+"${ssh_cmd[@]}" 'printf "REMOTE_ID=%s@%s\n" "$(id -un)" "$(hostname)"' > "$tmp/remote-identity.txt"
+
+a=$("${ssh_cmd[@]}" 'find /var/backups/cloud-infrastructure -maxdepth 1 -type f -name "cloud-infrastructure-config-*.tar.gz" -printf "%T@ %p\n" | sort -nr | head -n1 | cut -d" " -f2-')
+[[ "$a" == /var/backups/cloud-infrastructure/cloud-infrastructure-config-*.tar.gz ]] || {
+  echo "RECOVERY_ABORT=remote_backup_not_found value=$a" >&2
+  exit 21
+}
+remote_hash=$("${ssh_cmd[@]}" "sha256sum '$a' | cut -d' ' -f1")
+base=$(basename "$a")
+"${scp_cmd[@]}" "$REMOTE_HOST:$a" "$tmp/$base" >/dev/null
+"${scp_cmd[@]}" "$REMOTE_HOST:$a.sha256" "$tmp/$base.sha256" >/dev/null
+local_hash=$(sha256sum "$tmp/$base" | cut -d' ' -f1)
+[[ "$remote_hash" == "$local_hash" ]] || { echo "RECOVERY_ABORT=root_backup_hash_mismatch" >&2; exit 22; }
+
+remote_tar_cmd='set -e; p=();'
+for p in "${runtime_paths[@]}"; do
+  printf -v q '%q' "/$p"
+  remote_tar_cmd+=" [ -e $q ] && p+=( $q );"
+done
+# shellcheck disable=SC2016  # expansion is intentionally evaluated by the remote shell
+remote_tar_cmd+=' ((${#p[@]})); tar -C / -czf - "${p[@]#/}"'
+"${ssh_cmd[@]}" "bash -lc $(printf '%q' "$remote_tar_cmd")" > "$tmp/runtime-overlay.tar.gz"
+
+# shellcheck disable=SC2016  # expansion is intentionally evaluated by the remote shell
+"${ssh_cmd[@]}" 'bash -lc '\''
+set -u
+printf "collected_at=%s\n" "$(date -Iseconds)"
+printf "hostname=%s\n" "$(hostname)"
+printf "kernel=%s\n" "$(uname -r)"
+printf "os="; . /etc/os-release; printf "%s\n" "$PRETTY_NAME"
+printf "system_state="; systemctl is-system-running 2>/dev/null || true
+printf "failed_units="; systemctl --failed --no-legend 2>/dev/null | wc -l
+printf "repo_branch="; git -C /home/ubuntu/cloud-infrastructure branch --show-current 2>/dev/null || true
+printf "repo_head="; git -C /home/ubuntu/cloud-infrastructure rev-parse HEAD 2>/dev/null || true
+printf "repo_dirty="; test -z "$(git -C /home/ubuntu/cloud-infrastructure status --porcelain 2>/dev/null)" && echo no || echo yes
+printf "runner="; /home/ubuntu/actions-runner/bin/Runner.Listener --version 2>/dev/null || true
+printf "docker="; docker --version 2>/dev/null || true
+printf "xrdp="; xrdp --version 2>&1 | head -n1 || true
+printf "hermes="; /home/ubuntu/.local/bin/hermes --version 2>/dev/null || true
+printf "sentinelx_agent_service="; systemctl is-active sentinelx-cloud-core.service 2>/dev/null || true
+printf "backup_timer="; systemctl is-active cloud-infrastructure-config-backup.timer 2>/dev/null || true
+printf "backup_generator_meta="; stat -c "%a:%U:%G:%s:%y" /usr/local/sbin/cloud-infrastructure-config-backup 2>/dev/null || true
+printf "backup_last="; systemctl show cloud-infrastructure-config-backup.service -p ExecMainStatus -p ExecMainExitTimestamp --value 2>/dev/null | tr "\n" ";" || true; echo
+ss -H -lntup 2>/dev/null | sed -E "s/users:\(.*//" | sort
+'\''' > "$tmp/runtime-state.txt"
+
+mkdir "$tmp/root-extract" "$tmp/runtime-extract"
+python3 - "$tmp/$base" "$tmp/runtime-overlay.tar.gz" <<'PY'
+import pathlib, sys, tarfile
+for archive in sys.argv[1:]:
+    with tarfile.open(archive, "r:gz") as tf:
+        for m in tf.getmembers():
+            p = pathlib.PurePosixPath(m.name)
+            if p.is_absolute() or ".." in p.parts:
+                raise SystemExit(f"unsafe archive path: {m.name}")
+            if m.issym() or m.islnk():
+                raise SystemExit(f"archive link refused: {m.name}")
+PY
+
+tar -xzf "$tmp/$base" -C "$tmp/root-extract"
+tar -xzf "$tmp/runtime-overlay.tar.gz" -C "$tmp/runtime-extract"
+
+for p in "${required_runtime_paths[@]}"; do
+  [[ -f "$tmp/runtime-extract/$p" ]] || { echo "RECOVERY_ABORT=missing_runtime_artifact path=$p" >&2; exit 23; }
+done
+
+# Refuse common private-key/token material if it ever enters the allowlisted overlay.
+if grep -RIlE --binary-files=without-match -- '-----BEGIN ([A-Z0-9 ]+ )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-proj-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{32,}' \
+  "$tmp/runtime-extract" "$tmp/root-extract" > "$tmp/secret-scan.matches"; then
+  echo "RECOVERY_ABORT=secret_pattern_detected" >&2
+  sed 's#^.*/##' "$tmp/secret-scan.matches" >&2
+  exit 24
+fi
+rm -f "$tmp/secret-scan.matches"
+
+root_members=$(tar -tzf "$tmp/$base" | wc -l)
+runtime_members=$(tar -tzf "$tmp/runtime-overlay.tar.gz" | wc -l)
+cat > "$tmp/RECOVERY-MANIFEST.txt" <<EOF
+RECOVERY_FORMAT=RECOVERY-P2-v1
+COLLECTED_AT=$stamp
+REMOTE_HOST=$REMOTE_HOST
+ROOT_BACKUP=$base
+ROOT_BACKUP_SHA256=$local_hash
+ROOT_BACKUP_MEMBERS=$root_members
+RUNTIME_OVERLAY=runtime-overlay.tar.gz
+RUNTIME_OVERLAY_MEMBERS=$runtime_members
+SECRET_SCAN=PASS
+ARCHIVE_PATH_SAFETY=PASS
+ARCHIVE_LINK_SAFETY=PASS
+RESTORE_SMOKE=PASS
+BOUNDARY=NO_PRIVATE_KEYS_NO_PROVIDER_IDENTITIES_NO_BROWSER_PROFILES_NO_WORKLOAD_DATA
+RESTORE_ORDER=base_os_then_packages_then_root_config_then_runtime_overlay_then_external_reenrollment_then_validation
+EOF
+
+(
+  cd "$tmp"
+  sha256sum "$base" "$base.sha256" runtime-overlay.tar.gz runtime-state.txt remote-identity.txt RECOVERY-MANIFEST.txt > SHA256SUMS
+)
+rm -rf "$tmp/root-extract" "$tmp/runtime-extract"
+find "$tmp" -maxdepth 1 -type f -exec chmod 600 {} +
+mv "$tmp" "$final"
+trap - EXIT
+ln -sfn "$(basename "$final")" "$DEST_ROOT/latest"
+printf 'RESTORE_SMOKE=PASS\n'
+printf 'RECOVERY_P2=PASS\n'
+printf 'RECOVERY_DIR=%s\n' "$final"
+printf 'ROOT_BACKUP_SHA256=%s\n' "$local_hash"

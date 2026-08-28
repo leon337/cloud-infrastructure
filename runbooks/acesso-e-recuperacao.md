@@ -44,3 +44,17 @@ Verificar timer, arquivo e hash antes de depender do backup. O backup atual não
 - não reativar LXD/NOPASSWD sem decisão;
 - não aceitar host key alterada automaticamente;
 - não registrar senhas, passphrases ou chaves privadas.
+
+## RECOVERY-P2 — off-host em camadas
+
+O recovery off-host usa modelo pull a partir do computador do operador, sem abrir porta de entrada no notebook e sem conceder novo privilégio no NODE-01.
+
+- Layer A: archive sanitizado root-owned produzido por `cloud-infrastructure-config-backup.timer`;
+- Layer B: overlay allowlisted de units/scripts operacionais legíveis, coletado por SSH com `BatchMode=yes` e `StrictHostKeyChecking=yes`;
+- Layer C: `RECOVERY-MANIFEST.txt`, `runtime-state.txt` e `SHA256SUMS`.
+
+Instalação de referência: `config/offhost/`. O timer do usuário executa diariamente às 00:30 com `Persistent=true` e grava em `~/Backups/cloud-infrastructure/recovery/`.
+
+O bundle deve falhar fechado se o ssh-agent/host key não estiver disponível, se o SHA do archive root divergir, se faltar artefato runtime obrigatório, se houver path inseguro/link no tar ou se o secret scan detectar material compatível com chave privada/token.
+
+O escopo continua deliberadamente sem chaves privadas, identidades de provider/SentinelX, perfis/cookies de navegador, `.env`, dados completos de workload ou dados pessoais. `RECOVERY_P2=PASS` prova a reconstruibilidade dos artefatos cobertos, não uma restauração integral de imagem da VPS.
