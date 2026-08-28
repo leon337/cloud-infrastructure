@@ -200,7 +200,9 @@ GUEST_HARNESS_COMMAND="set -Eeuo pipefail; \
   test \"\$(git rev-parse HEAD)\" = '$CANDIDATE_SHA'; \
   test -z \"\$(git status --porcelain)\"; \
   DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY \
-    scripts/test_node_network_services_vm.sh"
+    scripts/test_node_network_services_vm.sh; \
+  DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY \
+    scripts/test_node_network_services_partial_recovery_vm.sh"
 readonly GUEST_HARNESS_COMMAND
 
 set +e

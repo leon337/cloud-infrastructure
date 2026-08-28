@@ -1,0 +1,90 @@
+name: f1-2c-rollout-recovery-kvm
+
+on:
+  pull_request:
+    branches:
+      - fix/f1-2c-systemd-runtime-lock
+
+permissions:
+  contents: read
+
+concurrency:
+  group: f1-2c-rollout-recovery-kvm-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  disposable-kvm:
+    if: github.head_ref == 'fix/f1-2c-node01-rollout-recovery-20260828'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+
+    steps:
+      - name: Check out exact recovery candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prepare disposable KVM host
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain)"
+          if [[ ! -e /dev/kvm ]]; then
+            echo 'KVM_ACCEPTANCE_REFUSED reason=/dev/kvm_missing' >&2
+            exit 2
+          fi
+          sudo chmod 0666 /dev/kvm
+
+          # This is an ephemeral GitHub-hosted runner. Remove only preinstalled
+          # rebuildable toolchains when the existing F1.2c 30-GiB safety gate
+          # would otherwise reject the disposable lab.
+          free_kib=$(df -Pk "${TMPDIR:-/tmp}" | awk 'NR==2 {print $4}')
+          if (( free_kib < 35 * 1024 * 1024 )); then
+            sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache || true
+          fi
+
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 qemu-utils cloud-image-utils
+          ls -l /dev/kvm
+          free -h
+          df -h "${TMPDIR:-/tmp}"
+
+      - name: Run exact-head disposable KVM lifecycle and partial recovery
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          scripts/run_f1_2c_kvm_lab.sh "$CANDIDATE_SHA"
+
+      - name: Collect KVM evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          evidence_dir="$RUNNER_TEMP/kvm-evidence"
+          mkdir -p "$evidence_dir"
+          evidence_root="${XDG_STATE_HOME:-$HOME/.local/state}/mcf-kvm-lab/evidence"
+          if [[ -d "$evidence_root" ]]; then
+            cp -a "$evidence_root"/. "$evidence_dir/"
+          fi
+          find "$evidence_dir" -maxdepth 3 -type f -print || true
+
+      - name: Upload KVM evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: f1-2c-rollout-recovery-kvm-${{ github.run_id }}
+          path: ${{ runner.temp }}/kvm-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Confirm repository workspace stayed clean
+        if: always()
+        shell: bash
+        run: |
+          git status --short
+          test -z "$(git status --porcelain)"

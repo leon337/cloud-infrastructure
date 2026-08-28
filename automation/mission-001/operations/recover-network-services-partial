@@ -1,0 +1,359 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)
+readonly ROOT
+readonly EXPECTED_PARENT=80a1579bf6525029be8085fa1d1cbdec602ddfbd
+readonly HISTORICAL_PARTIAL_COMMIT=c9f909945b544d22dbabc619252456f7190f7ae9
+readonly EXPECTED_HOST=vmi3506102
+readonly EXPECTED_MACHINE_ID_SHA256=27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
+readonly KVM_CONFIRMATION=F1_2C_RECOVERY_DISPOSABLE_KVM_ONLY
+readonly KVM_MARKER=MCF_F1_2C_KVM_LAB_V1
+readonly SERVICE_HELPER=/usr/local/libexec/cloud-platform-network-services
+readonly SERVICE_UNIT=/etc/systemd/system/cloud-platform-network-services.service
+readonly SERVICE_MARKER=/etc/cloud-platform-network-services.managed
+readonly SERVICE_ROOT=/etc/cloud-platform/network-services
+readonly SYSCTL_FILE=/etc/sysctl.d/90-cloud-platform-network-forwarding.conf
+readonly BASE_HELPER=/usr/local/libexec/cloud-platform-network-enforcement
+readonly BASE_UNIT=/etc/systemd/system/cloud-platform-network-enforcement.service
+readonly BASE_DROPIN=/etc/systemd/system/docker.service.d/20-cloud-platform-network-enforcement.conf
+readonly BASE_MARKER=/etc/cloud-platform-network-enforcement.managed
+readonly FOUNDATION_MARKER=/etc/cloud-platform-foundation.managed
+readonly DOCKER_MARKER=/etc/cloud-platform-docker-runtime.managed
+readonly LEGACY_LOCK=/run/lock/cloud-platform-network-services.lock
+readonly PRIVATE_RUNTIME=/run/cloud-platform-network-services
+readonly STATE_ROOT=/var/lib/cloud-platform-f1-2c-partial-recovery
+readonly CHECKPOINT=$STATE_ROOT/checkpoint
+readonly STATE_FILE=$STATE_ROOT/state
+readonly LOCK_FILE=/run/lock/cloud-platform-f1-2c-partial-recovery.lock
+readonly BACKUP_COMMAND=/usr/local/sbin/cloud-infrastructure-config-backup
+readonly SERVICE_VERSION=SLICE-002C-NODE-01-SERVICES-V1
+readonly BASE_VERSION=SLICE-002C-BASE-V1
+
+readonly OLD_HELPER_SHA256=06d0f016809a2e8d9cf0be5a258766563cc686fe40b21ec3578a99c731421060
+readonly OLD_UNIT_SHA256=dfe10b0e0046242695fe5ba03215f49aa938cf94b733bba3b1a2ba9cfad7e6d1
+readonly BASE_HELPER_SHA256=11468ad2031e65d9824c77ed15222ed520251aff07d32d6b85a6484af21d24b4
+readonly BASE_UNIT_SHA256=32a200e1512c64af055278ba37d760c73979cf1fd4fff438d10148f33e67fb62
+readonly BASE_DROPIN_SHA256=a83bff96d635e0d13227d50e2f34512824e0389d6dd925ba681d334256bb0cc0
+readonly NEW_HELPER_SHA256=b69f41cd1c66000da239f39c09a46681afd5098a311065adf76b3c7aae35b9a3
+readonly NEW_UNIT_SHA256=c8297e4e88572a9fee9393960f7896e1ba27d9650f5643d595388878f059a57b
+readonly SYSCTL_SHA256=a2a00688b6f566d94ad43cebd13da2f4abcec76815b9fce11dab36b137be0c39
+
+refuse() {
+  printf 'RECOVERY_REFUSED reason=%s\n' "$1" >&2
+  exit 2
+}
+
+human_gate() {
+  printf 'RECOVERY_HUMAN_GATE_REQUIRED stage=%s\n' "$1" >&2
+  exit 3
+}
+
+sha_of() { sha256sum "$1" | awk '{print $1}'; }
+
+file_exact() {
+  local path=$1 mode=$2 digest=$3
+  [[ -f $path && ! -L $path ]] || return 1
+  [[ $(stat -c '%U:%G:%a:%h' "$path") == "root:root:$mode:1" ]] || return 1
+  [[ $(sha_of "$path") == "$digest" ]]
+}
+
+source_exact() {
+  local path=$1 digest=$2
+  [[ -f $path && ! -L $path ]] || refuse "source_missing_$path"
+  [[ $(sha_of "$path") == "$digest" ]] || refuse "source_drift_$path"
+}
+
+marker_exact() {
+  local path=$1 content=$2
+  [[ -f $path && ! -L $path ]] || return 1
+  [[ $(stat -c '%U:%G:%a:%h' "$path") == root:root:600:1 ]] || return 1
+  [[ $(<"$path") == "$content" ]]
+}
+
+require_commands() {
+  local command
+  for command in awk cp date diff docker flock git grep install ip logger mkdir rm rmdir \
+    sha256sum ss stat systemctl sysctl; do
+    command -v "$command" >/dev/null 2>&1 || refuse "missing_command_$command"
+  done
+}
+
+validate_identity() {
+  if [[ ${F1_2C_RECOVERY_TEST_CONFIRM:-} == "$KVM_CONFIRMATION" ]]; then
+    [[ $(hostname --short) == mcf-f1-2c-kvm-* ]] || refuse invalid_kvm_hostname
+    [[ -f /etc/mcf-f1-2c-kvm-lab && ! -L /etc/mcf-f1-2c-kvm-lab ]] || refuse kvm_marker_missing
+    grep -Fxq "$KVM_MARKER" /etc/mcf-f1-2c-kvm-lab || refuse kvm_marker_drift
+    return
+  fi
+  [[ -z ${F1_2C_RECOVERY_TEST_CONFIRM:-} ]] || refuse invalid_test_confirmation
+  [[ $(hostname) == "$EXPECTED_HOST" ]] || refuse wrong_host
+  local machine_id_sha256
+  machine_id_sha256=$(tr -d '\n' </etc/machine-id | sha256sum | awk '{print $1}')
+  [[ $machine_id_sha256 == "$EXPECTED_MACHINE_ID_SHA256" ]] || refuse wrong_machine_id
+  [[ $(stat -c '%U:%G' "$ROOT") == root:root ]] || refuse live_source_repository_not_root_owned
+}
+
+validate_repository() {
+  local candidate=${F1_2C_RECOVERY_CANDIDATE_SHA:-}
+  [[ $candidate =~ ^[0-9a-f]{40}$ ]] || refuse candidate_sha_required
+  [[ -d $ROOT/.git && ! -L $ROOT ]] || refuse repository_missing
+  local head
+  head=$(git -c safe.directory="$ROOT" -C "$ROOT" rev-parse HEAD) || refuse repository_head_unavailable
+  [[ $head == "$candidate" ]] || refuse candidate_not_head
+  git -c safe.directory="$ROOT" -C "$ROOT" merge-base --is-ancestor "$EXPECTED_PARENT" "$head" ||
+    refuse candidate_not_descendant_of_validated_parent
+  git -c safe.directory="$ROOT" -C "$ROOT" diff --quiet || refuse repository_dirty
+  git -c safe.directory="$ROOT" -C "$ROOT" diff --cached --quiet || refuse repository_index_dirty
+}
+
+validate_sources() {
+  source_exact "$ROOT/platform/network/cloud-platform-network-services" "$NEW_HELPER_SHA256"
+  source_exact "$ROOT/platform/systemd/cloud-platform-network-services.service" "$NEW_UNIT_SHA256"
+  source_exact "$ROOT/platform/sysctl/90-cloud-platform-network-forwarding.conf" "$SYSCTL_SHA256"
+  source_exact "$ROOT/platform/network/node-01/compose.yaml" 704154f06c2e72d0a0243d0c4618a3d46320f6321cf9f17955a402e8985ab7d0
+  source_exact "$ROOT/platform/network/node-01/cp00000002/Corefile" 52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa
+  source_exact "$ROOT/platform/network/node-01/cp00000002/records.hosts" a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703
+  source_exact "$ROOT/platform/network/node-01/cp00000002/squid.conf" 8d54cd3ec9a53c870c0d8253af97365ed9a0a00cd64cc2e21e3039c7843d4307
+  source_exact "$ROOT/platform/network/node-01/cp00000003/Corefile" 52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa
+  source_exact "$ROOT/platform/network/node-01/cp00000003/records.hosts" a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703
+  source_exact "$ROOT/platform/network/node-01/cp00000003/squid.conf" 1820d5eac816259597f8cb8c3551daa6e400a13390cafbadd9a47c99ba0056dc
+}
+
+required_services_active() {
+  local service services
+  if [[ ${F1_2C_RECOVERY_TEST_CONFIRM:-} == "$KVM_CONFIRMATION" ]]; then
+    services=(ssh docker containerd cloud-platform-network-enforcement.service)
+  else
+    services=(ssh ufw fail2ban xrdp xrdp-sesman docker containerd cloud-platform-network-enforcement.service)
+  fi
+  for service in "${services[@]}"; do
+    systemctl is-active --quiet "$service" || return 1
+  done
+  ! systemctl is-active --quiet snap.lxd.daemon.service &&
+    ! systemctl is-active --quiet snap.lxd.daemon.unix.socket
+}
+
+zero_docker_state() {
+  [[ -z $(docker container ls --all --quiet) ]] &&
+    [[ -z $(docker image ls --all --quiet) ]] &&
+    [[ -z $(docker volume ls --quiet) ]] &&
+    [[ -z $(docker network ls --filter type=custom --quiet) ]]
+}
+
+no_managed_links() {
+  ! ip -o link show | awk -F': ' '{print $2}' | sed 's/@.*//' |
+    grep -Eq '^(cp[0-9a-f]{8}|cpeg[0-9]{4})$'
+}
+
+no_route_collision() {
+  ! ip -o route show table all | grep -Eq '(^|[[:space:]])10\.240\.'
+}
+
+no_public_managed_listeners() {
+  ! ss -Hlnptu | grep -Eq '[[:space:]](0\.0\.0\.0|\[::\]|\*):(53|3128|2375|2376)[[:space:]]'
+}
+
+validate_base() {
+  file_exact "$BASE_HELPER" 755 "$BASE_HELPER_SHA256" || refuse base_helper_drift
+  file_exact "$BASE_UNIT" 644 "$BASE_UNIT_SHA256" || refuse base_unit_drift
+  file_exact "$BASE_DROPIN" 644 "$BASE_DROPIN_SHA256" || refuse base_dropin_drift
+  marker_exact "$BASE_MARKER" "$BASE_VERSION" || refuse base_marker_drift
+  marker_exact "$FOUNDATION_MARKER" 'slice=SLICE-001' || refuse foundation_marker_drift
+  marker_exact "$DOCKER_MARKER" 'slice=SLICE-002B' || refuse docker_marker_drift
+  systemctl is-enabled --quiet cloud-platform-network-enforcement.service || refuse base_not_enabled
+  "$BASE_HELPER" check >/dev/null || refuse base_check_failed
+}
+
+partial_state_valid() {
+  required_services_active || return 1
+  validate_base
+  marker_exact "$SERVICE_MARKER" "$SERVICE_VERSION" || return 1
+  file_exact "$SERVICE_HELPER" 755 "$OLD_HELPER_SHA256" || return 1
+  file_exact "$SERVICE_UNIT" 644 "$OLD_UNIT_SHA256" || return 1
+  file_exact "$SYSCTL_FILE" 644 "$SYSCTL_SHA256" || return 1
+  [[ ! -e $SERVICE_ROOT && ! -L $SERVICE_ROOT ]] || return 1
+  [[ ! -e $PRIVATE_RUNTIME && ! -L $PRIVATE_RUNTIME ]] || return 1
+  [[ -f $LEGACY_LOCK && ! -L $LEGACY_LOCK ]] || return 1
+  [[ $(stat -c '%U:%G:%a:%s' "$LEGACY_LOCK") == root:root:600:0 ]] || return 1
+  systemctl is-enabled --quiet cloud-platform-network-services.service || return 1
+  systemctl is-failed --quiet cloud-platform-network-services.service || return 1
+  [[ $(sysctl -n net.ipv4.ip_forward) == 0 ]] || return 1
+  [[ $(sysctl -n net.ipv6.conf.all.forwarding) == 0 ]] || return 1
+  [[ $(stat -c '%U:%G:%a' /var/run/docker.sock) == root:root:600 ]] || return 1
+  zero_docker_state || return 1
+  no_managed_links || return 1
+  no_route_collision || return 1
+  no_public_managed_listeners || return 1
+}
+
+installed_config_exact() {
+  file_exact "$SERVICE_ROOT/compose.yaml" 644 704154f06c2e72d0a0243d0c4618a3d46320f6321cf9f17955a402e8985ab7d0 &&
+  file_exact "$SERVICE_ROOT/cp00000002/Corefile" 644 52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa &&
+  file_exact "$SERVICE_ROOT/cp00000002/records.hosts" 644 a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703 &&
+  file_exact "$SERVICE_ROOT/cp00000002/squid.conf" 644 8d54cd3ec9a53c870c0d8253af97365ed9a0a00cd64cc2e21e3039c7843d4307 &&
+  file_exact "$SERVICE_ROOT/cp00000003/Corefile" 644 52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa &&
+  file_exact "$SERVICE_ROOT/cp00000003/records.hosts" 644 a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703 &&
+  file_exact "$SERVICE_ROOT/cp00000003/squid.conf" 644 1820d5eac816259597f8cb8c3551daa6e400a13390cafbadd9a47c99ba0056dc
+}
+
+recovered_state_valid() {
+  [[ -f $STATE_FILE && ! -L $STATE_FILE && $(<"$STATE_FILE") == RECOVERED ]] || return 1
+  marker_exact "$SERVICE_MARKER" "$SERVICE_VERSION" || return 1
+  file_exact "$SERVICE_HELPER" 755 "$NEW_HELPER_SHA256" || return 1
+  file_exact "$SERVICE_UNIT" 644 "$NEW_UNIT_SHA256" || return 1
+  file_exact "$SYSCTL_FILE" 644 "$SYSCTL_SHA256" || return 1
+  installed_config_exact || return 1
+  required_services_active || return 1
+  systemctl is-active --quiet cloud-platform-network-services.service || return 1
+  "$SERVICE_HELPER" check >/dev/null || return 1
+  no_public_managed_listeners || return 1
+}
+
+write_state() {
+  printf '%s\n' "$1" >"$STATE_FILE"
+  chown root:root "$STATE_FILE"
+  chmod 0600 "$STATE_FILE"
+}
+
+create_checkpoint() {
+  [[ ! -e $STATE_ROOT && ! -L $STATE_ROOT ]] || refuse recovery_state_already_exists
+  install -d -o root -g root -m 0700 "$CHECKPOINT"
+  install -o root -g root -m 0755 "$SERVICE_HELPER" "$CHECKPOINT/old-helper"
+  install -o root -g root -m 0644 "$SERVICE_UNIT" "$CHECKPOINT/old-unit"
+  file_exact "$CHECKPOINT/old-helper" 755 "$OLD_HELPER_SHA256" || refuse checkpoint_helper_failed
+  file_exact "$CHECKPOINT/old-unit" 644 "$OLD_UNIT_SHA256" || refuse checkpoint_unit_failed
+  {
+    printf 'candidate_sha=%s\n' "$F1_2C_RECOVERY_CANDIDATE_SHA"
+    printf 'historical_partial_commit=%s\n' "$HISTORICAL_PARTIAL_COMMIT"
+    printf 'old_helper_sha256=%s\n' "$OLD_HELPER_SHA256"
+    printf 'old_unit_sha256=%s\n' "$OLD_UNIT_SHA256"
+    printf 'created_at=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+  } >"$CHECKPOINT/manifest.env"
+  chown root:root "$CHECKPOINT/manifest.env"
+  chmod 0600 "$CHECKPOINT/manifest.env"
+  write_state CHECKPOINT_READY
+}
+
+install_candidate_surface() {
+  install -d -o root -g root -m 0755 "$SERVICE_ROOT/cp00000002" "$SERVICE_ROOT/cp00000003"
+  install -o root -g root -m 0755 "$ROOT/platform/network/cloud-platform-network-services" "$SERVICE_HELPER"
+  install -o root -g root -m 0644 "$ROOT/platform/network/node-01/compose.yaml" "$SERVICE_ROOT/compose.yaml"
+  local scope file
+  for scope in cp00000002 cp00000003; do
+    for file in Corefile records.hosts squid.conf; do
+      install -o root -g root -m 0644 "$ROOT/platform/network/node-01/$scope/$file" "$SERVICE_ROOT/$scope/$file"
+    done
+  done
+  install -o root -g root -m 0644 "$ROOT/platform/systemd/cloud-platform-network-services.service" "$SERVICE_UNIT"
+  file_exact "$SERVICE_HELPER" 755 "$NEW_HELPER_SHA256" || human_gate installed_helper_mismatch
+  file_exact "$SERVICE_UNIT" 644 "$NEW_UNIT_SHA256" || human_gate installed_unit_mismatch
+  installed_config_exact || human_gate installed_config_mismatch
+  systemctl daemon-reload
+}
+
+remove_candidate_config() {
+  local scope file
+  for scope in cp00000002 cp00000003; do
+    for file in Corefile records.hosts squid.conf; do
+      [[ -f $SERVICE_ROOT/$scope/$file && ! -L $SERVICE_ROOT/$scope/$file ]] || human_gate "rollback_missing_$scope/$file"
+      rm -- "$SERVICE_ROOT/$scope/$file"
+    done
+  done
+  [[ -f $SERVICE_ROOT/compose.yaml && ! -L $SERVICE_ROOT/compose.yaml ]] || human_gate rollback_missing_compose
+  rm -- "$SERVICE_ROOT/compose.yaml"
+  rmdir "$SERVICE_ROOT/cp00000002" "$SERVICE_ROOT/cp00000003" "$SERVICE_ROOT"
+  rmdir /etc/cloud-platform 2>/dev/null || true
+}
+
+restore_checkpoint_surface() {
+  file_exact "$CHECKPOINT/old-helper" 755 "$OLD_HELPER_SHA256" || human_gate checkpoint_helper_drift
+  file_exact "$CHECKPOINT/old-unit" 644 "$OLD_UNIT_SHA256" || human_gate checkpoint_unit_drift
+  install -o root -g root -m 0755 "$CHECKPOINT/old-helper" "$SERVICE_HELPER"
+  install -o root -g root -m 0644 "$CHECKPOINT/old-unit" "$SERVICE_UNIT"
+  file_exact "$SERVICE_HELPER" 755 "$OLD_HELPER_SHA256" || human_gate restored_helper_drift
+  file_exact "$SERVICE_UNIT" 644 "$OLD_UNIT_SHA256" || human_gate restored_unit_drift
+  systemctl daemon-reload
+}
+
+operation_precheck() {
+  [[ ! -e $STATE_ROOT && ! -L $STATE_ROOT ]] || refuse recovery_state_already_exists
+  partial_state_valid || refuse partial_state_mismatch
+  printf 'RECOVERY_PRECHECK=PASS state=KNOWN_PARTIAL candidate=%s\n' "$F1_2C_RECOVERY_CANDIDATE_SHA"
+}
+
+operation_apply() {
+  if recovered_state_valid; then
+    printf 'RECOVERY_APPLY=PASS changed=0 state=RECOVERED candidate=%s\n' "$F1_2C_RECOVERY_CANDIDATE_SHA"
+    return
+  fi
+  operation_precheck >/dev/null
+  create_checkpoint
+  "$BACKUP_COMMAND" >/dev/null || refuse preapply_backup_failed
+  write_state SURFACE_MUTATION_STARTED
+  install_candidate_surface
+  systemctl reset-failed cloud-platform-network-services.service || true
+  write_state SERVICE_STARTING
+  if ! systemctl start cloud-platform-network-services.service; then
+    write_state UNCLASSIFIED_AFTER_SERVICE_START_FAILURE
+    human_gate service_start_failed
+  fi
+  if ! "$SERVICE_HELPER" check >/dev/null; then
+    write_state UNCLASSIFIED_AFTER_SERVICE_CHECK_FAILURE
+    human_gate service_check_failed
+  fi
+  write_state RECOVERED
+  recovered_state_valid || human_gate recovered_state_postcheck_failed
+  printf 'RECOVERY_APPLY=PASS changed=1 state=RECOVERED candidate=%s\n' "$F1_2C_RECOVERY_CANDIDATE_SHA"
+}
+
+operation_check() {
+  recovered_state_valid || refuse recovered_state_invalid
+  printf 'RECOVERY_CHECK=PASS state=RECOVERED candidate=%s\n' "$F1_2C_RECOVERY_CANDIDATE_SHA"
+}
+
+operation_rollback() {
+  recovered_state_valid || refuse rollback_requires_healthy_recovered_state
+  file_exact "$CHECKPOINT/old-helper" 755 "$OLD_HELPER_SHA256" || refuse checkpoint_helper_drift
+  file_exact "$CHECKPOINT/old-unit" 644 "$OLD_UNIT_SHA256" || refuse checkpoint_unit_drift
+  systemctl stop cloud-platform-network-services.service
+  "$SERVICE_HELPER" rollback >/dev/null || human_gate candidate_runtime_rollback_failed
+  remove_candidate_config
+  if [[ -d $PRIVATE_RUNTIME && ! -L $PRIVATE_RUNTIME ]]; then
+    [[ $(stat -c '%U:%G:%a' "$PRIVATE_RUNTIME") == root:root:700 ]] || human_gate private_runtime_drift
+    [[ -f $PRIVATE_RUNTIME/lock && ! -L $PRIVATE_RUNTIME/lock ]] || human_gate private_runtime_lock_missing
+    rm -- "$PRIVATE_RUNTIME/lock"
+    rmdir "$PRIVATE_RUNTIME"
+  fi
+  restore_checkpoint_surface
+  systemctl is-enabled --quiet cloud-platform-network-services.service || human_gate service_enablement_drift
+  marker_exact "$SERVICE_MARKER" "$SERVICE_VERSION" || human_gate service_marker_drift_after_rollback
+  file_exact "$SYSCTL_FILE" 644 "$SYSCTL_SHA256" || human_gate sysctl_drift_after_rollback
+  required_services_active || human_gate required_service_failed_after_rollback
+  "$BASE_HELPER" check >/dev/null || human_gate base_check_failed_after_rollback
+  zero_docker_state || human_gate docker_state_remained_after_rollback
+  no_managed_links || human_gate managed_links_remained_after_rollback
+  [[ $(sysctl -n net.ipv4.ip_forward) == 0 ]] || human_gate ipv4_forwarding_remained_after_rollback
+  [[ $(sysctl -n net.ipv6.conf.all.forwarding) == 0 ]] || human_gate ipv6_forwarding_drift_after_rollback
+  [[ ! -e $SERVICE_ROOT && ! -L $SERVICE_ROOT ]] || human_gate config_root_remained_after_rollback
+  write_state ROLLED_BACK_SAFE_PARTIAL
+  printf 'RECOVERY_ROLLBACK=PASS state=SAFE_PARTIAL_BASELINE candidate=%s\n' "$F1_2C_RECOVERY_CANDIDATE_SHA"
+}
+
+[[ $EUID -eq 0 ]] || refuse root_required
+[[ $# -eq 1 ]] || refuse exactly_one_operation_required
+case $1 in precheck | apply | check | rollback) operation=$1 ;; *) refuse operation_not_allowlisted ;; esac
+require_commands
+validate_identity
+validate_repository
+validate_sources
+[[ -x $BACKUP_COMMAND ]] || refuse backup_command_missing
+exec 9>"$LOCK_FILE"
+flock -n 9 || refuse concurrent_recovery_operation
+
+case $operation in
+  precheck) operation_precheck ;;
+  apply) operation_apply ;;
+  check) operation_check ;;
+  rollback) operation_rollback ;;
+esac
