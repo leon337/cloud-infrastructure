@@ -43,6 +43,29 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertIn("F1_2C_RECOVERY_DISPOSABLE_KVM_ONLY", text)
         self.assertIn("root:root", text)
 
+    def test_recovery_uses_canonical_dev_marker_contracts(self):
+        recovery = RECOVERY.read_text(encoding="utf-8")
+        harness = KVM_RECOVERY.read_text(encoding="utf-8")
+        self.assertIn("0ece23dea825d4961bba3ae1af84b1a2dd3814adeca4a4bdbb204928039e3e54", recovery)
+        self.assertIn("c66d8a8033aa095bb9f655666146f7577f2450cec61727b4f19e466128874a60", recovery)
+        self.assertNotIn("marker_exact \"$FOUNDATION_MARKER\" 'slice=SLICE-001'", recovery)
+        self.assertNotIn("marker_exact \"$DOCKER_MARKER\" 'slice=SLICE-002B'", recovery)
+        for line in (
+            "managed_by=cloud-infrastructure",
+            "slice=SLICE-001",
+            "schema=1",
+            "environment=dev",
+            "node=node-01",
+            "slice=SLICE-002B",
+            "runtime=docker-ce",
+            "docker_ce=5:29.7.2-1~ubuntu.24.04~noble",
+            "containerd_io=2.3.3-1~ubuntu.24.04~noble",
+        ):
+            self.assertIn(line, harness)
+        self.assertNotIn("printf '%s\\n' 'slice=SLICE-001'", harness)
+        self.assertNotIn("printf '%s\\n' 'slice=SLICE-002B'", harness)
+        self.assertNotIn("cat <<'EOF' | sudo tee /etc/cloud-platform-foundation.managed", harness)
+
     def test_kvm_runner_executes_partial_recovery_harness(self):
         self.assertTrue(KVM_RECOVERY.is_file(), "partial recovery KVM harness must exist")
         runner = KVM_RUNNER.read_text(encoding="utf-8")
@@ -65,6 +88,7 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertIn("runs-on: ubuntu-24.04", text)
         self.assertIn("github.event.pull_request.head.sha", text)
         self.assertIn("fix/f1-2c-node01-rollout-recovery-20260828", text)
+        self.assertIn("fix/f1-2c-marker-contract-equivalence-20260828", text)
         self.assertIn("tests.test_f1_2c_partial_recovery_contract", text)
         self.assertNotIn("runs-on: [self-hosted", text)
         self.assertNotIn("cache: pip", text)
@@ -76,6 +100,7 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertIn("runs-on: ubuntu-24.04", text)
         self.assertIn("github.event.pull_request.head.sha", text)
         self.assertIn("scripts/run_f1_2c_kvm_lab.sh", text)
+        self.assertIn("fix/f1-2c-marker-contract-equivalence-20260828", text)
         self.assertIn("/dev/kvm", text)
         self.assertIn("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", text)
         self.assertNotIn("self-hosted", text)
