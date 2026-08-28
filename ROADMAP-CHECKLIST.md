@@ -91,14 +91,15 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 - [x] `mcf-ox-display10` confirmada com loopback + forced command/restrict.
 - [x] `dsh-tunnel-leo-N43SM-to-vmi3506102` identificada e comando de inclusão localizado.
 - [x] Owner/origem operacional da `dsh-tunnel...` correlacionados ao caminho administrativo do notebook por histórico do `ubuntu` + fingerprint em auth log.
-- [x] Necessidade atual avaliada: nenhum processo, unit, referência em SSH config, chave carregada no agente ou `.pub` local atual depende dela (`NOT_OBSERVED`).
-- [x] Fallback independente comprovado com chave administrativa distinta (`PASS_INDEPENDENT_KEY`).
-- [!] Alterar/remover/restringir a `dsh-tunnel...` requer decisão explícita de LEANDRO; `authorized_keys` permanece inalterado.
-- [x] Provenance e gate registrados em `evidence/ssh-key-governance/SSH-KEY-GOVERNANCE-P1-20260828.md`.
+- [x] LEANDRO confirmou dependência atual: a chave é usada para abrir/acessar a VPS pelo notebook (`CONFIRMED_BY_LEANDRO_USER_WORKFLOW`).
+- [x] Fallback independente comprovado com chave administrativa distinta (`PASS_INDEPENDENT_KEY`), classificado apenas como contingência.
+- [x] Decisão operacional: manter a `dsh-tunnel...` para preservar o fluxo notebook→VPS; `authorized_keys` permanece inalterado.
+- [!] Qualquer hardening/restrição futura deve primeiro provar que preserva o acesso interativo atual.
+- [x] Provenance e correção da dependência registradas em `evidence/ssh-key-governance/SSH-KEY-GOVERNANCE-P1-20260828.md`.
 
-**Estado:** `EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED`.
+**Estado:** `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`.
 
-**Próximo passo exato:** `SSH_KEY_GOVERNANCE_P1_HUMAN_GATE`.
+**Próximo passo exato:** `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
 
 ## 5. F1.2c / Cloud Platform Network Services — P1
 
@@ -210,7 +211,7 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 RECOVERY-P1                         DONE
 RECOVERY-P2                         DONE
 RUNNER_ISOLATION_P1                 DONE_CROSS_JOB / GLOBAL_HOOK_HARDENING_PENDING
-SSH_KEY_GOVERNANCE_P1               HUMAN_GATE
+SSH_KEY_GOVERNANCE_P1               DONE_KEEP_CURRENT_USER_WORKFLOW
 F1_2C_NODE01_ROLLOUT                PENDING / HUMAN_GATE
 NETWORK_CONVERGENCE_P2              PENDING
 UPDATE_AND_CONTROLLED_REBOOT        BLOCKED_BY_PRECONDITIONS

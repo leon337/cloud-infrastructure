@@ -33,7 +33,7 @@ Na coleta de 2026-08-28:
 - nenhum arquivo `.pub` local atual corresponde ao fingerprint da `dsh`;
 - nenhuma referência à comment da chave foi encontrada na configuração SSH atual nem no repositório canônico.
 
-Isso sustenta `current_dependency=NOT_OBSERVED`. Não prova que a chave jamais será necessária novamente.
+Esses probes sustentavam apenas `dependency_not_observed_by_automated_checks`; eles não eram suficientes para concluir ausência de dependência no fluxo humano. Em 28/08/2026, LEANDRO corrigiu explicitamente esse ponto: a chave é usada para abrir/acessar a VPS pelo notebook. A classificação canônica passa a ser `current_dependency=CONFIRMED_BY_LEANDRO_USER_WORKFLOW`.
 
 ## Fallback independente
 
@@ -43,7 +43,7 @@ Uma conexão read-only `BatchMode=yes` + `StrictHostKeyChecking=yes` autenticou 
 
 ## Boundary e decisão
 
-`authorized_keys` **não foi alterado** nesta fase. Remover, restringir ou manter a `dsh-tunnel...` é uma decisão de acesso material e exige HUMAN_GATE explícito de LEANDRO.
+`authorized_keys` **não foi alterado**. A declaração explícita de LEANDRO confirma que a `dsh-tunnel...` é necessária no fluxo atual notebook→VPS. Portanto a decisão operacional é `KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW`. O fallback independente permanece contingência, não justificativa para remoção. Qualquer hardening futuro exige prova de preservação do acesso interativo atual.
 
-Estado: `EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED`.
-Próximo passo: `SSH_KEY_GOVERNANCE_P1_HUMAN_GATE`.
+Estado: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`.
+Próximo passo: `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.

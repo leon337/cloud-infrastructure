@@ -59,15 +59,16 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertFalse(toolchain["g2b_functional_code_imported"])
         self.assertFalse(toolchain["f1_2c_functional_code_imported"])
 
-    def test_ssh_key_governance_requires_human_gate_after_evidence(self):
+    def test_ssh_key_governance_preserves_confirmed_user_workflow(self):
         ssh = self.state["ssh_key_governance"]
-        self.assertEqual(ssh["status"], "EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED")
+        self.assertEqual(ssh["status"], "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED")
         self.assertEqual(ssh["dsh_key"]["provenance"], "CONFIRMED_UBUNTU_HISTORY_AND_AUTH_LOG")
-        self.assertEqual(ssh["dsh_key"]["current_dependency"], "NOT_OBSERVED")
+        self.assertEqual(ssh["dsh_key"]["current_dependency"], "CONFIRMED_BY_LEANDRO_USER_WORKFLOW")
+        self.assertEqual(ssh["decision"], "KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW")
         self.assertEqual(ssh["fallback_auth"], "PASS_INDEPENDENT_KEY")
         self.assertFalse(ssh["authorized_keys_changed"])
-        self.assertEqual(ssh["decision_gate"], "REMOVE_OR_RESTRICT_OR_KEEP")
-        self.assertEqual(self.state["project"]["next_exact_step"], "SSH_KEY_GOVERNANCE_P1_HUMAN_GATE")
+        self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
+        self.assertEqual(self.state["project"]["next_exact_step"], "F1_2C_NODE01_ROLLOUT_HUMAN_GATE")
 
     def test_runner_isolation_state_is_verified_with_hook_restart_pending(self):
         runner = self.state["runner_isolation"]

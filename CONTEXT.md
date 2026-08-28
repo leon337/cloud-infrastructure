@@ -43,7 +43,7 @@ Fatos que não podem ser promovidos além da evidência:
 - G2-B Tasks 9–10: `NOT_STARTED`;
 - produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`;
 - Repository Hygiene: `REPOSITORY_HYGIENE_REVALIDATED`; a compatibilidade do PR #19 com a toolchain canônica foi comprovada e o blocker histórico de secrets foi resolvido.
-- SSH key governance: `EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED`; provenance e fallback da `dsh-tunnel...` comprovados, sem alteração de `authorized_keys`.
+- SSH key governance: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso da `dsh-tunnel...` no acesso notebook→VPS; chave preservada e `authorized_keys` inalterado.
 - Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`; PoC legado removido, policy/guard canônicos ativos e prova cross-job real PASS; hook global configurado, não carregado até restart autorizado.
 
 ## Toolchain canônica
@@ -84,4 +84,4 @@ O executor canônico de integração também preserva o boundary F1.1: GitHub-ho
 
 ## Próximo passo exato
 
-**SSH_KEY_GOVERNANCE_P1_HUMAN_GATE**. Evidência da `dsh-tunnel...` está completa, fallback independente foi comprovado e `authorized_keys` permanece inalterado. LEANDRO deve decidir remover, restringir ou manter a chave. O hardening de hooks globais do runner permanece pendente até restart autorizado do serviço; não contornar `systemd`/sudo.
+**F1_2C_NODE01_ROLLOUT_HUMAN_GATE**. `SSH_KEY_GOVERNANCE_P1` foi resolvido preservando a `dsh-tunnel...` porque LEANDRO confirmou dependência no fluxo notebook→VPS. Qualquer hardening futuro deve manter esse acesso. O hardening de hooks globais do runner permanece pendente até restart autorizado do serviço; não contornar `systemd`/sudo.
