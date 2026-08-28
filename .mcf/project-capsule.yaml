@@ -3,9 +3,9 @@ project_id: cloud-infrastructure
 purpose: Govern and reproduce the development and lab infrastructure that can host MCF agents without making historical host evidence current by implication.
 lifecycle: ACTIVE
 snapshot:
-  current_workstream: ecosystem-semantic-sync-post-mcf-main
-  current_status: G2A_LOCAL_CONTEXT_REAL_MCF_APPMODULE_LAB_E2E_HISTORICALLY_VERIFIED_DISCONNECTED_INACTIVE__G2B_TASK8_LAB_VALIDATED_INACTIVE
-  next_action: Reconnect only in a fresh explicitly authorized disposable local lab after binding the current Cloud source hashes; verify every remote claim separately before material use.
+  current_workstream: ecosystem-promotion-gate-sync-20260828
+  current_status: G2A_LOCAL_CONTEXT_REAL_MCF_APPMODULE_LAB_E2E_HISTORICALLY_VERIFIED_DISCONNECTED_INACTIVE__G2B_TASK8_LAB_VALIDATED_INACTIVE__PROMOTION_REPLAY_ONLY
+  next_action: Promote only by selective replay into a fresh clean target after independent review, secret scanning, repository validation, four Ansible syntax checks, and green CI; do not merge divergent historical branches directly.
   blockers:
     - G2-A operational state is historical and requires live verification before material use.
     - The real MCF AppModule path passed a disposable local lab E2E, but the connection is now DISCONNECTED, runtime is INACTIVE, and activation remains a separate gate.
@@ -13,6 +13,8 @@ snapshot:
     - Historical policy findings on unrelated Git refs require a separate repository-wide security review; candidate HEAD ancestry is clean.
     - G2-B Tasks 9 and 10 remain blocked and not started; real write, rollback, revocation, and MCF effective use are not proven.
     - G2-B Tasks 9 and 10, active G2-B promotion or activation, NODE-01 access, and production mutation are not authorized by this capsule.
+    - main and mcf/mission-001-control-bridge-g1 diverge materially; direct promotion is not a safe substitute for reviewed selective replay.
+    - The preserved SSH recovery commit is not a promotion candidate; it requires replay and validation on the canonical clean target.
 sources:
   current_state: context/mcf-cloud-context.yaml
-observed_at: "2026-08-24T03:22:59Z"
+observed_at: "2026-08-28T17:24:51Z"
