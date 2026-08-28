@@ -64,6 +64,7 @@ tmp=$(mktemp -d "$DEST_ROOT/.recovery-p2-$stamp.XXXXXX")
 final="$DEST_ROOT/$stamp"
 trap 'rm -rf "$tmp"' EXIT
 
+# shellcheck disable=SC2016  # expansion is intentionally evaluated by the remote shell
 "${ssh_cmd[@]}" 'printf "REMOTE_ID=%s@%s\n" "$(id -un)" "$(hostname)"' > "$tmp/remote-identity.txt"
 
 a=$("${ssh_cmd[@]}" 'find /var/backups/cloud-infrastructure -maxdepth 1 -type f -name "cloud-infrastructure-config-*.tar.gz" -printf "%T@ %p\n" | sort -nr | head -n1 | cut -d" " -f2-')
@@ -83,9 +84,11 @@ for p in "${runtime_paths[@]}"; do
   printf -v q '%q' "/$p"
   remote_tar_cmd+=" [ -e $q ] && p+=( $q );"
 done
+# shellcheck disable=SC2016  # expansion is intentionally evaluated by the remote shell
 remote_tar_cmd+=' ((${#p[@]})); tar -C / -czf - "${p[@]#/}"'
 "${ssh_cmd[@]}" "bash -lc $(printf '%q' "$remote_tar_cmd")" > "$tmp/runtime-overlay.tar.gz"
 
+# shellcheck disable=SC2016  # expansion is intentionally evaluated by the remote shell
 "${ssh_cmd[@]}" 'bash -lc '\''
 set -u
 printf "collected_at=%s\n" "$(date -Iseconds)"
