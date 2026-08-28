@@ -49,7 +49,7 @@ def main() -> int:
         ("freshness", "checklist_scope"): "IMPLEMENTACAO_DA_VPS_ONLY",
         ("source_snapshot", "main", "executive_projection"): "README.md",
         ("project", "integration_status"): "DOCUMENTATION_AND_INTEGRATION_DRIFT",
-        ("project", "next_exact_step"): "SSH_KEY_GOVERNANCE_P1",
+        ("project", "next_exact_step"): "SSH_KEY_GOVERNANCE_P1_HUMAN_GATE",
         ("runner_isolation", "status"): "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING",
         ("runner_isolation", "legacy_poc"): "RETIRED",
         ("runner_isolation", "live_cleanup"): "PASS",
@@ -59,6 +59,12 @@ def main() -> int:
         ("runner_isolation", "global_hook"): "CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE",
         ("runner_isolation", "global_hook_restart_required"): True,
         ("runner_isolation", "service_boundary_bypassed"): False,
+        ("ssh_key_governance", "status"): "EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED",
+        ("ssh_key_governance", "dsh_key", "provenance"): "CONFIRMED_UBUNTU_HISTORY_AND_AUTH_LOG",
+        ("ssh_key_governance", "dsh_key", "current_dependency"): "NOT_OBSERVED",
+        ("ssh_key_governance", "fallback_auth"): "PASS_INDEPENDENT_KEY",
+        ("ssh_key_governance", "authorized_keys_changed"): False,
+        ("ssh_key_governance", "decision_gate"): "REMOVE_OR_RESTRICT_OR_KEEP",
         ("platform", "f1_2c", "status"): "REQUIRES_REVIEW",
         ("platform", "f1_2c", "accepted"): False,
         ("platform", "f1_2c", "node01_reapply_authorized"): False,
@@ -79,6 +85,7 @@ def main() -> int:
         ("authorization", "production_promotion"): "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED",
         ("authorization", "g2b_real_write"): "NOT_AUTHORIZED",
         ("authorization", "f1_2c_node01_reapply"): "NOT_AUTHORIZED",
+        ("authorization", "ssh_dsh_key_change"): "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED",
     }
     for path, expected in exact.items():
         expect(data, path, expected)

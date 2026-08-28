@@ -59,6 +59,16 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertFalse(toolchain["g2b_functional_code_imported"])
         self.assertFalse(toolchain["f1_2c_functional_code_imported"])
 
+    def test_ssh_key_governance_requires_human_gate_after_evidence(self):
+        ssh = self.state["ssh_key_governance"]
+        self.assertEqual(ssh["status"], "EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED")
+        self.assertEqual(ssh["dsh_key"]["provenance"], "CONFIRMED_UBUNTU_HISTORY_AND_AUTH_LOG")
+        self.assertEqual(ssh["dsh_key"]["current_dependency"], "NOT_OBSERVED")
+        self.assertEqual(ssh["fallback_auth"], "PASS_INDEPENDENT_KEY")
+        self.assertFalse(ssh["authorized_keys_changed"])
+        self.assertEqual(ssh["decision_gate"], "REMOVE_OR_RESTRICT_OR_KEEP")
+        self.assertEqual(self.state["project"]["next_exact_step"], "SSH_KEY_GOVERNANCE_P1_HUMAN_GATE")
+
     def test_runner_isolation_state_is_verified_with_hook_restart_pending(self):
         runner = self.state["runner_isolation"]
         self.assertEqual(runner["status"], "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING")
@@ -66,7 +76,6 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(runner["cross_job_proof"], "PASS")
         self.assertEqual(runner["workflow_policy"], "PASS")
         self.assertEqual(runner["global_hook"], "CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE")
-        self.assertEqual(self.state["project"]["next_exact_step"], "SSH_KEY_GOVERNANCE_P1")
 
 
 if __name__ == "__main__":
