@@ -57,6 +57,7 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         cleanup = "sudo rmdir /run/cloud-platform-network-services"
         self.assertIn(cleanup, harness)
         self.assertLess(harness.index(cleanup), harness.index("fail private_runtime_preexists"))
+        self.assertNotIn("systemctl start cloud-platform-network-services.service >/tmp", harness)
 
     def test_recovery_ci_is_hosted_and_exact_head(self):
         self.assertTrue(CI_WORKFLOW.is_file(), "recovery validation workflow must exist")

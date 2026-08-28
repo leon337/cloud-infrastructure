@@ -113,7 +113,7 @@ sudo test ! -e /run/cloud-platform-network-services || fail private_runtime_pree
 sudo systemctl daemon-reload
 sudo systemctl enable cloud-platform-network-services.service >/dev/null
 set +e
-sudo systemctl start cloud-platform-network-services.service >/tmp/f1-old-start.log 2>&1
+sudo systemctl start cloud-platform-network-services.service
 old_rc=$?
 set -e
 [[ $old_rc -ne 0 ]] || fail historical_unit_unexpectedly_started
