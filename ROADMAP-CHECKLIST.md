@@ -2,7 +2,7 @@
 
 <!-- IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST -->
 
-Atualizado em **28/08/2026 14:03 -03:00**.
+Atualizado em **28/08/2026 14:14 -03:00**.
 
 Este arquivo é o checklist operacional detalhado da missão **IMPLEMENTAÇÃO DA VPS** no
 repositório `leon337/cloud-infrastructure`. Ele é **subordinado ao `README.md`**, que
@@ -113,7 +113,9 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 - [x] Artifact KVM `9694059362`, SHA-256 `1aced1e4e786859dd9faa3f0d700a7a35ccd815a06f7ec79311a6557e9b718da`.
 - [x] PR #35 integrada na lineage `fix/f1-2c-systemd-runtime-lock`; merge `2575bdaa99b195d756386ff9e923e05231b9aa17`.
 - [!] `foundation-ci` run `33191612766` e `docker-boundary-ci` run `33191612669` permanecem `FAIL — PREEXISTING_HISTORY_ONLY_GATE`; não contam como CI verde desta frente.
-- [ ] Reconfirmar preflight live imediatamente antes de qualquer apply material.
+- [x] Preflight live **somente leitura** via SSH notebook→VPS executado em `2026-08-28T17:11:31Z`: identidade, hashes antigos/base, serviços requeridos, LXD inativo, unit enabled+failed, config/runtime ausentes, lock legado, forwarding, socket Docker e ausência de links/rotas/listeners gerenciados = PASS.
+- [!] Conteúdo exato dos markers `0600` e `zero_docker_state` permanecem `NÃO VERIFICADO` sem privilégio; ambos pertencem ao `precheck` privilegiado fail-closed.
+- [!] Staging root-owned do candidato exato + `precheck` privilegiado + `apply` pertencem ao rollout controlado e permanecem bloqueados pelo HUMAN_GATE.
 - [!] Reapply NODE-01 requer autorização humana explícita antes de alteração privilegiada/material.
 - [ ] Validar serviço, redes privadas e `systemctl --failed` pós-apply, se autorizado.
 

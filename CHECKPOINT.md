@@ -1,6 +1,6 @@
 # CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **28/08/2026** após validação exact-head e integração do recovery parcial `F1_2C`.
+Atualizado em **28/08/2026** após validação exact-head, integração do recovery parcial `F1_2C` e preflight live não privilegiado.
 
 ## Hierarquia documental
 
@@ -24,7 +24,7 @@ continua tendo precedência para fatos mutáveis.
 - SSH_KEY_GOVERNANCE_P1: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso notebook→VPS, chave preservada e `authorized_keys` inalterado.
 - Próxima prioridade: `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
 - Qualquer hardening futuro da `dsh-tunnel...` deve preservar o acesso interativo atual.
-- F1.2c no NODE-01: `REQUIRES_REVIEW`; recovery do estado `PARTIAL_FIRST_APPLY` validado no candidato `81a5f357...`, integrado pela PR #35 (`2575bdaa...`), mas nenhum write live foi executado.
+- F1.2c no NODE-01: `REQUIRES_REVIEW`; recovery do estado `PARTIAL_FIRST_APPLY` validado/integrado e preflight live não privilegiado PASS em `2026-08-28T17:11:31Z`; conteúdo dos markers `0600`, `zero_docker_state`, staging root-owned e precheck privilegiado permanecem pendentes do HUMAN_GATE; nenhum write live foi executado.
 - Network convergence: pendente antes de reboot.
 - Reboot/kernel: bloqueado por precondições.
 - Full-image/provider disaster recovery: NÃO VERIFICADO.
@@ -72,4 +72,4 @@ contenha o marcador `IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST` e permaneça su
 
 ## Próximo passo
 
-Resolver `F1_2C_NODE01_ROLLOUT_HUMAN_GATE` conforme `ROADMAP-CHECKLIST.md`; manter a `dsh-tunnel...` para o fluxo atual notebook→VPS e preservar a ativação do hook global do runner como hardening pendente.
+Resolver `F1_2C_NODE01_ROLLOUT_HUMAN_GATE` conforme `ROADMAP-CHECKLIST.md`; após autorização, executar staging root-owned + precheck privilegiado fail-closed antes de qualquer apply; manter a `dsh-tunnel...` para o fluxo atual notebook→VPS e preservar a ativação do hook global do runner como hardening pendente.
