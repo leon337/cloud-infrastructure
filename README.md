@@ -23,6 +23,11 @@ somente leitura no NODE-01.
 prova real entre dois jobs passou; o hook global do runner está configurado, mas
 permanece `CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE` até restart autorizado do serviço.
 
+**SSH key governance em 28/08/2026:** a provenance da `dsh-tunnel...` foi confirmada
+por histórico do `ubuntu` e auth log; nenhuma dependência atual foi observada e um
+fallback administrativo independente foi comprovado. `authorized_keys` permanece
+inalterado até HUMAN_GATE explícito.
+
 | Área | Estado reconciliado | Resumo |
 |---|---|---|
 | VPS / NODE-01 | `OPERATIONAL_WITH_OPEN_INCIDENTS` | host acessível pelo runner, serviços essenciais ativos e uma unit F1.2c em `failed` |
@@ -31,6 +36,7 @@ permanece `CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE` até restart autorizado do s
 | Control Bridge G2-A | `PASS_REAL_NODE_01_READ_ONLY` | leitura confinada e recusa de escape comprovadas |
 | Control Bridge G2-B | `TASK_8_FAILED_ATTEMPT_3` | Tasks 1–7 concluídas; prova descartável completa ainda não passou |
 | Runner isolation | `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING` | PoC persistente retirado; policy + guard canônicos e prova cross-job real passaram; hook global aguarda restart autorizado |
+| SSH key governance | `EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED` | `dsh-tunnel...` tem provenance confirmada e fallback independente; mudança da chave aguarda decisão humana |
 | GitHub `main` | `DOCUMENTATION_AND_INTEGRATION_DRIFT` | não contém ainda as linhagens completas da plataforma e do bridge |
 | Produção externa | `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` | nenhuma promoção para produção está autorizada |
 | Credenciais | `ROTATION_DEFERRED_BY_HUMAN_DECISION` | política anterior permanece vigente |
@@ -38,7 +44,7 @@ permanece `CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE` até restart autorizado do s
 ### Próxima ação exata
 
 ```text
-SSH_KEY_GOVERNANCE_P1
+SSH_KEY_GOVERNANCE_P1_HUMAN_GATE
 ```
 
 Hardening pendente separado: ativar os hooks globais STARTED/COMPLETED do runner
@@ -222,6 +228,10 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
   + `nohup setsid` na lineage histórica), PoC live retirado, recovery ajustado, policy/guard
   canônicos adicionados e prova real cross-job `PASS`. Hook global configurado, mas ainda
   não carregado por restart privilegiado pendente.
+- [ ] **28/08 — SSH_KEY_GOVERNANCE_P1:** provenance da `dsh-tunnel...` e uso histórico
+  confirmados; nenhuma dependência atual observada e fallback administrativo independente
+  comprovado. `authorized_keys` permanece inalterado; remover/restringir/manter depende de
+  `SSH_KEY_GOVERNANCE_P1_HUMAN_GATE`.
 
 ## Roadmap operacional
 

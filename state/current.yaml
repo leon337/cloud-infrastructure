@@ -1,9 +1,9 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: runner/isolation-p1-20260828
-updated_at: "2026-08-28T09:15:00-03:00"
-state_classification: CURRENT_RUNNER_ISOLATION_VERIFIED_WITH_GLOBAL_HOOK_RESTART_PENDING
+candidate_branch: security/ssh-key-governance-p1-20260828
+updated_at: "2026-08-28T12:24:00-03:00"
+state_classification: CURRENT_SSH_KEY_GOVERNANCE_EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 freshness:
@@ -34,9 +34,9 @@ continuity:
 
 source_snapshot:
   main:
-    sha: 5a39737ce27ef81945f19cc0d0e8118c28a1ab08
-    baseline_before_runner_isolation_closeout: true
-    latest_integrated_pr: 30
+    sha: b0ab31c5d69f9cd72c7a767b61c3022d833da0c6
+    baseline_before_ssh_key_governance_gate: true
+    latest_integrated_pr: 32
     executive_projection: README.md
     operational_checklist: ROADMAP-CHECKLIST.md
   executable_evidence:
@@ -69,7 +69,7 @@ project:
     recovery_p1: COMPLETE
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
-  next_exact_step: SSH_KEY_GOVERNANCE_P1
+  next_exact_step: SSH_KEY_GOVERNANCE_P1_HUMAN_GATE
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
@@ -85,6 +85,24 @@ runner_isolation:
   provenance_run: 32576011235
   implementation_candidate_sha: cf96f258f517ea1e520f989ca321e7c24e4aaf24
   cross_job_proof_run: 33170001699
+
+ssh_key_governance:
+  status: EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED
+  key_comment: dsh-tunnel-leo-N43SM-to-vmi3506102
+  dsh_key:
+    fingerprint: SHA256:ugwguEmoX3yxLEc2YC7+8jLMog7ZeEsFNVfOaoZEkvA
+    options: UNRESTRICTED
+    provenance: CONFIRMED_UBUNTU_HISTORY_AND_AUTH_LOG
+    first_observed_use_date: "2026-08-25"
+    source_address_correlation: MATCHES_CURRENT_ADMIN_PATH
+    current_dependency: NOT_OBSERVED
+    present_in_authorized_keys: true
+    loaded_in_current_agent: false
+  fallback_auth: PASS_INDEPENDENT_KEY
+  fallback_key_fingerprint: SHA256:/p5jX65s2WyxkD3xooTozV09DSYAmKIAgZKk3Veb1Hg
+  authorized_keys_changed: false
+  decision_gate: REMOVE_OR_RESTRICT_OR_KEEP
+  evidence_file: evidence/ssh-key-governance/SSH-KEY-GOVERNANCE-P1-20260828.md
 
 execution:
   authority: LEANDRO
@@ -256,6 +274,7 @@ boundaries:
   node01_privileged_operations: false
   production_promoted: false
   branch_deletion_performed: false
+  authorized_keys_changed_in_ssh_governance_p1: false
 
 authorization:
   authority: LEANDRO
@@ -264,6 +283,7 @@ authorization:
   g2b_real_write: NOT_AUTHORIZED
   f1_2c_node01_reapply: NOT_AUTHORIZED
   destructive_history_remediation: NOT_AUTHORIZED
+  ssh_dsh_key_change: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
 
 secrets_policy:
   current_tree_scan: true

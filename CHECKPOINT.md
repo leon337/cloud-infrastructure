@@ -1,6 +1,6 @@
 # CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **28/08/2026** após validação do `RUNNER_ISOLATION_P1`.
+Atualizado em **28/08/2026** após coleta de evidência do `SSH_KEY_GOVERNANCE_P1`.
 
 ## Hierarquia documental
 
@@ -21,7 +21,8 @@ continua tendo precedência para fatos mutáveis.
 - RECOVERY-P1: concluído.
 - RECOVERY-P2: concluído, off-host automático + restore smoke verificados.
 - RUNNER-ISOLATION-P1: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`; PoC legado retirado; hook global configurado e aguardando restart privilegiado autorizado.
-- Próxima prioridade: `SSH_KEY_GOVERNANCE_P1`.
+- SSH_KEY_GOVERNANCE_P1: `EVIDENCE_COMPLETE_HUMAN_GATE_REQUIRED`; provenance/fallback comprovados e `authorized_keys` inalterado.
+- Próxima prioridade: `SSH_KEY_GOVERNANCE_P1_HUMAN_GATE`.
 - Governança da chave `dsh-tunnel...`: pendente e agora é a próxima frente exata.
 - F1.2c no NODE-01: rollout pendente e `REQUIRES_REVIEW`.
 - Network convergence: pendente antes de reboot.
@@ -71,4 +72,4 @@ contenha o marcador `IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST` e permaneça su
 
 ## Próximo passo
 
-Executar `SSH_KEY_GOVERNANCE_P1` conforme `ROADMAP-CHECKLIST.md`; manter a ativação do hook global do runner como hardening pendente sujeito a restart autorizado.
+Resolver `SSH_KEY_GOVERNANCE_P1_HUMAN_GATE` conforme `ROADMAP-CHECKLIST.md`; manter `authorized_keys` inalterado até decisão explícita e preservar a ativação do hook global do runner como hardening pendente.
