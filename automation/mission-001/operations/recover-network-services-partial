@@ -24,6 +24,7 @@ readonly LEGACY_LOCK=/run/lock/cloud-platform-network-services.lock
 readonly PRIVATE_RUNTIME=/run/cloud-platform-network-services
 readonly STATE_ROOT=/var/lib/cloud-platform-f1-2c-partial-recovery
 readonly CHECKPOINT=$STATE_ROOT/checkpoint
+readonly CHECKPOINT_CONFIG_STATE=$CHECKPOINT/config-state
 readonly STATE_FILE=$STATE_ROOT/state
 readonly LOCK_FILE=/run/lock/cloud-platform-f1-2c-partial-recovery.lock
 readonly BACKUP_COMMAND=/usr/local/sbin/cloud-infrastructure-config-backup
@@ -60,6 +61,12 @@ file_exact() {
   [[ $(sha_of "$path") == "$digest" ]]
 }
 
+dir_exact() {
+  local path=$1 mode=$2
+  [[ -d $path && ! -L $path ]] || return 1
+  [[ $(stat -c '%U:%G:%a' "$path") == "root:root:$mode" ]]
+}
+
 source_exact() {
   local path=$1 digest=$2
   [[ -f $path && ! -L $path ]] || refuse "source_missing_$path"
@@ -75,8 +82,8 @@ marker_exact() {
 
 require_commands() {
   local command
-  for command in awk cp date diff docker flock git grep install ip logger mkdir rm rmdir \
-    sha256sum ss stat systemctl sysctl; do
+  for command in awk cp date diff docker find flock git grep install ip logger mkdir rm rmdir \
+    sha256sum sort ss stat systemctl sysctl; do
     command -v "$command" >/dev/null 2>&1 || refuse "missing_command_$command"
   done
 }
@@ -174,7 +181,7 @@ partial_state_valid() {
   file_exact "$SERVICE_HELPER" 755 "$OLD_HELPER_SHA256" || return 1
   file_exact "$SERVICE_UNIT" 644 "$OLD_UNIT_SHA256" || return 1
   file_exact "$SYSCTL_FILE" 644 "$SYSCTL_SHA256" || return 1
-  [[ ! -e $SERVICE_ROOT && ! -L $SERVICE_ROOT ]] || return 1
+  partial_config_state >/dev/null || return 1
   [[ ! -e $PRIVATE_RUNTIME && ! -L $PRIVATE_RUNTIME ]] || return 1
   [[ -f $LEGACY_LOCK && ! -L $LEGACY_LOCK ]] || return 1
   [[ $(stat -c '%U:%G:%a:%s' "$LEGACY_LOCK") == root:root:600:0 ]] || return 1
@@ -189,7 +196,18 @@ partial_state_valid() {
   no_public_managed_listeners || return 1
 }
 
+config_tree_shape_exact() {
+  local expected actual
+  expected=$'compose.yaml\ncp00000002\ncp00000002/Corefile\ncp00000002/records.hosts\ncp00000002/squid.conf\ncp00000003\ncp00000003/Corefile\ncp00000003/records.hosts\ncp00000003/squid.conf'
+  actual=$(find "$SERVICE_ROOT" -xdev -mindepth 1 -maxdepth 2 -printf '%P\n' | LC_ALL=C sort) || return 1
+  [[ $actual == "$expected" ]]
+}
+
 installed_config_exact() {
+  dir_exact "$SERVICE_ROOT" 755 &&
+  dir_exact "$SERVICE_ROOT/cp00000002" 755 &&
+  dir_exact "$SERVICE_ROOT/cp00000003" 755 &&
+  config_tree_shape_exact &&
   file_exact "$SERVICE_ROOT/compose.yaml" 644 704154f06c2e72d0a0243d0c4618a3d46320f6321cf9f17955a402e8985ab7d0 &&
   file_exact "$SERVICE_ROOT/cp00000002/Corefile" 644 52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa &&
   file_exact "$SERVICE_ROOT/cp00000002/records.hosts" 644 a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703 &&
@@ -197,6 +215,22 @@ installed_config_exact() {
   file_exact "$SERVICE_ROOT/cp00000003/Corefile" 644 52ae50e70a503f9fd4822c3d3122ad1be8b1252b5a39a35d6fedfe53aecc5ffa &&
   file_exact "$SERVICE_ROOT/cp00000003/records.hosts" 644 a702e2eb6a70caf3941c0311ab19c16672d15e3474e7aae070a6d115056d2703 &&
   file_exact "$SERVICE_ROOT/cp00000003/squid.conf" 644 1820d5eac816259597f8cb8c3551daa6e400a13390cafbadd9a47c99ba0056dc
+}
+
+partial_config_state() {
+  if [[ ! -e $SERVICE_ROOT && ! -L $SERVICE_ROOT ]]; then
+    printf '%s\n' ABSENT
+    return 0
+  fi
+  [[ -d $SERVICE_ROOT && ! -L $SERVICE_ROOT ]] || return 1
+  installed_config_exact || return 1
+  printf '%s\n' EXACT_PRESENT
+}
+
+checkpoint_config_state() {
+  marker_exact "$CHECKPOINT_CONFIG_STATE" ABSENT && { printf '%s\n' ABSENT; return 0; }
+  marker_exact "$CHECKPOINT_CONFIG_STATE" EXACT_PRESENT && { printf '%s\n' EXACT_PRESENT; return 0; }
+  return 1
 }
 
 recovered_state_valid() {
@@ -220,40 +254,52 @@ write_state() {
 
 create_checkpoint() {
   [[ ! -e $STATE_ROOT && ! -L $STATE_ROOT ]] || refuse recovery_state_already_exists
+  local baseline_config_state
+  baseline_config_state=$(partial_config_state) || refuse checkpoint_config_state_unknown
   install -d -o root -g root -m 0700 "$CHECKPOINT"
   install -o root -g root -m 0755 "$SERVICE_HELPER" "$CHECKPOINT/old-helper"
   install -o root -g root -m 0644 "$SERVICE_UNIT" "$CHECKPOINT/old-unit"
   file_exact "$CHECKPOINT/old-helper" 755 "$OLD_HELPER_SHA256" || refuse checkpoint_helper_failed
   file_exact "$CHECKPOINT/old-unit" 644 "$OLD_UNIT_SHA256" || refuse checkpoint_unit_failed
+  printf '%s\n' "$baseline_config_state" >"$CHECKPOINT_CONFIG_STATE"
+  chown root:root "$CHECKPOINT_CONFIG_STATE"
+  chmod 0600 "$CHECKPOINT_CONFIG_STATE"
+  marker_exact "$CHECKPOINT_CONFIG_STATE" "$baseline_config_state" || refuse checkpoint_config_state_write_failed
   {
     printf 'candidate_sha=%s\n' "$F1_2C_RECOVERY_CANDIDATE_SHA"
     printf 'historical_partial_commit=%s\n' "$HISTORICAL_PARTIAL_COMMIT"
     printf 'old_helper_sha256=%s\n' "$OLD_HELPER_SHA256"
     printf 'old_unit_sha256=%s\n' "$OLD_UNIT_SHA256"
+    printf 'baseline_config_state=%s\n' "$baseline_config_state"
     printf 'created_at=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   } >"$CHECKPOINT/manifest.env"
   chown root:root "$CHECKPOINT/manifest.env"
   chmod 0600 "$CHECKPOINT/manifest.env"
   write_state CHECKPOINT_READY
 }
-
 install_candidate_surface() {
-  install -d -o root -g root -m 0755 "$SERVICE_ROOT/cp00000002" "$SERVICE_ROOT/cp00000003"
+  local config_state scope file
+  config_state=$(partial_config_state) || human_gate candidate_config_preinstall_unclassified
+  case $config_state in
+    ABSENT)
+      install -d -o root -g root -m 0755 "$SERVICE_ROOT/cp00000002" "$SERVICE_ROOT/cp00000003"
+      install -o root -g root -m 0644 "$ROOT/platform/network/node-01/compose.yaml" "$SERVICE_ROOT/compose.yaml"
+      for scope in cp00000002 cp00000003; do
+        for file in Corefile records.hosts squid.conf; do
+          install -o root -g root -m 0644 "$ROOT/platform/network/node-01/$scope/$file" "$SERVICE_ROOT/$scope/$file"
+        done
+      done
+      ;;
+    EXACT_PRESENT) : ;;
+    *) human_gate candidate_config_preinstall_unclassified ;;
+  esac
   install -o root -g root -m 0755 "$ROOT/platform/network/cloud-platform-network-services" "$SERVICE_HELPER"
-  install -o root -g root -m 0644 "$ROOT/platform/network/node-01/compose.yaml" "$SERVICE_ROOT/compose.yaml"
-  local scope file
-  for scope in cp00000002 cp00000003; do
-    for file in Corefile records.hosts squid.conf; do
-      install -o root -g root -m 0644 "$ROOT/platform/network/node-01/$scope/$file" "$SERVICE_ROOT/$scope/$file"
-    done
-  done
   install -o root -g root -m 0644 "$ROOT/platform/systemd/cloud-platform-network-services.service" "$SERVICE_UNIT"
   file_exact "$SERVICE_HELPER" 755 "$NEW_HELPER_SHA256" || human_gate installed_helper_mismatch
   file_exact "$SERVICE_UNIT" 644 "$NEW_UNIT_SHA256" || human_gate installed_unit_mismatch
   installed_config_exact || human_gate installed_config_mismatch
   systemctl daemon-reload
 }
-
 remove_candidate_config() {
   local scope file
   for scope in cp00000002 cp00000003; do
@@ -281,7 +327,10 @@ restore_checkpoint_surface() {
 operation_precheck() {
   [[ ! -e $STATE_ROOT && ! -L $STATE_ROOT ]] || refuse recovery_state_already_exists
   partial_state_valid || refuse partial_state_mismatch
-  printf 'RECOVERY_PRECHECK=PASS state=KNOWN_PARTIAL candidate=%s\n' "$F1_2C_RECOVERY_CANDIDATE_SHA"
+  local baseline_config_state
+  baseline_config_state=$(partial_config_state) || refuse partial_config_state_unclassified
+  printf 'RECOVERY_PRECHECK=PASS state=KNOWN_PARTIAL baseline_config=%s candidate=%s\n' \
+    "$baseline_config_state" "$F1_2C_RECOVERY_CANDIDATE_SHA"
 }
 
 operation_apply() {
@@ -318,9 +367,15 @@ operation_rollback() {
   recovered_state_valid || refuse rollback_requires_healthy_recovered_state
   file_exact "$CHECKPOINT/old-helper" 755 "$OLD_HELPER_SHA256" || refuse checkpoint_helper_drift
   file_exact "$CHECKPOINT/old-unit" 644 "$OLD_UNIT_SHA256" || refuse checkpoint_unit_drift
+  local baseline_config_state
+  baseline_config_state=$(checkpoint_config_state) || refuse checkpoint_config_state_drift
   systemctl stop cloud-platform-network-services.service
   "$SERVICE_HELPER" rollback >/dev/null || human_gate candidate_runtime_rollback_failed
-  remove_candidate_config
+  case $baseline_config_state in
+    ABSENT) remove_candidate_config ;;
+    EXACT_PRESENT) installed_config_exact || human_gate rollback_exact_present_config_drift ;;
+    *) refuse checkpoint_config_state_drift ;;
+  esac
   if [[ -d $PRIVATE_RUNTIME && ! -L $PRIVATE_RUNTIME ]]; then
     [[ $(stat -c '%U:%G:%a' "$PRIVATE_RUNTIME") == root:root:700 ]] || human_gate private_runtime_drift
     [[ -f $PRIVATE_RUNTIME/lock && ! -L $PRIVATE_RUNTIME/lock ]] || human_gate private_runtime_lock_missing
@@ -337,11 +392,14 @@ operation_rollback() {
   no_managed_links || human_gate managed_links_remained_after_rollback
   [[ $(sysctl -n net.ipv4.ip_forward) == 0 ]] || human_gate ipv4_forwarding_remained_after_rollback
   [[ $(sysctl -n net.ipv6.conf.all.forwarding) == 0 ]] || human_gate ipv6_forwarding_drift_after_rollback
-  [[ ! -e $SERVICE_ROOT && ! -L $SERVICE_ROOT ]] || human_gate config_root_remained_after_rollback
+  case $baseline_config_state in
+    ABSENT) [[ ! -e $SERVICE_ROOT && ! -L $SERVICE_ROOT ]] || human_gate config_root_remained_after_rollback ;;
+    EXACT_PRESENT) installed_config_exact || human_gate config_exact_present_not_preserved_after_rollback ;;
+  esac
   write_state ROLLED_BACK_SAFE_PARTIAL
-  printf 'RECOVERY_ROLLBACK=PASS state=SAFE_PARTIAL_BASELINE candidate=%s\n' "$F1_2C_RECOVERY_CANDIDATE_SHA"
+  printf 'RECOVERY_ROLLBACK=PASS state=SAFE_PARTIAL_BASELINE baseline_config=%s candidate=%s\n' \
+    "$baseline_config_state" "$F1_2C_RECOVERY_CANDIDATE_SHA"
 }
-
 [[ $EUID -eq 0 ]] || refuse root_required
 [[ $# -eq 1 ]] || refuse exactly_one_operation_required
 case $1 in precheck | apply | check | rollback) operation=$1 ;; *) refuse operation_not_allowlisted ;; esac
