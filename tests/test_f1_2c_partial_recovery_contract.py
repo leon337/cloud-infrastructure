@@ -52,6 +52,12 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertIn("recover-network-services-partial", harness)
         self.assertIn("c9f909945b544d22dbabc619252456f7190f7ae9", harness)
 
+    def test_partial_recovery_harness_removes_prior_lab_runtime_residue(self):
+        harness = KVM_RECOVERY.read_text(encoding="utf-8")
+        cleanup = "sudo rmdir /run/cloud-platform-network-services"
+        self.assertIn(cleanup, harness)
+        self.assertLess(harness.index(cleanup), harness.index("fail private_runtime_preexists"))
+
     def test_recovery_ci_is_hosted_and_exact_head(self):
         self.assertTrue(CI_WORKFLOW.is_file(), "recovery validation workflow must exist")
         text = CI_WORKFLOW.read_text(encoding="utf-8")
@@ -60,6 +66,8 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertIn("fix/f1-2c-node01-rollout-recovery-20260828", text)
         self.assertIn("tests.test_f1_2c_partial_recovery_contract", text)
         self.assertNotIn("runs-on: [self-hosted", text)
+        self.assertNotIn("cache: pip", text)
+        self.assertIn("requirements-dev.lock", text)
 
     def test_recovery_kvm_ci_is_hosted_exact_head_and_collects_evidence(self):
         self.assertTrue(KVM_WORKFLOW.is_file(), "hosted KVM recovery workflow must exist")
@@ -71,6 +79,8 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertIn("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", text)
         self.assertNotIn("self-hosted", text)
         self.assertNotIn("node-01", text)
+        self.assertIn("$RUNNER_TEMP/kvm-evidence", text)
+        self.assertNotIn("$GITHUB_WORKSPACE/kvm-evidence", text)
 
 
 if __name__ == "__main__":

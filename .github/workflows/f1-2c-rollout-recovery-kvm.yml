@@ -65,19 +65,20 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          mkdir -p "$GITHUB_WORKSPACE/kvm-evidence"
+          evidence_dir="$RUNNER_TEMP/kvm-evidence"
+          mkdir -p "$evidence_dir"
           evidence_root="${XDG_STATE_HOME:-$HOME/.local/state}/mcf-kvm-lab/evidence"
           if [[ -d "$evidence_root" ]]; then
-            cp -a "$evidence_root"/. "$GITHUB_WORKSPACE/kvm-evidence/"
+            cp -a "$evidence_root"/. "$evidence_dir/"
           fi
-          find "$GITHUB_WORKSPACE/kvm-evidence" -maxdepth 3 -type f -print || true
+          find "$evidence_dir" -maxdepth 3 -type f -print || true
 
       - name: Upload KVM evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: f1-2c-rollout-recovery-kvm-${{ github.run_id }}
-          path: kvm-evidence/
+          path: ${{ runner.temp }}/kvm-evidence/
           if-no-files-found: warn
           retention-days: 14
 

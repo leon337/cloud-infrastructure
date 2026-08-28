@@ -103,6 +103,10 @@ printf '%s\n' SLICE-002C-NODE-01-SERVICES-V1 | sudo tee "$SERVICE_MARKER" >/dev/
 sudo chown root:root "$SERVICE_MARKER"
 sudo chmod 0600 "$SERVICE_MARKER"
 sudo install -o root -g root -m 0600 /dev/null "$LEGACY_LOCK"
+# Remove only the private runtime residue left by the preceding normal-lifecycle
+# test in this same disposable guest before reproducing the NODE-01 partial state.
+sudo rm -f -- /run/cloud-platform-network-services/lock
+sudo rmdir /run/cloud-platform-network-services 2>/dev/null || true
 # No service config tree is installed: this mirrors the live partial state.
 sudo test ! -e "$SERVICE_ROOT" || fail partial_config_root_exists
 sudo test ! -e /run/cloud-platform-network-services || fail private_runtime_preexists
