@@ -202,6 +202,9 @@ GUEST_HARNESS_COMMAND="set -Eeuo pipefail; \
   DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY \
     scripts/test_node_network_services_vm.sh; \
   DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY \
+    scripts/test_node_network_services_partial_recovery_vm.sh; \
+  F1_2C_PARTIAL_FIXTURE=exact_present \
+  DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM=MCF_LOCAL_KVM_UBUNTU_24_04_DISPOSABLE_VM_ONLY \
     scripts/test_node_network_services_partial_recovery_vm.sh"
 readonly GUEST_HARNESS_COMMAND
 

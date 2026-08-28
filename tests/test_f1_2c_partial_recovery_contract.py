@@ -1,3 +1,4 @@
+import hashlib
 import unittest
 from pathlib import Path
 
@@ -66,6 +67,47 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertNotIn("printf '%s\\n' 'slice=SLICE-002B'", harness)
         self.assertNotIn("cat <<'EOF' | sudo tee /etc/cloud-platform-foundation.managed", harness)
 
+    def test_recovery_preserves_known_partial_config_variant(self):
+        recovery = RECOVERY.read_text(encoding="utf-8")
+        for token in (
+            "partial_config_state",
+            "ABSENT",
+            "EXACT_PRESENT",
+            "CHECKPOINT_CONFIG_STATE=$CHECKPOINT/config-state",
+            "checkpoint_config_state_drift",
+            "baseline_config_state",
+            "dir_exact",
+            "config_tree_shape_exact",
+            "candidate_config_preinstall_unclassified",
+        ):
+            self.assertIn(token, recovery)
+        self.assertIn("installed_config_exact", recovery)
+        self.assertIn("EXACT_PRESENT) : ;;", recovery)
+
+    def test_kvm_exercises_absent_and_exact_present_partial_variants(self):
+        runner = KVM_RUNNER.read_text(encoding="utf-8")
+        harness = KVM_RECOVERY.read_text(encoding="utf-8")
+        self.assertIn("F1_2C_PARTIAL_FIXTURE=exact_present", runner)
+        self.assertIn("F1_2C_PARTIAL_FIXTURE", harness)
+        self.assertIn("exact_present", harness)
+        self.assertIn("baseline_config=", harness)
+        self.assertIn("config_exact_present_not_preserved_after_rollback", harness)
+
+    def test_recovery_installed_config_hashes_match_sources(self):
+        recovery = RECOVERY.read_text(encoding="utf-8")
+        for rel in (
+            "compose.yaml",
+            "cp00000002/Corefile",
+            "cp00000002/records.hosts",
+            "cp00000002/squid.conf",
+            "cp00000003/Corefile",
+            "cp00000003/records.hosts",
+            "cp00000003/squid.conf",
+        ):
+            source = ROOT / "platform/network/node-01" / rel
+            digest = hashlib.sha256(source.read_bytes()).hexdigest()
+            self.assertIn(f'file_exact "$SERVICE_ROOT/{rel}" 644 {digest}', recovery, rel)
+
     def test_kvm_runner_executes_partial_recovery_harness(self):
         self.assertTrue(KVM_RECOVERY.is_file(), "partial recovery KVM harness must exist")
         runner = KVM_RUNNER.read_text(encoding="utf-8")
@@ -89,6 +131,7 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertIn("github.event.pull_request.head.sha", text)
         self.assertIn("fix/f1-2c-node01-rollout-recovery-20260828", text)
         self.assertIn("fix/f1-2c-marker-contract-equivalence-20260828", text)
+        self.assertIn("fix/f1-2c-config-present-partial-20260828", text)
         self.assertIn("tests.test_f1_2c_partial_recovery_contract", text)
         self.assertNotIn("runs-on: [self-hosted", text)
         self.assertNotIn("cache: pip", text)
@@ -101,6 +144,7 @@ class F12CPartialRecoveryContractTests(unittest.TestCase):
         self.assertIn("github.event.pull_request.head.sha", text)
         self.assertIn("scripts/run_f1_2c_kvm_lab.sh", text)
         self.assertIn("fix/f1-2c-marker-contract-equivalence-20260828", text)
+        self.assertIn("fix/f1-2c-config-present-partial-20260828", text)
         self.assertIn("/dev/kvm", text)
         self.assertIn("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", text)
         self.assertNotIn("self-hosted", text)

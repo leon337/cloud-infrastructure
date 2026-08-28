@@ -23,11 +23,36 @@ readonly RECOVERY_STATE=/var/lib/cloud-platform-f1-2c-partial-recovery
 readonly BACKUP=/usr/local/sbin/cloud-infrastructure-config-backup
 readonly OLD_HELPER_SHA=06d0f016809a2e8d9cf0be5a258766563cc686fe40b21ec3578a99c731421060
 readonly OLD_UNIT_SHA=dfe10b0e0046242695fe5ba03215f49aa938cf94b733bba3b1a2ba9cfad7e6d1
+readonly FIXTURE=${F1_2C_PARTIAL_FIXTURE:-absent}
 
 fail() { printf 'NODE_NETWORK_SERVICES_PARTIAL_RECOVERY_VM_FAIL reason=%s\n' "$1" >&2; exit 1; }
 sha_of() { sha256sum "$1" | awk '{print $1}'; }
 
+install_exact_config() {
+  sudo install -d -o root -g root -m 0755 "$SERVICE_ROOT/cp00000002" "$SERVICE_ROOT/cp00000003"
+  sudo install -o root -g root -m 0644 "$ROOT/platform/network/node-01/compose.yaml" "$SERVICE_ROOT/compose.yaml"
+  local scope file
+  for scope in cp00000002 cp00000003; do
+    for file in Corefile records.hosts squid.conf; do
+      sudo install -o root -g root -m 0644 "$ROOT/platform/network/node-01/$scope/$file" "$SERVICE_ROOT/$scope/$file"
+    done
+  done
+}
+
+config_exact_present() {
+  sudo test -d "$SERVICE_ROOT" || return 1
+  local rel
+  for rel in compose.yaml cp00000002/Corefile cp00000002/records.hosts cp00000002/squid.conf \
+    cp00000003/Corefile cp00000003/records.hosts cp00000003/squid.conf; do
+    sudo test -f "$SERVICE_ROOT/$rel" || return 1
+    sudo test ! -L "$SERVICE_ROOT/$rel" || return 1
+    [[ $(sudo stat -c '%U:%G:%a:%h' "$SERVICE_ROOT/$rel") == root:root:644:1 ]] || return 1
+    sudo cmp -s "$ROOT/platform/network/node-01/$rel" "$SERVICE_ROOT/$rel" || return 1
+  done
+}
+
 [[ $# -eq 0 ]] || fail unexpected_arguments
+case $FIXTURE in absent | exact_present) ;; *) fail invalid_partial_fixture ;; esac
 [[ ${DOCKER_BOUNDARY_TEST_PRIVILEGED_CONFIRM:-} == "$CONFIRMATION" ]] || fail missing_exact_confirmation
 [[ $(id -un) == mcf-lab ]] || fail wrong_user
 [[ $(hostname --short) == mcf-f1-2c-kvm-* ]] || fail wrong_host
@@ -118,8 +143,15 @@ sudo install -o root -g root -m 0600 /dev/null "$LEGACY_LOCK"
 # test in this same disposable guest before reproducing the NODE-01 partial state.
 sudo rm -f -- /run/cloud-platform-network-services/lock
 sudo rmdir /run/cloud-platform-network-services 2>/dev/null || true
-# No service config tree is installed: this mirrors the live partial state.
-sudo test ! -e "$SERVICE_ROOT" || fail partial_config_root_exists
+case $FIXTURE in
+  absent)
+    sudo test ! -e "$SERVICE_ROOT" || fail partial_config_root_exists
+    ;;
+  exact_present)
+    install_exact_config
+    config_exact_present || fail partial_config_exact_present_setup_failed
+    ;;
+esac
 sudo test ! -e /run/cloud-platform-network-services || fail private_runtime_preexists
 sudo systemctl daemon-reload
 sudo systemctl enable cloud-platform-network-services.service >/dev/null
@@ -161,7 +193,10 @@ sudo "$SERVICE" check >/dev/null || fail recovered_helper_check_failed
 sudo "${RECOVERY_ENV[@]}" "$RECOVERY" rollback | grep -F 'RECOVERY_ROLLBACK=PASS' >/dev/null || fail recovery_rollback_failed
 [[ $(sudo sha256sum "$SERVICE" | awk '{print $1}') == "$OLD_HELPER_SHA" ]] || fail old_helper_not_restored
 [[ $(sudo sha256sum "$SERVICE_UNIT" | awk '{print $1}') == "$OLD_UNIT_SHA" ]] || fail old_unit_not_restored
-sudo test ! -e "$SERVICE_ROOT" || fail config_root_remained_after_rollback
+case $FIXTURE in
+  absent) sudo test ! -e "$SERVICE_ROOT" || fail config_root_remained_after_rollback ;;
+  exact_present) config_exact_present || fail config_exact_present_not_preserved_after_rollback ;;
+esac
 [[ -z $(sudo docker container ls --all --quiet) ]] || fail containers_remained_after_rollback
 [[ -z $(sudo docker image ls --all --quiet) ]] || fail images_remained_after_rollback
 [[ -z $(sudo docker network ls --filter type=custom --quiet) ]] || fail networks_remained_after_rollback
@@ -171,4 +206,4 @@ sudo grep -Fxq ROLLED_BACK_SAFE_PARTIAL "$RECOVERY_STATE/state" || fail rollback
 
 trap - EXIT
 cleanup
-printf '%s\n' 'NODE_NETWORK_SERVICES_PARTIAL_RECOVERY_VM_PASS historical_failure=pass precheck=pass apply=pass check=pass idempotence=pass rollback=pass cleanup=pass'
+printf 'NODE_NETWORK_SERVICES_PARTIAL_RECOVERY_VM_PASS baseline_config=%s historical_failure=pass precheck=pass apply=pass check=pass idempotence=pass rollback=pass cleanup=pass\n' "$FIXTURE"
