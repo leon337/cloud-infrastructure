@@ -28,24 +28,27 @@ por histórico do `ubuntu` e auth log. LEANDRO confirmou que essa chave é usada
 real de abertura/acesso à VPS pelo notebook. O fallback independente permanece apenas
 como contingência; `authorized_keys` segue inalterado e a chave deve ser preservada.
 
-**F1.2c rollout gate em 28/08/2026:** o estado parcial live foi classificado como
-`PARTIAL_FIRST_APPLY`. O recovery fail-closed foi validado no candidato exato
-`81a5f3571d66d9764d9c70f8071367f5094fbc05`: static/ShellCheck run `33191612674` e
-KVM run `33191612729` passaram; a PR #35 foi integrada na lineage de correção em
-`2575bdaa99b195d756386ff9e923e05231b9aa17`. O NODE-01 não foi alterado e o reapply
-continua `NOT_AUTHORIZED`, aguardando `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
+**F1.2c live recovery em 28/08/2026:** a classificação parcial foi refinada após diagnóstico
+root: a árvore `/etc/cloud-platform/network-services` já existia e era byte-exata (`EXACT_PRESENT`);
+a ausência reportada no preflight não privilegiado era falso negativo de traversal permission. As PRs
+#39/#40 corrigiram o contrato de markers e modelaram rollback simétrico para `ABSENT`/`EXACT_PRESENT`.
+O candidato exato `baaf83908e8e83264baafc032434a4df1952450b` passou static/ShellCheck run
+`33217692498` e KVM run `33217692536` nas duas variantes.
 
-Preflight live somente leitura em `2026-08-28T17:11:31Z` via fluxo SSH notebook→VPS:
-identidade, hashes antigos/base, serviços requeridos, estado enabled+failed da unit, ausência da
-árvore/runtime privado, lock legado, forwarding, socket Docker e ausência de links/rotas/listeners
-gerenciados passaram. Conteúdo dos markers privados e `zero_docker_state` permanecem
-`NÃO VERIFICADO` até o precheck privilegiado; staging root-owned/precheck/apply continuam
-bloqueados pelo HUMAN_GATE.
+Com autorização humana one-shot, o precheck live retornou `KNOWN_PARTIAL baseline_config=EXACT_PRESENT`;
+checkpoint e backup pré-apply foram verificados; `apply` + `check` concluíram e a pós-validação root
+confirmou `state=RECOVERED`, serviço `active+enabled`, helper/base checks `PASS`, forwarding IPv4/IPv6
+`1/0` e ausência de listeners públicos gerenciados. A autorização foi consumida; novo reapply exige
+novo gate. Evidência: [`evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`](evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md).
+
+**NETWORK_CONVERGENCE_P2 live em 29/08/2026:** a causa funcional do `wait-online` foi reproduzida em KVM como ausência da rota conectada IPv4 `/17`; o agente exato que a removeu permanece `NÃO VERIFICADO`. O fix preservou o `staticroute` do cloud-init/provedor e adicionou somente `169.58.128.1/32 scope link`. Após PRs #42/#43, static + KVM hospedados `SUCCESS`, precheck live `KNOWN_BROKEN`, backup/checkpoint e apply/check autorizados, `eth0` convergiu para `configured` e ambos os predicates `wait-online` passaram. O `systemd-networkd` não foi reiniciado. Evidência: [`evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md`](evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md).
+
+**PRE_REBOOT_CHECKPOINT em 29/08/2026:** baseline pré-reboot verificada com serviços críticos ativos, `eth0=configured`, wait-online PASS e recovery F1.2c/P2 saudável. O V1 foi rejeitado por self-hash inválido de `SHA256SUMS`; o V2 `pre-reboot-checkpoint-20260829T203736Z.tar.gz` passou SHA externo, segurança de archive, todos os hashes internos e cópia off-host. Backup canônico associado `cloud-infrastructure-config-20260829T203734Z.tar.gz` também foi verificado off-host com `RECOVERY_P2=PASS`. Reboot/updates continuam não autorizados. Evidência: [`evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md`](evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md).
 
 | Área | Estado reconciliado | Resumo |
 |---|---|---|
-| VPS / NODE-01 | `OPERATIONAL_WITH_OPEN_INCIDENTS` | host acessível pelo runner, serviços essenciais ativos e uma unit F1.2c em `failed` |
-| Plataforma privada | `IMPLEMENTATION_IN_PROGRESS` | S0, F1.1 e F1.2b concluídos; recovery F1.2c validado, rollout live ainda pendente de gate |
+| VPS / NODE-01 | `OPERATIONAL_WITH_OPEN_INCIDENTS` | F1.2c, network convergence P2 e checkpoint pré-reboot verificados; reboot e outros débitos permanecem abertos |
+| Plataforma privada | `IMPLEMENTATION_IN_PROGRESS` | S0, F1.1, F1.2b, F1.2c, network convergence P2 e checkpoint pré-reboot concluídos; próximo gate é update/reboot controlado |
 | Control Bridge G1 | `PASS_REAL_NODE_01_ROUNDTRIP` | transporte curto pelo runner comprovado |
 | Control Bridge G2-A | `PASS_REAL_NODE_01_READ_ONLY` | leitura confinada e recusa de escape comprovadas |
 | Control Bridge G2-B | `TASK_8_FAILED_ATTEMPT_3` | Tasks 1–7 concluídas; prova descartável completa ainda não passou |
@@ -58,12 +61,12 @@ bloqueados pelo HUMAN_GATE.
 ### Próxima ação exata
 
 ```text
-F1_2C_NODE01_ROLLOUT_HUMAN_GATE
+UPDATE_AND_CONTROLLED_REBOOT
 ```
 
 Hardening pendente separado: ativar os hooks globais STARTED/COMPLETED do runner
 somente em uma janela de restart autorizada do serviço. Não contornar o boundary de
-`systemd`/sudo para isso. F1.2c e network convergence continuam em suas frentes próprias.
+`systemd`/sudo para isso. F1.2c e network convergence P2 estão concluídos; reboot continua em gate separado.
 
 ## Estado observado da VPS
 
@@ -93,16 +96,16 @@ Atualização live de **28/08/2026**: o PID `783478`, socket, PID file e source 
 | VM descartável G2-B | ainda ligada como `g2b-disposable-task8-vm3`, 6 vCPU/12 GiB, SSH local `127.0.0.1:22284` |
 | PTY persistente experimental | **histórico em 22/08:** PID `783478`, processo vivo, socket modo `0600`; retirado em 28/08 |
 
-### Incidentes abertos
+### Incidentes e pendências
 
-#### INC-001 — F1.2c network services em `failed`
+#### INC-001 — RESOLVIDO em 28/08 — F1.2c network services
 
-- a base SSH/UFW/Docker/containerd continua ativa;
-- `cloud-platform-network-services.service` permanece `failed` no estado parcial observado;
-- marker F1.2c existe, helper/unit históricos foram reconhecidos e a árvore de configuração de serviços está ausente;
-- recovery fail-closed validado em `81a5f357...` e integrado à lineage em `2575bdaa...`;
-- nenhum write live foi executado durante a preparação;
-- não reaplicar sem preflight fresco e autorização explícita de LEANDRO.
+- causa histórica: helper/unit antigos tentavam lock em `/run/lock` sob filesystem protegido;
+- o preflight não privilegiado inferiu incorretamente config ausente; diagnóstico root confirmou baseline `EXACT_PRESENT` byte-exata;
+- PRs #39/#40 corrigiram marker equivalence e preservação da baseline parcial;
+- candidato `baaf83908e8e83264baafc032434a4df1952450b` passou static/ShellCheck e KVM `ABSENT` + `EXACT_PRESENT`;
+- rollout autorizado concluiu `RECOVERY_CHECK=PASS` e pós-validação `F1_2C_POSTVERIFY=PASS`;
+- qualquer novo reapply requer nova autorização humana; a autorização usada foi consumida.
 
 #### INC-002 — G2-B tentativa descartável 3 encerrada, guest ainda ligado
 
@@ -124,6 +127,16 @@ chave dedicada carregada. O teste direto retorna `Permission denied
 Nunca registrar nem enviar a passphrase; quando o acesso direto for necessário,
 LEANDRO carrega a chave localmente com `ssh-add`.
 
+#### INC-004 — RESOLVIDO em 29/08 — systemd-networkd convergence
+
+- causa funcional comprovada: ausência da rota conectada `169.58.128.0/17` mantinha `eth0` em `configuring` e `wait-online` em timeout;
+- agente exato que removeu a rota conectada: `NÃO VERIFICADO`;
+- `staticroute` originado em NoCloud/cloud-init foi preservado e não foi provado como causa única;
+- correção mínima: host-route `169.58.128.1/32 scope link`, sem restaurar o `/17` inteiro;
+- candidato `682c3e55d835ebea4bcc2edd297a8b819b2df434`, PRs #42/#43, static/KVM hospedados PASS;
+- rollout live autorizado concluiu `RECOVERED`, `AdministrativeState=configured` e wait-online PASS sem restart do networkd;
+- autorização P2 one-shot consumida; reboot continua não autorizado.
+
 ## Onde está cada parte do trabalho
 
 Esta tabela é o inventário de reconciliação. Nenhum item listado como local ou
@@ -132,7 +145,7 @@ experimental deve ser apagado, resetado ou mesclado sem classificação prévia.
 | Local/ref | Estado | Conteúdo e decisão |
 |---|---|---|
 | GitHub `main` — `3621a6d` antes desta reconciliação | limpo, porém incompleto | baseline histórica, Cloud Workstation e provas temporárias; não contém a implementação integral das branches abaixo |
-| `fix/f1-2c-systemd-runtime-lock` — computador local | 2 modificados + 1 não rastreado | frente F1.2c avançada; correção de runtime lock e espera pós-restart; preservar e testar antes de commit |
+| `fix/f1-2c-systemd-runtime-lock` — GitHub | lineage funcional em `badad65` | F1.2c (`baaf839...`) + NETWORK_CONVERGENCE_P2 (`682c3e55...`) integrados via PRs #39/#40/#42/#43; `main` ainda não importa código funcional |
 | `codex/mission-001-f1-2c-network-enforcement` — GitHub | branch de implementação | F1.1/F1.2b e desired state F1.2c; base da PR #9 |
 | `mcf/mission-001-control-bridge-g1` — GitHub | G1/G2-A comprovados | roundtrip e leitura real do NODE-01; [PR #3](https://github.com/leon337/cloud-infrastructure/pull/3) aberta |
 | `codex/control-bridge-g2b` — VPS/GitHub | limpo em `fbef3d4` | G2-B Tasks 1–7, continuidade R1–R8 e correções das tentativas 1–3; [PR #11](https://github.com/leon337/cloud-infrastructure/pull/11) draft |
@@ -156,7 +169,7 @@ backup/inspeção do ref, para não perder trabalho do usuário.
 |---|---|---|---|
 | Segurança, produção e HUMAN_GATE | LEANDRO | LEANDRO | decisão humana final |
 | Sequenciamento da implementação da VPS | LEANDRO | Codex nesta retomada | auditar, preservar e consolidar antes de mutar |
-| F1.2c existente | LEANDRO | handoff em reconciliação | worktree sujo permanece congelado até checkpoint local |
+| F1.2c | LEANDRO | MESTRE | rollout live verificado; lineage funcional permanece isolada até integração mainline revisada |
 | Control Bridge G2-B | LEANDRO | Codex retomando a execução técnica | VPS/GitHub `fbef3d4` é a linha remota mais avançada |
 | MESTRE/ChatGPT e equipe MCF | LEANDRO | MESTRE | agentes consumidores do bridge; não recebem root/shell arbitrário |
 | Experimento MCF com worker Codex autônomo | nenhum rollout autorizado | nenhum | rejeitado para esta missão; Codex não substitui o MESTRE |
@@ -201,9 +214,9 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
   comprovados no NODE-01.
 - [x] **17/08 — F1.2b Docker boundary:** Docker/containerd aplicados, reiniciados
   e reconciliados com runtime vazio.
-- [ ] **17–20/08 — F1.2c Network Enforcement:** base real e desired state
-  testados; crash-tests avançaram até o pós-restart, mas a unit de serviços está
-  atualmente `failed` e a frente não está aceita.
+- [x] **17–28/08 — F1.2c Network Enforcement:** falha histórica reproduzida e recovery
+  fail-closed corrigido; rollout live autorizado do candidato `baaf839...` terminou
+  `RECOVERED`, com serviço/helper/base/rede privada pós-apply verificados.
 - [x] **18/08 — Control Bridge G1:** primeiro handshake e roundtrip real pelo
   self-hosted runner.
 - [x] **19/08 — Control Bridge G2-A:** leitura real do workspace, Git read-only,
@@ -255,9 +268,8 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
 - [ ] encerrar a QEMU `g2b-disposable-task8-vm3` e remover somente o diretório
   efêmero validado, após preservar a evidência;
 - [ ] confirmar que CPU/RAM e porta local `22284` foram liberadas;
-- [ ] coletar diagnóstico read-only da unit F1.2c falha;
-- [ ] decidir a correção F1.2c a partir do worktree já existente, sem sobrescrever
-  as três mudanças locais.
+- [x] coletar diagnóstico read-only/root da unit e classificar o estado parcial F1.2c;
+- [x] corrigir o recovery F1.2c em lineage isolada sem sobrescrever trabalho local; PRs #39/#40 integradas na lineage.
 
 ### P0-B — Concluir as chaves controladas do prédio
 
@@ -285,8 +297,8 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
 
 ### P1 — Finalizar a fundação da plataforma DEV/lab
 
-- [ ] **F1.2c:** recuperar network services, provar restart/idempotência e liberar
-  o primeiro workload somente após todos os gates;
+- [x] **F1.2c:** network services recuperados no NODE-01; precheck, backup/checkpoint, apply/check, KVM/idempotência e pós-validação live comprovados;
+- [x] **NETWORK_CONVERGENCE_P2:** `eth0` convergiu para `configured`, gateway `/32` materializado e wait-online validado sem restart;
 - [ ] **F1.2a:** Management Network — `WAITING_HUMAN_GATE`;
 - [ ] **F1.3:** observabilidade mínima e accounting;
 - [ ] **F1.4:** secret bootstrap foundation;

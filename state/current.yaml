@@ -1,9 +1,9 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: governance/f1-2c-preflight-evidence-20260828
-updated_at: "2026-08-28T14:14:50-03:00"
-state_classification: CURRENT_F1_2C_HUMAN_GATE_READY_WITH_PRIVILEGED_PREFLIGHT_PENDING
+candidate_branch: docs/f1-2c-live-closeout-20260828
+updated_at: "2026-08-29T17:44:30-03:00"
+state_classification: CURRENT_PRE_REBOOT_CHECKPOINT_VERIFIED_UPDATE_REBOOT_HUMAN_GATE_PENDING
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 freshness:
@@ -34,9 +34,10 @@ continuity:
 
 source_snapshot:
   main:
-    sha: 0069e391eee836b978d748d52fcc91404c80ba8c
+    sha: ce829067a9a04eceaa6eaefd9553899b2ce14da1
     baseline_before_f1_2c_preflight_evidence_projection: true
-    latest_integrated_pr: 36
+    baseline_before_f1_2c_live_closeout_projection: true
+    latest_integrated_pr: 37
     executive_projection: README.md
     operational_checklist: ROADMAP-CHECKLIST.md
   executable_evidence:
@@ -56,6 +57,32 @@ source_snapshot:
     f1_2c_partial_recovery_kvm_artifact: 9694059362
     f1_2c_unprivileged_preflight_utc: "2026-08-28T17:11:31Z"
     f1_2c_unprivileged_preflight_result: PASS_WITH_PRIVILEGED_ITEMS_PENDING
+    f1_2c_marker_contract_pr: 39
+    f1_2c_exact_present_recovery_pr: 40
+    f1_2c_live_candidate: baaf83908e8e83264baafc032434a4df1952450b
+    f1_2c_recovery_lineage_merge: 2408aed4ac8dbe692912a8d806852a45d9a97c49
+    f1_2c_live_static_run: 33217692498
+    f1_2c_live_kvm_run: 33217692536
+    f1_2c_live_precheck_utc: "2026-08-28T22:52:55Z"
+    f1_2c_checkpoint_utc: "2026-08-28T22:55:37Z"
+    f1_2c_live_result: RECOVERED_POSTVERIFY_PASS
+    f1_2c_evidence: evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md
+    network_convergence_p2_initial_pr: 42
+    network_convergence_p2_metadata_pr: 43
+    network_convergence_p2_candidate: 682c3e55d835ebea4bcc2edd297a8b819b2df434
+    network_convergence_p2_lineage_merge: badad65ae583f159347c2219e1561a9a4a245152
+    network_convergence_p2_static_run: 33270932935
+    network_convergence_p2_kvm_run: 33270932950
+    network_convergence_p2_checkpoint_utc: "2026-08-29T19:50:01Z"
+    network_convergence_p2_live_result: RECOVERED_POSTVERIFY_PASS
+    network_convergence_p2_evidence: evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md
+    pre_reboot_checkpoint_v1: REJECTED_INTERNAL_SHA256SUMS_SELF_HASH
+    pre_reboot_checkpoint_v2_utc: "2026-08-29T20:37:36Z"
+    pre_reboot_checkpoint_v2_sha256: 8fe354e44c5d7948a9e87f0ab57cb9dd261fd438791f10964001158d800e0b42
+    pre_reboot_canonical_backup: cloud-infrastructure-config-20260829T203734Z.tar.gz
+    pre_reboot_canonical_backup_sha256: ce85092790cfbfe7b3aec675f12b3ef28e890c2e5ccb492c345a408118271c20
+    pre_reboot_offhost_recovery_dir: /home/leo/Backups/cloud-infrastructure/recovery/20260829T203850Z
+    pre_reboot_evidence: evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md
   open_fronts:
     repository_hygiene_pr: 19
     f1_2c_recovery_pr: 20
@@ -74,11 +101,14 @@ project:
     platform_s0: COMPLETE
     platform_f1_1: COMPLETE
     platform_f1_2b: COMPLETE
+    platform_f1_2c: COMPLETE_LIVE_VERIFIED
+    network_convergence_p2: COMPLETE_LIVE_VERIFIED
+    pre_reboot_checkpoint: VERIFIED_OFFHOST
     recovery_p1: COMPLETE
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
-  next_exact_step: F1_2C_NODE01_ROLLOUT_HUMAN_GATE
+  next_exact_step: UPDATE_AND_CONTROLLED_REBOOT
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
@@ -124,53 +154,146 @@ execution:
 
 platform:
   f1_2c:
-    status: REQUIRES_REVIEW
-    accepted: false
-    live_partial_state: CONFIRMED_PARTIAL_FIRST_APPLY
-    live_write_performed_by_recovery_prep: false
-    recovery_status: EXACT_HEAD_VALIDATED_AND_MERGED_IN_CORRECTION_LINEAGE
+    status: COMPLETE_LIVE_VERIFIED
+    accepted: true
+    acceptance_basis: LIVE_RECOVERY_CHECK_AND_INDEPENDENT_POSTVERIFY_PASS
+    live_partial_state_before_recovery: KNOWN_PARTIAL_EXACT_PRESENT
+    unprivileged_absence_observation: FALSE_NEGATIVE_TRAVERSAL_PERMISSION
+    live_write_performed: true
+    recovery_status: EXACT_HEAD_VALIDATED_APPLIED_AND_POSTVERIFIED
     recovery_branch: fix/f1-2c-systemd-runtime-lock
-    recovery_pr: 35
-    recovery_candidate_sha: 81a5f3571d66d9764d9c70f8071367f5094fbc05
-    recovery_merge_sha: 2575bdaa99b195d756386ff9e923e05231b9aa17
+    initial_recovery_pr: 35
+    marker_contract_pr: 39
+    exact_present_recovery_pr: 40
+    applied_candidate_sha: baaf83908e8e83264baafc032434a4df1952450b
+    recovery_lineage_merge_sha: 2408aed4ac8dbe692912a8d806852a45d9a97c49
     static_validation:
       status: PASS
-      run: 33191612674
+      run: 33217692498
       exact_head: true
       shellcheck: PASS
     disposable_kvm:
-      status: PASS
-      gate_pr: 35
-      run: 33191612729
+      status: PASS_BOTH_BASELINE_VARIANTS
+      gate_pr: 40
+      run: 33217692536
       exact_head: true
-      artifact_id: 9694059362
-      artifact_sha256: 1aced1e4e786859dd9faa3f0d700a7a35ccd815a06f7ec79311a6557e9b718da
+      baseline_absent: PASS
+      baseline_exact_present: PASS
       upstream_cause: NOT_VERIFIED
     generic_ci:
       status: FAIL_PREEXISTING_HISTORY_ONLY_GATE
-      foundation_run: 33191612766
-      docker_boundary_run: 33191612669
     live_preflight:
-      status: PASS_UNPRIVILEGED_WITH_PRIVILEGED_ITEMS_PENDING
-      observed_at_utc: "2026-08-28T17:11:31Z"
-      channel: NOTEBOOK_SSH_GCR_READ_ONLY
-      host_identity: PASS
-      historical_surface_hashes: PASS
-      base_surface_hashes: PASS
-      required_services: PASS
-      lxd_inactive: PASS
-      service_enabled_failed: PASS
-      service_root_and_private_runtime_absent: PASS
-      legacy_lock_metadata: PASS
-      forwarding_zero: PASS
-      docker_socket_boundary: PASS
-      managed_links_routes_public_listeners_absent: PASS
-      marker_files: PRESENT_ROOT_0600_CONTENT_NOT_VERIFIED
-      zero_docker_state: NOT_VERIFIED_REQUIRES_PRIVILEGED_PRECHECK
-      root_owned_exact_candidate_staging: PENDING_HUMAN_GATE
-      privileged_precheck: PENDING_HUMAN_GATE
-      live_write_performed: false
+      historical_unprivileged_observed_at_utc: "2026-08-28T17:11:31Z"
+      historical_result: PASS_WITH_FALSE_NEGATIVE_CONFIG_ABSENCE_AND_PRIVILEGED_ITEMS_PENDING
+      privileged_exact_precheck_at_utc: "2026-08-28T22:52:55Z"
+      privileged_exact_precheck: PASS_KNOWN_PARTIAL_EXACT_PRESENT
+      markers: PASS_CANONICAL
+      zero_docker_state_before_apply: PASS
+      root_owned_exact_candidate_staging: PASS
+    checkpoint_backup:
+      checkpoint_created_at_utc: "2026-08-28T22:55:37Z"
+      baseline_config_state: EXACT_PRESENT
+      old_helper_preserved: PASS
+      old_unit_preserved: PASS
+      backup_archive: cloud-infrastructure-config-20260828T225537Z.tar.gz
+      backup_sha256_sidecar: PASS
+    live_postverify:
+      status: PASS
+      recovery_state: RECOVERED
+      recovery_check: PASS
+      service_active: true
+      service_enabled: true
+      service_failed: false
+      helper_check: PASS
+      base_check: PASS
+      ipv4_forwarding: 1
+      ipv6_all_forwarding: 0
+      public_managed_listeners_absent: true
+      containers: 4
+      images: 2
+      volumes: 0
+      custom_networks: 4
+      evidence_file: evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md
     node01_reapply_authorized: false
+    one_shot_authorization_consumed: true
+
+network_convergence_p2:
+  status: COMPLETE_LIVE_VERIFIED
+  accepted: true
+  functional_cause: CONNECTED_IPV4_ROUTE_ABSENT_REPRODUCED_IN_KVM
+  route_removal_agent: NOT_VERIFIED
+  provider_staticroute: PRESERVED_NOT_PROVEN_UNIQUE_ROOT_CAUSE
+  initial_implementation_pr: 42
+  metadata_correction_pr: 43
+  applied_candidate_sha: 682c3e55d835ebea4bcc2edd297a8b819b2df434
+  recovery_lineage_merge_sha: badad65ae583f159347c2219e1561a9a4a245152
+  static_validation:
+    status: PASS
+    run: 33270932935
+    exact_head: true
+    shellcheck: PASS
+  disposable_kvm:
+    status: PASS
+    run: 33270932950
+    exact_head: true
+    generated_network_metadata: root:systemd-network:640
+    broken_signature_reproduced: true
+    recovered_wait_online: PASS
+    rollback_baseline_reproduced: PASS
+  generic_ci:
+    status: FAIL_PREEXISTING_HISTORY_ONLY_GATE
+  live_precheck:
+    initial_candidate: 5955fcf467bddb3525dae564c2d61878e0fad96a
+    initial_result: REFUSED_FALSE_GENERATED_METADATA_DRIFT_NO_APPLY
+    corrected_candidate: 682c3e55d835ebea4bcc2edd297a8b819b2df434
+    corrected_result: PASS_KNOWN_BROKEN
+  checkpoint_backup:
+    checkpoint_created_at_utc: "2026-08-29T19:50:01Z"
+    backup_archive: cloud-infrastructure-config-20260829T194958Z.tar.gz
+    backup_sha256_sidecar: PASS
+  live_postverify:
+    status: PASS
+    recovery_state: RECOVERED
+    recovery_check: PASS
+    administrative_state: configured
+    wait_online_predicate_1: PASS
+    wait_online_predicate_2: PASS
+    gateway_host_route: 169.58.128.1/32_SCOPE_LINK
+    connected_ipv4_subnet_route: ABSENT_PRESERVED
+    default_route: PRESERVED
+    provider_files: PRESERVED
+    systemd_networkd_restarted: false
+    systemd_networkd_start_timestamp: "Sat 2026-08-29 06:52:24 -03"
+    evidence_file: evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md
+  node01_reapply_authorized: false
+  one_shot_authorization_consumed: true
+
+pre_reboot_checkpoint:
+  status: VERIFIED_PRE_REBOOT_CHECKPOINT_V2
+  accepted: true
+  v1_status: REJECTED_INTERNAL_SHA256SUMS_SELF_HASH
+  v2_archive: pre-reboot-checkpoint-20260829T203736Z.tar.gz
+  v2_sha256: 8fe354e44c5d7948a9e87f0ab57cb9dd261fd438791f10964001158d800e0b42
+  canonical_backup: cloud-infrastructure-config-20260829T203734Z.tar.gz
+  canonical_backup_sha256: ce85092790cfbfe7b3aec675f12b3ef28e890c2e5ccb492c345a408118271c20
+  offhost_recovery:
+    status: PASS
+    restore_smoke: PASS
+    recovery_p2: PASS
+    directory: /home/leo/Backups/cloud-infrastructure/recovery/20260829T203850Z
+    checkpoint_copy: /home/leo/Backups/cloud-infrastructure/pre-reboot/20260829T203736Z
+  baseline:
+    kernel: 6.8.0-137-generic
+    reboot_required: true
+    eth0_administrative_state: configured
+    wait_online_predicate_1: PASS
+    wait_online_predicate_2: PASS
+    failed_unit_boot_baseline: systemd-networkd-wait-online.service
+    docker_containers: 4
+    docker_running_containers: 4
+  reboot_authorized: false
+  updates_authorized: false
+  evidence_file: evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md
 
 control_bridge:
   g1: PASS_REAL_NODE_01_ROUNDTRIP
@@ -254,6 +377,21 @@ toolchain:
     pull_request: 2
   package: CANONICAL_MAINLINE_NEUTRAL_V2
   validation_status: PASS
+  live_closeout_validation:
+    branch: docs/f1-2c-live-closeout-20260828
+    executed_at: "2026-08-29T17:44:30-03:00"
+    canonical_suite: PASS
+    unit_tests: 34_OF_34_PASS
+    git_diff_check: PASS
+    secret_policy: PASS
+    runner_isolation_policy: PASS
+    markdown_links: PASS
+    yaml: PASS
+    state: PASS
+    consistency: PASS
+    python_syntax: PASS
+    shell_syntax: PASS
+    shellcheck: SKIPPED_NOT_INSTALLED_LOCAL_HOSTED_CI_REQUIRED
   canonical_ci:
     workflow: .github/workflows/canonical-validation.yml
     runner: ubuntu-24.04
@@ -315,7 +453,9 @@ toolchain:
 
 boundaries:
   protected_branches_modified: false
-  node01_privileged_operations: false
+  node01_privileged_operations: true
+  node01_privileged_operation_scope: F1_2C_P2_AND_PRE_REBOOT_CHECKPOINT_ONE_SHOT_AUTHORIZATIONS_COMPLETED
+  node01_privileged_operations_currently_authorized: false
   production_promoted: false
   branch_deletion_performed: false
   authorized_keys_changed_in_ssh_governance_p1: false
@@ -325,7 +465,11 @@ authorization:
   canonical_neutral_extraction: AUTHORIZED_2026_08_22
   production_promotion: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   g2b_real_write: NOT_AUTHORIZED
-  f1_2c_node01_reapply: NOT_AUTHORIZED
+  f1_2c_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
+  network_convergence_p2_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
+  pre_reboot_checkpoint: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
+  updates: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
+  reboot: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   destructive_history_remediation: NOT_AUTHORIZED
   ssh_dsh_key_change: NOT_AUTHORIZED_WITHOUT_PRESERVING_CURRENT_USER_WORKFLOW
 

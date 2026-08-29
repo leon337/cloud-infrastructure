@@ -28,14 +28,15 @@ Nunca transforme estado desejado em estado observado.
 | Contrato de execução histórico/vinculante | `docs/CODEX-EXECUTION-MISSION-001.md` |
 | Validação canônica do repositório | `scripts/test.sh` + `.github/workflows/canonical-validation.yml` |
 
-## Estado reconciliado em 22/08/2026 + atualização operacional de 28/08/2026
+## Estado reconciliado em 22/08/2026 + atualizações operacionais de 28–29/08/2026
 
-`main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b` está em `DOCUMENTATION_AND_INTEGRATION_DRIFT`.
+Baseline deste closeout: `main@ce829067a9a04eceaa6eaefd9553899b2ce14da1` em `DOCUMENTATION_AND_INTEGRATION_DRIFT`; esta branch projeta os estados live F1.2c e NETWORK_CONVERGENCE_P2 posteriores sem importar as lineages funcionais para `main`.
 
 Fatos que não podem ser promovidos além da evidência:
 
 - S0, F1.1 e F1.2b: concluídos conforme a reconciliação integrada;
-- F1.2c: `REQUIRES_REVIEW`; recovery candidate estático verde, mas KVM acceptance não executado e NODE-01 sem reapply;
+- F1.2c: `COMPLETE_LIVE_VERIFIED`; candidato `baaf839...` passou static/ShellCheck + KVM `ABSENT`/`EXACT_PRESENT` e o rollout autorizado terminou `RECOVERED` com pós-validação root PASS;
+- NETWORK_CONVERGENCE_P2: `COMPLETE_LIVE_VERIFIED`; causa funcional da não convergência reproduzida em KVM, agente que removeu a rota `/17` = `NOT_VERIFIED`; candidato `682c3e55...` passou static/KVM hospedados e rollout live terminou `RECOVERED`, `configured` e wait-online PASS sem restart;
 - Control Bridge G1: `PASS_REAL_NODE_01_ROUNDTRIP`;
 - Control Bridge G2-A: `PASS_REAL_NODE_01_READ_ONLY`;
 - G2-B Tasks 1–7: `COMPLETE`;
@@ -77,11 +78,11 @@ O executor canônico de integração também preserva o boundary F1.1: GitHub-ho
 
 - LEANDRO é autoridade humana final.
 - MESTRE orquestra a missão.
-- nenhuma conclusão autoriza merge final, produção, escrita real G2-B ou reapply F1.2c;
-- nenhuma operação privilegiada no NODE-01 pertence a esta frente;
+- conclusão F1.2c/P2 não autoriza merge funcional automático, produção, escrita real G2-B, reboot ou novo reapply;
+- as operações privilegiadas F1.2c e P2 autorizadas foram concluídas e suas autorizações one-shot consumidas; novas operações privilegiadas exigem seus próprios gates;
 - branches G2-B/F1.2c permanecem isoladas;
 - secrets nunca são versionados.
 
 ## Próximo passo exato
 
-**F1_2C_NODE01_ROLLOUT_HUMAN_GATE**. `SSH_KEY_GOVERNANCE_P1` foi resolvido preservando a `dsh-tunnel...` porque LEANDRO confirmou dependência no fluxo notebook→VPS. Qualquer hardening futuro deve manter esse acesso. O hardening de hooks globais do runner permanece pendente até restart autorizado do serviço; não contornar `systemd`/sudo.
+**UPDATE_AND_CONTROLLED_REBOOT** — `WAITING_HUMAN_GATE`. F1.2c, NETWORK_CONVERGENCE_P2 e PRE_REBOOT_CHECKPOINT V2 foram concluídos no NODE-01 com evidência live/off-host. O checkpoint não autoriza update/reboot; um gate humano separado continua obrigatório. `SSH_KEY_GOVERNANCE_P1` continua preservando a `dsh-tunnel...`; o hardening de hooks globais do runner permanece pendente até restart autorizado do serviço.

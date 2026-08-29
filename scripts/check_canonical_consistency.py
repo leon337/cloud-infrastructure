@@ -42,19 +42,23 @@ def main() -> int:
         for token in (
             "scripts/test.sh",
             "DOCUMENTATION_AND_INTEGRATION_DRIFT",
-            "REQUIRES_REVIEW",
+            "COMPLETE_LIVE_VERIFIED",
             "IN_PROGRESS_DIAGNOSTIC_REPRODUCTION",
             "REPOSITORY_HYGIENE_REVALIDATED",
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "F1_2C_NODE01_ROLLOUT_HUMAN_GATE",
+            "NETWORK_CONVERGENCE_P2",
+            "PRE_REBOOT_CHECKPOINT",
+            "UPDATE_AND_CONTROLLED_REBOOT",
         ):
             require_token(path, token)
 
     for path in (Path("README.md"), Path("ROADMAP-CHECKLIST.md")):
         require_token(path, "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING")
         require_token(path, "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED")
-        require_token(path, "F1_2C_NODE01_ROLLOUT_HUMAN_GATE")
+        require_token(path, "NETWORK_CONVERGENCE_P2")
+        require_token(path, "PRE_REBOOT_CHECKPOINT")
+        require_token(path, "UPDATE_AND_CONTROLLED_REBOOT")
 
     active = state["continuity"]["active_mission_model"]
     if active["status"] == "NOT_ADOPTED" and Path(active["file"]).exists():
@@ -103,8 +107,8 @@ def main() -> int:
         raise AssertionError("ssh key governance must keep current user workflow")
     if ssh.get("authorized_keys_changed") is not False:
         raise AssertionError("ssh key governance must preserve authorized_keys")
-    if state["project"].get("next_exact_step") != "F1_2C_NODE01_ROLLOUT_HUMAN_GATE":
-        raise AssertionError("next exact step drift after ssh key governance")
+    if state["project"].get("next_exact_step") != "UPDATE_AND_CONTROLLED_REBOOT":
+        raise AssertionError("next exact step drift after PRE_REBOOT_CHECKPOINT closeout")
 
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

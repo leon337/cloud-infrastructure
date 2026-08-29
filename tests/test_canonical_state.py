@@ -27,11 +27,19 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertTrue(Path(roadmap["file"]).is_file())
         self.assertEqual(self.state["source_snapshot"]["main"]["executive_projection"], "README.md")
 
-    def test_future_state_is_not_promoted(self):
+    def test_f1_2c_live_state_and_future_g2b_are_bounded(self):
         f1 = self.state["platform"]["f1_2c"]
-        self.assertEqual(f1["status"], "REQUIRES_REVIEW")
-        self.assertFalse(f1["accepted"])
+        self.assertEqual(f1["status"], "COMPLETE_LIVE_VERIFIED")
+        self.assertTrue(f1["accepted"])
         self.assertFalse(f1["node01_reapply_authorized"])
+        self.assertTrue(f1["one_shot_authorization_consumed"])
+        self.assertEqual(f1["applied_candidate_sha"], "baaf83908e8e83264baafc032434a4df1952450b")
+        self.assertEqual(f1["live_postverify"]["recovery_state"], "RECOVERED")
+        evidence = Path(f1["live_postverify"]["evidence_file"])
+        self.assertTrue(evidence.is_file())
+        evidence_text = evidence.read_text(encoding="utf-8")
+        self.assertIn("VERIFIED_LIVE_RECOVERY", evidence_text)
+        self.assertIn(f1["applied_candidate_sha"], evidence_text)
 
         g2b = self.state["control_bridge"]["g2b"]
         self.assertFalse(g2b["accepted"])
@@ -39,12 +47,46 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(g2b["task_8"]["root_cause"], "NOT_VERIFIED")
         self.assertEqual(g2b["tasks_9_10"], "NOT_STARTED")
 
+    def test_network_convergence_p2_live_state_and_reboot_boundary(self):
+        p2 = self.state["network_convergence_p2"]
+        self.assertEqual(p2["status"], "COMPLETE_LIVE_VERIFIED")
+        self.assertTrue(p2["accepted"])
+        self.assertEqual(p2["route_removal_agent"], "NOT_VERIFIED")
+        self.assertEqual(p2["applied_candidate_sha"], "682c3e55d835ebea4bcc2edd297a8b819b2df434")
+        self.assertEqual(p2["live_postverify"]["recovery_state"], "RECOVERED")
+        self.assertEqual(p2["live_postverify"]["administrative_state"], "configured")
+        self.assertFalse(p2["live_postverify"]["systemd_networkd_restarted"])
+        self.assertFalse(p2["node01_reapply_authorized"])
+        self.assertTrue(p2["one_shot_authorization_consumed"])
+        evidence = Path(p2["live_postverify"]["evidence_file"])
+        self.assertTrue(evidence.is_file())
+        self.assertIn("VERIFIED_LIVE_NETWORK_CONVERGENCE_P2", evidence.read_text(encoding="utf-8"))
+        self.assertEqual(self.state["project"]["next_exact_step"], "UPDATE_AND_CONTROLLED_REBOOT")
+        self.assertEqual(self.state["authorization"]["reboot"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+
+    def test_pre_reboot_checkpoint_is_verified_but_update_reboot_remain_closed(self):
+        cp = self.state["pre_reboot_checkpoint"]
+        self.assertEqual(cp["status"], "VERIFIED_PRE_REBOOT_CHECKPOINT_V2")
+        self.assertTrue(cp["accepted"])
+        self.assertEqual(cp["v1_status"], "REJECTED_INTERNAL_SHA256SUMS_SELF_HASH")
+        self.assertEqual(cp["v2_sha256"], "8fe354e44c5d7948a9e87f0ab57cb9dd261fd438791f10964001158d800e0b42")
+        self.assertEqual(cp["offhost_recovery"]["status"], "PASS")
+        self.assertEqual(cp["offhost_recovery"]["restore_smoke"], "PASS")
+        self.assertFalse(cp["reboot_authorized"])
+        self.assertFalse(cp["updates_authorized"])
+        evidence = Path(cp["evidence_file"])
+        self.assertTrue(evidence.is_file())
+        self.assertIn("VERIFIED_PRE_REBOOT_CHECKPOINT_V2", evidence.read_text(encoding="utf-8"))
+        self.assertEqual(self.state["authorization"]["updates"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+        self.assertEqual(self.state["authorization"]["reboot"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+
     def test_production_remains_closed(self):
         self.assertEqual(
             self.state["authorization"]["production_promotion"],
             "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED",
         )
         self.assertFalse(self.state["boundaries"]["production_promoted"])
+        self.assertFalse(self.state["boundaries"]["node01_privileged_operations_currently_authorized"])
 
     def test_repository_hygiene_revalidation_is_recorded(self):
         hygiene = self.state["repository_hygiene"]
@@ -68,7 +110,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["fallback_auth"], "PASS_INDEPENDENT_KEY")
         self.assertFalse(ssh["authorized_keys_changed"])
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
-        self.assertEqual(self.state["project"]["next_exact_step"], "F1_2C_NODE01_ROLLOUT_HUMAN_GATE")
+        self.assertEqual(self.state["project"]["next_exact_step"], "UPDATE_AND_CONTROLLED_REBOOT")
 
     def test_runner_isolation_state_is_verified_with_hook_restart_pending(self):
         runner = self.state["runner_isolation"]

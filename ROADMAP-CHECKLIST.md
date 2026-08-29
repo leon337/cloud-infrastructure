@@ -99,39 +99,45 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 
 **Estado:** `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`.
 
-**Próximo passo exato:** `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
+**Próximo passo exato:** `NETWORK_CONVERGENCE_P2`.
 
 ## 5. F1.2c / Cloud Platform Network Services — P1
 
-- [x] `cloud-platform-network-services.service` confirmado em FAILED no live audit.
-- [x] Falha de runtime lock sob filesystem protegido observada.
-- [x] Estado live classificado como `PARTIAL_FIRST_APPLY`: marker presente, helper/unit históricos conhecidos e árvore `/etc/cloud-platform/network-services` ausente.
-- [x] Recovery fail-closed específico para esse estado parcial implementado sem alterar o `apply`/`rollback` normais.
-- [x] Candidato exato do recovery fixado em `81a5f3571d66d9764d9c70f8071367f5094fbc05`.
-- [x] GitHub-hosted static + ShellCheck: run `33191612674` = PASS no SHA exato.
-- [x] GitHub-hosted KVM: run `33191612729` = PASS no SHA exato, incluindo `historical_failure`, `precheck`, `apply`, `check`, idempotência, rollback e cleanup.
-- [x] Artifact KVM `9694059362`, SHA-256 `1aced1e4e786859dd9faa3f0d700a7a35ccd815a06f7ec79311a6557e9b718da`.
-- [x] PR #35 integrada na lineage `fix/f1-2c-systemd-runtime-lock`; merge `2575bdaa99b195d756386ff9e923e05231b9aa17`.
-- [!] `foundation-ci` run `33191612766` e `docker-boundary-ci` run `33191612669` permanecem `FAIL — PREEXISTING_HISTORY_ONLY_GATE`; não contam como CI verde desta frente.
-- [x] Preflight live **somente leitura** via SSH notebook→VPS executado em `2026-08-28T17:11:31Z`: identidade, hashes antigos/base, serviços requeridos, LXD inativo, unit enabled+failed, config/runtime ausentes, lock legado, forwarding, socket Docker e ausência de links/rotas/listeners gerenciados = PASS.
-- [!] Conteúdo exato dos markers `0600` e `zero_docker_state` permanecem `NÃO VERIFICADO` sem privilégio; ambos pertencem ao `precheck` privilegiado fail-closed.
-- [!] Staging root-owned do candidato exato + `precheck` privilegiado + `apply` pertencem ao rollout controlado e permanecem bloqueados pelo HUMAN_GATE.
-- [!] Reapply NODE-01 requer autorização humana explícita antes de alteração privilegiada/material.
-- [ ] Validar serviço, redes privadas e `systemctl --failed` pós-apply, se autorizado.
+- [x] Falha histórica de runtime lock sob filesystem protegido reproduzida e classificada.
+- [x] Recovery fail-closed específico implementado; PR #35 integrou a primeira versão na lineage.
+- [x] Falso `foundation_marker_drift` identificado: recovery/KVM usavam markers simplificados; PR #39 alinhou aos markers canônicos reais.
+- [x] `partial_state_mismatch` decomposto predicate-by-predicate; única divergência persistente era a suposta ausência de `/etc/cloud-platform/network-services`.
+- [x] Diagnóstico root provou baseline `EXACT_PRESENT`: diretórios/arquivos canônicos, metadata exata, shape exato e sete hashes corretos; o preflight não privilegiado anterior sofreu falso negativo por traversal permission.
+- [x] PR #40 adicionou variantes `ABSENT`/`EXACT_PRESENT`, checkpoint da baseline, rollback simétrico, rejeição de extras e não reescrita de config já exata.
+- [x] Candidato exato: `baaf83908e8e83264baafc032434a4df1952450b`; lineage após merge da PR #40: `2408aed4ac8dbe692912a8d806852a45d9a97c49`.
+- [x] Local: contratos `10/10`, suíte `152/152`, Markdown/YAML/manifests/state/status/compile/shell/diff = PASS.
+- [x] GitHub-hosted static + ShellCheck run `33217692498` = SUCCESS.
+- [x] GitHub-hosted KVM run `33217692536` = SUCCESS para `baseline_config=absent` e `baseline_config=exact_present`, incluindo historical failure, precheck, apply, check, idempotência, rollback e cleanup.
+- [!] `foundation-ci` / `docker-boundary-ci` genéricos continuam `FAIL — PREEXISTING_HISTORY_ONLY_GATE`; nenhum arquivo novo da PR apareceu nos achados históricos.
+- [x] LEANDRO autorizou one-shot o rollout do SHA exato `baaf839...`.
+- [x] Precheck live em `2026-08-28T22:52:55Z`: `RECOVERY_PRECHECK=PASS state=KNOWN_PARTIAL baseline_config=EXACT_PRESENT`.
+- [x] Checkpoint root-owned + backup pré-apply criados em `2026-08-28T22:55:37Z`; sidecar SHA-256 do backup validou `OK`.
+- [x] Apply + recovery check concluídos; state root-owned = `RECOVERED`.
+- [x] Pós-validação root independente: `F1_2C_POSTVERIFY=PASS`, serviço `active+enabled`, helper/base checks PASS, IPv4/IPv6 forwarding `1/0` e ausência de listeners públicos gerenciados.
+- [x] Superfície privada observada: `cp00000001/02/03` + `cpeg0001`, rotas 10.240.1/2/3/254, containers `4`, images `2`, volumes `0`, custom networks `4`.
+- [x] Evidência sanitizada: `evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`.
+- [!] A autorização foi consumida; não existe autorização permanente para novo reapply.
 
-**Estado:** `REQUIRES_REVIEW`; recovery técnico validado e integrado, rollout live pendente de `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
+**Estado:** `COMPLETE_LIVE_VERIFIED`; F1.2c aceito tecnicamente no NODE-01. Próxima frente: `NETWORK_CONVERGENCE_P2`.
 
 ## 6. Rede / systemd-networkd — P2
 
-- [x] `eth0` operacional/routable observado.
-- [x] `SetupState=configuring` observado.
-- [x] `systemd-networkd-wait-online` com timeouts recorrentes observado.
-- [ ] Identificar causa de não convergência.
-- [ ] Validar netplan/networkd efetivo.
-- [ ] Corrigir somente após diagnóstico.
-- [ ] Confirmar `wait-online` saudável antes de reboot.
+- [x] `eth0` operacional/routable observado com `AdministrativeState=configuring`.
+- [x] Dois predicates reais de `systemd-networkd-wait-online` reproduzidos em timeout.
+- [x] Causa funcional reproduzida em KVM: rota conectada `169.58.128.0/17` ausente; agente que a removeu = `NÃO VERIFICADO`.
+- [x] Netplan/networkd efetivo validado; `staticroute` NoCloud/cloud-init preservado.
+- [x] Correção mínima validada: `169.58.128.1/32 scope link`, sem restaurar o `/17` inteiro.
+- [x] PRs #42/#43, static + KVM hospedados PASS; candidato live `682c3e55d835ebea4bcc2edd297a8b819b2df434`.
+- [x] Precheck, backup/checkpoint, apply/check e pós-validação independentes PASS.
+- [x] `eth0 AdministrativeState=configured` e ambos `wait-online` PASS; networkd não reiniciado.
+- [x] Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md`.
 
-**Estado:** `NETWORK_CONVERGENCE_P2_PENDING`.
+**Estado:** `COMPLETE_LIVE_VERIFIED`; próxima etapa: `PRE_REBOOT_CHECKPOINT`.
 
 ## 7. Kernel / atualização / reboot — P2
 
@@ -139,12 +145,12 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 - [x] Kernel atual e kernel novo pendente inventariados.
 - [x] Pacotes atualizáveis inventariados.
 - [x] `Spec rstack overflow` reportado pelo kernel foi registrado.
-- [!] Não rebootar antes de fechar recovery, F1.2c e network convergence.
-- [ ] Criar checkpoint pré-reboot.
-- [ ] Executar reboot controlado quando autorizado.
+- [x] F1.2c e `NETWORK_CONVERGENCE_P2` foram fechados com evidência live.
+- [x] `PRE_REBOOT_CHECKPOINT` V2 criado, SHA interno/externo e cópia off-host verificados; V1 rejeitado e preservado como evidência.
+- [ ] Executar update/reboot controlado somente após gate humano separado.
 - [ ] Validar SSH, rede, firewall, Docker, Runner, SentinelX, XRDP e backup pós-reboot.
 
-**Estado:** `REBOOT_BLOCKED_BY_PRECONDITIONS`.
+**Estado:** `WAITING_HUMAN_GATE_FOR_UPDATE_AND_CONTROLLED_REBOOT`.
 
 ## 8. Segurança / firewall
 
@@ -164,7 +170,7 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 
 - [x] Docker e containerd ativos.
 - [x] `ubuntu` fora do grupo Docker.
-- [ ] Inventário completo de containers, imagens e volumes.
+- [!] Post-F1.2c: contagem root verificada em containers `4`, images `2`, volumes `0`, custom networks `4`; isto não substitui inventário semântico por workload.
 - [ ] Mapear owner/projeto, restart policies e persistência de cada workload.
 - [ ] Definir recovery apropriado por workload.
 
@@ -219,9 +225,10 @@ RECOVERY-P1                         DONE
 RECOVERY-P2                         DONE
 RUNNER_ISOLATION_P1                 DONE_CROSS_JOB / GLOBAL_HOOK_HARDENING_PENDING
 SSH_KEY_GOVERNANCE_P1               DONE_KEEP_CURRENT_USER_WORKFLOW
-F1_2C_NODE01_ROLLOUT                PENDING / HUMAN_GATE
-NETWORK_CONVERGENCE_P2              PENDING
-UPDATE_AND_CONTROLLED_REBOOT        BLOCKED_BY_PRECONDITIONS
+F1_2C_NODE01_ROLLOUT                DONE / LIVE_VERIFIED
+NETWORK_CONVERGENCE_P2              DONE / LIVE_VERIFIED
+PRE_REBOOT_CHECKPOINT               DONE / VERIFIED_OFFHOST
+UPDATE_AND_CONTROLLED_REBOOT        WAITING_HUMAN_GATE
 POST_REBOOT_VALIDATION              PENDING
 CANONICAL_STATE_AND_PR_HYGIENE      PENDING
 FINAL_AUDIT                         PENDING
