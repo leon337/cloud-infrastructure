@@ -157,6 +157,26 @@ class NetworkConvergenceSelfReviewTests(unittest.TestCase):
         self.assertIn("POSTBOOT_P2_CHECK=PASS", harness)
         self.assertIn('ip route replace 169.58.128.0/17 via 169.58.128.1 dev eth0', harness)
 
+    def test_successor_check_accepts_exact_live_applied_checkpoint_without_relaxing_mutators(self):
+        text = OP.read_text(encoding="utf-8")
+        harness = KVM.read_text(encoding="utf-8")
+        applied = "682c3e55d835ebea4bcc2edd297a8b819b2df434"
+        for token in (
+            f"LIVE_APPLIED_CANDIDATE_SHA={applied}",
+            "checkpoint_candidate_valid_exact",
+            "checkpoint_candidate_valid_for_check",
+            "recovered_state_valid_for_check",
+        ):
+            self.assertIn(token, text)
+        self.assertIn("recovered_state_valid_for_check || refuse recovered_state_invalid", text)
+        self.assertIn("SUCCESSOR_CHECK=PASS", harness)
+        self.assertIn(applied, harness)
+
+    def test_new_checkpoint_lineage_branch_runs_hosted_gates(self):
+        branch = "fix/network-convergence-p2-check-lineage-20260829"
+        self.assertIn(branch, WORKFLOW.read_text(encoding="utf-8"))
+        self.assertIn(branch, STATIC_WORKFLOW.read_text(encoding="utf-8"))
+
     def test_live_rollback_restores_persistence_without_forcing_runtime_reconfigure(self):
         text = OP.read_text(encoding="utf-8")
         self.assertIn("runtime_reconfigure=NOT_FORCED", text)
