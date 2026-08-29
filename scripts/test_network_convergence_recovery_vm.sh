@@ -117,6 +117,13 @@ ip -o -4 route show 169.58.128.0/17 | grep -Eq '^169\.58\.128\.0/17 via 169\.58\
 echo PROVIDER_POSTBOOT_ROUTE=PASS
 sudo env "${ENV[@]}" "$OP" check
 echo POSTBOOT_P2_CHECK=PASS
+
+# Simulate a successor checker validating the immutable checkpoint created by the live-applied candidate.
+sudo sed -i 's/^candidate=.*/candidate=682c3e55d835ebea4bcc2edd297a8b819b2df434/' "$CHECKPOINT"
+sudo env "${ENV[@]}" "$OP" check
+echo SUCCESSOR_CHECK=PASS
+# Restore exact-candidate ownership before testing rollback, which must remain strict.
+sudo sed -i "s/^candidate=.*/candidate=$CANDIDATE/" "$CHECKPOINT"
 networkctl status eth0 --json=short | grep -Fq '"AdministrativeState":"configured"' || fail provider_postboot_not_configured
 timeout 5 /lib/systemd/systemd-networkd-wait-online -i eth0:degraded >/dev/null 2>&1 || fail provider_postboot_wait_failed
 

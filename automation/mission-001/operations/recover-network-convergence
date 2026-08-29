@@ -4,6 +4,7 @@ set -Eeuo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)
 readonly ROOT
 readonly EXPECTED_PARENT=2408aed4ac8dbe692912a8d806852a45d9a97c49
+readonly LIVE_APPLIED_CANDIDATE_SHA=682c3e55d835ebea4bcc2edd297a8b819b2df434
 readonly EXPECTED_HOST=vmi3506102
 readonly EXPECTED_MACHINE_ID_SHA256=27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
 readonly TEST_CONFIRM=NETWORK_CONVERGENCE_DISPOSABLE_KVM_ONLY
@@ -216,13 +217,36 @@ checkpoint_hashes_valid() {
   grep -Fxq "staticroute_sha256=$STATICROUTE_SHA256" "$CHECKPOINT"
 }
 
-checkpoint_valid() {
+checkpoint_common_valid() {
   [[ -f $CHECKPOINT && ! -L $CHECKPOINT ]] || return 1
   [[ $(stat -c '%U:%G:%a:%h' "$CHECKPOINT") == root:root:600:1 ]] || return 1
-  grep -Fxq "candidate=${NETWORK_CONVERGENCE_CANDIDATE_SHA}" "$CHECKPOINT" || return 1
   checkpoint_hashes_valid || return 1
   grep -Fxq 'baseline_connected_route=ABSENT' "$CHECKPOINT" || return 1
   grep -Fxq 'baseline_gateway_host_route=ABSENT' "$CHECKPOINT"
+}
+
+checkpoint_candidate_valid_exact() {
+  grep -Fxq "candidate=${NETWORK_CONVERGENCE_CANDIDATE_SHA}" "$CHECKPOINT"
+}
+
+checkpoint_candidate_valid_for_check() {
+  checkpoint_candidate_valid_exact && return 0
+  grep -Fxq "candidate=$LIVE_APPLIED_CANDIDATE_SHA" "$CHECKPOINT" || return 1
+  if [[ ${NETWORK_CONVERGENCE_TEST_CONFIRM:-} == "$TEST_CONFIRM" ]]; then
+    return 0
+  fi
+  git -c safe.directory="$ROOT" -C "$ROOT" merge-base --is-ancestor \
+    "$LIVE_APPLIED_CANDIDATE_SHA" "${NETWORK_CONVERGENCE_CANDIDATE_SHA}"
+}
+
+checkpoint_valid() {
+  checkpoint_common_valid || return 1
+  checkpoint_candidate_valid_exact
+}
+
+checkpoint_valid_for_check() {
+  checkpoint_common_valid || return 1
+  checkpoint_candidate_valid_for_check
 }
 
 # Final command contract; kept close to mutating operations for auditability.
@@ -249,6 +273,13 @@ recovered_state_valid() {
   [[ -f $STATE_FILE && ! -L $STATE_FILE ]] || return 1
   [[ $(<"$STATE_FILE") == RECOVERED ]] || return 1
   checkpoint_valid || return 1
+  recovered_surface_valid
+}
+
+recovered_state_valid_for_check() {
+  [[ -f $STATE_FILE && ! -L $STATE_FILE ]] || return 1
+  [[ $(<"$STATE_FILE") == RECOVERED ]] || return 1
+  checkpoint_valid_for_check || return 1
   recovered_surface_valid
 }
 
@@ -290,7 +321,7 @@ operation_apply() {
 
 operation_check() {
   validate_common
-  recovered_state_valid || refuse recovered_state_invalid
+  recovered_state_valid_for_check || refuse recovered_state_invalid
   printf 'NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED candidate=%s\n' \
     "$NETWORK_CONVERGENCE_CANDIDATE_SHA"
 }
