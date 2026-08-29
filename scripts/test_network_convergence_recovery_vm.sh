@@ -117,6 +117,16 @@ ip -o -4 route show 169.58.128.0/17 | grep -Eq '^169\.58\.128\.0/17 via 169\.58\
 echo PROVIDER_POSTBOOT_ROUTE=PASS
 sudo env "${ENV[@]}" "$OP" check
 echo POSTBOOT_P2_CHECK=PASS
+
+# Prove a newer checker can verify the exact legacy candidate applied on NODE-01.
+readonly LEGACY_APPLIED_CANDIDATE=682c3e55d835ebea4bcc2edd297a8b819b2df434
+sudo sed -i "s/^candidate=.*/candidate=$LEGACY_APPLIED_CANDIDATE/" "$CHECKPOINT"
+sudo env "${ENV[@]}" \
+  NETWORK_CONVERGENCE_APPLIED_CANDIDATE_SHA="$LEGACY_APPLIED_CANDIDATE" \
+  "$OP" check
+echo LEGACY_APPLIED_CHECK=PASS
+sudo sed -i "s/^candidate=.*/candidate=$CANDIDATE/" "$CHECKPOINT"
+
 networkctl status eth0 --json=short | grep -Fq '"AdministrativeState":"configured"' || fail provider_postboot_not_configured
 timeout 5 /lib/systemd/systemd-networkd-wait-online -i eth0:degraded >/dev/null 2>&1 || fail provider_postboot_wait_failed
 

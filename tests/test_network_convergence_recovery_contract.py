@@ -166,5 +166,33 @@ class NetworkConvergenceSelfReviewTests(unittest.TestCase):
         self.assertIn("ROLLBACK_RUNTIME_REEVALUATED", harness)
 
 
+class NetworkConvergenceCheckerUpgradeTests(unittest.TestCase):
+    def test_checker_upgrade_is_bounded_to_known_live_applied_candidate(self):
+        text = OP.read_text(encoding="utf-8")
+        for token in (
+            "NETWORK_CONVERGENCE_APPLIED_CANDIDATE_SHA",
+            "682c3e55d835ebea4bcc2edd297a8b819b2df434",
+            "resolve_check_applied_candidate",
+            "checkpoint_valid \"$applied_candidate\"",
+            "recovered_state_valid \"$applied_candidate\"",
+        ):
+            self.assertIn(token, text)
+        self.assertIn("check_applied_candidate_not_allowed", text)
+
+    def test_kvm_proves_upgraded_checker_against_legacy_applied_checkpoint(self):
+        text = KVM.read_text(encoding="utf-8")
+        for token in (
+            "LEGACY_APPLIED_CHECK=PASS",
+            "NETWORK_CONVERGENCE_APPLIED_CANDIDATE_SHA",
+            "682c3e55d835ebea4bcc2edd297a8b819b2df434",
+        ):
+            self.assertIn(token, text)
+
+    def test_hosted_gates_allow_checker_upgrade_branch(self):
+        branch = "fix/network-convergence-p2-checker-upgrade-20260829"
+        self.assertIn(branch, WORKFLOW.read_text(encoding="utf-8"))
+        self.assertIn(branch, STATIC_WORKFLOW.read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()
