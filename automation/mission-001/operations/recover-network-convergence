@@ -1,0 +1,302 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)
+readonly ROOT
+readonly EXPECTED_PARENT=2408aed4ac8dbe692912a8d806852a45d9a97c49
+readonly EXPECTED_HOST=vmi3506102
+readonly EXPECTED_MACHINE_ID_SHA256=27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107
+readonly TEST_CONFIRM=NETWORK_CONVERGENCE_DISPOSABLE_KVM_ONLY
+readonly TEST_MARKER=MCF_NETWORK_CONVERGENCE_KVM_V1
+readonly INTERFACE=eth0
+readonly ADDRESS=169.58.171.192/17
+readonly SUBNET=169.58.128.0/17
+readonly GATEWAY=169.58.128.1
+readonly NETPLAN=/etc/netplan/50-cloud-init.yaml
+readonly GENERATED=/run/systemd/network/10-netplan-eth0.network
+readonly STATICROUTE=/etc/cron.d/staticroute
+readonly OVERLAY=/etc/netplan/60-cloud-infrastructure-network-convergence.yaml
+readonly OVERLAY_SOURCE="$ROOT/config/vps/60-cloud-infrastructure-network-convergence.yaml"
+readonly STATE_ROOT=/var/lib/cloud-platform-network-convergence-p2
+readonly STATE_FILE=$STATE_ROOT/state
+readonly CHECKPOINT=$STATE_ROOT/checkpoint
+readonly LOCK_FILE=/run/lock/cloud-platform-network-convergence-p2.lock
+readonly BACKUP_COMMAND=/usr/local/sbin/cloud-infrastructure-config-backup
+readonly NETPLAN_SHA256=9ad2689b534bdb090060a51b3a1c0785384c65c2bd1bf3e42b9bbfdc76685790
+readonly GENERATED_SHA256=0f25043db9ffc67594a6d723a69550105fa8fb8d5ae2040905b1aff964042858
+readonly STATICROUTE_SHA256=4a0ab05ddb6ef718acc644f656d865b1129f0ec4996e1bf2725156042a913163
+readonly OVERLAY_SOURCE_SHA256=e7a55b96a2ba848ffd70867b7ca9415abdfb51b81c19e9de5be96f5471277060
+
+refuse() {
+  printf 'NETWORK_CONVERGENCE_REFUSED reason=%s\n' "$1" >&2
+  exit 2
+}
+
+human_gate() {
+  printf 'NETWORK_CONVERGENCE_HUMAN_GATE_REQUIRED stage=%s\n' "$1" >&2
+  exit 3
+}
+
+sha_of() { sha256sum "$1" | awk '{print $1}'; }
+
+file_exact() {
+  local path=$1 mode=$2 digest=$3
+  [[ -f $path && ! -L $path ]] || return 1
+  [[ $(stat -c '%U:%G:%a:%h' "$path") == "root:root:$mode:1" ]] || return 1
+  [[ $(sha_of "$path") == "$digest" ]]
+}
+
+validate_identity() {
+  [[ $EUID -eq 0 ]] || refuse root_required
+  if [[ ${NETWORK_CONVERGENCE_TEST_CONFIRM:-} == "$TEST_CONFIRM" ]]; then
+    [[ $(hostname --short) == mcf-f1-2c-kvm-* ]] || refuse invalid_kvm_hostname
+    [[ -f /etc/mcf-network-convergence-kvm && ! -L /etc/mcf-network-convergence-kvm ]] || refuse kvm_marker_missing
+    grep -Fxq "$TEST_MARKER" /etc/mcf-network-convergence-kvm || refuse kvm_marker_drift
+    return
+  fi
+  [[ -z ${NETWORK_CONVERGENCE_TEST_CONFIRM:-} ]] || refuse invalid_test_confirmation
+  [[ $(hostname) == "$EXPECTED_HOST" ]] || refuse wrong_host
+  local machine_id_sha256
+  machine_id_sha256=$(tr -d '\n' </etc/machine-id | sha256sum | awk '{print $1}')
+  [[ $machine_id_sha256 == "$EXPECTED_MACHINE_ID_SHA256" ]] || refuse wrong_machine_id
+  [[ $(stat -c '%U:%G' "$ROOT") == root:root ]] || refuse live_source_repository_not_root_owned
+}
+
+validate_repository() {
+  local candidate=${NETWORK_CONVERGENCE_CANDIDATE_SHA:-}
+  [[ $candidate =~ ^[0-9a-f]{40}$ ]] || refuse candidate_sha_required
+  [[ -d $ROOT/.git && ! -L $ROOT ]] || refuse repository_missing
+  local head
+  head=$(git -c safe.directory="$ROOT" -C "$ROOT" rev-parse HEAD) || refuse repository_head_unavailable
+  [[ $head == "$candidate" ]] || refuse candidate_not_head
+  git -c safe.directory="$ROOT" -C "$ROOT" merge-base --is-ancestor "$EXPECTED_PARENT" "$head" || refuse candidate_not_descendant
+  git -c safe.directory="$ROOT" -C "$ROOT" diff --quiet || refuse repository_dirty
+  git -c safe.directory="$ROOT" -C "$ROOT" diff --cached --quiet || refuse repository_index_dirty
+}
+
+validate_sources() {
+  [[ -f $OVERLAY_SOURCE && ! -L $OVERLAY_SOURCE ]] || refuse overlay_source_missing
+  [[ $(sha_of "$OVERLAY_SOURCE") == "$OVERLAY_SOURCE_SHA256" ]] || refuse overlay_source_drift
+}
+
+validate_provider_files_preapply() {
+  if [[ ${NETWORK_CONVERGENCE_TEST_CONFIRM:-} == "$TEST_CONFIRM" ]]; then
+    [[ -f $NETPLAN && -f $GENERATED && -f $STATICROUTE ]] || refuse kvm_provider_fixture_missing
+    return
+  fi
+  file_exact "$NETPLAN" 600 "$NETPLAN_SHA256" || refuse netplan_drift
+  file_exact "$GENERATED" 644 "$GENERATED_SHA256" || refuse generated_network_drift
+  file_exact "$STATICROUTE" 644 "$STATICROUTE_SHA256" || refuse staticroute_drift
+}
+
+staticroute_unchanged() {
+  if [[ ${NETWORK_CONVERGENCE_TEST_CONFIRM:-} == "$TEST_CONFIRM" ]]; then
+    [[ -f $STATICROUTE && ! -L $STATICROUTE ]]
+  else
+    file_exact "$STATICROUTE" 644 "$STATICROUTE_SHA256"
+  fi
+}
+
+address_present() {
+  ip -o -4 address show dev "$INTERFACE" | grep -Fq "inet $ADDRESS"
+}
+
+default_route_present() {
+  ip -4 route show default | grep -Eq "^default via $GATEWAY dev $INTERFACE([[:space:]]|$)"
+}
+
+connected_route_absent() {
+  ! ip -4 route show "$SUBNET" dev "$INTERFACE" | grep -q .
+}
+
+host_route_present() {
+  ip -4 route show "$GATEWAY/32" dev "$INTERFACE" | grep -Eq "^$GATEWAY([/][0-9]+)? dev $INTERFACE scope link|^$GATEWAY([/][0-9]+)? scope link"
+}
+
+admin_state_is() {
+  networkctl status "$INTERFACE" --json=short 2>/dev/null | grep -Fq '"AdministrativeState":"'"$1"'"'
+}
+
+wait_online_passes() {
+  timeout 10 /lib/systemd/systemd-networkd-wait-online -i "$INTERFACE:degraded" >/dev/null 2>&1 &&
+    timeout 10 /lib/systemd/systemd-networkd-wait-online --any -o routable -i "$INTERFACE" >/dev/null 2>&1
+}
+
+wait_online_times_out() {
+  local rc1 rc2
+  set +e
+  timeout 3 /lib/systemd/systemd-networkd-wait-online -i "$INTERFACE:degraded" >/dev/null 2>&1
+  rc1=$?
+  timeout 3 /lib/systemd/systemd-networkd-wait-online --any -o routable -i "$INTERFACE" >/dev/null 2>&1
+  rc2=$?
+  set -e
+  [[ $rc1 -eq 124 && $rc2 -eq 124 ]]
+}
+
+overlay_exact() {
+  file_exact "$OVERLAY" 600 "$OVERLAY_SOURCE_SHA256"
+}
+
+generated_has_host_route() {
+  grep -Fxq "Destination=$GATEWAY/32" "$GENERATED" && grep -Fxq 'Scope=link' "$GENERATED"
+}
+
+validate_common() {
+  require_commands
+  validate_identity
+  validate_repository
+  validate_sources
+  systemctl is-active --quiet systemd-networkd.service || refuse networkd_not_active
+  if [[ ${NETWORK_CONVERGENCE_TEST_CONFIRM:-} != "$TEST_CONFIRM" ]]; then
+    systemctl is-active --quiet cloud-platform-network-services.service || refuse f1_2c_service_not_active
+  fi
+  address_present || refuse ipv4_address_drift
+  default_route_present || refuse default_route_drift
+  staticroute_unchanged || refuse staticroute_drift
+}
+
+known_broken_state() {
+  [[ ! -e $STATE_ROOT && ! -L $STATE_ROOT ]] || return 1
+  [[ ! -e $OVERLAY && ! -L $OVERLAY ]] || return 1
+  validate_provider_files_preapply
+  connected_route_absent || return 1
+  ! host_route_present || return 1
+  admin_state_is configuring || return 1
+  wait_online_times_out || return 1
+}
+
+create_checkpoint() {
+  mkdir -p "$STATE_ROOT"
+  chmod 700 "$STATE_ROOT"
+  cat >"$CHECKPOINT" <<EOF
+candidate=${NETWORK_CONVERGENCE_CANDIDATE_SHA}
+created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+netplan_sha256=$(sha_of "$NETPLAN")
+generated_sha256=$(sha_of "$GENERATED")
+staticroute_sha256=$(sha_of "$STATICROUTE")
+baseline_connected_route=ABSENT
+baseline_gateway_host_route=ABSENT
+EOF
+  chown root:root "$CHECKPOINT"
+  chmod 600 "$CHECKPOINT"
+}
+
+checkpoint_hashes_valid() {
+  if [[ ${NETWORK_CONVERGENCE_TEST_CONFIRM:-} == "$TEST_CONFIRM" ]]; then
+    grep -Eq '^netplan_sha256=[0-9a-f]{64}$' "$CHECKPOINT" || return 1
+    grep -Eq '^generated_sha256=[0-9a-f]{64}$' "$CHECKPOINT" || return 1
+    grep -Eq '^staticroute_sha256=[0-9a-f]{64}$' "$CHECKPOINT"
+    return
+  fi
+  grep -Fxq "netplan_sha256=$NETPLAN_SHA256" "$CHECKPOINT" || return 1
+  grep -Fxq "generated_sha256=$GENERATED_SHA256" "$CHECKPOINT" || return 1
+  grep -Fxq "staticroute_sha256=$STATICROUTE_SHA256" "$CHECKPOINT"
+}
+
+checkpoint_valid() {
+  [[ -f $CHECKPOINT && ! -L $CHECKPOINT ]] || return 1
+  [[ $(stat -c '%U:%G:%a:%h' "$CHECKPOINT") == root:root:600:1 ]] || return 1
+  grep -Fxq "candidate=${NETWORK_CONVERGENCE_CANDIDATE_SHA}" "$CHECKPOINT" || return 1
+  checkpoint_hashes_valid || return 1
+  grep -Fxq 'baseline_connected_route=ABSENT' "$CHECKPOINT" || return 1
+  grep -Fxq 'baseline_gateway_host_route=ABSENT' "$CHECKPOINT"
+}
+
+# Final command contract; kept close to mutating operations for auditability.
+require_commands() {
+  local command
+  for command in awk cat chmod chown date diff flock git grep install ip mkdir netplan \
+    networkctl rm rmdir seq sha256sum sleep stat systemctl timeout; do
+    command -v "$command" >/dev/null 2>&1 || refuse "missing_command_$command"
+  done
+}
+
+recovered_surface_valid() {
+  overlay_exact || return 1
+  generated_has_host_route || return 1
+  connected_route_absent || return 1
+  host_route_present || return 1
+  admin_state_is configured || return 1
+  wait_online_passes || return 1
+  default_route_present || return 1
+  staticroute_unchanged || return 1
+}
+
+recovered_state_valid() {
+  [[ -f $STATE_FILE && ! -L $STATE_FILE ]] || return 1
+  [[ $(<"$STATE_FILE") == RECOVERED ]] || return 1
+  checkpoint_valid || return 1
+  recovered_surface_valid
+}
+
+operation_precheck() {
+  validate_common
+  [[ -x $BACKUP_COMMAND ]] || refuse backup_command_missing
+  known_broken_state || refuse state_not_known_broken
+  printf 'NETWORK_CONVERGENCE_PRECHECK=PASS state=KNOWN_BROKEN candidate=%s\n' \
+    "$NETWORK_CONVERGENCE_CANDIDATE_SHA"
+}
+
+operation_apply() {
+  validate_common
+  if recovered_state_valid; then
+    printf 'NETWORK_CONVERGENCE_APPLY=PASS changed=0 candidate=%s\n' \
+      "$NETWORK_CONVERGENCE_CANDIDATE_SHA"
+    return
+  fi
+  [[ -x $BACKUP_COMMAND ]] || refuse backup_command_missing
+  known_broken_state || refuse state_not_known_broken
+  "$BACKUP_COMMAND" >/dev/null || human_gate backup_failed
+  create_checkpoint
+  install -o root -g root -m 0600 "$OVERLAY_SOURCE" "$OVERLAY"
+  netplan generate || human_gate netplan_generate_failed
+  generated_has_host_route || human_gate generated_host_route_missing
+  ip route replace "$GATEWAY/32" dev "$INTERFACE" scope link
+  for _ in $(seq 1 40); do
+    admin_state_is configured && break
+    sleep 0.25
+  done
+  recovered_surface_valid || human_gate post_apply_check_failed
+  printf '%s\n' RECOVERED >"$STATE_FILE"
+  chown root:root "$STATE_FILE"
+  chmod 600 "$STATE_FILE"
+  recovered_state_valid || human_gate recovered_state_not_stable
+  printf 'NETWORK_CONVERGENCE_APPLY=PASS changed=1 candidate=%s\n' \
+    "$NETWORK_CONVERGENCE_CANDIDATE_SHA"
+}
+
+operation_check() {
+  validate_common
+  recovered_state_valid || refuse recovered_state_invalid
+  printf 'NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED candidate=%s\n' \
+    "$NETWORK_CONVERGENCE_CANDIDATE_SHA"
+}
+
+operation_rollback() {
+  validate_common
+  recovered_state_valid || refuse rollback_requires_recovered_state
+  rm -f -- "$OVERLAY"
+  netplan generate || human_gate rollback_netplan_generate_failed
+  ip route del "$GATEWAY/32" dev "$INTERFACE" scope link 2>/dev/null || true
+  [[ ! -e $OVERLAY && ! -L $OVERLAY ]] || human_gate rollback_overlay_still_present
+  validate_provider_files_preapply || human_gate rollback_provider_files_drift
+  connected_route_absent || human_gate rollback_connected_route_changed
+  ! host_route_present || human_gate rollback_host_route_still_present
+  default_route_present || human_gate rollback_default_route_drift
+  staticroute_unchanged || human_gate rollback_staticroute_drift
+  rm -f -- "$STATE_FILE" "$CHECKPOINT"
+  rmdir -- "$STATE_ROOT" 2>/dev/null || true
+  printf 'NETWORK_CONVERGENCE_ROLLBACK=PASS state=PERSISTENT_BASELINE_RESTORED runtime_reconfigure=NOT_FORCED candidate=%s\n' \
+    "$NETWORK_CONVERGENCE_CANDIDATE_SHA"
+}
+
+[[ $# -eq 1 ]] || refuse exactly_one_operation_required
+exec 9>"$LOCK_FILE"
+flock -n 9 || refuse lock_busy
+case "$1" in
+  precheck) operation_precheck ;;
+  apply) operation_apply ;;
+  check) operation_check ;;
+  rollback) operation_rollback ;;
+  *) refuse invalid_operation ;;
+esac
