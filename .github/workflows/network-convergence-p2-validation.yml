@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   validate:
-    if: github.head_ref == 'fix/network-convergence-p2-20260829' || github.head_ref == 'fix/network-convergence-p2-generated-metadata-20260829' || github.head_ref == 'fix/network-convergence-p2-postboot-route-contract-20260829'
+    if: github.head_ref == 'fix/network-convergence-p2-20260829' || github.head_ref == 'fix/network-convergence-p2-generated-metadata-20260829' || github.head_ref == 'fix/network-convergence-p2-postboot-route-contract-20260829' || github.head_ref == 'fix/network-convergence-p2-checker-upgrade-20260829'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 

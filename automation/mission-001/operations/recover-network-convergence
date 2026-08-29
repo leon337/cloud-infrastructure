@@ -26,6 +26,7 @@ readonly NETPLAN_SHA256=9ad2689b534bdb090060a51b3a1c0785384c65c2bd1bf3e42b9bbfdc
 readonly GENERATED_SHA256=0f25043db9ffc67594a6d723a69550105fa8fb8d5ae2040905b1aff964042858
 readonly STATICROUTE_SHA256=4a0ab05ddb6ef718acc644f656d865b1129f0ec4996e1bf2725156042a913163
 readonly OVERLAY_SOURCE_SHA256=e7a55b96a2ba848ffd70867b7ca9415abdfb51b81c19e9de5be96f5471277060
+readonly LIVE_APPLIED_CANDIDATE=682c3e55d835ebea4bcc2edd297a8b819b2df434
 
 refuse() {
   printf 'NETWORK_CONVERGENCE_REFUSED reason=%s\n' "$1" >&2
@@ -217,9 +218,11 @@ checkpoint_hashes_valid() {
 }
 
 checkpoint_valid() {
+  local applied_candidate=${1:-${NETWORK_CONVERGENCE_CANDIDATE_SHA:-}}
+  [[ $applied_candidate =~ ^[0-9a-f]{40}$ ]] || return 1
   [[ -f $CHECKPOINT && ! -L $CHECKPOINT ]] || return 1
   [[ $(stat -c '%U:%G:%a:%h' "$CHECKPOINT") == root:root:600:1 ]] || return 1
-  grep -Fxq "candidate=${NETWORK_CONVERGENCE_CANDIDATE_SHA}" "$CHECKPOINT" || return 1
+  grep -Fxq "candidate=$applied_candidate" "$CHECKPOINT" || return 1
   checkpoint_hashes_valid || return 1
   grep -Fxq 'baseline_connected_route=ABSENT' "$CHECKPOINT" || return 1
   grep -Fxq 'baseline_gateway_host_route=ABSENT' "$CHECKPOINT"
@@ -246,10 +249,22 @@ recovered_surface_valid() {
 }
 
 recovered_state_valid() {
+  local applied_candidate=${1:-${NETWORK_CONVERGENCE_CANDIDATE_SHA:-}}
   [[ -f $STATE_FILE && ! -L $STATE_FILE ]] || return 1
   [[ $(<"$STATE_FILE") == RECOVERED ]] || return 1
-  checkpoint_valid || return 1
+  checkpoint_valid "$applied_candidate" || return 1
   recovered_surface_valid
+}
+
+resolve_check_applied_candidate() {
+  local current_candidate=${NETWORK_CONVERGENCE_CANDIDATE_SHA:-}
+  local applied_candidate=${NETWORK_CONVERGENCE_APPLIED_CANDIDATE_SHA:-$current_candidate}
+  [[ $current_candidate =~ ^[0-9a-f]{40}$ ]] || return 1
+  [[ $applied_candidate =~ ^[0-9a-f]{40}$ ]] || return 1
+  if [[ $applied_candidate != "$current_candidate" && $applied_candidate != "$LIVE_APPLIED_CANDIDATE" ]]; then
+    return 1
+  fi
+  printf '%s\n' "$applied_candidate"
 }
 
 operation_precheck() {
@@ -290,9 +305,11 @@ operation_apply() {
 
 operation_check() {
   validate_common
-  recovered_state_valid || refuse recovered_state_invalid
-  printf 'NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED candidate=%s\n' \
-    "$NETWORK_CONVERGENCE_CANDIDATE_SHA"
+  local applied_candidate
+  applied_candidate=$(resolve_check_applied_candidate) || refuse check_applied_candidate_not_allowed
+  recovered_state_valid "$applied_candidate" || refuse recovered_state_invalid
+  printf 'NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED checker_candidate=%s applied_candidate=%s\n' \
+    "$NETWORK_CONVERGENCE_CANDIDATE_SHA" "$applied_candidate"
 }
 
 operation_rollback() {
