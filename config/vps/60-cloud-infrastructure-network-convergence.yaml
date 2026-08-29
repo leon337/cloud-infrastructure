@@ -1,0 +1,7 @@
+network:
+  version: 2
+  ethernets:
+    eth0:
+      routes:
+        - to: 169.58.128.1/32
+          scope: link

@@ -1,0 +1,96 @@
+name: network-convergence-p2-validation
+
+on:
+  pull_request:
+    branches:
+      - fix/f1-2c-systemd-runtime-lock
+
+permissions:
+  contents: read
+
+concurrency:
+  group: network-convergence-p2-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.head_ref == 'fix/network-convergence-p2-20260829'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out exact P2 candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+
+      - name: Install locked validation dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check -r requirements-dev.lock
+
+      - name: Provision pinned ShellCheck
+        shell: bash
+        env:
+          SHELLCHECK_VERSION: v0.11.0
+          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+        run: |
+          set -Eeuo pipefail
+          archive="${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}.tar.xz"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            --output "${archive}" \
+            "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          printf '%s  %s\n' "${SHELLCHECK_SHA256}" "${archive}" | sha256sum --check
+          tar -xJf "${archive}" -C "${RUNNER_TEMP}"
+          printf '%s\n' "${RUNNER_TEMP}/shellcheck-${SHELLCHECK_VERSION}" >>"${GITHUB_PATH}"
+
+      - name: Run exact-head P2 static validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          git diff --check
+          python -m unittest -v tests.test_network_convergence_recovery_contract
+          python scripts/check_markdown_links.py
+          python scripts/validate_yaml.py
+          python scripts/validate_manifests.py
+          python scripts/validate_state.py
+          python scripts/generate_project_status.py --check-readme
+          python - <<'PYTEST'
+          import unittest
+          suite = unittest.defaultTestLoader.discover('tests', pattern='test_*.py')
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          if not result.wasSuccessful():
+              raise SystemExit(1)
+          print(f'UNIT_TESTS_PASS count={result.testsRun}')
+          PYTEST
+          PYTHONDONTWRITEBYTECODE=1 python -m compileall -q scripts tests
+          shell_scripts=()
+          while IFS= read -r -d '' path; do
+            if [[ ! -f "$path" ]] || ! head -c 2 -- "$path" | cmp -s - <(printf '#!'); then
+              continue
+            fi
+            IFS= read -r first_line <"$path" || true
+            case "$first_line" in
+              '#!'*bash*) bash -n "$path" ;;
+              '#!'*/sh | '#!'*' sh') sh -n "$path" ;;
+              *) continue ;;
+            esac
+            shell_scripts+=("$path")
+          done < <(git ls-files --cached --others --exclude-standard -z)
+          shellcheck "${shell_scripts[@]}"
+          printf 'NETWORK_CONVERGENCE_P2_STATIC=PASS shell_scripts=%s historical_secret_gate=excluded_preexisting\n' "${#shell_scripts[@]}"
+
+      - name: Confirm workspace stayed clean
+        if: always()
+        shell: bash
+        run: |
+          git status --short
+          test -z "$(git status --porcelain)"

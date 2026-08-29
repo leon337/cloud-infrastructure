@@ -1,0 +1,72 @@
+name: network-convergence-p2-kvm
+
+on:
+  pull_request:
+    branches:
+      - fix/f1-2c-systemd-runtime-lock
+
+permissions:
+  contents: read
+
+concurrency:
+  group: network-convergence-p2-kvm-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  disposable-kvm:
+    if: github.head_ref == 'fix/network-convergence-p2-20260829'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prepare disposable KVM host
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain)"
+          test -e /dev/kvm || { echo 'KVM_REFUSED reason=/dev/kvm_missing' >&2; exit 2; }
+          sudo chmod 0666 /dev/kvm
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 qemu-utils cloud-image-utils
+      - name: Run exact-head convergence recovery KVM
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          scripts/run_network_convergence_kvm_lab.sh "$CANDIDATE_SHA"
+
+      - name: Collect KVM evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          evidence_dir="$RUNNER_TEMP/kvm-evidence"
+          mkdir -p "$evidence_dir"
+          evidence_root="${XDG_STATE_HOME:-$HOME/.local/state}/mcf-kvm-lab/evidence"
+          if [[ -d "$evidence_root" ]]; then
+            cp -a "$evidence_root"/. "$evidence_dir/"
+          fi
+          find "$evidence_dir" -maxdepth 3 -type f -print || true
+      - name: Upload KVM evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: network-convergence-p2-kvm-${{ github.run_id }}
+          path: ${{ runner.temp }}/kvm-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Confirm repository workspace stayed clean
+        if: always()
+        shell: bash
+        run: |
+          git status --short
+          test -z "$(git status --porcelain)"
