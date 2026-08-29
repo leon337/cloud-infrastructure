@@ -47,6 +47,23 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(g2b["task_8"]["root_cause"], "NOT_VERIFIED")
         self.assertEqual(g2b["tasks_9_10"], "NOT_STARTED")
 
+    def test_network_convergence_p2_live_state_and_reboot_boundary(self):
+        p2 = self.state["network_convergence_p2"]
+        self.assertEqual(p2["status"], "COMPLETE_LIVE_VERIFIED")
+        self.assertTrue(p2["accepted"])
+        self.assertEqual(p2["route_removal_agent"], "NOT_VERIFIED")
+        self.assertEqual(p2["applied_candidate_sha"], "682c3e55d835ebea4bcc2edd297a8b819b2df434")
+        self.assertEqual(p2["live_postverify"]["recovery_state"], "RECOVERED")
+        self.assertEqual(p2["live_postverify"]["administrative_state"], "configured")
+        self.assertFalse(p2["live_postverify"]["systemd_networkd_restarted"])
+        self.assertFalse(p2["node01_reapply_authorized"])
+        self.assertTrue(p2["one_shot_authorization_consumed"])
+        evidence = Path(p2["live_postverify"]["evidence_file"])
+        self.assertTrue(evidence.is_file())
+        self.assertIn("VERIFIED_LIVE_NETWORK_CONVERGENCE_P2", evidence.read_text(encoding="utf-8"))
+        self.assertEqual(self.state["project"]["next_exact_step"], "PRE_REBOOT_CHECKPOINT")
+        self.assertEqual(self.state["authorization"]["reboot"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+
     def test_production_remains_closed(self):
         self.assertEqual(
             self.state["authorization"]["production_promotion"],
@@ -77,7 +94,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["fallback_auth"], "PASS_INDEPENDENT_KEY")
         self.assertFalse(ssh["authorized_keys_changed"])
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
-        self.assertEqual(self.state["project"]["next_exact_step"], "NETWORK_CONVERGENCE_P2")
+        self.assertEqual(self.state["project"]["next_exact_step"], "PRE_REBOOT_CHECKPOINT")
 
     def test_runner_isolation_state_is_verified_with_hook_restart_pending(self):
         runner = self.state["runner_isolation"]

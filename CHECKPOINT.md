@@ -1,6 +1,6 @@
 # CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **28/08/2026** após rollout live autorizado e pós-validação independente do `F1_2C` no NODE-01.
+Atualizado em **29/08/2026** após rollout live autorizado e pós-validação independente do `NETWORK_CONVERGENCE_P2` no NODE-01.
 
 ## Hierarquia documental
 
@@ -22,11 +22,11 @@ continua tendo precedência para fatos mutáveis.
 - RECOVERY-P2: concluído, off-host automático + restore smoke verificados.
 - RUNNER-ISOLATION-P1: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`; PoC legado retirado; hook global configurado e aguardando restart privilegiado autorizado.
 - SSH_KEY_GOVERNANCE_P1: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso notebook→VPS, chave preservada e `authorized_keys` inalterado.
-- Próxima prioridade: `NETWORK_CONVERGENCE_P2`.
+- Próxima prioridade: `PRE_REBOOT_CHECKPOINT`.
 - Qualquer hardening futuro da `dsh-tunnel...` deve preservar o acesso interativo atual.
 - F1.2c no NODE-01: `COMPLETE_LIVE_VERIFIED`; diagnóstico root corrigiu a classificação para baseline `EXACT_PRESENT`, PRs #39/#40 fecharam os gaps do recovery, candidato `baaf839...` passou static/ShellCheck + KVM nas duas variantes e o rollout autorizado concluiu `RECOVERY_CHECK=PASS` + `F1_2C_POSTVERIFY=PASS`. Checkpoint/backup pré-apply e state `RECOVERED` foram verificados. A autorização one-shot foi consumida.
-- Network convergence: pendente antes de reboot.
-- Reboot/kernel: bloqueado por precondições.
+- Network convergence: `COMPLETE_LIVE_VERIFIED`; candidato `682c3e55...`, PRs #42/#43, wait-online e `AdministrativeState=configured` comprovados sem restart do networkd.
+- Reboot/kernel: bloqueado por `PRE_REBOOT_CHECKPOINT` + novo gate humano.
 - Full-image/provider disaster recovery: NÃO VERIFICADO.
 
 ## State canônico
@@ -39,6 +39,7 @@ de dívida documental, não como negação da adoção do checklist.
 Marcadores históricos ainda preservados até reconciliação específica:
 
 - F1.2c: `COMPLETE_LIVE_VERIFIED`; candidato aplicado `baaf839...`, lineage `2408aed4...`, evidência em `evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`;
+- NETWORK_CONVERGENCE_P2: `COMPLETE_LIVE_VERIFIED`; candidato aplicado `682c3e55...`, lineage `badad65...`, evidência em `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md`;
 - G2-B legado: `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
 - Repository Hygiene histórico: `REPOSITORY_HYGIENE_REVALIDATED`.
 
@@ -66,10 +67,10 @@ contenha o marcador `IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST` e permaneça su
 ## Boundaries
 
 - `state/active-mission.yaml` continua `NOT_ADOPTED`.
-- conclusão F1.2c não autoriza produção, G2-B, reboot ou novo reapply; qualquer nova mutação privilegiada segue seu gate específico;
+- conclusão F1.2c/P2 não autoriza produção, G2-B, reboot ou novo reapply; as autorizações one-shot usadas foram consumidas e qualquer nova mutação privilegiada segue seu gate específico;
 - mudanças materiais no NODE-01 continuam sujeitas aos gates aplicáveis;
 - secrets nunca são versionados.
 
 ## Próximo passo
 
-Executar `NETWORK_CONVERGENCE_P2` inicialmente read-only conforme `ROADMAP-CHECKLIST.md`; manter a `dsh-tunnel...` para o fluxo atual notebook→VPS e preservar a ativação do hook global do runner como hardening pendente. Não rebootar antes da convergência de rede e de um checkpoint pré-reboot.
+Criar `PRE_REBOOT_CHECKPOINT` conforme `ROADMAP-CHECKLIST.md`; manter a `dsh-tunnel...` para o fluxo atual notebook→VPS e preservar a ativação do hook global do runner como hardening pendente. Não rebootar até o checkpoint existir e um gate humano separado autorizar o reboot.

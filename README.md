@@ -41,10 +41,12 @@ confirmou `state=RECOVERED`, serviço `active+enabled`, helper/base checks `PASS
 `1/0` e ausência de listeners públicos gerenciados. A autorização foi consumida; novo reapply exige
 novo gate. Evidência: [`evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`](evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md).
 
+**NETWORK_CONVERGENCE_P2 live em 29/08/2026:** a causa funcional do `wait-online` foi reproduzida em KVM como ausência da rota conectada IPv4 `/17`; o agente exato que a removeu permanece `NÃO VERIFICADO`. O fix preservou o `staticroute` do cloud-init/provedor e adicionou somente `169.58.128.1/32 scope link`. Após PRs #42/#43, static + KVM hospedados `SUCCESS`, precheck live `KNOWN_BROKEN`, backup/checkpoint e apply/check autorizados, `eth0` convergiu para `configured` e ambos os predicates `wait-online` passaram. O `systemd-networkd` não foi reiniciado. Evidência: [`evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md`](evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md).
+
 | Área | Estado reconciliado | Resumo |
 |---|---|---|
-| VPS / NODE-01 | `OPERATIONAL_WITH_OPEN_INCIDENTS` | F1.2c recuperado e verificado; network convergence/reboot e outros débitos permanecem abertos |
-| Plataforma privada | `IMPLEMENTATION_IN_PROGRESS` | S0, F1.1, F1.2b e F1.2c live concluídos; próxima frente é network convergence P2 |
+| VPS / NODE-01 | `OPERATIONAL_WITH_OPEN_INCIDENTS` | F1.2c e network convergence P2 verificados; checkpoint pré-reboot/reboot e outros débitos permanecem abertos |
+| Plataforma privada | `IMPLEMENTATION_IN_PROGRESS` | S0, F1.1, F1.2b, F1.2c e network convergence P2 live concluídos; próximo passo é checkpoint pré-reboot |
 | Control Bridge G1 | `PASS_REAL_NODE_01_ROUNDTRIP` | transporte curto pelo runner comprovado |
 | Control Bridge G2-A | `PASS_REAL_NODE_01_READ_ONLY` | leitura confinada e recusa de escape comprovadas |
 | Control Bridge G2-B | `TASK_8_FAILED_ATTEMPT_3` | Tasks 1–7 concluídas; prova descartável completa ainda não passou |
@@ -57,12 +59,12 @@ novo gate. Evidência: [`evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`]
 ### Próxima ação exata
 
 ```text
-NETWORK_CONVERGENCE_P2
+PRE_REBOOT_CHECKPOINT
 ```
 
 Hardening pendente separado: ativar os hooks globais STARTED/COMPLETED do runner
 somente em uma janela de restart autorizada do serviço. Não contornar o boundary de
-`systemd`/sudo para isso. F1.2c e network convergence continuam em suas frentes próprias.
+`systemd`/sudo para isso. F1.2c e network convergence P2 estão concluídos; reboot continua em gate separado.
 
 ## Estado observado da VPS
 
@@ -123,6 +125,16 @@ chave dedicada carregada. O teste direto retorna `Permission denied
 Nunca registrar nem enviar a passphrase; quando o acesso direto for necessário,
 LEANDRO carrega a chave localmente com `ssh-add`.
 
+#### INC-004 — RESOLVIDO em 29/08 — systemd-networkd convergence
+
+- causa funcional comprovada: ausência da rota conectada `169.58.128.0/17` mantinha `eth0` em `configuring` e `wait-online` em timeout;
+- agente exato que removeu a rota conectada: `NÃO VERIFICADO`;
+- `staticroute` originado em NoCloud/cloud-init foi preservado e não foi provado como causa única;
+- correção mínima: host-route `169.58.128.1/32 scope link`, sem restaurar o `/17` inteiro;
+- candidato `682c3e55d835ebea4bcc2edd297a8b819b2df434`, PRs #42/#43, static/KVM hospedados PASS;
+- rollout live autorizado concluiu `RECOVERED`, `AdministrativeState=configured` e wait-online PASS sem restart do networkd;
+- autorização P2 one-shot consumida; reboot continua não autorizado.
+
 ## Onde está cada parte do trabalho
 
 Esta tabela é o inventário de reconciliação. Nenhum item listado como local ou
@@ -131,7 +143,7 @@ experimental deve ser apagado, resetado ou mesclado sem classificação prévia.
 | Local/ref | Estado | Conteúdo e decisão |
 |---|---|---|
 | GitHub `main` — `3621a6d` antes desta reconciliação | limpo, porém incompleto | baseline histórica, Cloud Workstation e provas temporárias; não contém a implementação integral das branches abaixo |
-| `fix/f1-2c-systemd-runtime-lock` — GitHub | lineage de recovery em `2408aed4` | PRs #39/#40 integradas na lineage; candidato live validado/aplicado foi `baaf839...`; `main` ainda não importa código funcional |
+| `fix/f1-2c-systemd-runtime-lock` — GitHub | lineage funcional em `badad65` | F1.2c (`baaf839...`) + NETWORK_CONVERGENCE_P2 (`682c3e55...`) integrados via PRs #39/#40/#42/#43; `main` ainda não importa código funcional |
 | `codex/mission-001-f1-2c-network-enforcement` — GitHub | branch de implementação | F1.1/F1.2b e desired state F1.2c; base da PR #9 |
 | `mcf/mission-001-control-bridge-g1` — GitHub | G1/G2-A comprovados | roundtrip e leitura real do NODE-01; [PR #3](https://github.com/leon337/cloud-infrastructure/pull/3) aberta |
 | `codex/control-bridge-g2b` — VPS/GitHub | limpo em `fbef3d4` | G2-B Tasks 1–7, continuidade R1–R8 e correções das tentativas 1–3; [PR #11](https://github.com/leon337/cloud-infrastructure/pull/11) draft |
@@ -284,6 +296,7 @@ item parcial ou bloqueado permanece `[ ]`, mesmo quando existe código.
 ### P1 — Finalizar a fundação da plataforma DEV/lab
 
 - [x] **F1.2c:** network services recuperados no NODE-01; precheck, backup/checkpoint, apply/check, KVM/idempotência e pós-validação live comprovados;
+- [x] **NETWORK_CONVERGENCE_P2:** `eth0` convergiu para `configured`, gateway `/32` materializado e wait-online validado sem restart;
 - [ ] **F1.2a:** Management Network — `WAITING_HUMAN_GATE`;
 - [ ] **F1.3:** observabilidade mínima e accounting;
 - [ ] **F1.4:** secret bootstrap foundation;

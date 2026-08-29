@@ -127,15 +127,17 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 
 ## 6. Rede / systemd-networkd — P2
 
-- [x] `eth0` operacional/routable observado.
-- [x] `SetupState=configuring` observado.
-- [x] `systemd-networkd-wait-online` com timeouts recorrentes observado.
-- [ ] Identificar causa de não convergência.
-- [ ] Validar netplan/networkd efetivo.
-- [ ] Corrigir somente após diagnóstico.
-- [ ] Confirmar `wait-online` saudável antes de reboot.
+- [x] `eth0` operacional/routable observado com `AdministrativeState=configuring`.
+- [x] Dois predicates reais de `systemd-networkd-wait-online` reproduzidos em timeout.
+- [x] Causa funcional reproduzida em KVM: rota conectada `169.58.128.0/17` ausente; agente que a removeu = `NÃO VERIFICADO`.
+- [x] Netplan/networkd efetivo validado; `staticroute` NoCloud/cloud-init preservado.
+- [x] Correção mínima validada: `169.58.128.1/32 scope link`, sem restaurar o `/17` inteiro.
+- [x] PRs #42/#43, static + KVM hospedados PASS; candidato live `682c3e55d835ebea4bcc2edd297a8b819b2df434`.
+- [x] Precheck, backup/checkpoint, apply/check e pós-validação independentes PASS.
+- [x] `eth0 AdministrativeState=configured` e ambos `wait-online` PASS; networkd não reiniciado.
+- [x] Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md`.
 
-**Estado:** `NETWORK_CONVERGENCE_P2_PENDING`.
+**Estado:** `COMPLETE_LIVE_VERIFIED`; próxima etapa: `PRE_REBOOT_CHECKPOINT`.
 
 ## 7. Kernel / atualização / reboot — P2
 
@@ -143,7 +145,7 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 - [x] Kernel atual e kernel novo pendente inventariados.
 - [x] Pacotes atualizáveis inventariados.
 - [x] `Spec rstack overflow` reportado pelo kernel foi registrado.
-- [!] F1.2c foi fechado; não rebootar antes de fechar `NETWORK_CONVERGENCE_P2` e criar checkpoint pré-reboot.
+- [x] F1.2c e `NETWORK_CONVERGENCE_P2` foram fechados com evidência live.
 - [ ] Criar checkpoint pré-reboot.
 - [ ] Executar reboot controlado quando autorizado.
 - [ ] Validar SSH, rede, firewall, Docker, Runner, SentinelX, XRDP e backup pós-reboot.
@@ -224,8 +226,9 @@ RECOVERY-P2                         DONE
 RUNNER_ISOLATION_P1                 DONE_CROSS_JOB / GLOBAL_HOOK_HARDENING_PENDING
 SSH_KEY_GOVERNANCE_P1               DONE_KEEP_CURRENT_USER_WORKFLOW
 F1_2C_NODE01_ROLLOUT                DONE / LIVE_VERIFIED
-NETWORK_CONVERGENCE_P2              PENDING
-UPDATE_AND_CONTROLLED_REBOOT        BLOCKED_BY_PRECONDITIONS
+NETWORK_CONVERGENCE_P2              DONE / LIVE_VERIFIED
+PRE_REBOOT_CHECKPOINT               NEXT
+UPDATE_AND_CONTROLLED_REBOOT        BLOCKED_BY_PRE_REBOOT_CHECKPOINT_AND_HUMAN_GATE
 POST_REBOOT_VALIDATION              PENDING
 CANONICAL_STATE_AND_PR_HYGIENE      PENDING
 FINAL_AUDIT                         PENDING

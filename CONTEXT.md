@@ -28,14 +28,15 @@ Nunca transforme estado desejado em estado observado.
 | Contrato de execução histórico/vinculante | `docs/CODEX-EXECUTION-MISSION-001.md` |
 | Validação canônica do repositório | `scripts/test.sh` + `.github/workflows/canonical-validation.yml` |
 
-## Estado reconciliado em 22/08/2026 + atualização operacional de 28/08/2026
+## Estado reconciliado em 22/08/2026 + atualizações operacionais de 28–29/08/2026
 
-Baseline deste closeout: `main@ce829067a9a04eceaa6eaefd9553899b2ce14da1` em `DOCUMENTATION_AND_INTEGRATION_DRIFT`; esta branch projeta o estado live F1.2c posterior sem importar a lineage funcional para `main`.
+Baseline deste closeout: `main@ce829067a9a04eceaa6eaefd9553899b2ce14da1` em `DOCUMENTATION_AND_INTEGRATION_DRIFT`; esta branch projeta os estados live F1.2c e NETWORK_CONVERGENCE_P2 posteriores sem importar as lineages funcionais para `main`.
 
 Fatos que não podem ser promovidos além da evidência:
 
 - S0, F1.1 e F1.2b: concluídos conforme a reconciliação integrada;
 - F1.2c: `COMPLETE_LIVE_VERIFIED`; candidato `baaf839...` passou static/ShellCheck + KVM `ABSENT`/`EXACT_PRESENT` e o rollout autorizado terminou `RECOVERED` com pós-validação root PASS;
+- NETWORK_CONVERGENCE_P2: `COMPLETE_LIVE_VERIFIED`; causa funcional da não convergência reproduzida em KVM, agente que removeu a rota `/17` = `NOT_VERIFIED`; candidato `682c3e55...` passou static/KVM hospedados e rollout live terminou `RECOVERED`, `configured` e wait-online PASS sem restart;
 - Control Bridge G1: `PASS_REAL_NODE_01_ROUNDTRIP`;
 - Control Bridge G2-A: `PASS_REAL_NODE_01_READ_ONLY`;
 - G2-B Tasks 1–7: `COMPLETE`;
@@ -77,11 +78,11 @@ O executor canônico de integração também preserva o boundary F1.1: GitHub-ho
 
 - LEANDRO é autoridade humana final.
 - MESTRE orquestra a missão.
-- conclusão F1.2c não autoriza merge funcional automático, produção, escrita real G2-B, reboot ou novo reapply;
-- a operação privilegiada F1.2c autorizada foi concluída e consumida; novas operações privilegiadas exigem seus próprios gates;
+- conclusão F1.2c/P2 não autoriza merge funcional automático, produção, escrita real G2-B, reboot ou novo reapply;
+- as operações privilegiadas F1.2c e P2 autorizadas foram concluídas e suas autorizações one-shot consumidas; novas operações privilegiadas exigem seus próprios gates;
 - branches G2-B/F1.2c permanecem isoladas;
 - secrets nunca são versionados.
 
 ## Próximo passo exato
 
-**NETWORK_CONVERGENCE_P2**. F1.2c foi concluído no NODE-01 com evidência live; o próximo passo começa read-only e deve fechar `systemd-networkd` / `wait-online` antes de qualquer reboot. `SSH_KEY_GOVERNANCE_P1` continua preservando a `dsh-tunnel...`; o hardening de hooks globais do runner permanece pendente até restart autorizado do serviço.
+**PRE_REBOOT_CHECKPOINT**. F1.2c e NETWORK_CONVERGENCE_P2 foram concluídos no NODE-01 com evidência live; o reboot continua bloqueado até existir checkpoint pré-reboot e um gate humano separado. `SSH_KEY_GOVERNANCE_P1` continua preservando a `dsh-tunnel...`; o hardening de hooks globais do runner permanece pendente até restart autorizado do serviço.

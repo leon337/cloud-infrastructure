@@ -2,8 +2,8 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: docs/f1-2c-live-closeout-20260828
-updated_at: "2026-08-28T20:11:58-03:00"
-state_classification: CURRENT_F1_2C_LIVE_VERIFIED_NETWORK_CONVERGENCE_PENDING
+updated_at: "2026-08-29T16:50:01-03:00"
+state_classification: CURRENT_NETWORK_CONVERGENCE_P2_LIVE_VERIFIED_PRE_REBOOT_CHECKPOINT_PENDING
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 freshness:
@@ -67,6 +67,15 @@ source_snapshot:
     f1_2c_checkpoint_utc: "2026-08-28T22:55:37Z"
     f1_2c_live_result: RECOVERED_POSTVERIFY_PASS
     f1_2c_evidence: evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md
+    network_convergence_p2_initial_pr: 42
+    network_convergence_p2_metadata_pr: 43
+    network_convergence_p2_candidate: 682c3e55d835ebea4bcc2edd297a8b819b2df434
+    network_convergence_p2_lineage_merge: badad65ae583f159347c2219e1561a9a4a245152
+    network_convergence_p2_static_run: 33270932935
+    network_convergence_p2_kvm_run: 33270932950
+    network_convergence_p2_checkpoint_utc: "2026-08-29T19:50:01Z"
+    network_convergence_p2_live_result: RECOVERED_POSTVERIFY_PASS
+    network_convergence_p2_evidence: evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md
   open_fronts:
     repository_hygiene_pr: 19
     f1_2c_recovery_pr: 20
@@ -86,11 +95,12 @@ project:
     platform_f1_1: COMPLETE
     platform_f1_2b: COMPLETE
     platform_f1_2c: COMPLETE_LIVE_VERIFIED
+    network_convergence_p2: COMPLETE_LIVE_VERIFIED
     recovery_p1: COMPLETE
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
-  next_exact_step: NETWORK_CONVERGENCE_P2
+  next_exact_step: PRE_REBOOT_CHECKPOINT
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
@@ -199,6 +209,57 @@ platform:
     node01_reapply_authorized: false
     one_shot_authorization_consumed: true
 
+network_convergence_p2:
+  status: COMPLETE_LIVE_VERIFIED
+  accepted: true
+  functional_cause: CONNECTED_IPV4_ROUTE_ABSENT_REPRODUCED_IN_KVM
+  route_removal_agent: NOT_VERIFIED
+  provider_staticroute: PRESERVED_NOT_PROVEN_UNIQUE_ROOT_CAUSE
+  initial_implementation_pr: 42
+  metadata_correction_pr: 43
+  applied_candidate_sha: 682c3e55d835ebea4bcc2edd297a8b819b2df434
+  recovery_lineage_merge_sha: badad65ae583f159347c2219e1561a9a4a245152
+  static_validation:
+    status: PASS
+    run: 33270932935
+    exact_head: true
+    shellcheck: PASS
+  disposable_kvm:
+    status: PASS
+    run: 33270932950
+    exact_head: true
+    generated_network_metadata: root:systemd-network:640
+    broken_signature_reproduced: true
+    recovered_wait_online: PASS
+    rollback_baseline_reproduced: PASS
+  generic_ci:
+    status: FAIL_PREEXISTING_HISTORY_ONLY_GATE
+  live_precheck:
+    initial_candidate: 5955fcf467bddb3525dae564c2d61878e0fad96a
+    initial_result: REFUSED_FALSE_GENERATED_METADATA_DRIFT_NO_APPLY
+    corrected_candidate: 682c3e55d835ebea4bcc2edd297a8b819b2df434
+    corrected_result: PASS_KNOWN_BROKEN
+  checkpoint_backup:
+    checkpoint_created_at_utc: "2026-08-29T19:50:01Z"
+    backup_archive: cloud-infrastructure-config-20260829T194958Z.tar.gz
+    backup_sha256_sidecar: PASS
+  live_postverify:
+    status: PASS
+    recovery_state: RECOVERED
+    recovery_check: PASS
+    administrative_state: configured
+    wait_online_predicate_1: PASS
+    wait_online_predicate_2: PASS
+    gateway_host_route: 169.58.128.1/32_SCOPE_LINK
+    connected_ipv4_subnet_route: ABSENT_PRESERVED
+    default_route: PRESERVED
+    provider_files: PRESERVED
+    systemd_networkd_restarted: false
+    systemd_networkd_start_timestamp: "Sat 2026-08-29 06:52:24 -03"
+    evidence_file: evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md
+  node01_reapply_authorized: false
+  one_shot_authorization_consumed: true
+
 control_bridge:
   g1: PASS_REAL_NODE_01_ROUNDTRIP
   g2a: PASS_REAL_NODE_01_READ_ONLY
@@ -283,9 +344,9 @@ toolchain:
   validation_status: PASS
   live_closeout_validation:
     branch: docs/f1-2c-live-closeout-20260828
-    executed_at: "2026-08-28T20:12:00-03:00"
+    executed_at: "2026-08-29T17:01:49-03:00"
     canonical_suite: PASS
-    unit_tests: 32_OF_32_PASS
+    unit_tests: 33_OF_33_PASS
     git_diff_check: PASS
     secret_policy: PASS
     runner_isolation_policy: PASS
@@ -358,7 +419,7 @@ toolchain:
 boundaries:
   protected_branches_modified: false
   node01_privileged_operations: true
-  node01_privileged_operation_scope: F1_2C_EXACT_SHA_AUTHORIZED_COMPLETED
+  node01_privileged_operation_scope: F1_2C_AND_NETWORK_CONVERGENCE_P2_ONE_SHOT_AUTHORIZATIONS_COMPLETED
   node01_privileged_operations_currently_authorized: false
   production_promoted: false
   branch_deletion_performed: false
@@ -370,6 +431,8 @@ authorization:
   production_promotion: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   g2b_real_write: NOT_AUTHORIZED
   f1_2c_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
+  network_convergence_p2_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
+  reboot: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   destructive_history_remediation: NOT_AUTHORIZED
   ssh_dsh_key_change: NOT_AUTHORIZED_WITHOUT_PRESERVING_CURRENT_USER_WORKFLOW
 

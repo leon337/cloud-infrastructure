@@ -48,6 +48,7 @@ def main() -> int:
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
             "NETWORK_CONVERGENCE_P2",
+            "PRE_REBOOT_CHECKPOINT",
         ):
             require_token(path, token)
 
@@ -55,6 +56,7 @@ def main() -> int:
         require_token(path, "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING")
         require_token(path, "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED")
         require_token(path, "NETWORK_CONVERGENCE_P2")
+        require_token(path, "PRE_REBOOT_CHECKPOINT")
 
     active = state["continuity"]["active_mission_model"]
     if active["status"] == "NOT_ADOPTED" and Path(active["file"]).exists():
@@ -103,8 +105,8 @@ def main() -> int:
         raise AssertionError("ssh key governance must keep current user workflow")
     if ssh.get("authorized_keys_changed") is not False:
         raise AssertionError("ssh key governance must preserve authorized_keys")
-    if state["project"].get("next_exact_step") != "NETWORK_CONVERGENCE_P2":
-        raise AssertionError("next exact step drift after F1.2c live closeout")
+    if state["project"].get("next_exact_step") != "PRE_REBOOT_CHECKPOINT":
+        raise AssertionError("next exact step drift after NETWORK_CONVERGENCE_P2 live closeout")
 
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")
