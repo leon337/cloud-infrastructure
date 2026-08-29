@@ -49,6 +49,8 @@ BACKUP
 sudo chmod 755 /usr/local/sbin/cloud-infrastructure-config-backup
 
 sudo netplan generate
+[[ $(sudo stat -c '%U:%G:%a:%h' /run/systemd/network/10-netplan-eth0.network) == root:systemd-network:640:1 ]] || fail generated_metadata_drift
+echo generated_metadata_match=PASS
 sudo networkctl reload
 sudo ip link set eth0 up
 sudo networkctl reconfigure eth0

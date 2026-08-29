@@ -46,6 +46,13 @@ file_exact() {
   [[ $(sha_of "$path") == "$digest" ]]
 }
 
+generated_file_exact() {
+  local digest=${1:-}
+  [[ -f $GENERATED && ! -L $GENERATED ]] || return 1
+  [[ $(stat -c '%U:%G:%a:%h' "$GENERATED") == root:systemd-network:640:1 ]] || return 1
+  [[ -z $digest || $(sha_of "$GENERATED") == "$digest" ]]
+}
+
 validate_identity() {
   [[ $EUID -eq 0 ]] || refuse root_required
   if [[ ${NETWORK_CONVERGENCE_TEST_CONFIRM:-} == "$TEST_CONFIRM" ]]; then
@@ -81,11 +88,12 @@ validate_sources() {
 
 validate_provider_files_preapply() {
   if [[ ${NETWORK_CONVERGENCE_TEST_CONFIRM:-} == "$TEST_CONFIRM" ]]; then
-    [[ -f $NETPLAN && -f $GENERATED && -f $STATICROUTE ]] || refuse kvm_provider_fixture_missing
+    [[ -f $NETPLAN && -f $STATICROUTE ]] || refuse kvm_provider_fixture_missing
+    generated_file_exact || refuse kvm_generated_network_metadata_drift
     return
   fi
   file_exact "$NETPLAN" 600 "$NETPLAN_SHA256" || refuse netplan_drift
-  file_exact "$GENERATED" 644 "$GENERATED_SHA256" || refuse generated_network_drift
+  generated_file_exact "$GENERATED_SHA256" || refuse generated_network_drift
   file_exact "$STATICROUTE" 644 "$STATICROUTE_SHA256" || refuse staticroute_drift
 }
 
