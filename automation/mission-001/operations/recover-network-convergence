@@ -113,8 +113,23 @@ default_route_present() {
   ip -4 route show default | grep -Eq "^default via $GATEWAY dev $INTERFACE([[:space:]]|$)"
 }
 
-connected_route_absent() {
+subnet_route_absent() {
   ! ip -4 route show "$SUBNET" dev "$INTERFACE" | grep -q .
+}
+
+direct_connected_route_absent() {
+  ! ip -4 route show "$SUBNET" dev "$INTERFACE" scope link | grep -q .
+}
+
+provider_subnet_route_safe() {
+  direct_connected_route_absent || return 1
+  ip -o -4 route show "$SUBNET" table main dev "$INTERFACE" | awk \
+    -v subnet="$SUBNET" -v gateway="$GATEWAY" '
+      NF == 0 { next }
+      $1 == subnet && $2 == "via" && $3 == gateway { valid++; next }
+      { invalid = 1 }
+      END { exit (invalid || valid > 1) ? 1 : 0 }
+    '
 }
 
 host_route_present() {
@@ -167,7 +182,7 @@ known_broken_state() {
   [[ ! -e $STATE_ROOT && ! -L $STATE_ROOT ]] || return 1
   [[ ! -e $OVERLAY && ! -L $OVERLAY ]] || return 1
   validate_provider_files_preapply
-  connected_route_absent || return 1
+  subnet_route_absent || return 1
   ! host_route_present || return 1
   admin_state_is configuring || return 1
   wait_online_times_out || return 1
@@ -222,7 +237,7 @@ require_commands() {
 recovered_surface_valid() {
   overlay_exact || return 1
   generated_has_host_route || return 1
-  connected_route_absent || return 1
+  provider_subnet_route_safe || return 1
   host_route_present || return 1
   admin_state_is configured || return 1
   wait_online_passes || return 1
@@ -288,7 +303,7 @@ operation_rollback() {
   ip route del "$GATEWAY/32" dev "$INTERFACE" scope link 2>/dev/null || true
   [[ ! -e $OVERLAY && ! -L $OVERLAY ]] || human_gate rollback_overlay_still_present
   validate_provider_files_preapply || human_gate rollback_provider_files_drift
-  connected_route_absent || human_gate rollback_connected_route_changed
+  provider_subnet_route_safe || human_gate rollback_provider_subnet_route_unsafe
   ! host_route_present || human_gate rollback_host_route_still_present
   default_route_present || human_gate rollback_default_route_drift
   staticroute_unchanged || human_gate rollback_staticroute_drift

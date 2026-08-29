@@ -85,6 +85,7 @@ class NetworkConvergenceRecoveryContractTests(unittest.TestCase):
         self.assertIn("run_network_convergence_kvm_lab.sh", workflow)
         self.assertIn("fix/f1-2c-systemd-runtime-lock", workflow)
         self.assertIn("fix/network-convergence-p2-generated-metadata-20260829", workflow)
+        self.assertIn("fix/network-convergence-p2-postboot-route-contract-20260829", workflow)
         self.assertNotIn("self-hosted", workflow)
         self.assertNotIn("node-01", workflow)
 
@@ -94,6 +95,7 @@ class NetworkConvergenceRecoveryContractTests(unittest.TestCase):
         self.assertIn("runs-on: ubuntu-24.04", text)
         self.assertIn("github.event.pull_request.head.sha", text)
         self.assertIn("fix/network-convergence-p2-generated-metadata-20260829", text)
+        self.assertIn("fix/network-convergence-p2-postboot-route-contract-20260829", text)
         for token in (
             "tests.test_network_convergence_recovery_contract",
             "scripts/check_markdown_links.py",
@@ -136,6 +138,24 @@ class NetworkConvergenceSelfReviewTests(unittest.TestCase):
         self.assertIn("0f25043db9ffc67594a6d723a69550105fa8fb8d5ae2040905b1aff964042858", text)
         self.assertNotIn('file_exact "$GENERATED" 644', text)
         self.assertIn("generated_metadata_match=PASS", harness)
+
+    def test_postboot_provider_subnet_route_is_safe_but_direct_connected_route_is_not(self):
+        text = OP.read_text(encoding="utf-8")
+        harness = KVM.read_text(encoding="utf-8")
+        for token in (
+            "subnet_route_absent",
+            "direct_connected_route_absent",
+            "provider_subnet_route_safe",
+            'scope link',
+            '-v gateway="$GATEWAY"',
+            '$2 == "via"',
+        ):
+            self.assertIn(token, text)
+        self.assertIn('ip -o -4 route show "$SUBNET" table main dev "$INTERFACE"', text)
+        self.assertNotIn('ip -o -4 route show "$SUBNET" table main | awk', text)
+        self.assertIn("PROVIDER_POSTBOOT_ROUTE=PASS", harness)
+        self.assertIn("POSTBOOT_P2_CHECK=PASS", harness)
+        self.assertIn('ip route replace 169.58.128.0/17 via 169.58.128.1 dev eth0', harness)
 
     def test_live_rollback_restores_persistence_without_forcing_runtime_reconfigure(self):
         text = OP.read_text(encoding="utf-8")

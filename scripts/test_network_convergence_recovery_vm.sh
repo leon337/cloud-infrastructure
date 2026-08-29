@@ -81,7 +81,22 @@ ENV=(
   NETWORK_CONVERGENCE_CANDIDATE_SHA="$CANDIDATE"
 )
 sudo env "${ENV[@]}" "$OP" precheck
-sudo env "${ENV[@]}" "$OP" apply
+set +e
+apply_output=$(sudo env "${ENV[@]}" "$OP" apply 2>&1)
+apply_rc=$?
+set -e
+printf '%s\n' "$apply_output"
+if [[ $apply_rc -ne 0 ]]; then
+  echo APPLY_DIAG_BEGIN
+  networkctl status eth0 --json=short 2>/dev/null || true
+  ip -o -4 route show table main dev eth0 || true
+  printf 'APPLY_DIAG_SUBNET_MAIN='; ip -o -4 route show 169.58.128.0/17 table main || true
+  printf 'APPLY_DIAG_SUBNET_SCOPE_LINK='; ip -4 route show 169.58.128.0/17 dev eth0 scope link || true
+  printf 'APPLY_DIAG_HOST_ROUTE='; ip -4 route show 169.58.128.1/32 dev eth0 || true
+  sudo grep -nE '^(Destination=169.58.128.1/32|Scope=link)$' /run/systemd/network/10-netplan-eth0.network || true
+  echo APPLY_DIAG_END
+  fail "apply_rc_${apply_rc}"
+fi
 CHECKPOINT=/var/lib/cloud-platform-network-convergence-p2/checkpoint
 sudo grep -Fxq "netplan_sha256=$pre_netplan_hash" "$CHECKPOINT" || fail checkpoint_netplan_hash_mismatch
 sudo grep -Fxq "generated_sha256=$pre_generated_hash" "$CHECKPOINT" || fail checkpoint_generated_hash_mismatch
@@ -93,7 +108,17 @@ echo ADMIN_STATE=configured
 timeout 5 /lib/systemd/systemd-networkd-wait-online -i eth0:degraded >/dev/null 2>&1 || fail wait_recovered_failed
 echo WAIT_RECOVERED_RC=0
 ip -4 route show 169.58.128.1/32 dev eth0 | grep -q 'scope link' || fail host_route_missing_after_apply
-! ip -4 route show 169.58.128.0/17 dev eth0 | grep -q . || fail connected_route_restored_unexpectedly
+! ip -4 route show 169.58.128.0/17 dev eth0 scope link | grep -q . || fail direct_connected_route_restored_unexpectedly
+
+# Simulate the exact material result of the provider NoCloud @reboot staticroute.
+sudo ip route replace 169.58.128.0/17 via 169.58.128.1 dev eth0
+ip -o -4 route show 169.58.128.0/17 | grep -Eq '^169\.58\.128\.0/17 via 169\.58\.128\.1 dev eth0([[:space:]]|$)' || fail provider_postboot_route_missing
+! ip -4 route show 169.58.128.0/17 dev eth0 scope link | grep -q . || fail provider_postboot_direct_route_present
+echo PROVIDER_POSTBOOT_ROUTE=PASS
+sudo env "${ENV[@]}" "$OP" check
+echo POSTBOOT_P2_CHECK=PASS
+networkctl status eth0 --json=short | grep -Fq '"AdministrativeState":"configured"' || fail provider_postboot_not_configured
+timeout 5 /lib/systemd/systemd-networkd-wait-online -i eth0:degraded >/dev/null 2>&1 || fail provider_postboot_wait_failed
 
 sudo env "${ENV[@]}" "$OP" rollback
 sudo systemctl restart systemd-networkd
