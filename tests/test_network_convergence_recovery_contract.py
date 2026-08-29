@@ -84,6 +84,7 @@ class NetworkConvergenceRecoveryContractTests(unittest.TestCase):
         self.assertIn("/dev/kvm", workflow)
         self.assertIn("run_network_convergence_kvm_lab.sh", workflow)
         self.assertIn("fix/f1-2c-systemd-runtime-lock", workflow)
+        self.assertIn("fix/network-convergence-p2-generated-metadata-20260829", workflow)
         self.assertNotIn("self-hosted", workflow)
         self.assertNotIn("node-01", workflow)
 
@@ -92,6 +93,7 @@ class NetworkConvergenceRecoveryContractTests(unittest.TestCase):
         text = STATIC_WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("runs-on: ubuntu-24.04", text)
         self.assertIn("github.event.pull_request.head.sha", text)
+        self.assertIn("fix/network-convergence-p2-generated-metadata-20260829", text)
         for token in (
             "tests.test_network_convergence_recovery_contract",
             "scripts/check_markdown_links.py",
@@ -125,6 +127,15 @@ class NetworkConvergenceSelfReviewTests(unittest.TestCase):
             "staticroute_sha256=$STATICROUTE_SHA256",
         ):
             self.assertIn(token, text)
+
+    def test_generated_network_metadata_matches_netplan_runtime_contract(self):
+        text = OP.read_text(encoding="utf-8")
+        harness = KVM.read_text(encoding="utf-8")
+        self.assertIn("generated_file_exact", text)
+        self.assertIn("root:systemd-network:640:1", text)
+        self.assertIn("0f25043db9ffc67594a6d723a69550105fa8fb8d5ae2040905b1aff964042858", text)
+        self.assertNotIn('file_exact "$GENERATED" 644', text)
+        self.assertIn("generated_metadata_match=PASS", harness)
 
     def test_live_rollback_restores_persistence_without_forcing_runtime_reconfigure(self):
         text = OP.read_text(encoding="utf-8")
