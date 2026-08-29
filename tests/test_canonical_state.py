@@ -61,7 +61,23 @@ class CanonicalStateTests(unittest.TestCase):
         evidence = Path(p2["live_postverify"]["evidence_file"])
         self.assertTrue(evidence.is_file())
         self.assertIn("VERIFIED_LIVE_NETWORK_CONVERGENCE_P2", evidence.read_text(encoding="utf-8"))
-        self.assertEqual(self.state["project"]["next_exact_step"], "PRE_REBOOT_CHECKPOINT")
+        self.assertEqual(self.state["project"]["next_exact_step"], "UPDATE_AND_CONTROLLED_REBOOT")
+        self.assertEqual(self.state["authorization"]["reboot"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+
+    def test_pre_reboot_checkpoint_is_verified_but_update_reboot_remain_closed(self):
+        cp = self.state["pre_reboot_checkpoint"]
+        self.assertEqual(cp["status"], "VERIFIED_PRE_REBOOT_CHECKPOINT_V2")
+        self.assertTrue(cp["accepted"])
+        self.assertEqual(cp["v1_status"], "REJECTED_INTERNAL_SHA256SUMS_SELF_HASH")
+        self.assertEqual(cp["v2_sha256"], "8fe354e44c5d7948a9e87f0ab57cb9dd261fd438791f10964001158d800e0b42")
+        self.assertEqual(cp["offhost_recovery"]["status"], "PASS")
+        self.assertEqual(cp["offhost_recovery"]["restore_smoke"], "PASS")
+        self.assertFalse(cp["reboot_authorized"])
+        self.assertFalse(cp["updates_authorized"])
+        evidence = Path(cp["evidence_file"])
+        self.assertTrue(evidence.is_file())
+        self.assertIn("VERIFIED_PRE_REBOOT_CHECKPOINT_V2", evidence.read_text(encoding="utf-8"))
+        self.assertEqual(self.state["authorization"]["updates"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
         self.assertEqual(self.state["authorization"]["reboot"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
 
     def test_production_remains_closed(self):
@@ -94,7 +110,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["fallback_auth"], "PASS_INDEPENDENT_KEY")
         self.assertFalse(ssh["authorized_keys_changed"])
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
-        self.assertEqual(self.state["project"]["next_exact_step"], "PRE_REBOOT_CHECKPOINT")
+        self.assertEqual(self.state["project"]["next_exact_step"], "UPDATE_AND_CONTROLLED_REBOOT")
 
     def test_runner_isolation_state_is_verified_with_hook_restart_pending(self):
         runner = self.state["runner_isolation"]

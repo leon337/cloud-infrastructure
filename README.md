@@ -43,10 +43,12 @@ novo gate. Evidência: [`evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`]
 
 **NETWORK_CONVERGENCE_P2 live em 29/08/2026:** a causa funcional do `wait-online` foi reproduzida em KVM como ausência da rota conectada IPv4 `/17`; o agente exato que a removeu permanece `NÃO VERIFICADO`. O fix preservou o `staticroute` do cloud-init/provedor e adicionou somente `169.58.128.1/32 scope link`. Após PRs #42/#43, static + KVM hospedados `SUCCESS`, precheck live `KNOWN_BROKEN`, backup/checkpoint e apply/check autorizados, `eth0` convergiu para `configured` e ambos os predicates `wait-online` passaram. O `systemd-networkd` não foi reiniciado. Evidência: [`evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md`](evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md).
 
+**PRE_REBOOT_CHECKPOINT em 29/08/2026:** baseline pré-reboot verificada com serviços críticos ativos, `eth0=configured`, wait-online PASS e recovery F1.2c/P2 saudável. O V1 foi rejeitado por self-hash inválido de `SHA256SUMS`; o V2 `pre-reboot-checkpoint-20260829T203736Z.tar.gz` passou SHA externo, segurança de archive, todos os hashes internos e cópia off-host. Backup canônico associado `cloud-infrastructure-config-20260829T203734Z.tar.gz` também foi verificado off-host com `RECOVERY_P2=PASS`. Reboot/updates continuam não autorizados. Evidência: [`evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md`](evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md).
+
 | Área | Estado reconciliado | Resumo |
 |---|---|---|
-| VPS / NODE-01 | `OPERATIONAL_WITH_OPEN_INCIDENTS` | F1.2c e network convergence P2 verificados; checkpoint pré-reboot/reboot e outros débitos permanecem abertos |
-| Plataforma privada | `IMPLEMENTATION_IN_PROGRESS` | S0, F1.1, F1.2b, F1.2c e network convergence P2 live concluídos; próximo passo é checkpoint pré-reboot |
+| VPS / NODE-01 | `OPERATIONAL_WITH_OPEN_INCIDENTS` | F1.2c, network convergence P2 e checkpoint pré-reboot verificados; reboot e outros débitos permanecem abertos |
+| Plataforma privada | `IMPLEMENTATION_IN_PROGRESS` | S0, F1.1, F1.2b, F1.2c, network convergence P2 e checkpoint pré-reboot concluídos; próximo gate é update/reboot controlado |
 | Control Bridge G1 | `PASS_REAL_NODE_01_ROUNDTRIP` | transporte curto pelo runner comprovado |
 | Control Bridge G2-A | `PASS_REAL_NODE_01_READ_ONLY` | leitura confinada e recusa de escape comprovadas |
 | Control Bridge G2-B | `TASK_8_FAILED_ATTEMPT_3` | Tasks 1–7 concluídas; prova descartável completa ainda não passou |
@@ -59,7 +61,7 @@ novo gate. Evidência: [`evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`]
 ### Próxima ação exata
 
 ```text
-PRE_REBOOT_CHECKPOINT
+UPDATE_AND_CONTROLLED_REBOOT
 ```
 
 Hardening pendente separado: ativar os hooks globais STARTED/COMPLETED do runner

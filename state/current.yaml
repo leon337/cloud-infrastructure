@@ -2,8 +2,8 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: docs/f1-2c-live-closeout-20260828
-updated_at: "2026-08-29T16:50:01-03:00"
-state_classification: CURRENT_NETWORK_CONVERGENCE_P2_LIVE_VERIFIED_PRE_REBOOT_CHECKPOINT_PENDING
+updated_at: "2026-08-29T17:44:30-03:00"
+state_classification: CURRENT_PRE_REBOOT_CHECKPOINT_VERIFIED_UPDATE_REBOOT_HUMAN_GATE_PENDING
 documentation_state: DOCUMENTATION_AND_INTEGRATION_DRIFT
 
 freshness:
@@ -76,6 +76,13 @@ source_snapshot:
     network_convergence_p2_checkpoint_utc: "2026-08-29T19:50:01Z"
     network_convergence_p2_live_result: RECOVERED_POSTVERIFY_PASS
     network_convergence_p2_evidence: evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md
+    pre_reboot_checkpoint_v1: REJECTED_INTERNAL_SHA256SUMS_SELF_HASH
+    pre_reboot_checkpoint_v2_utc: "2026-08-29T20:37:36Z"
+    pre_reboot_checkpoint_v2_sha256: 8fe354e44c5d7948a9e87f0ab57cb9dd261fd438791f10964001158d800e0b42
+    pre_reboot_canonical_backup: cloud-infrastructure-config-20260829T203734Z.tar.gz
+    pre_reboot_canonical_backup_sha256: ce85092790cfbfe7b3aec675f12b3ef28e890c2e5ccb492c345a408118271c20
+    pre_reboot_offhost_recovery_dir: /home/leo/Backups/cloud-infrastructure/recovery/20260829T203850Z
+    pre_reboot_evidence: evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md
   open_fronts:
     repository_hygiene_pr: 19
     f1_2c_recovery_pr: 20
@@ -96,11 +103,12 @@ project:
     platform_f1_2b: COMPLETE
     platform_f1_2c: COMPLETE_LIVE_VERIFIED
     network_convergence_p2: COMPLETE_LIVE_VERIFIED
+    pre_reboot_checkpoint: VERIFIED_OFFHOST
     recovery_p1: COMPLETE
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
-  next_exact_step: PRE_REBOOT_CHECKPOINT
+  next_exact_step: UPDATE_AND_CONTROLLED_REBOOT
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING
@@ -260,6 +268,33 @@ network_convergence_p2:
   node01_reapply_authorized: false
   one_shot_authorization_consumed: true
 
+pre_reboot_checkpoint:
+  status: VERIFIED_PRE_REBOOT_CHECKPOINT_V2
+  accepted: true
+  v1_status: REJECTED_INTERNAL_SHA256SUMS_SELF_HASH
+  v2_archive: pre-reboot-checkpoint-20260829T203736Z.tar.gz
+  v2_sha256: 8fe354e44c5d7948a9e87f0ab57cb9dd261fd438791f10964001158d800e0b42
+  canonical_backup: cloud-infrastructure-config-20260829T203734Z.tar.gz
+  canonical_backup_sha256: ce85092790cfbfe7b3aec675f12b3ef28e890c2e5ccb492c345a408118271c20
+  offhost_recovery:
+    status: PASS
+    restore_smoke: PASS
+    recovery_p2: PASS
+    directory: /home/leo/Backups/cloud-infrastructure/recovery/20260829T203850Z
+    checkpoint_copy: /home/leo/Backups/cloud-infrastructure/pre-reboot/20260829T203736Z
+  baseline:
+    kernel: 6.8.0-137-generic
+    reboot_required: true
+    eth0_administrative_state: configured
+    wait_online_predicate_1: PASS
+    wait_online_predicate_2: PASS
+    failed_unit_boot_baseline: systemd-networkd-wait-online.service
+    docker_containers: 4
+    docker_running_containers: 4
+  reboot_authorized: false
+  updates_authorized: false
+  evidence_file: evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md
+
 control_bridge:
   g1: PASS_REAL_NODE_01_ROUNDTRIP
   g2a: PASS_REAL_NODE_01_READ_ONLY
@@ -344,9 +379,9 @@ toolchain:
   validation_status: PASS
   live_closeout_validation:
     branch: docs/f1-2c-live-closeout-20260828
-    executed_at: "2026-08-29T17:01:49-03:00"
+    executed_at: "2026-08-29T17:44:30-03:00"
     canonical_suite: PASS
-    unit_tests: 33_OF_33_PASS
+    unit_tests: 34_OF_34_PASS
     git_diff_check: PASS
     secret_policy: PASS
     runner_isolation_policy: PASS
@@ -419,7 +454,7 @@ toolchain:
 boundaries:
   protected_branches_modified: false
   node01_privileged_operations: true
-  node01_privileged_operation_scope: F1_2C_AND_NETWORK_CONVERGENCE_P2_ONE_SHOT_AUTHORIZATIONS_COMPLETED
+  node01_privileged_operation_scope: F1_2C_P2_AND_PRE_REBOOT_CHECKPOINT_ONE_SHOT_AUTHORIZATIONS_COMPLETED
   node01_privileged_operations_currently_authorized: false
   production_promoted: false
   branch_deletion_performed: false
@@ -432,6 +467,8 @@ authorization:
   g2b_real_write: NOT_AUTHORIZED
   f1_2c_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   network_convergence_p2_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
+  pre_reboot_checkpoint: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
+  updates: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   reboot: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   destructive_history_remediation: NOT_AUTHORIZED
   ssh_dsh_key_change: NOT_AUTHORIZED_WITHOUT_PRESERVING_CURRENT_USER_WORKFLOW

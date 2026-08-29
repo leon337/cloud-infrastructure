@@ -85,4 +85,4 @@ O executor canônico de integração também preserva o boundary F1.1: GitHub-ho
 
 ## Próximo passo exato
 
-**PRE_REBOOT_CHECKPOINT**. F1.2c e NETWORK_CONVERGENCE_P2 foram concluídos no NODE-01 com evidência live; o reboot continua bloqueado até existir checkpoint pré-reboot e um gate humano separado. `SSH_KEY_GOVERNANCE_P1` continua preservando a `dsh-tunnel...`; o hardening de hooks globais do runner permanece pendente até restart autorizado do serviço.
+**UPDATE_AND_CONTROLLED_REBOOT** — `WAITING_HUMAN_GATE`. F1.2c, NETWORK_CONVERGENCE_P2 e PRE_REBOOT_CHECKPOINT V2 foram concluídos no NODE-01 com evidência live/off-host. O checkpoint não autoriza update/reboot; um gate humano separado continua obrigatório. `SSH_KEY_GOVERNANCE_P1` continua preservando a `dsh-tunnel...`; o hardening de hooks globais do runner permanece pendente até restart autorizado do serviço.

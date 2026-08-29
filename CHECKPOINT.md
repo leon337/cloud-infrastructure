@@ -22,11 +22,12 @@ continua tendo precedência para fatos mutáveis.
 - RECOVERY-P2: concluído, off-host automático + restore smoke verificados.
 - RUNNER-ISOLATION-P1: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`; PoC legado retirado; hook global configurado e aguardando restart privilegiado autorizado.
 - SSH_KEY_GOVERNANCE_P1: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso notebook→VPS, chave preservada e `authorized_keys` inalterado.
-- Próxima prioridade: `PRE_REBOOT_CHECKPOINT`.
+- Próxima prioridade: `UPDATE_AND_CONTROLLED_REBOOT` — aguardando gate humano específico.
 - Qualquer hardening futuro da `dsh-tunnel...` deve preservar o acesso interativo atual.
 - F1.2c no NODE-01: `COMPLETE_LIVE_VERIFIED`; diagnóstico root corrigiu a classificação para baseline `EXACT_PRESENT`, PRs #39/#40 fecharam os gaps do recovery, candidato `baaf839...` passou static/ShellCheck + KVM nas duas variantes e o rollout autorizado concluiu `RECOVERY_CHECK=PASS` + `F1_2C_POSTVERIFY=PASS`. Checkpoint/backup pré-apply e state `RECOVERED` foram verificados. A autorização one-shot foi consumida.
 - Network convergence: `COMPLETE_LIVE_VERIFIED`; candidato `682c3e55...`, PRs #42/#43, wait-online e `AdministrativeState=configured` comprovados sem restart do networkd.
-- Reboot/kernel: bloqueado por `PRE_REBOOT_CHECKPOINT` + novo gate humano.
+- PRE_REBOOT_CHECKPOINT: `VERIFIED_PRE_REBOOT_CHECKPOINT_V2`; archive/backup e cópias off-host verificados; V1 rejeitado por self-hash interno e não aceito.
+- Reboot/kernel: checkpoint pré-reboot concluído; update/reboot continua `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
 - Full-image/provider disaster recovery: NÃO VERIFICADO.
 
 ## State canônico
@@ -73,4 +74,4 @@ contenha o marcador `IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST` e permaneça su
 
 ## Próximo passo
 
-Criar `PRE_REBOOT_CHECKPOINT` conforme `ROADMAP-CHECKLIST.md`; manter a `dsh-tunnel...` para o fluxo atual notebook→VPS e preservar a ativação do hook global do runner como hardening pendente. Não rebootar até o checkpoint existir e um gate humano separado autorizar o reboot.
+Aguardar gate humano específico para `UPDATE_AND_CONTROLLED_REBOOT`; manter a `dsh-tunnel...` para o fluxo atual notebook→VPS e preservar a ativação do hook global do runner como hardening pendente. O checkpoint V2 já existe, mas não constitui autorização para update ou reboot.

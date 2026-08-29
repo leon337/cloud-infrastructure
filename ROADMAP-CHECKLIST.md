@@ -146,11 +146,11 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 - [x] Pacotes atualizáveis inventariados.
 - [x] `Spec rstack overflow` reportado pelo kernel foi registrado.
 - [x] F1.2c e `NETWORK_CONVERGENCE_P2` foram fechados com evidência live.
-- [ ] Criar checkpoint pré-reboot.
-- [ ] Executar reboot controlado quando autorizado.
+- [x] `PRE_REBOOT_CHECKPOINT` V2 criado, SHA interno/externo e cópia off-host verificados; V1 rejeitado e preservado como evidência.
+- [ ] Executar update/reboot controlado somente após gate humano separado.
 - [ ] Validar SSH, rede, firewall, Docker, Runner, SentinelX, XRDP e backup pós-reboot.
 
-**Estado:** `REBOOT_BLOCKED_BY_PRECONDITIONS`.
+**Estado:** `WAITING_HUMAN_GATE_FOR_UPDATE_AND_CONTROLLED_REBOOT`.
 
 ## 8. Segurança / firewall
 
@@ -227,8 +227,8 @@ RUNNER_ISOLATION_P1                 DONE_CROSS_JOB / GLOBAL_HOOK_HARDENING_PENDI
 SSH_KEY_GOVERNANCE_P1               DONE_KEEP_CURRENT_USER_WORKFLOW
 F1_2C_NODE01_ROLLOUT                DONE / LIVE_VERIFIED
 NETWORK_CONVERGENCE_P2              DONE / LIVE_VERIFIED
-PRE_REBOOT_CHECKPOINT               NEXT
-UPDATE_AND_CONTROLLED_REBOOT        BLOCKED_BY_PRE_REBOOT_CHECKPOINT_AND_HUMAN_GATE
+PRE_REBOOT_CHECKPOINT               DONE / VERIFIED_OFFHOST
+UPDATE_AND_CONTROLLED_REBOOT        WAITING_HUMAN_GATE
 POST_REBOOT_VALIDATION              PENDING
 CANONICAL_STATE_AND_PR_HYGIENE      PENDING
 FINAL_AUDIT                         PENDING
