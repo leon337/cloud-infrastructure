@@ -1,0 +1,67 @@
+---
+- name: Slice 002 - install protected Docker and Compose runtime
+  hosts: execution_nodes
+  gather_facts: true
+  become: true
+
+  vars:
+    mission_slice_id: slice-002-docker-install
+
+  pre_tasks:
+    - name: Require live recovery gates before NODE-01 mutation
+      ansible.builtin.assert:
+        that:
+          - mission_live_precheck_passed | default(false) | bool
+          - mission_expected_fingerprint_verified | default(false) | bool
+        fail_msg: >-
+          NODE-01 mutation is blocked. Run the canonical read-only prechecks,
+          reconcile drift and verify the expected SSH host fingerprint first.
+
+    - name: Require a stable checkpoint ID bound to the reviewed revision
+      ansible.builtin.assert:
+        that:
+          - mission_checkpoint_id | default('') | length > 0
+
+  roles:
+    - role: prechange_checkpoint
+    - role: platform_paths
+    - role: docker_engine
+
+  post_tasks:
+    - name: Verify existing SSH service remains active
+      ansible.builtin.command: systemctl is-active ssh.service
+      register: slice002_ssh_state
+      changed_when: false
+      failed_when: slice002_ssh_state.stdout | trim != 'active'
+
+    - name: Verify UFW remains active
+      ansible.builtin.command: ufw status
+      register: slice002_ufw_state
+      changed_when: false
+      failed_when: "'Status: active' not in slice002_ufw_state.stdout"
+
+    - name: Capture effective listeners after Docker installation
+      ansible.builtin.command: ss -lntup
+      register: slice002_listeners
+      changed_when: false
+
+    - name: Capture effective nftables rules after Docker installation
+      ansible.builtin.command: nft list ruleset
+      register: slice002_nftables
+      changed_when: false
+
+    - name: Verify Docker and Compose versions
+      ansible.builtin.command: "{{ item }}"
+      loop:
+        - docker version
+        - docker compose version
+      register: slice002_runtime_versions
+      changed_when: false
+
+    - name: State workload-publication boundary explicitly
+      ansible.builtin.debug:
+        msg: >-
+          Docker foundation is installed only. This slice creates no project
+          workload, publishes no application host port and grants no user or
+          agent membership in the docker group. A pinned no-public-port test
+          image is added only after its digest is reviewed.

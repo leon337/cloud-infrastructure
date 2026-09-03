@@ -1,0 +1,67 @@
+---
+- name: Slice 001 rollback - remove only a newly introduced Tailscale client
+  hosts: execution_nodes
+  gather_facts: false
+  become: true
+
+  pre_tasks:
+    - name: Require explicit rollback evidence and confirmation
+      ansible.builtin.assert:
+        that:
+          - mission_rollback_confirmed | default(false) | bool
+          - tailscale_preexisting_before_slice is defined
+          - not (tailscale_preexisting_before_slice | bool)
+        fail_msg: >-
+          Automatic rollback is allowed only when checkpoint evidence proves
+          Tailscale was not present before Slice 001 and rollback has been
+          explicitly confirmed. If it pre-existed, restore its prior reviewed
+          state instead of removing it.
+
+    - name: Require existing SSH fallback before disabling the overlay client
+      ansible.builtin.command: systemctl is-active ssh.service
+      register: rollback_ssh_state
+      changed_when: false
+      failed_when: rollback_ssh_state.stdout | trim != 'active'
+
+  tasks:
+    - name: Disconnect Tailscale if it was enrolled later
+      ansible.builtin.command: tailscale down
+      changed_when: true
+      failed_when: false
+
+    - name: Stop and disable tailscaled
+      ansible.builtin.systemd_service:
+        name: tailscaled.service
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    - name: Remove the Tailscale package without purging runtime state
+      ansible.builtin.apt:
+        name: tailscale
+        state: absent
+        purge: false
+        autoremove: false
+
+    - name: Remove the repository definition introduced by the slice
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/tailscale.list
+        state: absent
+
+    - name: Remove the repository signing key introduced by the slice
+      ansible.builtin.file:
+        path: /usr/share/keyrings/tailscale-archive-keyring.gpg
+        state: absent
+
+  post_tasks:
+    - name: Verify SSH fallback remains active after rollback
+      ansible.builtin.command: systemctl is-active ssh.service
+      register: rollback_ssh_after
+      changed_when: false
+      failed_when: rollback_ssh_after.stdout | trim != 'active'
+
+    - name: Verify UFW remains active after rollback
+      ansible.builtin.command: ufw status
+      register: rollback_ufw_after
+      changed_when: false
+      failed_when: "'Status: active' not in rollback_ufw_after.stdout"

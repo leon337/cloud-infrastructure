@@ -1,0 +1,20 @@
+---
+- name: Create protected platform directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ platform_root_config }}", mode: "0750" }
+    - { path: "{{ platform_root_config }}/policies", mode: "0750" }
+    - { path: "{{ platform_root_config }}/env", mode: "0750" }
+    - { path: "{{ platform_root_opt }}", mode: "0755" }
+    - { path: "{{ platform_root_opt }}/compose", mode: "0755" }
+    - { path: "{{ platform_root_opt }}/bin", mode: "0755" }
+    - { path: "{{ platform_root_state }}", mode: "0750" }
+    - { path: "{{ platform_root_state }}/data", mode: "0750" }
+    - { path: "{{ platform_root_state }}/evidence", mode: "0750" }
+    - { path: "{{ platform_root_state }}/work", mode: "0750" }
+    - { path: "{{ platform_root_backup }}", mode: "0700" }

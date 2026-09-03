@@ -1,0 +1,8 @@
+---
+tailscale_package_version: ""
+tailscale_key_sha256: ""
+tailscale_repo_list_sha256: ""
+tailscale_key_url: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
+tailscale_repo_list_url: https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list
+tailscale_key_path: /usr/share/keyrings/tailscale-archive-keyring.gpg
+tailscale_repo_list_path: /etc/apt/sources.list.d/tailscale.list

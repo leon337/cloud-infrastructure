@@ -1,0 +1,74 @@
+---
+- name: Validate checkpoint identifier
+  ansible.builtin.assert:
+    that:
+      - mission_checkpoint_id is match('^[a-z0-9][a-z0-9._-]{2,79}$')
+    fail_msg: >-
+      A stable mission_checkpoint_id is required so repeated reconciliation does
+      not create unbounded snapshots.
+
+- name: Create protected prechange checkpoint directory
+  ansible.builtin.file:
+    path: "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Capture sanitized prechange operational baseline once
+  ansible.builtin.shell: |
+    set -o pipefail
+    {
+      printf 'checkpoint=%s\n' '{{ mission_checkpoint_id }}'
+      date --iso-8601=seconds
+      uname -a
+      printf '\n== packages ==\n'
+      dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' 2>/dev/null | sort
+      printf '\n== interfaces ==\n'
+      ip -brief address
+      printf '\n== routes ==\n'
+      ip route
+      printf '\n== listeners ==\n'
+      ss -lntup
+      printf '\n== ufw ==\n'
+      ufw status verbose
+      printf '\n== nftables ==\n'
+      nft list ruleset
+      printf '\n== services ==\n'
+      systemctl is-active ssh.service || true
+      systemctl is-active fail2ban.service || true
+      systemctl is-active cloud-infrastructure-config-backup.timer || true
+      systemctl is-active docker.service || true
+      systemctl is-active tailscaled.service || true
+    } > '{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/baseline.txt'
+  args:
+    executable: /bin/bash
+    creates: "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/baseline.txt"
+
+- name: Copy UFW configuration into checkpoint once
+  ansible.builtin.command:
+    argv:
+      - cp
+      - -a
+      - /etc/ufw
+      - "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/ufw"
+    creates: "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/ufw"
+
+- name: Copy apt source definitions into checkpoint once
+  ansible.builtin.command:
+    argv:
+      - cp
+      - -a
+      - /etc/apt/sources.list.d
+      - "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/sources.list.d"
+    creates: "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/sources.list.d"
+
+- name: Hash checkpoint files for local integrity evidence once
+  ansible.builtin.shell: |
+    set -o pipefail
+    find '{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}' -type f \
+      ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum \
+      > '{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/SHA256SUMS'
+  args:
+    executable: /bin/bash
+    creates: "{{ mission_checkpoint_root }}/{{ mission_checkpoint_id }}/SHA256SUMS"

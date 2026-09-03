@@ -1,0 +1,191 @@
+mission:
+  id: CODEX-EXECUTION-MISSION-001
+  authority: LEANDRO
+  canonical_repository: leon337/cloud-infrastructure
+  base_branch: main
+  execution_branch: codex/mission-001
+  base_sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
+  scope: DEV_LAB_ONLY
+  status: IN_PROGRESS
+  production_promotion: NOT_AUTHORIZED
+  credential_rotation: DEFERRED_BY_HUMAN_DECISION
+
+recovery:
+  github:
+    status: VERIFIED
+    branch: main
+    sha: 987c5359ea948d1903355e98177ae1eb2f1849d5
+    verified_at_utc: 2026-08-16T09:26:43Z
+  node_01:
+    canonical_snapshot_at_utc: 2026-08-16T01:58:02Z
+    live_independent_revalidation: BLOCKED_NO_AUTHENTICATED_EXECUTION_CHANNEL
+    mutation_authorized_by_q40_d: true
+    mutation_allowed_now: false
+    blocker: HG-EXECUTION-ACCESS-001
+    expected_ssh_host_fingerprint: SHA256:sb3hPt85xBueteG/kVVVXZs1Wf/KCO3DSeY25fvGkj4
+    ssh_principal: ubuntu
+    secret_material_in_repo: false
+
+slice_000:
+  name: REPRODUCIBLE_FOUNDATION_BASELINE
+  status: REPOSITORY_BASELINE_COMPLETE_WAITING_FOR_LIVE_NODE_PRECHECK
+  repository_work:
+    branch_created: true
+    mission_acceptance_recovery_report: DELIVERED
+    consolidated_requirements: CREATED
+    target_architecture: CREATED
+    threat_model_and_autonomy_boundaries: CREATED
+    infrastructure_blueprint_v1: CREATED
+    revised_implementation_roadmap: CREATED
+    component_inventory: CREATED
+    foundations_runbook: CREATED
+    foundation_technology_mapping: CREATED
+    workflow_event_technology_mapping: CREATED
+    data_secrets_observability_technology_mapping: CREATED
+    edge_identity_artifacts_ai_technology_mapping: CREATED
+    readonly_precheck: CREATED_NOT_EXECUTED
+    readonly_precheck_files:
+      - infra/ansible/ansible.cfg
+      - infra/ansible/inventory/node-01.example.yml
+      - infra/ansible/playbooks/precheck-readonly.yml
+      - infra/ansible/playbooks/precheck-privileged-readonly.yml
+      - infra/ansible/README.md
+    slice_001_apply_contract: CREATED_NOT_EXECUTED
+    slice_001_rollback_contract: CREATED_NOT_EXECUTED
+    slice_002_apply_contract: CREATED_NOT_EXECUTED
+    slice_002_rollback_contract: CREATED_NOT_EXECUTED
+    repository_ci:
+      workflow: mission-001-validate
+      validated_sha: f2716e367d302aca700a5f41451e3fa2b7800f00
+      run_id: 31940420737
+      conclusion: SUCCESS
+      checks:
+        - REPOSITORY_WHITESPACE
+        - YAML_PARSE
+        - ANSIBLE_SYNTAX
+        - COMMON_SECRET_PATTERN_SCAN
+        - ANSIBLE_AUTH_SECRET_VARIABLE_SCAN
+    evidence:
+      - evidence/mission-001/slice-000/repository-validation.md
+    review_checkpoint:
+      pull_request: 1
+      state: OPEN_DRAFT
+      base: main
+      head: codex/mission-001
+      merged: false
+  node_changes_performed: false
+  production_changes_performed: false
+  credentials_rotated: false
+
+technology_mapping:
+  host_reconciliation:
+    technology: Ansible
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  container_runtime:
+    technology: Docker_Engine_and_Docker_Compose
+    status: BINDING_SELECTED
+  private_management_overlay:
+    technology: Tailscale
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  host_firewall:
+    technology: UFW
+    status: PRESERVE_EXISTING
+  authorization_policy_engine:
+    technology: Open_Policy_Agent
+    status: SELECTED_FOR_PLATFORM_CORE
+  identity_provider:
+    technology: Keycloak
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  capability_core_runtime:
+    technology: Nodejs_24_LTS_TypeScript_Fastify_v5
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  mcp_adapter:
+    technology: Official_MCP_TypeScript_SDK_Streamable_HTTP
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  workflow_engine:
+    technology: Temporal
+    topology: SELF_HOSTED_SINGLE_NODE_FIRST_POSTGRESQL_BACKED_DISTRIBUTED_CAPABLE
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  event_backbone:
+    technology: NATS_JetStream
+    topology: SINGLE_NODE_FILE_STORE_FIRST_CLUSTER_READY
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  relational_data_plane:
+    technology: PostgreSQL_18
+    status: SELECTED_WITH_TEMPORAL_COMPATIBILITY_GATE
+  secret_store:
+    technology: OpenBao_Integrated_Storage
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  object_storage:
+    technology: Garage_S3
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  cache:
+    technology: Valkey
+    role: CACHE_ONLY_NOT_CANONICAL_STATE
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  observability:
+    technology:
+      - OpenTelemetry_Collector
+      - Prometheus
+      - Grafana_Loki
+      - Grafana
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  preview_gateway:
+    technology: Traefik_v3_File_Provider
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  dev_dns:
+    technology: WILDCARD_OPERATOR_OWNED_DOMAIN
+    status: SELECTED_PATTERN_ACTIVATION_WAITING_FOR_DOMAIN_FACT
+  automatic_tls:
+    technology: Traefik_ACME_HTTP01
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  canonical_oci_registry:
+    technology: GitHub_Container_Registry
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  local_oci_cache:
+    technology: zot
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  agent_gateway:
+    technology: Nodejs_24_LTS_TypeScript_Fastify_v5
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+  ai_model_gateway:
+    technology: LiteLLM_Proxy
+    status: SELECTED_FOR_INCREMENTAL_VALIDATION
+
+active_human_gates:
+  - id: HG-EXECUTION-ACCESS-001
+    status: WAITING_FOR_HUMAN_GATE
+    purpose: PROVIDE_SECURE_EXISTING_AUTHENTICATED_READONLY_EXECUTION_PATH_TO_NODE_01
+    constraints:
+      - DO_NOT_PASTE_PRIVATE_SSH_KEY_IN_CHAT
+      - DO_NOT_VERSION_PRIVATE_KEY_OR_PASSWORD
+      - DO_NOT_ROTATE_CREDENTIALS
+      - DO_NOT_WEAKEN_SSH_POLICY
+      - STOP_ON_UNEXPECTED_HOST_FINGERPRINT
+
+anticipated_human_gates:
+  - id: HG-OPENBAO-RECOVERY-001
+    status: NOT_YET_REACHED
+    purpose: SECURELY_RECEIVE_AND_STORE_INITIAL_OPENBAO_RECOVERY_MATERIAL
+  - id: HG-IDENTITY-BOOTSTRAP-001
+    status: NOT_YET_REACHED
+    purpose: SECURELY_ESTABLISH_FIRST_PLATFORM_IDENTITY_ADMINISTRATOR
+  - id: HG-DEV-DNS-001
+    status: NOT_YET_REACHED
+    purpose: DESIGNATE_OPERATOR_OWNED_DEV_DOMAIN_OR_SUBDOMAIN_FOR_PUBLIC_PREVIEWS
+
+findings_carried_forward:
+  - id: FND-BACKUP-001
+    status: MITIGATED_OPEN
+  - id: FND-CPU-001
+    status: OBSERVED_NEEDS_ANALYSIS
+  - id: FND-CLOUDINIT-001
+    status: CONFIRMED_OPEN
+
+next_actions:
+  independent_safe: []
+  blocked_on_human_gate:
+    - AUTHENTICATED_LIVE_NODE_01_PRECHECK
+    - RECORD_GITHUB_NODE_DRIFT
+    - PIN_SLICE_001_UPSTREAM_VERSION_AND_CHECKSUMS
+    - FIRST_NODE_01_MUTATION

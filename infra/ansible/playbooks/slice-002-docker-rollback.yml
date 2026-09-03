@@ -1,0 +1,86 @@
+---
+- name: Slice 002 rollback - remove only a foundation-only Docker installation
+  hosts: execution_nodes
+  gather_facts: false
+  become: true
+
+  pre_tasks:
+    - name: Require explicit rollback evidence and confirmation
+      ansible.builtin.assert:
+        that:
+          - mission_rollback_confirmed | default(false) | bool
+          - docker_packages_preexisting_before_slice is defined
+          - not (docker_packages_preexisting_before_slice | bool)
+          - docker_foundation_only_confirmed | default(false) | bool
+        fail_msg: >-
+          Automatic rollback is allowed only when checkpoint evidence proves
+          the selected Docker packages were introduced by Slice 002 and no
+          later platform/project workload depends on this runtime.
+
+    - name: Require existing SSH fallback before stopping Docker
+      ansible.builtin.command: systemctl is-active ssh.service
+      register: rollback_ssh_state
+      changed_when: false
+      failed_when: rollback_ssh_state.stdout | trim != 'active'
+
+  tasks:
+    - name: Stop and disable Docker service
+      ansible.builtin.systemd_service:
+        name: docker.service
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    - name: Stop and disable Docker socket
+      ansible.builtin.systemd_service:
+        name: docker.socket
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    - name: Remove Docker foundation packages without purging data
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: absent
+        purge: false
+        autoremove: false
+
+    - name: Remove Docker repository definition introduced by the slice
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/docker.sources
+        state: absent
+
+    - name: Remove Docker repository signing key introduced by the slice
+      ansible.builtin.file:
+        path: /etc/apt/keyrings/docker.asc
+        state: absent
+
+  post_tasks:
+    - name: Preserve Docker persistent data for forensic/recovery use
+      ansible.builtin.stat:
+        path: /var/lib/docker
+      register: rollback_docker_data
+
+    - name: Report Docker persistent data preservation
+      ansible.builtin.debug:
+        msg: >-
+          /var/lib/docker exists={{ rollback_docker_data.stat.exists }}. This
+          rollback never deletes Docker data, volumes or project persistent
+          state.
+
+    - name: Verify SSH fallback remains active after rollback
+      ansible.builtin.command: systemctl is-active ssh.service
+      register: rollback_ssh_after
+      changed_when: false
+      failed_when: rollback_ssh_after.stdout | trim != 'active'
+
+    - name: Verify UFW remains active after rollback
+      ansible.builtin.command: ufw status
+      register: rollback_ufw_after
+      changed_when: false
+      failed_when: "'Status: active' not in rollback_ufw_after.stdout"
