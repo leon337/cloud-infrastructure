@@ -20,7 +20,7 @@ continua tendo precedência para fatos mutáveis.
 - Inventário/base: concluído.
 - RECOVERY-P1: concluído.
 - RECOVERY-P2: concluído, off-host automático + restore smoke verificados.
-- RUNNER-ISOLATION-P1: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED`; PoC legado retirado; restart ocorreu em 02/09 e o probe pós-restart `33992772737` confirmou hooks carregados, porém rejeitados pelo runner por path extensionless. Wrapper `.sh` preparado; ativação live continua atrás de gate separado.
+- RUNNER-ISOLATION-P1: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`; PoC legado retirado; restart ocorreu em 02/09 e o probe pós-restart `33992772737` confirmou hooks carregados, porém rejeitados pelo runner por path extensionless. Wrapper `.sh` ativado live em 05/09; run `33998487949` confirmou STARTED/COMPLETED com `RUNNER_ISOLATION_GUARD_PASS` e prova cross-job PASS. Próximo gate é revisão/merge humano do PR #47.
 - SSH_KEY_GOVERNANCE_P1: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso notebook→VPS, chave preservada e `authorized_keys` inalterado.
 - Próxima prioridade: `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
 - Qualquer hardening futuro da `dsh-tunnel...` deve preservar o acesso interativo atual.

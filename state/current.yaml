@@ -76,29 +76,29 @@ project:
     platform_f1_2b: COMPLETE
     recovery_p1: COMPLETE
     recovery_p2: COMPLETE
-    runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED
+    runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
   next_exact_step: F1_2C_NODE01_ROLLOUT_HUMAN_GATE
 
 runner_isolation:
-  status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED
+  status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
   legacy_poc: RETIRED
   live_cleanup: PASS
   cross_job_proof: PASS
   workflow_policy: PASS
   recovery_regression: PASS
-  global_hook: LOADED_REJECTED_INVALID_SCRIPT_EXTENSION
-  global_hook_restart_required: true
-  global_hook_activation_authorized: false
-  global_hook_last_probe_run: 33992772737
-  global_hook_last_probe_result: FAIL_INVALID_SCRIPT_EXTENSION
+  global_hook: ACTIVE_VERIFIED
+  global_hook_restart_required: false
+  global_hook_activation_authorized: true
+  global_hook_last_probe_run: 33998487949
+  global_hook_last_probe_result: PASS_ACTIVE_VERIFIED
   global_hook_remediation_candidate: config/runner/cloud-infrastructure-runner-isolation-guard.sh
-  next_exact_step: RUNNER_ISOLATION_GLOBAL_HOOK_ACTIVATION_HUMAN_GATE
+  next_exact_step: RUNNER_ISOLATION_GLOBAL_HOOK_PR_MERGE_HUMAN_GATE
   service_boundary_bypassed: false
   provenance_workflow_sha: 025a3f784e4f984e10c9cbf087682c43304394d8
   provenance_run: 32576011235
   implementation_candidate_sha: cf96f258f517ea1e520f989ca321e7c24e4aaf24
-  cross_job_proof_run: 33170001699
+  cross_job_proof_run: 33998487949
 
 ssh_key_governance:
   status: CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED

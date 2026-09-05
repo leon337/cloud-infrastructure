@@ -45,14 +45,14 @@ def main() -> int:
             "REQUIRES_REVIEW",
             "IN_PROGRESS_DIAGNOSTIC_REPRODUCTION",
             "REPOSITORY_HYGIENE_REVALIDATED",
-            "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED",
+            "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
             "F1_2C_NODE01_ROLLOUT_HUMAN_GATE",
         ):
             require_token(path, token)
 
     for path in (Path("README.md"), Path("ROADMAP-CHECKLIST.md")):
-        require_token(path, "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED")
+        require_token(path, "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED")
         require_token(path, "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED")
         require_token(path, "F1_2C_NODE01_ROLLOUT_HUMAN_GATE")
 
@@ -90,17 +90,17 @@ def main() -> int:
         raise AssertionError("source snapshot executive projection must remain README.md")
 
     runner = state.get("runner_isolation", {})
-    if runner.get("status") != "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED":
+    if runner.get("status") != "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED":
         raise AssertionError("runner isolation state drift")
-    if runner.get("global_hook") != "LOADED_REJECTED_INVALID_SCRIPT_EXTENSION":
+    if runner.get("global_hook") != "ACTIVE_VERIFIED":
         raise AssertionError("runner global hook boundary drift")
-    if runner.get("global_hook_last_probe_run") != 33992772737:
+    if runner.get("global_hook_last_probe_run") != 33998487949:
         raise AssertionError("runner global hook probe run drift")
-    if runner.get("global_hook_last_probe_result") != "FAIL_INVALID_SCRIPT_EXTENSION":
+    if runner.get("global_hook_last_probe_result") != "PASS_ACTIVE_VERIFIED":
         raise AssertionError("runner global hook probe result drift")
-    if runner.get("global_hook_activation_authorized") is not False:
-        raise AssertionError("runner global hook activation must remain unauthorized")
-    if runner.get("next_exact_step") != "RUNNER_ISOLATION_GLOBAL_HOOK_ACTIVATION_HUMAN_GATE":
+    if runner.get("global_hook_activation_authorized") is not True:
+        raise AssertionError("runner global hook activation authorization receipt drift")
+    if runner.get("next_exact_step") != "RUNNER_ISOLATION_GLOBAL_HOOK_PR_MERGE_HUMAN_GATE":
         raise AssertionError("runner global hook next gate drift")
     ssh = state.get("ssh_key_governance", {})
     if ssh.get("status") != "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED":

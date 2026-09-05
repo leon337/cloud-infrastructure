@@ -37,7 +37,9 @@ Estados permitidos:
 - `ACTIVE_VERIFIED`: novo Listener contém os nomes das duas variáveis e um job real mostra o guard no início/fim;
 - `BLOCKED_PRIVILEGE`: restart recusado pela política do host; manter o runner ativo e não improvisar outro supervisor.
 
-## Defesa enquanto o hook global não está ativo
+Evidência live de 05/09/2026: após autorização humana, o wrapper `.sh` foi instalado no NODE-01, o Listener reiniciado e o workflow `runner-isolation-proof` run `33998487949` terminou `success`; STARTED e COMPLETED registraram `RUNNER_ISOLATION_GUARD_PASS` e a verificação cross-job registrou `RUNNER_ISOLATION_CROSS_JOB=PASS`.
+
+## Defesa explícita complementar nos workflows self-hosted
 
 Todo workflow self-hosted versionado no `main` deve chamar o guard explicitamente. `scripts/check_runner_isolation.py` rejeita:
 

@@ -80,9 +80,9 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 - [x] Recovery off-host revalidado sem preservar o daemon legado (`RECOVERY_P2=PASS`).
 - [x] Provar carregamento pós-restart: run `33992772737` confirmou STARTED/COMPLETED configurados, mas ambos foram rejeitados por path sem extensão suportada.
 - [x] Preparar wrapper `.sh` canônico e contrato TDD para extensão administrativa suportada.
-- [ ] Em gate separado, instalar o wrapper live, atualizar `.env`, reiniciar runner idle e repetir a prova cross-job.
+- [x] Em gate separado, instalar o wrapper live, atualizar `.env`, reiniciar runner idle e repetir a prova cross-job: run `33998487949` PASS, hooks STARTED/COMPLETED `RUNNER_ISOLATION_GUARD_PASS`.
 
-**Estado:** `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED`.
+**Estado:** `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`.
 
 **Próximo passo exato da missão:** `SSH_KEY_GOVERNANCE_P1`.
 

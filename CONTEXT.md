@@ -44,7 +44,7 @@ Fatos que não podem ser promovidos além da evidência:
 - produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`;
 - Repository Hygiene: `REPOSITORY_HYGIENE_REVALIDATED`; a compatibilidade do PR #19 com a toolchain canônica foi comprovada e o blocker histórico de secrets foi resolvido.
 - SSH key governance: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso da `dsh-tunnel...` no acesso notebook→VPS; chave preservada e `authorized_keys` inalterado.
-- Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED`; PoC legado removido, policy/guard canônicos e prova cross-job histórica PASS; após restart real, run `33992772737` provou que o hook global foi carregado mas rejeitado por extensão inválida. Wrapper `.sh` preparado; `.env` + restart ainda não autorizados.
+- Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`; PoC legado removido, policy/guard canônicos e prova cross-job histórica PASS; após restart real, run `33992772737` provou que o hook global foi carregado mas rejeitado por extensão inválida. Wrapper `.sh` ativado após autorização de LEANDRO; run `33998487949` confirmou hooks STARTED/COMPLETED e `RUNNER_ISOLATION_CROSS_JOB=PASS`. Merge do PR #47 permanece não autorizado.
 
 ## Toolchain canônica
 
