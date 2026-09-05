@@ -78,9 +78,11 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 - [x] Guard obrigatório aplicado aos workflows self-hosted canônicos.
 - [x] Prova real em dois jobs no mesmo `node--1-mcf-control`: `RUNNER_ISOLATION_CROSS_JOB=PASS`.
 - [x] Recovery off-host revalidado sem preservar o daemon legado (`RECOVERY_P2=PASS`).
-- [ ] Ativar hooks globais `ACTIONS_RUNNER_HOOK_JOB_STARTED/COMPLETED` após restart autorizado do serviço; configuração já instalada, mas ainda não carregada.
+- [x] Provar carregamento pós-restart: run `33992772737` confirmou STARTED/COMPLETED configurados, mas ambos foram rejeitados por path sem extensão suportada.
+- [x] Preparar wrapper `.sh` canônico e contrato TDD para extensão administrativa suportada.
+- [ ] Em gate separado, instalar o wrapper live, atualizar `.env`, reiniciar runner idle e repetir a prova cross-job.
 
-**Estado:** `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING`.
+**Estado:** `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED`.
 
 **Próximo passo exato da missão:** `SSH_KEY_GOVERNANCE_P1`.
 

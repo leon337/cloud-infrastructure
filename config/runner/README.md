@@ -14,22 +14,26 @@ Instalação live esperada:
 
 ```text
 ~/.local/libexec/cloud-infrastructure-runner-isolation-guard
+~/.local/libexec/cloud-infrastructure-runner-isolation-guard.sh
 ```
+
+O arquivo `.sh` é o wrapper administrativo do GitHub Actions e delega ao guard canônico extensionless. O wrapper existe porque hooks administrativos do runner aceitam somente paths com extensão `.sh`, `.ps1` ou `.js`.
 
 ## Hooks oficiais
 
 O runner deve apontar os hooks de início e conclusão para o guard no arquivo `~/actions-runner/.env`:
 
 ```text
-ACTIONS_RUNNER_HOOK_JOB_STARTED=/home/ubuntu/.local/libexec/cloud-infrastructure-runner-isolation-guard
-ACTIONS_RUNNER_HOOK_JOB_COMPLETED=/home/ubuntu/.local/libexec/cloud-infrastructure-runner-isolation-guard
+ACTIONS_RUNNER_HOOK_JOB_STARTED=/home/ubuntu/.local/libexec/cloud-infrastructure-runner-isolation-guard.sh
+ACTIONS_RUNNER_HOOK_JOB_COMPLETED=/home/ubuntu/.local/libexec/cloud-infrastructure-runner-isolation-guard.sh
 ```
 
-Alterar `.env` não ativa os hooks no processo já em execução. O GitHub Actions runner precisa de **restart** para recarregar essas variáveis. O restart deve ocorrer somente com runner idle e por um caminho autorizado; não contornar systemd, sudo ou HUMAN_GATE.
+O path do hook precisa terminar em uma extensão suportada pelo runner; um path extensionless é rejeitado no `Set up runner` antes dos steps do job. Alterar `.env` não ativa os hooks no processo já em execução. O GitHub Actions runner precisa de **restart** para recarregar essas variáveis. O restart deve ocorrer somente com runner idle e por um caminho autorizado; não contornar systemd, sudo ou HUMAN_GATE.
 
 Estados permitidos:
 
 - `CONFIGURED_NOT_ACTIVE`: arquivo `.env` e guard instalados, mas processo atual ainda não foi reiniciado/provado;
+- `LOADED_REJECTED_INVALID_SCRIPT_EXTENSION`: Listener recarregado e hook reconhecido, porém rejeitado antes dos steps porque o path não termina em `.sh`, `.ps1` ou `.js`;
 - `ACTIVE_VERIFIED`: novo Listener contém os nomes das duas variáveis e um job real mostra o guard no início/fim;
 - `BLOCKED_PRIVILEGE`: restart recusado pela política do host; manter o runner ativo e não improvisar outro supervisor.
 

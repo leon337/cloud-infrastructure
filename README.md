@@ -20,8 +20,7 @@ somente leitura no NODE-01.
 
 **Atualização operacional de 28/08/2026:** RECOVERY-P1/P2 concluídos e
 `RUNNER_ISOLATION_P1` comprovado no NODE-01. O PoC persistente foi retirado e a
-prova real entre dois jobs passou; o hook global do runner está configurado, mas
-permanece `CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE` até restart autorizado do serviço.
+prova real entre dois jobs passou. Em 05/09/2026, após o restart real de 02/09, o runner carregou os hooks globais, mas o run `33992772737` os rejeitou antes dos steps porque o path administrativo não terminava em `.sh`, `.ps1` ou `.js`. O estado atual é `LOADED_REJECTED_INVALID_SCRIPT_EXTENSION`; a correção proposta usa um wrapper `.sh` e continua exigindo gate separado para alterar `.env` e reiniciar o serviço.
 
 **SSH key governance em 28/08/2026:** a provenance da `dsh-tunnel...` foi confirmada
 por histórico do `ubuntu` e auth log. LEANDRO confirmou que essa chave é usada no fluxo
@@ -49,7 +48,7 @@ bloqueados pelo HUMAN_GATE.
 | Control Bridge G1 | `PASS_REAL_NODE_01_ROUNDTRIP` | transporte curto pelo runner comprovado |
 | Control Bridge G2-A | `PASS_REAL_NODE_01_READ_ONLY` | leitura confinada e recusa de escape comprovadas |
 | Control Bridge G2-B | `TASK_8_FAILED_ATTEMPT_3` | Tasks 1–7 concluídas; prova descartável completa ainda não passou |
-| Runner isolation | `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING` | PoC persistente retirado; policy + guard canônicos e prova cross-job real passaram; hook global aguarda restart autorizado |
+| Runner isolation | `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_EXTENSION_REMEDIATION_REQUIRED` | PoC retirado e prova cross-job histórica PASS; probe pós-restart `33992772737` provou hook carregado, porém rejeitado por extensão inválida; wrapper `.sh` em remediação |
 | SSH key governance | `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED` | `dsh-tunnel...` é usada no acesso notebook→VPS; manter a chave e preservar esse fluxo em qualquer hardening futuro |
 | GitHub `main` | `DOCUMENTATION_AND_INTEGRATION_DRIFT` | não contém ainda as linhagens completas da plataforma e do bridge |
 | Produção externa | `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` | nenhuma promoção para produção está autorizada |
@@ -61,9 +60,7 @@ bloqueados pelo HUMAN_GATE.
 F1_2C_NODE01_ROLLOUT_HUMAN_GATE
 ```
 
-Hardening pendente separado: ativar os hooks globais STARTED/COMPLETED do runner
-somente em uma janela de restart autorizada do serviço. Não contornar o boundary de
-`systemd`/sudo para isso. F1.2c e network convergence continuam em suas frentes próprias.
+Hardening pendente separado: aplicar o wrapper administrativo `.sh`, apontar STARTED/COMPLETED para ele e reiniciar o runner somente em gate humano específico. O run `33992772737` é a evidência do erro de extensão; não contornar o boundary de `systemd`/sudo. F1.2c e network convergence continuam em suas frentes próprias.
 
 ## Estado observado da VPS
 
