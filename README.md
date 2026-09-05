@@ -60,7 +60,7 @@ bloqueados pelo HUMAN_GATE.
 F1_2C_NODE01_ROLLOUT_HUMAN_GATE
 ```
 
-Hardening do runner concluído live: o run `33992772737` preserva a evidência do erro de extensão e o run `33998487949` comprova o wrapper `.sh` ativo em STARTED/COMPLETED e a prova cross-job PASS. Merge do PR #47 continua atrás de gate humano; não contornar o boundary de `systemd`/sudo. F1.2c e network convergence continuam em suas frentes próprias.
+Hardening do runner concluído live: o run `33992772737` preserva a evidência do erro de extensão e o run `33998487949` comprova o wrapper `.sh` ativo em STARTED/COMPLETED e a prova cross-job PASS. PR #47 foi integrado em `main@65717400a1c976f0d8a634411b69515519dd87cb`; não há ação pendente na trilha de runner isolation. Não contornar o boundary de `systemd`/sudo. F1.2c e network convergence continuam em suas frentes próprias.
 
 ## Estado observado da VPS
 

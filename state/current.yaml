@@ -93,7 +93,7 @@ runner_isolation:
   global_hook_last_probe_run: 33998487949
   global_hook_last_probe_result: PASS_ACTIVE_VERIFIED
   global_hook_remediation_candidate: config/runner/cloud-infrastructure-runner-isolation-guard.sh
-  next_exact_step: RUNNER_ISOLATION_GLOBAL_HOOK_PR_MERGE_HUMAN_GATE
+  next_exact_step: NONE
   service_boundary_bypassed: false
   provenance_workflow_sha: 025a3f784e4f984e10c9cbf087682c43304394d8
   provenance_run: 32576011235

@@ -62,7 +62,7 @@ def main() -> int:
         ("runner_isolation", "global_hook_last_probe_run"): 33998487949,
         ("runner_isolation", "global_hook_last_probe_result"): "PASS_ACTIVE_VERIFIED",
         ("runner_isolation", "global_hook_remediation_candidate"): "config/runner/cloud-infrastructure-runner-isolation-guard.sh",
-        ("runner_isolation", "next_exact_step"): "RUNNER_ISOLATION_GLOBAL_HOOK_PR_MERGE_HUMAN_GATE",
+        ("runner_isolation", "next_exact_step"): "NONE",
         ("runner_isolation", "service_boundary_bypassed"): False,
         ("ssh_key_governance", "status"): "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
         ("ssh_key_governance", "dsh_key", "provenance"): "CONFIRMED_UBUNTU_HISTORY_AND_AUTH_LOG",

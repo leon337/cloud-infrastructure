@@ -100,7 +100,7 @@ def main() -> int:
         raise AssertionError("runner global hook probe result drift")
     if runner.get("global_hook_activation_authorized") is not True:
         raise AssertionError("runner global hook activation authorization receipt drift")
-    if runner.get("next_exact_step") != "RUNNER_ISOLATION_GLOBAL_HOOK_PR_MERGE_HUMAN_GATE":
+    if runner.get("next_exact_step") != "NONE":
         raise AssertionError("runner global hook next gate drift")
     ssh = state.get("ssh_key_governance", {})
     if ssh.get("status") != "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED":
