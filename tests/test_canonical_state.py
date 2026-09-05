@@ -70,13 +70,19 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
         self.assertEqual(self.state["project"]["next_exact_step"], "F1_2C_NODE01_ROLLOUT_HUMAN_GATE")
 
-    def test_runner_isolation_state_is_verified_with_hook_restart_pending(self):
+    def test_runner_isolation_state_records_active_verified_global_hook(self):
         runner = self.state["runner_isolation"]
-        self.assertEqual(runner["status"], "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_RESTART_PENDING")
+        self.assertEqual(runner["status"], "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED")
         self.assertEqual(runner["live_cleanup"], "PASS")
         self.assertEqual(runner["cross_job_proof"], "PASS")
         self.assertEqual(runner["workflow_policy"], "PASS")
-        self.assertEqual(runner["global_hook"], "CONFIGURED_NOT_ACTIVE_BLOCKED_PRIVILEGE")
+        self.assertEqual(runner["global_hook"], "ACTIVE_VERIFIED")
+        self.assertFalse(runner["global_hook_restart_required"])
+        self.assertTrue(runner["global_hook_activation_authorized"])
+        self.assertEqual(runner["global_hook_last_probe_run"], 33998487949)
+        self.assertEqual(runner["global_hook_last_probe_result"], "PASS_ACTIVE_VERIFIED")
+        self.assertEqual(runner["cross_job_proof_run"], 33998487949)
+        self.assertEqual(runner["next_exact_step"], "RUNNER_ISOLATION_GLOBAL_HOOK_PR_MERGE_HUMAN_GATE")
 
 
 if __name__ == "__main__":

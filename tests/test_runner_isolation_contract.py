@@ -84,6 +84,44 @@ class RunnerIsolationContractTests(unittest.TestCase):
         self.assertGreaterEqual(text.count("cloud-infrastructure-runner-isolation-guard"), 2)
         self.assertNotIn("RUNNER_TRACKING_ID", text)
 
+    def test_runner_admin_hooks_use_supported_script_extension(self):
+        doc = Path("config/runner/README.md").read_text(encoding="utf-8")
+        hook_lines = [
+            line.split("=", 1)[1].strip()
+            for line in doc.splitlines()
+            if line.startswith("ACTIONS_RUNNER_HOOK_JOB_")
+        ]
+        self.assertEqual(len(hook_lines), 2)
+        for hook_path in hook_lines:
+            self.assertTrue(
+                hook_path.endswith((".sh", ".ps1", ".js")),
+                f"unsupported admin hook extension: {hook_path}",
+            )
+
+    def test_runner_admin_hook_wrapper_delegates_to_guard(self):
+        hook = Path("config/runner/cloud-infrastructure-runner-isolation-guard.sh")
+        self.assertTrue(hook.is_file())
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runtime = root / "runtime"
+            home = root / "home"
+            runtime.mkdir()
+            home.mkdir()
+            sock_path = runtime / "mcf-mission2-terminal.sock"
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.bind(str(sock_path))
+            sock.close()
+            result = subprocess.run(
+                ["bash", str(hook)],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={**__import__("os").environ, "RUNNER_ISOLATION_RUNTIME_DIR": str(runtime), "RUNNER_ISOLATION_HOME": str(home)},
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse(sock_path.exists())
+            self.assertIn("RUNNER_ISOLATION_GUARD_PASS", result.stdout)
+
     def test_runner_guard_activation_is_documented(self):
         doc = Path("config/runner/README.md")
         self.assertTrue(doc.is_file())
