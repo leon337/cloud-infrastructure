@@ -115,6 +115,28 @@ sudo ip route replace 169.58.128.0/17 via 169.58.128.1 dev eth0
 ip -o -4 route show 169.58.128.0/17 | grep -Eq '^169\.58\.128\.0/17 via 169\.58\.128\.1 dev eth0([[:space:]]|$)' || fail provider_postboot_route_missing
 ! ip -4 route show 169.58.128.0/17 dev eth0 scope link | grep -q . || fail provider_postboot_direct_route_present
 echo PROVIDER_POSTBOOT_ROUTE=PASS
+# Reproduce NODE-01 postboot host-route semantics where systemd-networkd includes protocol metadata.
+sudo ip route replace 169.58.128.1/32 dev eth0 proto static scope link
+postboot_host_route=$(ip -o -4 route show 169.58.128.1/32 table main dev eth0)
+printf 'POSTBOOT_HOST_ROUTE_OUTPUT=%s\n' "$postboot_host_route"
+printf '%s\n' "$postboot_host_route" | awk -v gateway="169.58.128.1" '
+  NF == 0 { next }
+  {
+    destination = $1
+    proto_static = 0
+    scope_link = 0
+    via_seen = 0
+    for (i = 2; i <= NF; i++) {
+      if ($i == "proto" && $(i + 1) == "static") proto_static = 1
+      if ($i == "scope" && $(i + 1) == "link") scope_link = 1
+      if ($i == "via") via_seen = 1
+    }
+    if ((destination == gateway || destination == gateway "/32") && proto_static && scope_link && !via_seen) valid++
+    else invalid = 1
+  }
+  END { exit (invalid || valid != 1) ? 1 : 0 }
+' || fail postboot_host_route_proto_static_missing
+echo POSTBOOT_HOST_ROUTE_PROTO_STATIC=PASS
 sudo env "${ENV[@]}" "$OP" check
 echo POSTBOOT_P2_CHECK=PASS
 

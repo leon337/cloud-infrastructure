@@ -134,7 +134,25 @@ provider_subnet_route_safe() {
 }
 
 host_route_present() {
-  ip -4 route show "$GATEWAY/32" dev "$INTERFACE" | grep -Eq "^$GATEWAY([/][0-9]+)? dev $INTERFACE scope link|^$GATEWAY([/][0-9]+)? scope link"
+  ip -o -4 route show "$GATEWAY/32" table main dev "$INTERFACE" | awk \
+    -v gateway="$GATEWAY" '
+      NF == 0 { next }
+      {
+        destination = $1
+        scope_ok = 0
+        via_seen = 0
+        for (i = 2; i <= NF; i++) {
+          if ($i == "scope" && $(i + 1) == "link") scope_ok = 1
+          if ($i == "via") via_seen = 1
+        }
+        if ((destination == gateway || destination == gateway "/32") && scope_ok && !via_seen) {
+          valid++
+          next
+        }
+        invalid = 1
+      }
+      END { exit (invalid || valid != 1) ? 1 : 0 }
+    '
 }
 
 admin_state_is() {
