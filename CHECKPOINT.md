@@ -28,13 +28,13 @@ não autoriza mudança material por si só.
 
 ## Próxima ação exata
 
-`CANONICAL_PR_BRANCH_HYGIENE`
+`FINAL_TRANSVERSAL_AUDIT`
 
 A autorização B de LEANDRO foi consumida por update + reboot controlado. O kernel `6.8.0-139-generic`
 está ativo, o sistema está `running` com zero failed units, e o checker P2 corrigido `9070c24...`
 retornou `NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED`. DSH e 9Router responderam HTTP 200/307
 na pós-verificação independente. A PR #51 foi integrada em `fix/f1-2c-systemd-runtime-lock@d5508e1...` e
-o resultado integrado passou 166/166 testes. A PR #50 também foi integrada em `main@c7315e43...`, com CI pós-merge SUCCESS e 35/35 testes em clone isolado. A integração pós-reboot está encerrada. O próximo trabalho operacional é `CANONICAL_PR_BRANCH_HYGIENE`.
+o resultado integrado passou 166/166 testes. A PR #50 também foi integrada em `main@c7315e43...`, com CI pós-merge SUCCESS e 35/35 testes em clone isolado. A integração pós-reboot está encerrada. A higiene canônica classificou 68 branches, fechou 8 PRs legadas com evidência preservada, manteve a PR #21 Draft e não deletou branches. O próximo trabalho operacional é `FINAL_TRANSVERSAL_AUDIT`.
 
 ## Boundaries
 
@@ -55,6 +55,7 @@ o resultado integrado passou 166/166 testes. A PR #50 também foi integrada em `
 - Checkpoint fresco: `evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260906.md`.
 - Reconciliação atual: `evidence/vps/LIVE-STATE-RECONCILIATION-20260905.md`.
 - Pós-reboot: `evidence/post-reboot/POST-REBOOT-LIVE-VERIFICATION-20260906.md`.
+- PR/branch hygiene: `evidence/repository-hygiene/PR-BRANCH-HYGIENE-20260906.yaml`.
 
 ## Toolchain canônica
 
@@ -70,4 +71,4 @@ o resultado integrado passou 166/166 testes. A PR #50 também foi integrada em `
 - ShellCheck no CI hospedado;
 - policy de isolamento do runner.
 
-**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_NEXT`.
+**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_CLASSIFIED_FINAL_AUDIT_NEXT`.
