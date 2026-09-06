@@ -28,12 +28,13 @@ não autoriza mudança material por si só.
 
 ## Próxima ação exata
 
-`HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION`
+`HUMAN_GATE_PR50_CANONICAL_MERGE`
 
 A autorização B de LEANDRO foi consumida por update + reboot controlado. O kernel `6.8.0-139-generic`
 está ativo, o sistema está `running` com zero failed units, e o checker P2 corrigido `9070c24...`
 retornou `NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED`. DSH e 9Router responderam HTTP 200/307
-na pós-verificação independente. O próximo gate é somente a decisão de integração pós-reboot.
+na pós-verificação independente. A PR #51 foi integrada em `fix/f1-2c-systemd-runtime-lock@d5508e1...` e
+o resultado integrado passou 166/166 testes. O próximo gate é somente o merge canônico da PR #50.
 
 ## Boundaries
 
@@ -69,4 +70,4 @@ na pós-verificação independente. O próximo gate é somente a decisão de int
 - ShellCheck no CI hospedado;
 - policy de isolamento do runner.
 
-**Estado documental:** `POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING`.
+**Estado documental:** `POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING`.

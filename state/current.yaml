@@ -2,9 +2,9 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: docs/pre-reboot-checkpoint-20260906
-updated_at: "2026-09-06T19:14:29-03:00"
-state_classification: CURRENT_POST_REBOOT_LIVE_VERIFIED_INTEGRATION_GATE
-documentation_state: POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING
+updated_at: "2026-09-06T19:41:21-03:00"
+state_classification: CURRENT_POST_REBOOT_PR51_INTEGRATED_PR50_MERGE_GATE
+documentation_state: POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING
 
 freshness:
   canonical_executive_panel: README.md
@@ -45,14 +45,17 @@ source_snapshot:
     post_reboot_p2_checker_pr: 51
     post_reboot_p2_checker_candidate: 9070c24e637e6d571bc53c66d0c54d3825340ffb
     post_reboot_p2_checker_result: PASS_RECOVERED
+    post_reboot_p2_checker_merge_branch: fix/f1-2c-systemd-runtime-lock
+    post_reboot_p2_checker_merge_sha: d5508e1ed417b85bd4863ae5771605079d15aa99
+    post_reboot_p2_checker_merge_tree: b0a51bef522bbb6c872baf5f4ef15116d6f584b0
     g2b_task8_pr: 21
     g2b_task8_head: f91c836e92fae1aea1cc2e48ecc4c4bde6df78b8
     historical_pre_reboot_checkpoint: pre-reboot-checkpoint-20260829T203736Z.tar.gz
 
 project:
   name: IMPLEMENTACAO_DA_VPS
-  status: ACTIVE_POST_REBOOT_LIVE_VERIFIED_INTEGRATION_GATE
-  integration_status: LIVE_STATE_RECONCILED_OPEN_INTEGRATION_DEBT
+  status: ACTIVE_POST_REBOOT_PR51_INTEGRATED_PR50_MERGE_GATE
+  integration_status: PR51_OPERATIONAL_FIX_INTEGRATED_PR50_CANONICAL_MERGE_PENDING
   durable_completed:
     phase_0_inventory: DONE
     phase_1_access_recovery_security: DONE
@@ -66,7 +69,7 @@ project:
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
-  next_exact_step: HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION
+  next_exact_step: HUMAN_GATE_PR50_CANONICAL_MERGE
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
@@ -296,6 +299,26 @@ reboot_coordination:
   reboot_authorized: false
   updates_authorized: false
 
+post_reboot_integration:
+  status: PR51_OPERATIONAL_FIX_INTEGRATED_PR50_CANONICAL_MERGE_PENDING
+  operational_fix:
+    pr: 51
+    branch: fix/f1-2c-systemd-runtime-lock
+    candidate_head: 9070c24e637e6d571bc53c66d0c54d3825340ffb
+    merge_sha: d5508e1ed417b85bd4863ae5771605079d15aa99
+    tree_sha: b0a51bef522bbb6c872baf5f4ef15116d6f584b0
+    github_merge_verified: true
+    merge_commit_signed_verified: true
+    postmerge_validation: PASS_166_OF_166
+    postmerge_shell_syntax: PASS_21
+    postmerge_ansible_syntax: PASS_6
+    postmerge_worktree_clean: true
+    merge_commit_workflow: NOT_TRIGGERED
+  canonical_reconciliation:
+    pr: 50
+    branch: docs/pre-reboot-checkpoint-20260906
+    merge_status: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
+
 control_bridge:
   g1: PASS_REAL_NODE_01_ROUNDTRIP
   g2a: PASS_REAL_NODE_01_READ_ONLY
@@ -389,7 +412,8 @@ authorization:
   updates: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   reboot: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   post_reboot_live_check: AUTHORIZED_EXECUTED_PASS_EXACT_CANDIDATE
-  post_reboot_integration: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
+  post_reboot_integration: PR51_OPERATIONAL_INTEGRATION_COMPLETED
+  pr50_canonical_merge: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   destructive_history_remediation: NOT_AUTHORIZED
   ssh_dsh_key_change: NOT_AUTHORIZED_WITHOUT_PRESERVING_CURRENT_USER_WORKFLOW
 

@@ -32,7 +32,7 @@ def main() -> int:
     for token in (
         "CANONICAL_EXECUTIVE_PANEL_IMPLEMENTACAO_DA_VPS",
         "Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**",
-        "POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING",
+        "POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING",
         "COMPLETE_LIVE_VERIFIED",
         "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
         "INTERMITTENT_NOT_CLOSED",
@@ -43,13 +43,13 @@ def main() -> int:
     for path in (Path("CONTEXT.md"), Path("CHECKPOINT.md")):
         for token in (
             "scripts/test.sh",
-            "POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING",
+            "POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING",
             "COMPLETE_LIVE_VERIFIED",
             "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
             "INTERMITTENT_NOT_CLOSED",
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION",
+            "HUMAN_GATE_PR50_CANONICAL_MERGE",
         ):
             require_token(path, token)
 
@@ -57,7 +57,7 @@ def main() -> int:
         for token in (
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION",
+            "HUMAN_GATE_PR50_CANONICAL_MERGE",
             "COMPLETE_LIVE_VERIFIED",
             "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
         ):
@@ -216,6 +216,17 @@ def main() -> int:
     if active.get("dsh_gpt", {}).get("status") != "PAUSED_SAFE_CHECKPOINT_NO_NEW_DSH_9ROUTER_EXECUTIONS":
         raise AssertionError("Dsh Gpt maintenance checkpoint drift")
 
+    integration = state.get("post_reboot_integration", {})
+    if integration.get("status") != "PR51_OPERATIONAL_FIX_INTEGRATED_PR50_CANONICAL_MERGE_PENDING":
+        raise AssertionError("post-reboot integration status drift")
+    operational = integration.get("operational_fix", {})
+    if operational.get("merge_sha") != "d5508e1ed417b85bd4863ae5771605079d15aa99":
+        raise AssertionError("PR #51 merge SHA drift")
+    if operational.get("postmerge_validation") != "PASS_166_OF_166":
+        raise AssertionError("PR #51 post-merge validation drift")
+    if integration.get("canonical_reconciliation", {}).get("merge_status") != "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED":
+        raise AssertionError("PR #50 merge gate must remain closed")
+
     if state.get("authorization", {}).get("pre_reboot_checkpoint") != "FRESH_READ_ONLY_COMPLETED_OFFHOST_RECOVERY_FRESH":
         raise AssertionError("pre-reboot authorization receipt drift")
     if state.get("authorization", {}).get("external_service_coordination_gate") != "AUTHORIZED_EXECUTED_PASS_ACTIVE_CONSUMERS_CHECKPOINTED":
@@ -224,8 +235,12 @@ def main() -> int:
         raise AssertionError("update authorization receipt drift")
     if state.get("authorization", {}).get("reboot") != "COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED":
         raise AssertionError("reboot authorization receipt drift")
+    if state.get("authorization", {}).get("post_reboot_integration") != "PR51_OPERATIONAL_INTEGRATION_COMPLETED":
+        raise AssertionError("PR #51 integration authorization receipt drift")
+    if state.get("authorization", {}).get("pr50_canonical_merge") != "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED":
+        raise AssertionError("PR #50 canonical merge must remain human-gated")
 
-    if state["project"].get("next_exact_step") != "HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION":
+    if state["project"].get("next_exact_step") != "HUMAN_GATE_PR50_CANONICAL_MERGE":
         raise AssertionError("project next exact step drift")
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

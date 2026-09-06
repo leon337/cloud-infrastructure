@@ -33,15 +33,16 @@ Base canônica: `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`.
 - Recovery off-host: `20260906T185928Z`, `RECOVERY-P2-v1`, `PASS_6_OF_6`, restore smoke PASS; causa da ausência anterior segue historicamente `NOT_VERIFIED`.
 - Produção: não autorizada; autorizações one-shot de update/reboot já foram consumidas e não permanecem ativas.
 
-**Estado documental:** `POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING`.
+**Estado documental:** `POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING`.
 
 ## Próximo passo exato
 
-`HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION`
+`HUMAN_GATE_PR50_CANONICAL_MERGE`
 
 Update/reboot autorizados por LEANDRO já foram executados e consumidos. O NODE-01 voltou no kernel
 `6.8.0-139-generic`, zero failed units, DSH/9Router acessíveis e Network P2 formalmente PASS com o
-checker corrigido `9070c24...`. O próximo passo é somente a decisão humana de integração pós-reboot.
+checker corrigido `9070c24...`. A PR #51 foi integrada em `fix/f1-2c-systemd-runtime-lock@d5508e1...`
+e passou validação pós-merge 166/166. O próximo passo é somente o gate humano de merge da PR #50.
 
 ## Boundary externo
 

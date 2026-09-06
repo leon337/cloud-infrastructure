@@ -87,13 +87,24 @@ A separate SentinelX read-only collection confirmed:
 - systemd-networkd, F1.2c enforcement/services, Docker, containerd, SSH, SentinelX, XRDP and LightDM: active;
 - isolated checker remains exact-head and clean.
 
+## Operational integration after live verification
+
+LEANDRO authorized alternative A: merge PR #51 first, verify the integrated result, then revalidate PR #50.
+
+PR #51 was merged into `fix/f1-2c-systemd-runtime-lock` with merge commit:
+`d5508e1ed417b85bd4863ae5771605079d15aa99`.
+
+The merge tree `b0a51bef522bbb6c872baf5f4ef15116d6f584b0` is byte-identical to the previously qualified candidate tree. A fresh isolated post-merge run on `d5508e1...` passed 166/166 tests, shell syntax 21/21, Ansible syntax 6/6, and remained clean. No workflow was automatically triggered for the merge SHA.
+
+PR #50 remains unmerged and requires a separate LEANDRO human gate.
+
 ## Result and boundaries
 
 Maintenance result: `PASS_POST_REBOOT_LIVE_VERIFIED`.
 Network P2 result: `COMPLETE_LIVE_VERIFIED` with corrected exact-candidate check PASS.
 
 Current update/reboot authorization: `false`; the one-shot authorization was consumed.
-Production promotion, G2-B real write, network reapply, and merge remain separately gated.
+Production promotion, G2-B real write, network reapply, and PR #50 canonical merge remain separately gated. PR #51 operational integration is complete.
 
 Next exact step:
-`HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION`.
+`HUMAN_GATE_PR50_CANONICAL_MERGE`.

@@ -15,13 +15,13 @@ Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 A projeção atual parte de `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`, do checkpoint
 pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo dia.
 
-**Estado documental:** `POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING`.
+**Estado documental:** `POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING`.
 
 | Área | Estado atual | Evidência/limite |
 |---|---|---|
 | VPS / NODE-01 | `POST_REBOOT_LIVE_VERIFIED` | boot `0d8df458...`; kernel `6.8.0-139-generic`; system `running`; 0 failed units; DSH/9Router acessíveis |
 | F1.2c Network Services | `COMPLETE_LIVE_VERIFIED` | candidato `baaf8390...`; serviço `active+enabled`; postverify PASS |
-| Network Convergence P2 | `COMPLETE_LIVE_VERIFIED` | candidato `682c3e55...`; `eth0` `routable (configured)`; gateway `/32 scope link`; wait-online ativo |
+| Network Convergence P2 | `COMPLETE_LIVE_VERIFIED` | candidato live `682c3e55...`; checker corrigido integrado pela PR #51 em `fix/f1-2c-systemd-runtime-lock@d5508e1...` |
 | Runner isolation | `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED` | run `33998487949`; STARTED/COMPLETED e prova cross-job PASS; `next_exact_step=NONE` |
 | SSH key governance | `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED` | preservar fluxo notebook→VPS e `authorized_keys` |
 | G2-B Task 8 | `TECHNICAL_PASS_DRAFT_UNINTEGRATED` | PR #21 Draft, head `f91c836e...`; 373/373 testes e 13/13 marcadores; não integrado |
@@ -33,7 +33,7 @@ pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo 
 ## Próxima ação exata
 
 ```text
-HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION
+HUMAN_GATE_PR50_CANONICAL_MERGE
 ```
 
 A manutenção autorizada por LEANDRO foi concluída:
@@ -44,9 +44,10 @@ A manutenção autorizada por LEANDRO foi concluída:
 4. upgrade: **PASS**, `APT_UPGRADE_RC=0`, zero pacotes atualizáveis após a transação;
 5. reboot: **PASS**, boot ID alterado e kernel `6.8.0-139-generic` ativo;
 6. F1.2c e P2 pós-reboot: **PASS**, incluindo `NETWORK_CONVERGENCE_CHECK=PASS` no candidato corrigido `9070c24...`;
-7. pós-verificação independente: **PASS**.
+7. pós-verificação independente: **PASS**;
+8. PR #51: **MERGED** em `fix/f1-2c-systemd-runtime-lock@d5508e1...`; validação pós-merge 166/166, shell 21 e Ansible 6 PASS.
 
-O próximo gate é somente a decisão de integração das evidências/PRs pós-reboot.
+A correção operacional já está integrada. O próximo gate é somente autorizar ou não o merge canônico da PR #50 em `main`.
 
 DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY` como boundary de mutação.
 Esta PR não os modifica, reinicia, usa como executor ou muda seu ownership. Um reboot do host os
