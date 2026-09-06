@@ -84,7 +84,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
         self.assertEqual(
             self.state["project"]["next_exact_step"],
-            "HUMAN_GATE_UPDATE_REBOOT",
+            "HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION",
         )
 
     def test_reboot_gate_requires_fresh_checkpoint_and_external_coordination(self):
@@ -122,7 +122,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(sentinel["root_cause"], "NOT_VERIFIED")
 
         coordination = self.state["reboot_coordination"]
-        self.assertEqual(coordination["status"], "ACTIVE_CONSUMERS_COORDINATED_HUMAN_GATE")
+        self.assertEqual(coordination["status"], "MAINTENANCE_COMPLETED_POST_REBOOT_LIVE_VERIFIED")
         self.assertFalse(coordination["checkpoint_refresh_required"])
         self.assertFalse(coordination["offhost_recovery_freshness_required"])
         self.assertFalse(coordination["external_service_coordination_required"])
@@ -130,19 +130,29 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(coordination["coordination_gate_result"], "PASS_ACTIVE_CHAT_CONSUMERS_CHECKPOINTED")
         self.assertEqual(coordination["external_owner_status"], "NOT_RESOLVED_NOT_GATE_BLOCKING_AFTER_LEANDRO_CLARIFICATION")
         self.assertEqual(coordination["external_contact_channel_status"], "GUI_CHAT_CHANNEL_VERIFIED")
-        self.assertEqual(coordination["maintenance_window_status"], "HUMAN_GATE_PENDING")
+        self.assertEqual(coordination["maintenance_window_status"], "COMPLETED")
         self.assertTrue(coordination["contact_attempt_sent"])
         self.assertEqual(coordination["contact_attempt_reason"], "ACTIVE_CHAT_CONSUMERS_COORDINATED_VIA_GUI")
         self.assertTrue(coordination["host_reboot_would_interrupt_external_services"])
         self.assertEqual(coordination["deepseek_harness"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")
         self.assertEqual(coordination["ninerouter"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")
         self.assertTrue(coordination["active_consumers_ready"])
+        self.assertFalse(coordination["post_reboot_validation_required"])
+        self.assertFalse(coordination["reboot_authorized"])
+        self.assertFalse(coordination["updates_authorized"])
+        execution = coordination["maintenance_execution"]
+        self.assertEqual(execution["status"], "PASS_POST_REBOOT_LIVE_VERIFIED")
+        self.assertEqual(execution["authorization_choice"], "B_UPDATES_AND_REBOOT")
+        self.assertEqual(execution["current_kernel"], "6.8.0-139-generic")
+        self.assertEqual(execution["post_reboot_checker_candidate"], "9070c24e637e6d571bc53c66d0c54d3825340ffb")
+        self.assertEqual(execution["post_reboot_checker_result"], "NETWORK_CONVERGENCE_CHECK_PASS_RECOVERED")
+        self.assertEqual(execution["independent_postverify"], "PASS")
         self.assertEqual(coordination["coordination_channel"], "CHATGPT_GUI")
         self.assertEqual(coordination["active_consumers"]["hy4_teste"]["status"], "READY_FOR_NODE01_MAINTENANCE")
         self.assertEqual(coordination["active_consumers"]["dsh_gpt"]["status"], "PAUSED_SAFE_CHECKPOINT_NO_NEW_DSH_9ROUTER_EXECUTIONS")
         self.assertEqual(self.state["authorization"]["external_service_coordination_gate"], "AUTHORIZED_EXECUTED_PASS_ACTIVE_CONSUMERS_CHECKPOINTED")
-        self.assertEqual(self.state["authorization"]["updates"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
-        self.assertEqual(self.state["authorization"]["reboot"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+        self.assertEqual(self.state["authorization"]["updates"], "COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED")
+        self.assertEqual(self.state["authorization"]["reboot"], "COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED")
 
     def test_runner_isolation_state_records_active_verified_global_hook(self):
         runner = self.state["runner_isolation"]

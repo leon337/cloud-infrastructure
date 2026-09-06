@@ -19,7 +19,7 @@ Precedência operacional:
 
 Nunca transformar estado desejado ou histórico em estado observado atual.
 
-## Mapa atual — checkpoint pré-reboot de 06/09/2026
+## Mapa atual — pós-reboot live verified de 06/09/2026
 
 Base canônica: `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`.
 
@@ -31,17 +31,17 @@ Base canônica: `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`.
 - Checkpoint 06/09: `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH`.
 - Backup on-host 06/09: `FRESH_INTEGRITY_PASS`.
 - Recovery off-host: `20260906T185928Z`, `RECOVERY-P2-v1`, `PASS_6_OF_6`, restore smoke PASS; causa da ausência anterior segue historicamente `NOT_VERIFIED`.
-- Produção/update/reboot: não autorizados.
+- Produção: não autorizada; autorizações one-shot de update/reboot já foram consumidas e não permanecem ativas.
 
-**Estado documental:** `PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING`.
+**Estado documental:** `POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING`.
 
 ## Próximo passo exato
 
-`HUMAN_GATE_UPDATE_REBOOT`
+`HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION`
 
-Não executar update/reboot. O recovery off-host e o recheck mínimo foram fechados; LEANDRO clarificou
-que o canal operacional correto era a GUI com os dois chats consumidores ativos. Ambos foram coordenados
-e estão em checkpoint seguro. O próximo passo é somente o gate humano de update/reboot.
+Update/reboot autorizados por LEANDRO já foram executados e consumidos. O NODE-01 voltou no kernel
+`6.8.0-139-generic`, zero failed units, DSH/9Router acessíveis e Network P2 formalmente PASS com o
+checker corrigido `9070c24...`. O próximo passo é somente a decisão humana de integração pós-reboot.
 
 ## Boundary externo
 
@@ -53,7 +53,7 @@ Não:
 - reiniciar/parar seus processos;
 - alterar supervisor/cron/pacotes;
 - usá-los como rota de execução;
-- realizar reboot do host antes do gate humano explícito de update/reboot.
+- executar novo reboot/update sem uma nova autorização humana explícita.
 
 O fato de um reboot não editar seus arquivos não elimina o impacto: ele interrompe o host e,
 portanto, esses serviços.
@@ -93,15 +93,20 @@ A causa atual permanece `NOT_VERIFIED`. Não inferir automaticamente que o heart
 O receipt histórico de 29/08 continua válido como baseline histórica, mas o snapshot corrente é
 `evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260906.md`.
 
-O checkpoint de 06/09 confirmou:
+O checkpoint pré-reboot de 06/09 confirmou kernel `6.8.0-138-generic` e `reboot-required=YES`.
+Depois, o recovery off-host `20260906T185928Z` fechou a lacuna de frescor e a autorização B foi consumida.
 
-- kernel `6.8.0-138-generic`; alvo instalado `6.8.0-139.139`;
-- `reboot-required=YES` para kernel + `linux-base`;
-- zero units failed; F1.2c, wait-online, Docker, UFW, Fail2Ban, Tailscale, Runner e SentinelX ativos;
-- backup on-host 06/09 íntegro;
-- recovery off-host mais recente ainda 05/09, 6/6 SHA PASS.
+O estado pós-reboot confirmado é:
 
-A ausência do recovery de 06/09 bloqueia o gate atual. Causa: `NOT_VERIFIED`.
+- boot ID `0d8df458-4f6f-4db6-84a4-d51b393d6743`;
+- kernel `6.8.0-139-generic`;
+- `reboot-required=NO`, zero pacotes atualizáveis e zero failed units;
+- F1.2c enforcement/services ativos e check PASS;
+- Network P2 `NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED` no candidato `9070c24...`;
+- rota `/17` permitida via gateway e rota `/17 scope link` ausente na tabela IPv4 main;
+- DSH HTTP 200 e 9Router HTTP 307.
+
+Receipt: `evidence/post-reboot/POST-REBOOT-LIVE-VERIFICATION-20260906.md`.
 
 ## Toolchain canônica
 
@@ -115,5 +120,5 @@ state/consistency, unit tests, Python/shell syntax e ShellCheck.
 - MESTRE orquestra a missão.
 - esta reconciliação é documental/estado e não autoriza mudanças live;
 - autorizações one-shot F1.2c/Network P2 foram consumidas;
-- nenhuma conclusão autoriza produção, reboot, update, G2-B real write ou reapply;
+- nenhuma conclusão autoriza nova produção, novo reboot/update, G2-B real write ou reapply;
 - secrets nunca são versionados.

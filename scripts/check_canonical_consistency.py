@@ -32,7 +32,7 @@ def main() -> int:
     for token in (
         "CANONICAL_EXECUTIVE_PANEL_IMPLEMENTACAO_DA_VPS",
         "Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**",
-        "PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING",
+        "POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING",
         "COMPLETE_LIVE_VERIFIED",
         "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
         "INTERMITTENT_NOT_CLOSED",
@@ -43,13 +43,13 @@ def main() -> int:
     for path in (Path("CONTEXT.md"), Path("CHECKPOINT.md")):
         for token in (
             "scripts/test.sh",
-            "PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING",
+            "POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING",
             "COMPLETE_LIVE_VERIFIED",
             "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
             "INTERMITTENT_NOT_CLOSED",
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "HUMAN_GATE_UPDATE_REBOOT",
+            "HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION",
         ):
             require_token(path, token)
 
@@ -57,7 +57,7 @@ def main() -> int:
         for token in (
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "HUMAN_GATE_UPDATE_REBOOT",
+            "HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION",
             "COMPLETE_LIVE_VERIFIED",
             "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
         ):
@@ -169,7 +169,7 @@ def main() -> int:
         raise AssertionError("historical off-host missing-run cause must remain NOT_VERIFIED")
 
     coordination = state.get("reboot_coordination", {})
-    if coordination.get("status") != "ACTIVE_CONSUMERS_COORDINATED_HUMAN_GATE":
+    if coordination.get("status") != "MAINTENANCE_COMPLETED_POST_REBOOT_LIVE_VERIFIED":
         raise AssertionError("reboot coordination gate drift")
     if coordination.get("checkpoint_refresh_required") is not False:
         raise AssertionError("checkpoint refresh must be closed after fresh read-only collection")
@@ -183,7 +183,7 @@ def main() -> int:
         raise AssertionError("external owner status drift after LEANDRO coordination clarification")
     if coordination.get("external_contact_channel_status") != "GUI_CHAT_CHANNEL_VERIFIED":
         raise AssertionError("GUI chat coordination channel drift")
-    if coordination.get("maintenance_window_status") != "HUMAN_GATE_PENDING":
+    if coordination.get("maintenance_window_status") != "COMPLETED":
         raise AssertionError("maintenance human gate status drift")
     if coordination.get("contact_attempt_sent") is not True:
         raise AssertionError("active-consumer coordination message receipt missing")
@@ -196,7 +196,18 @@ def main() -> int:
     if coordination.get("external_service_coordination_required") is not False:
         raise AssertionError("active consumer coordination gate must be closed")
     if coordination.get("active_consumers_ready") is not True:
-        raise AssertionError("active consumers must be checkpointed before human reboot gate")
+        raise AssertionError("maintenance coordination checkpoint receipt drift")
+    if coordination.get("post_reboot_validation_required") is not False:
+        raise AssertionError("post-reboot validation must be closed after live PASS")
+    if coordination.get("reboot_authorized") is not False or coordination.get("updates_authorized") is not False:
+        raise AssertionError("one-shot maintenance authorization must be consumed")
+    execution = coordination.get("maintenance_execution", {})
+    if execution.get("status") != "PASS_POST_REBOOT_LIVE_VERIFIED":
+        raise AssertionError("maintenance execution receipt drift")
+    if execution.get("post_reboot_checker_candidate") != "9070c24e637e6d571bc53c66d0c54d3825340ffb":
+        raise AssertionError("post-reboot checker candidate drift")
+    if execution.get("independent_postverify") != "PASS":
+        raise AssertionError("independent post-reboot verification drift")
     if coordination.get("coordination_channel") != "CHATGPT_GUI":
         raise AssertionError("coordination channel drift")
     active = coordination.get("active_consumers", {})
@@ -209,8 +220,12 @@ def main() -> int:
         raise AssertionError("pre-reboot authorization receipt drift")
     if state.get("authorization", {}).get("external_service_coordination_gate") != "AUTHORIZED_EXECUTED_PASS_ACTIVE_CONSUMERS_CHECKPOINTED":
         raise AssertionError("external coordination authorization receipt drift")
+    if state.get("authorization", {}).get("updates") != "COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED":
+        raise AssertionError("update authorization receipt drift")
+    if state.get("authorization", {}).get("reboot") != "COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED":
+        raise AssertionError("reboot authorization receipt drift")
 
-    if state["project"].get("next_exact_step") != "HUMAN_GATE_UPDATE_REBOOT":
+    if state["project"].get("next_exact_step") != "HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION":
         raise AssertionError("project next exact step drift")
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

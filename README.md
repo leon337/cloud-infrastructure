@@ -12,14 +12,14 @@ Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 
 ## Estado executivo reconciliado — 06/09/2026
 
-A projeção atual parte de `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d` e do
-checkpoint read-only coletado em 06/09/2026. Nenhuma mudança na VPS pertence a este checkpoint.
+A projeção atual parte de `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`, do checkpoint
+pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo dia.
 
-**Estado documental:** `PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING`.
+**Estado documental:** `POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING`.
 
 | Área | Estado atual | Evidência/limite |
 |---|---|---|
-| VPS / NODE-01 | `OPERATIONAL_WITH_VERIFIED_NETWORK_AND_REBOOT_PENDING` | kernel `6.8.0-138-generic`; reboot requerido para `6.8.0-139-generic`; F1.2c/eth0/runner ativos |
+| VPS / NODE-01 | `POST_REBOOT_LIVE_VERIFIED` | boot `0d8df458...`; kernel `6.8.0-139-generic`; system `running`; 0 failed units; DSH/9Router acessíveis |
 | F1.2c Network Services | `COMPLETE_LIVE_VERIFIED` | candidato `baaf8390...`; serviço `active+enabled`; postverify PASS |
 | Network Convergence P2 | `COMPLETE_LIVE_VERIFIED` | candidato `682c3e55...`; `eth0` `routable (configured)`; gateway `/32 scope link`; wait-online ativo |
 | Runner isolation | `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED` | run `33998487949`; STARTED/COMPLETED e prova cross-job PASS; `next_exact_step=NONE` |
@@ -27,23 +27,26 @@ checkpoint read-only coletado em 06/09/2026. Nenhuma mudança na VPS pertence a 
 | G2-B Task 8 | `TECHNICAL_PASS_DRAFT_UNINTEGRATED` | PR #21 Draft, head `f91c836e...`; 373/373 testes e 13/13 marcadores; não integrado |
 | SentinelX direto | `INTERMITTENT_NOT_CLOSED` | serviço ativo; conexão ao hub oscilou; causa atual `NOT_VERIFIED` |
 | Pre-reboot checkpoint | `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH` | live/on-host frescos em 06/09; recovery `20260906T185928Z` com 6/6 SHA, secret/path/link safety e restore smoke PASS |
-| Update/reboot | `ACTIVE_CONSUMERS_COORDINATED_HUMAN_GATE` | recovery fechado; consumidores ativos de DSH/9Router coordenados via GUI e em checkpoint seguro; falta apenas gate humano de update/reboot |
+| Update/reboot | `PASS_POST_REBOOT_LIVE_VERIFIED` | autorização B consumida; upgrade RC=0; reboot concluído; P2 check corrigido PASS; nenhuma nova autorização permanece ativa |
 | Produção externa | `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` | nenhuma promoção autorizada |
 
 ## Próxima ação exata
 
 ```text
-HUMAN_GATE_UPDATE_REBOOT
+HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION
 ```
 
-Antes de qualquer update/reboot:
+A manutenção autorizada por LEANDRO foi concluída:
 
-1. checkpoint live fresco de 06/09: **concluído read-only**;
-2. recovery off-host fresco de 06/09: **concluído** (`20260906T185928Z`, RECOVERY-P2 PASS);
-3. recheck mínimo pós-recovery: **concluído**; repetir imediatamente antes do reboot se houver drift/tempo relevante;
-4. coordenar os chats consumidores ativos de DSH/9Router via GUI: **concluído**, ambos em checkpoint seguro;
-5. obter autorização humana explícita para updates/reboot e definir a janela efetiva;
-6. somente então executar manutenção e a validação pós-reboot.
+1. checkpoint e recovery off-host: **PASS**;
+2. consumidores ativos DSH/9Router coordenados: **PASS**;
+3. autorização B (`updates + reboot`): **consumida**;
+4. upgrade: **PASS**, `APT_UPGRADE_RC=0`, zero pacotes atualizáveis após a transação;
+5. reboot: **PASS**, boot ID alterado e kernel `6.8.0-139-generic` ativo;
+6. F1.2c e P2 pós-reboot: **PASS**, incluindo `NETWORK_CONVERGENCE_CHECK=PASS` no candidato corrigido `9070c24...`;
+7. pós-verificação independente: **PASS**.
+
+O próximo gate é somente a decisão de integração das evidências/PRs pós-reboot.
 
 DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY` como boundary de mutação.
 Esta PR não os modifica, reinicia, usa como executor ou muda seu ownership. Um reboot do host os
@@ -121,13 +124,10 @@ Ele confirmou kernel `6.8.0-138-generic`, alvo `6.8.0-139.139`, `reboot-required
 zero units failed, rede/F1.2c/runner/serviços críticos ativos, 2 CoreDNS + 2 Squid em Docker
 e backup on-host `cloud-infrastructure-config-20260906T030657Z.tar.gz` com integridade PASS.
 
-O último recovery off-host completo permanece `20260905T033111Z`, com `SHA256SUMS` 6/6 PASS.
-Não havia recovery de 06/09 no momento da coleta. Nas superfícies verificadas não foi encontrado
-timer systemd (user/system) nem crontab do usuário para esse recovery; isso não prova ausência
-de outro scheduler. Causa da lacuna: `NOT_VERIFIED`.
-
-Por isso o checkpoint é fresco como snapshot live, mas **não é aceito para reboot** até fechar
-a frescura do recovery off-host e depois cumprir coordenação externa + gate humano.
+Na coleta inicial não havia recovery off-host de 06/09; essa ausência permanece como observação
+histórica com causa `NOT_VERIFIED`. O gate autorizado produziu depois `20260906T185928Z`, com
+`SHA256SUMS` 6/6, secret/path/link safety e restore smoke PASS. O checkpoint/recovery foi então
+consumido pela manutenção autorizada e concluída no mesmo dia.
 
 ## Dívidas ainda abertas
 
@@ -145,5 +145,5 @@ a frescura do recovery off-host e depois cumprir coordenação externa + gate hu
 - LEANDRO é a autoridade humana final;
 - `scripts/test.sh` é o entrypoint de validação canônico;
 - esta reconciliação é documental/estado: `vps_mutation_by_this_reconciliation=false`;
-- nenhuma conclusão aqui autoriza produção, update, reboot, escrita real G2-B ou reapply F1.2c/Network P2;
+- as autorizações one-shot de update/reboot foram consumidas; nenhuma nova manutenção, produção, escrita real G2-B ou reapply F1.2c/Network P2 está autorizada;
 - secrets nunca são versionados.

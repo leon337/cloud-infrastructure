@@ -1,6 +1,6 @@
 # CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **06/09/2026** após checkpoint pré-reboot read-only do NODE-01 e recovery off-host.
+Atualizado em **06/09/2026** após manutenção autorizada, reboot controlado e validação live pós-reboot do NODE-01.
 
 ## Hierarquia documental
 
@@ -20,7 +20,7 @@ não autoriza mudança material por si só.
 - SSH key governance: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; preservar fluxo notebook→VPS.
 - G2-B Task 8: `TECHNICAL_PASS_DRAFT_UNINTEGRATED`.
 - SentinelX direto: `INTERMITTENT_NOT_CLOSED`; causa `NOT_VERIFIED`.
-- Kernel atual: `6.8.0-138-generic`; alvo instalado: `6.8.0-139.139`; reboot requerido.
+- Kernel atual: `6.8.0-139-generic`; boot ID `0d8df458-...`; `reboot-required=NO`.
 - Checkpoint live 06/09: `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH`.
 - Backup on-host 06/09: `cloud-infrastructure-config-20260906T030657Z.tar.gz`, SHA `ec5d83dd...5816f4`, integridade PASS.
 - Recovery off-host atual: `20260906T185928Z`, formato `RECOVERY-P2-v1`, `SHA256SUMS` 6/6 PASS, secret/path/link safety PASS e restore smoke PASS.
@@ -28,18 +28,19 @@ não autoriza mudança material por si só.
 
 ## Próxima ação exata
 
-`HUMAN_GATE_UPDATE_REBOOT`
+`HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION`
 
-O recovery off-host fresco e o recheck mínimo já foram concluídos. Após clarificação de LEANDRO,
-a coordenação operacional foi feita diretamente pela GUI com os dois chats consumidores ativos de
-DSH/9Router. Ambos estão em checkpoint seguro. Falta apenas o gate humano de update/reboot.
+A autorização B de LEANDRO foi consumida por update + reboot controlado. O kernel `6.8.0-139-generic`
+está ativo, o sistema está `running` com zero failed units, e o checker P2 corrigido `9070c24...`
+retornou `NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED`. DSH e 9Router responderam HTTP 200/307
+na pós-verificação independente. O próximo gate é somente a decisão de integração pós-reboot.
 
 ## Boundaries
 
 - DeepSeek Harness: `EXTERNALLY_MANAGED_OBSERVE_ONLY`.
 - 9router: `EXTERNALLY_MANAGED_OBSERVE_ONLY`.
-- Esta reconciliação não faz deploy, restart, package update, firewall change ou write na VPS.
-- Reboot do host interromperia os serviços acima; os consumidores ativos já foram coordenados e drenados para checkpoint seguro.
+- A manutenção live já foi executada sob autorização one-shot; esta reconciliação documental não executa nova alteração na VPS.
+- A interrupção do reboot já ocorreu dentro da janela autorizada; DSH/9Router voltaram acessíveis e não há nova autorização de reboot ativa.
 - F1.2c e Network P2 tiveram autorizações one-shot consumidas; nenhum reapply está autorizado.
 - G2-B real write permanece `NOT_AUTHORIZED`.
 - Produção permanece `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
@@ -52,6 +53,7 @@ DSH/9Router. Ambos estão em checkpoint seguro. Falta apenas o gate humano de up
 - Checkpoint histórico: `evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md`.
 - Checkpoint fresco: `evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260906.md`.
 - Reconciliação atual: `evidence/vps/LIVE-STATE-RECONCILIATION-20260905.md`.
+- Pós-reboot: `evidence/post-reboot/POST-REBOOT-LIVE-VERIFICATION-20260906.md`.
 
 ## Toolchain canônica
 
@@ -67,4 +69,4 @@ DSH/9Router. Ambos estão em checkpoint seguro. Falta apenas o gate humano de up
 - ShellCheck no CI hospedado;
 - policy de isolamento do runner.
 
-**Estado documental:** `PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING`.
+**Estado documental:** `POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING`.

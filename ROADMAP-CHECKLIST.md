@@ -101,22 +101,23 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 
 - [x] Checkpoint histórico V2 de 29/08 preservado como evidência.
 - [x] Checkpoint pré-reboot read-only fresco coletado em 06/09.
-- [x] Kernel atual `6.8.0-138-generic`; alvo `6.8.0-139.139` instalado.
-- [x] `reboot-required=YES` para `linux-image-6.8.0-139-generic` + `linux-base`.
+- [x] Snapshot pré-reboot: kernel `6.8.0-138-generic`; alvo `6.8.0-139.139` instalado.
+- [x] Snapshot pré-reboot registrou `reboot-required=YES`; pós-reboot confirmou `reboot-required=NO`.
 - [x] Zero units failed; F1.2c/rede/runner/serviços críticos ativos no checkpoint.
 - [x] Backup on-host 06/09 `cloud-infrastructure-config-20260906T030657Z.tar.gz`: integridade PASS.
 - [x] Recovery off-host de 05/09 revalidado: `SHA256SUMS` 6/6 PASS.
 - [x] Ausência do recovery de 06/09 preservada como observação histórica de 13:34; causa segue `NOT_VERIFIED`.
 - [x] Recovery off-host 06/09 produzido em `20260906T185928Z`: RECOVERY-P2, 6/6 SHA, secret/path/link safety e restore smoke PASS.
-- [x] Recheck mínimo pós-recovery: sistema `running`, zero failed units, kernel `6.8.0-138`, rede/F1.2c previamente revalidados nesta janela; repetir antes do reboot se houver drift/tempo relevante.
+- [x] Recheck mínimo pré-reboot: sistema `running`, zero failed units, kernel `6.8.0-138`, rede/F1.2c válidos antes da manutenção.
 - [x] Gate de coordenação concluído via GUI: `hy4 teste]` = `READY_FOR_NODE01_MAINTENANCE`; `Dsh Gpt` = missão pausada em checkpoint seguro, sem novas execuções DSH/9Router até retorno do NODE-01.
-- [!] Obter autorização humana explícita para updates/reboot.
-- [ ] Executar update/reboot controlado somente após todos os gates.
-- [ ] Executar validação pós-reboot completa.
+- [x] Autorização B (`updates + reboot`) concedida por LEANDRO e consumida como one-shot.
+- [x] Update controlado concluído: `APT_UPGRADE_RC=0`, zero pacotes atualizáveis após a transação.
+- [x] Reboot controlado concluído: boot ID alterado, kernel `6.8.0-139-generic`, `reboot-required=NO`.
+- [x] Validação pós-reboot concluída: F1.2c PASS, P2 checker `9070c24...` PASS live, pós-verificação independente PASS.
 
-**Estado:** `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH` + `ACTIVE_CONSUMERS_COORDINATED_HUMAN_GATE`.
+**Estado:** `PASS_POST_REBOOT_LIVE_VERIFIED`.
 
-**Próximo passo exato:** `HUMAN_GATE_UPDATE_REBOOT`.
+**Próximo passo exato:** `HUMAN_GATE_POST_REBOOT_INTEGRATION_DECISION`.
 
 ## 8. SentinelX direto NODE-01 → hub
 
@@ -185,7 +186,7 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [ ] Revisar branches históricas após classificação.
 - [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
 
-**Estado:** `PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING`.
+**Estado:** `POST_REBOOT_LIVE_VERIFIED_INTEGRATION_DECISION_PENDING`.
 
 ## Ordem operacional vigente
 
@@ -201,10 +202,11 @@ PRE_REBOOT_CHECKPOINT               FRESH_READ_ONLY / OFFHOST_RECOVERY_FRESH
 SENTINELX_DIRECT                    INTERMITTENT / NOT_CLOSED
 G2B_TASK8                           TECHNICAL_PASS / DRAFT_UNINTEGRATED
 PRE_REBOOT_OFFHOST_RECOVERY         DONE / RECOVERY_P2_PASS
-PRE_REBOOT_EXTERNAL_COORDINATION    BLOCKED / OWNER_CHANNEL_WINDOW_UNRESOLVED
-HUMAN_GATE_EXTERNAL_OWNER_WINDOW    NEXT / LEANDRO
-UPDATE_AND_CONTROLLED_REBOOT        NOT_AUTHORIZED
-POST_REBOOT_VALIDATION              PENDING
+PRE_REBOOT_EXTERNAL_COORDINATION    DONE / CHAT_CONSUMERS_CHECKPOINTED
+UPDATE_AND_CONTROLLED_REBOOT        DONE / ONE_SHOT_AUTHORIZATION_CONSUMED
+POST_REBOOT_VALIDATION              DONE / LIVE_VERIFIED
+POST_REBOOT_P2_CHECKER_PR51         DRAFT / STATIC+KVM+LIVE_CHECK_PASS
+POST_REBOOT_INTEGRATION_DECISION    NEXT / LEANDRO
 CANONICAL_PR_BRANCH_HYGIENE         PENDING
 FINAL_TRANSVERSAL_AUDIT             PENDING
 ```
