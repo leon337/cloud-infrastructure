@@ -2,9 +2,9 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: docs/pre-reboot-checkpoint-20260906
-updated_at: "2026-09-06T13:34:47-03:00"
-state_classification: CURRENT_PRE_REBOOT_CHECKPOINT_FRESH_OFFHOST_RECOVERY_GAP
-documentation_state: PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP
+updated_at: "2026-09-06T16:02:01-03:00"
+state_classification: CURRENT_PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_GATE
+documentation_state: PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING
 
 freshness:
   canonical_executive_panel: README.md
@@ -48,7 +48,7 @@ source_snapshot:
 
 project:
   name: IMPLEMENTACAO_DA_VPS
-  status: ACTIVE_PRE_REBOOT_BLOCKED_OFFHOST_FRESHNESS
+  status: ACTIVE_PRE_REBOOT_BLOCKED_EXTERNAL_COORDINATION
   integration_status: LIVE_STATE_RECONCILED_OPEN_INTEGRATION_DEBT
   durable_completed:
     phase_0_inventory: DONE
@@ -63,7 +63,7 @@ project:
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
-  next_exact_step: PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE
+  next_exact_step: PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
@@ -167,9 +167,10 @@ network_convergence_p2:
   one_shot_authorization_consumed: true
 
 pre_reboot_checkpoint:
-  status: FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP
+  status: FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH
   checkpoint_id: PRE_REBOOT_CHECKPOINT_NODE01_20260906_READONLY
   collected_at: "2026-09-06T13:34:47-03:00"
+  revalidated_at: "2026-09-06T15:59:52-03:00"
   live_snapshot_fresh: true
   historical_checkpoint_status: VERIFIED_PRE_REBOOT_CHECKPOINT_V2
   historical_v1_status: REJECTED_INTERNAL_SHA256SUMS_SELF_HASH
@@ -182,17 +183,28 @@ pre_reboot_checkpoint:
   reboot_required: true
   accepted_for_current_reboot: false
   refresh_required_before_reboot: false
-  blocking_reason: OFFHOST_RECOVERY_NOT_FRESH_AT_CHECK
+  blocking_reason: EXTERNAL_SERVICE_COORDINATION_PENDING
   system_failed_units: 0
   latest_onhost_config_backup: cloud-infrastructure-config-20260906T030657Z.tar.gz
   latest_onhost_config_backup_sha256: ec5d83ddcf8ef72d92d2d52590e6d8a4329fdce6893088ee16520ebb0c5816f4
   latest_onhost_config_backup_integrity: PASS
   offhost_recovery:
-    latest_complete_dir: 20260905T033111Z
-    latest_complete_local_time: "2026-09-05T00:31:49-03:00"
+    latest_complete_dir: 20260906T185928Z
+    latest_complete_local_time: "2026-09-06T15:59:28-03:00"
     sha256_status: PASS_6_OF_6
-    current_day_recovery_present: false
-    freshness: NOT_FRESH_FOR_2026_09_06_REBOOT_GATE
+    current_day_recovery_present: true
+    freshness: FRESH_FOR_2026_09_06_REBOOT_GATE
+    recovery_format: RECOVERY-P2-v1
+    root_backup: cloud-infrastructure-config-20260906T030657Z.tar.gz
+    root_backup_sha256: ec5d83ddcf8ef72d92d2d52590e6d8a4329fdce6893088ee16520ebb0c5816f4
+    root_backup_members: 41
+    runtime_overlay_members: 11
+    secret_scan: PASS
+    archive_path_safety: PASS
+    archive_link_safety: PASS
+    restore_smoke: PASS
+    canonical_script_main_sha: 7ce6fff85f66eaed88c7b6e092c4bc2375f5382d
+    execution_mode: MANUAL_AUTHORIZED_FRESHNESS_GATE
     checked_user_systemd_unit: NOT_FOUND
     checked_system_systemd_unit: NOT_FOUND
     checked_user_crontab_entry: NOT_FOUND
@@ -215,9 +227,9 @@ sentinelx_direct_connectivity:
   mutation_authorized: false
 
 reboot_coordination:
-  status: BLOCKED_OFFHOST_RECOVERY_FRESHNESS_THEN_EXTERNAL_COORDINATION
+  status: BLOCKED_EXTERNAL_SERVICE_COORDINATION_AND_HUMAN_GATE
   checkpoint_refresh_required: false
-  offhost_recovery_freshness_required: true
+  offhost_recovery_freshness_required: false
   external_service_coordination_required: true
   host_reboot_would_interrupt_external_services: true
   deepseek_harness: EXTERNALLY_MANAGED_OBSERVE_ONLY
@@ -308,7 +320,7 @@ authorization:
   g2b_real_write: NOT_AUTHORIZED
   f1_2c_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   network_convergence_p2_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
-  pre_reboot_checkpoint: FRESH_READ_ONLY_COMPLETED_OFFHOST_FRESHNESS_GAP
+  pre_reboot_checkpoint: FRESH_READ_ONLY_COMPLETED_OFFHOST_RECOVERY_FRESH
   updates: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   reboot: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   destructive_history_remediation: NOT_AUTHORIZED

@@ -84,21 +84,29 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
         self.assertEqual(
             self.state["project"]["next_exact_step"],
-            "PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE",
+            "PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE",
         )
 
     def test_reboot_gate_requires_fresh_checkpoint_and_external_coordination(self):
         checkpoint = self.state["pre_reboot_checkpoint"]
-        self.assertEqual(checkpoint["status"], "FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP")
+        self.assertEqual(checkpoint["status"], "FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH")
         self.assertFalse(checkpoint["accepted_for_current_reboot"])
         self.assertFalse(checkpoint["refresh_required_before_reboot"])
         self.assertTrue(checkpoint["live_snapshot_fresh"])
-        self.assertEqual(checkpoint["blocking_reason"], "OFFHOST_RECOVERY_NOT_FRESH_AT_CHECK")
+        self.assertEqual(checkpoint["blocking_reason"], "EXTERNAL_SERVICE_COORDINATION_PENDING")
         self.assertEqual(checkpoint["latest_onhost_config_backup"], "cloud-infrastructure-config-20260906T030657Z.tar.gz")
         self.assertEqual(checkpoint["latest_onhost_config_backup_integrity"], "PASS")
-        self.assertEqual(checkpoint["offhost_recovery"]["latest_complete_dir"], "20260905T033111Z")
+        self.assertEqual(checkpoint["offhost_recovery"]["latest_complete_dir"], "20260906T185928Z")
         self.assertEqual(checkpoint["offhost_recovery"]["sha256_status"], "PASS_6_OF_6")
-        self.assertFalse(checkpoint["offhost_recovery"]["current_day_recovery_present"])
+        self.assertTrue(checkpoint["offhost_recovery"]["current_day_recovery_present"])
+        self.assertEqual(checkpoint["offhost_recovery"]["freshness"], "FRESH_FOR_2026_09_06_REBOOT_GATE")
+        self.assertEqual(checkpoint["offhost_recovery"]["recovery_format"], "RECOVERY-P2-v1")
+        self.assertEqual(checkpoint["offhost_recovery"]["root_backup"], "cloud-infrastructure-config-20260906T030657Z.tar.gz")
+        self.assertEqual(checkpoint["offhost_recovery"]["root_backup_sha256"], "ec5d83ddcf8ef72d92d2d52590e6d8a4329fdce6893088ee16520ebb0c5816f4")
+        self.assertEqual(checkpoint["offhost_recovery"]["restore_smoke"], "PASS")
+        self.assertEqual(checkpoint["offhost_recovery"]["secret_scan"], "PASS")
+        self.assertEqual(checkpoint["offhost_recovery"]["archive_path_safety"], "PASS")
+        self.assertEqual(checkpoint["offhost_recovery"]["archive_link_safety"], "PASS")
         self.assertEqual(checkpoint["offhost_recovery"]["root_cause_missing_current_day"], "NOT_VERIFIED")
         self.assertEqual(checkpoint["current_kernel"], "6.8.0-138-generic")
         self.assertEqual(checkpoint["target_kernel"], "6.8.0-139-generic")
@@ -106,7 +114,7 @@ class CanonicalStateTests(unittest.TestCase):
 
         self.assertEqual(
             self.state["authorization"]["pre_reboot_checkpoint"],
-            "FRESH_READ_ONLY_COMPLETED_OFFHOST_FRESHNESS_GAP",
+            "FRESH_READ_ONLY_COMPLETED_OFFHOST_RECOVERY_FRESH",
         )
 
         sentinel = self.state["sentinelx_direct_connectivity"]
@@ -114,9 +122,9 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(sentinel["root_cause"], "NOT_VERIFIED")
 
         coordination = self.state["reboot_coordination"]
-        self.assertEqual(coordination["status"], "BLOCKED_OFFHOST_RECOVERY_FRESHNESS_THEN_EXTERNAL_COORDINATION")
+        self.assertEqual(coordination["status"], "BLOCKED_EXTERNAL_SERVICE_COORDINATION_AND_HUMAN_GATE")
         self.assertFalse(coordination["checkpoint_refresh_required"])
-        self.assertTrue(coordination["offhost_recovery_freshness_required"])
+        self.assertFalse(coordination["offhost_recovery_freshness_required"])
         self.assertTrue(coordination["external_service_coordination_required"])
         self.assertTrue(coordination["host_reboot_would_interrupt_external_services"])
         self.assertEqual(coordination["deepseek_harness"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")

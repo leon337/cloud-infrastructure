@@ -106,17 +106,17 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [x] Zero units failed; F1.2c/rede/runner/serviços críticos ativos no checkpoint.
 - [x] Backup on-host 06/09 `cloud-infrastructure-config-20260906T030657Z.tar.gz`: integridade PASS.
 - [x] Recovery off-host de 05/09 revalidado: `SHA256SUMS` 6/6 PASS.
-- [!] Recovery off-host de 06/09 ausente no momento da coleta; causa `NOT_VERIFIED`.
-- [ ] Produzir/revalidar recovery off-host fresco para fechar o gate atual.
-- [!] Depois, revalidar frescor mínimo do checkpoint conforme necessário.
+- [x] Ausência do recovery de 06/09 preservada como observação histórica de 13:34; causa segue `NOT_VERIFIED`.
+- [x] Recovery off-host 06/09 produzido em `20260906T185928Z`: RECOVERY-P2, 6/6 SHA, secret/path/link safety e restore smoke PASS.
+- [x] Recheck mínimo pós-recovery: sistema `running`, zero failed units, kernel `6.8.0-138`, rede/F1.2c previamente revalidados nesta janela; repetir antes do reboot se houver drift/tempo relevante.
 - [!] Coordenar janela com owners externos de DeepSeek Harness e 9router.
 - [!] Obter autorização humana explícita para updates/reboot.
 - [ ] Executar update/reboot controlado somente após todos os gates.
 - [ ] Executar validação pós-reboot completa.
 
-**Estado:** `FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP` + `BLOCKED_OFFHOST_RECOVERY_FRESHNESS_THEN_EXTERNAL_COORDINATION`.
+**Estado:** `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH` + `BLOCKED_EXTERNAL_SERVICE_COORDINATION_AND_HUMAN_GATE`.
 
-**Próximo passo exato:** `PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE`.
+**Próximo passo exato:** `PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`.
 
 ## 8. SentinelX direto NODE-01 → hub
 
@@ -185,7 +185,7 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [ ] Revisar branches históricas após classificação.
 - [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
 
-**Estado:** `PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP`.
+**Estado:** `PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING`.
 
 ## Ordem operacional vigente
 
@@ -197,10 +197,11 @@ RUNNER_ISOLATION_P1                 DONE / ACTIVE_VERIFIED
 SSH_KEY_GOVERNANCE_P1               DONE / KEEP_CURRENT_USER_WORKFLOW
 F1_2C_NODE01_ROLLOUT                DONE / LIVE_VERIFIED
 NETWORK_CONVERGENCE_P2              DONE / LIVE_VERIFIED
-PRE_REBOOT_CHECKPOINT               FRESH_READ_ONLY / OFFHOST_FRESHNESS_GAP
+PRE_REBOOT_CHECKPOINT               FRESH_READ_ONLY / OFFHOST_RECOVERY_FRESH
 SENTINELX_DIRECT                    INTERMITTENT / NOT_CLOSED
 G2B_TASK8                           TECHNICAL_PASS / DRAFT_UNINTEGRATED
-PRE_REBOOT_OFFHOST_RECOVERY         NEXT / FRESHNESS_GATE
+PRE_REBOOT_OFFHOST_RECOVERY         DONE / RECOVERY_P2_PASS
+PRE_REBOOT_EXTERNAL_COORDINATION    NEXT / HUMAN_COORDINATION_GATE
 UPDATE_AND_CONTROLLED_REBOOT        NOT_AUTHORIZED
 POST_REBOOT_VALIDATION              PENDING
 CANONICAL_PR_BRANCH_HYGIENE         PENDING

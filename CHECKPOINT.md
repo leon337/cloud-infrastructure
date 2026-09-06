@@ -21,17 +21,17 @@ não autoriza mudança material por si só.
 - G2-B Task 8: `TECHNICAL_PASS_DRAFT_UNINTEGRATED`.
 - SentinelX direto: `INTERMITTENT_NOT_CLOSED`; causa `NOT_VERIFIED`.
 - Kernel atual: `6.8.0-138-generic`; alvo instalado: `6.8.0-139.139`; reboot requerido.
-- Checkpoint live 06/09: `FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP`.
+- Checkpoint live 06/09: `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH`.
 - Backup on-host 06/09: `cloud-infrastructure-config-20260906T030657Z.tar.gz`, SHA `ec5d83dd...5816f4`, integridade PASS.
-- Recovery off-host: último completo `20260905T033111Z`, `SHA256SUMS` 6/6 PASS; recovery 06/09 ausente no check.
-- Causa da ausência do recovery 06/09: `NOT_VERIFIED`.
+- Recovery off-host atual: `20260906T185928Z`, formato `RECOVERY-P2-v1`, `SHA256SUMS` 6/6 PASS, secret/path/link safety PASS e restore smoke PASS.
+- Causa da ausência observada às 13:34 permanece historicamente `NOT_VERIFIED`; a lacuna de frescor foi fechada manualmente pelo gate autorizado.
 
 ## Próxima ação exata
 
-`PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE`
+`PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`
 
-Esse gate exige primeiro um recovery off-host fresco. Depois disso ainda são obrigatórios
-recheck mínimo do checkpoint, coordenação externa de DSH/9router e autorização humana para reboot.
+O recovery off-host fresco e o recheck mínimo já foram concluídos. Agora permanecem obrigatórios
+coordenação externa de DSH/9router e um gate humano separado para updates/reboot.
 
 ## Boundaries
 
@@ -66,4 +66,4 @@ recheck mínimo do checkpoint, coordenação externa de DSH/9router e autorizaç
 - ShellCheck no CI hospedado;
 - policy de isolamento do runner.
 
-**Estado documental:** `PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP`.
+**Estado documental:** `PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING`.

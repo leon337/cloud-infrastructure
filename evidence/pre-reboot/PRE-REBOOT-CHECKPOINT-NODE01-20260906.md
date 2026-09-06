@@ -1,6 +1,6 @@
 # PRE-REBOOT CHECKPOINT — NODE-01 — 2026-09-06
 
-Status: `FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP`
+Status: `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH`
 
 ## Escopo
 
@@ -106,18 +106,50 @@ Nas superfícies verificadas não foi encontrado:
 Isso **não prova ausência de outro scheduler**. A causa da falta de recovery de 06/09 é
 `NOT_VERIFIED`.
 
-Classificação: `NOT_FRESH_FOR_2026_09_06_REBOOT_GATE`.
+Classificação naquele momento: `NOT_FRESH_FOR_2026_09_06_REBOOT_GATE`.
 
-## Decisão do checkpoint
+## Execução autorizada do gate de recovery off-host
+
+LEANDRO autorizou `PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE` em 06/09/2026.
+Foi executado o script canônico de `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`, usando
+`BatchMode=yes`, `StrictHostKeyChecking=yes` e o ssh-agent estável do notebook. Nenhum comando de
+update, reboot, restart, deploy, firewall ou mutação de serviço foi executado na VPS.
+
+Resultado:
+
+- recovery: `/home/leo/Backups/cloud-infrastructure/recovery/20260906T185928Z`;
+- formato: `RECOVERY-P2-v1`;
+- backup raiz: `cloud-infrastructure-config-20260906T030657Z.tar.gz`;
+- SHA-256 raiz: `ec5d83ddcf8ef72d92d2d52590e6d8a4329fdce6893088ee16520ebb0c5816f4`;
+- `SHA256SUMS`: 6/6 PASS;
+- `SECRET_SCAN=PASS`;
+- `ARCHIVE_PATH_SAFETY=PASS`;
+- `ARCHIVE_LINK_SAFETY=PASS`;
+- `RESTORE_SMOKE=PASS`;
+- root members: 41;
+- runtime overlay members: 11;
+- symlink `latest` aponta para `20260906T185928Z`.
+
+Recheck mínimo na mesma janela confirmou `system_state=running`, zero failed units e kernel
+`6.8.0-138-generic`; F1.2c, `eth0=routable (configured)`, online state, gateway `/32` e default route
+já haviam sido revalidados nesta retomada antes do pull.
+
+A causa de o recovery automático de 06/09 não existir às 13:34 continua `NOT_VERIFIED`; a execução
+manual autorizada fecha a lacuna de frescor sem promover hipótese sobre scheduler.
+
+Classificação atual: `FRESH_FOR_2026_09_06_REBOOT_GATE`.
+
+## Decisão atual do checkpoint
 
 - `live_snapshot_fresh=true`.
 - `accepted_for_current_reboot=false`.
-- `blocking_reason=OFFHOST_RECOVERY_NOT_FRESH_AT_CHECK`.
+- `blocking_reason=EXTERNAL_SERVICE_COORDINATION_PENDING`.
+- recovery off-host fresco: **PASS**.
 - Reboot e updates continuam `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
-- Coordenação externa com os owners de DSH/9router continua obrigatória após resolver a lacuna off-host.
+- DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY`.
 
 Próximo gate:
 
-`PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE`
+`PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`
 
-Nenhuma causa não comprovada foi promovida a fato e nenhum boundary externo foi atravessado.
+Nenhuma causa não comprovada foi promovida a fato e nenhum reboot/update foi autorizado.

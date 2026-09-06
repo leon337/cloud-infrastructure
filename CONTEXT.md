@@ -28,19 +28,19 @@ Base canônica: `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`.
 - SSH key governance: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; preservar fluxo notebook→VPS.
 - G2-B Task 8: `TECHNICAL_PASS_DRAFT_UNINTEGRATED`.
 - SentinelX direto: `INTERMITTENT_NOT_CLOSED`; causa atual `NOT_VERIFIED`.
-- Checkpoint 06/09: `FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP`.
+- Checkpoint 06/09: `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH`.
 - Backup on-host 06/09: `FRESH_INTEGRITY_PASS`.
-- Recovery off-host: último completo `20260905T033111Z`, `PASS_6_OF_6`; 06/09 ausente no check; causa `NOT_VERIFIED`.
+- Recovery off-host: `20260906T185928Z`, `RECOVERY-P2-v1`, `PASS_6_OF_6`, restore smoke PASS; causa da ausência anterior segue historicamente `NOT_VERIFIED`.
 - Produção/update/reboot: não autorizados.
 
-**Estado documental:** `PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP`.
+**Estado documental:** `PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING`.
 
 ## Próximo passo exato
 
-`PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE`
+`PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`
 
-Não executar update/reboot. Primeiro fechar a frescura do recovery off-host; depois revalidar
-checkpoint conforme necessário, coordenar a janela com owners externos e obter autorização humana.
+Não executar update/reboot. O recovery off-host e o recheck mínimo foram fechados; agora coordenar
+a janela com owners externos e somente depois abrir gate humano separado para updates/reboot.
 
 ## Boundary externo
 
