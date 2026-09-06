@@ -40,6 +40,11 @@ execution, preservation of state/commit/evidence, and explicit readiness.
 Observed response: `READY_FOR_NODE01_MAINTENANCE`.
 The chat also reported Task 2 closed and a final HEAD recorded before the stop.
 
+GUI automation note: this chat already had a pre-existing user draft in its composer. During the
+preserve/restore sequence, one copy of that draft appears to have been submitted once while the draft
+was also restored to the composer. This is classified `NON_BLOCKING_GUI_AUTOMATION_SIDE_EFFECT`; it
+did not mutate NODE-01, DSH or 9router, and the chat subsequently reached the maintenance-ready state.
+
 ### Consumer 2 — `Dsh Gpt - Mestre chama assistente`
 
 The message was not forced into the chat while an active response was executing. The chat was
