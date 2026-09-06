@@ -82,7 +82,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(runner["global_hook_last_probe_run"], 33998487949)
         self.assertEqual(runner["global_hook_last_probe_result"], "PASS_ACTIVE_VERIFIED")
         self.assertEqual(runner["cross_job_proof_run"], 33998487949)
-        self.assertEqual(runner["next_exact_step"], "RUNNER_ISOLATION_GLOBAL_HOOK_PR_MERGE_HUMAN_GATE")
+        self.assertEqual(runner["next_exact_step"], "NONE")
 
 
 if __name__ == "__main__":
