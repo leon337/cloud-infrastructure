@@ -32,7 +32,7 @@ def main() -> int:
     for token in (
         "CANONICAL_EXECUTIVE_PANEL_IMPLEMENTACAO_DA_VPS",
         "Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**",
-        "LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT",
+        "PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP",
         "COMPLETE_LIVE_VERIFIED",
         "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
         "INTERMITTENT_NOT_CLOSED",
@@ -43,13 +43,13 @@ def main() -> int:
     for path in (Path("CONTEXT.md"), Path("CHECKPOINT.md")):
         for token in (
             "scripts/test.sh",
-            "LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT",
+            "PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP",
             "COMPLETE_LIVE_VERIFIED",
             "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
             "INTERMITTENT_NOT_CLOSED",
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE",
+            "PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE",
         ):
             require_token(path, token)
 
@@ -57,7 +57,7 @@ def main() -> int:
         for token in (
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE",
+            "PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE",
             "COMPLETE_LIVE_VERIFIED",
             "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
         ):
@@ -140,20 +140,42 @@ def main() -> int:
         raise AssertionError("SentinelX current root cause must remain NOT_VERIFIED")
 
     checkpoint = state.get("pre_reboot_checkpoint", {})
-    if checkpoint.get("status") != "HISTORICAL_VERIFIED_REFRESH_REQUIRED":
+    if checkpoint.get("status") != "FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP":
         raise AssertionError("pre-reboot checkpoint freshness classification drift")
     if checkpoint.get("accepted_for_current_reboot") is not False:
         raise AssertionError("historical checkpoint must not be accepted for current reboot")
+    if checkpoint.get("refresh_required_before_reboot") is not False:
+        raise AssertionError("fresh read-only checkpoint must not still require checkpoint refresh")
+    if checkpoint.get("live_snapshot_fresh") is not True:
+        raise AssertionError("fresh checkpoint live snapshot drift")
+    if checkpoint.get("blocking_reason") != "OFFHOST_RECOVERY_NOT_FRESH_AT_CHECK":
+        raise AssertionError("pre-reboot blocking reason drift")
+    if checkpoint.get("latest_onhost_config_backup_integrity") != "PASS":
+        raise AssertionError("on-host backup integrity drift")
+    offhost = checkpoint.get("offhost_recovery", {})
+    if offhost.get("sha256_status") != "PASS_6_OF_6":
+        raise AssertionError("off-host recovery checksum status drift")
+    if offhost.get("current_day_recovery_present") is not False:
+        raise AssertionError("off-host current-day freshness drift")
+    if offhost.get("root_cause_missing_current_day") != "NOT_VERIFIED":
+        raise AssertionError("off-host missing-run cause must remain NOT_VERIFIED")
 
     coordination = state.get("reboot_coordination", {})
-    if coordination.get("status") != "HUMAN_GATE_AND_EXTERNAL_SERVICE_COORDINATION_REQUIRED":
+    if coordination.get("status") != "BLOCKED_OFFHOST_RECOVERY_FRESHNESS_THEN_EXTERNAL_COORDINATION":
         raise AssertionError("reboot coordination gate drift")
+    if coordination.get("checkpoint_refresh_required") is not False:
+        raise AssertionError("checkpoint refresh must be closed after fresh read-only collection")
+    if coordination.get("offhost_recovery_freshness_required") is not True:
+        raise AssertionError("off-host recovery freshness gate must remain open")
     if coordination.get("deepseek_harness") != "EXTERNALLY_MANAGED_OBSERVE_ONLY":
         raise AssertionError("DeepSeek Harness ownership boundary drift")
     if coordination.get("ninerouter") != "EXTERNALLY_MANAGED_OBSERVE_ONLY":
         raise AssertionError("9router ownership boundary drift")
 
-    if state["project"].get("next_exact_step") != "PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE":
+    if state.get("authorization", {}).get("pre_reboot_checkpoint") != "FRESH_READ_ONLY_COMPLETED_OFFHOST_FRESHNESS_GAP":
+        raise AssertionError("pre-reboot authorization receipt drift")
+
+    if state["project"].get("next_exact_step") != "PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE":
         raise AssertionError("project next exact step drift")
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

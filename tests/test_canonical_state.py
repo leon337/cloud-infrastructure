@@ -84,24 +84,39 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
         self.assertEqual(
             self.state["project"]["next_exact_step"],
-            "PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE",
+            "PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE",
         )
 
     def test_reboot_gate_requires_fresh_checkpoint_and_external_coordination(self):
         checkpoint = self.state["pre_reboot_checkpoint"]
-        self.assertEqual(checkpoint["status"], "HISTORICAL_VERIFIED_REFRESH_REQUIRED")
+        self.assertEqual(checkpoint["status"], "FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP")
         self.assertFalse(checkpoint["accepted_for_current_reboot"])
-        self.assertTrue(checkpoint["refresh_required_before_reboot"])
+        self.assertFalse(checkpoint["refresh_required_before_reboot"])
+        self.assertTrue(checkpoint["live_snapshot_fresh"])
+        self.assertEqual(checkpoint["blocking_reason"], "OFFHOST_RECOVERY_NOT_FRESH_AT_CHECK")
+        self.assertEqual(checkpoint["latest_onhost_config_backup"], "cloud-infrastructure-config-20260906T030657Z.tar.gz")
+        self.assertEqual(checkpoint["latest_onhost_config_backup_integrity"], "PASS")
+        self.assertEqual(checkpoint["offhost_recovery"]["latest_complete_dir"], "20260905T033111Z")
+        self.assertEqual(checkpoint["offhost_recovery"]["sha256_status"], "PASS_6_OF_6")
+        self.assertFalse(checkpoint["offhost_recovery"]["current_day_recovery_present"])
+        self.assertEqual(checkpoint["offhost_recovery"]["root_cause_missing_current_day"], "NOT_VERIFIED")
         self.assertEqual(checkpoint["current_kernel"], "6.8.0-138-generic")
         self.assertEqual(checkpoint["target_kernel"], "6.8.0-139-generic")
         self.assertTrue(checkpoint["reboot_required"])
+
+        self.assertEqual(
+            self.state["authorization"]["pre_reboot_checkpoint"],
+            "FRESH_READ_ONLY_COMPLETED_OFFHOST_FRESHNESS_GAP",
+        )
 
         sentinel = self.state["sentinelx_direct_connectivity"]
         self.assertEqual(sentinel["status"], "INTERMITTENT_NOT_CLOSED")
         self.assertEqual(sentinel["root_cause"], "NOT_VERIFIED")
 
         coordination = self.state["reboot_coordination"]
-        self.assertEqual(coordination["status"], "HUMAN_GATE_AND_EXTERNAL_SERVICE_COORDINATION_REQUIRED")
+        self.assertEqual(coordination["status"], "BLOCKED_OFFHOST_RECOVERY_FRESHNESS_THEN_EXTERNAL_COORDINATION")
+        self.assertFalse(coordination["checkpoint_refresh_required"])
+        self.assertTrue(coordination["offhost_recovery_freshness_required"])
         self.assertTrue(coordination["external_service_coordination_required"])
         self.assertTrue(coordination["host_reboot_would_interrupt_external_services"])
         self.assertEqual(coordination["deepseek_harness"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")

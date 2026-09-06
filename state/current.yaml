@@ -1,10 +1,10 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: docs/live-state-reconciliation-20260905
-updated_at: "2026-09-05T23:50:00-03:00"
-state_classification: CURRENT_F1_2C_NETWORK_LIVE_VERIFIED_PRE_REBOOT_REFRESH_COORDINATION_GATE
-documentation_state: LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT
+candidate_branch: docs/pre-reboot-checkpoint-20260906
+updated_at: "2026-09-06T13:34:47-03:00"
+state_classification: CURRENT_PRE_REBOOT_CHECKPOINT_FRESH_OFFHOST_RECOVERY_GAP
+documentation_state: PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP
 
 freshness:
   canonical_executive_panel: README.md
@@ -31,8 +31,8 @@ continuity:
 
 source_snapshot:
   main:
-    sha: 34248311116e2282950fe560639873c8e5d2f81c
-    latest_integrated_pr: 48
+    sha: 7ce6fff85f66eaed88c7b6e092c4bc2375f5382d
+    latest_integrated_pr: 49
     reconciliation_pr: 49
     executive_projection: README.md
     operational_checklist: ROADMAP-CHECKLIST.md
@@ -48,7 +48,7 @@ source_snapshot:
 
 project:
   name: IMPLEMENTACAO_DA_VPS
-  status: ACTIVE_WITH_VERIFIED_NETWORK_AND_OPEN_REBOOT_GATE
+  status: ACTIVE_PRE_REBOOT_BLOCKED_OFFHOST_FRESHNESS
   integration_status: LIVE_STATE_RECONCILED_OPEN_INTEGRATION_DEBT
   durable_completed:
     phase_0_inventory: DONE
@@ -63,7 +63,7 @@ project:
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
-  next_exact_step: PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE
+  next_exact_step: PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
@@ -167,21 +167,38 @@ network_convergence_p2:
   one_shot_authorization_consumed: true
 
 pre_reboot_checkpoint:
-  status: HISTORICAL_VERIFIED_REFRESH_REQUIRED
+  status: FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP
+  checkpoint_id: PRE_REBOOT_CHECKPOINT_NODE01_20260906_READONLY
+  collected_at: "2026-09-06T13:34:47-03:00"
+  live_snapshot_fresh: true
   historical_checkpoint_status: VERIFIED_PRE_REBOOT_CHECKPOINT_V2
   historical_v1_status: REJECTED_INTERNAL_SHA256SUMS_SELF_HASH
   historical_v2_archive: pre-reboot-checkpoint-20260829T203736Z.tar.gz
   historical_v2_sha256: 8fe354e44c5d7948a9e87f0ab57cb9dd261fd438791f10964001158d800e0b42
-  historical_canonical_backup: cloud-infrastructure-config-20260829T203734Z.tar.gz
-  historical_canonical_backup_sha256: ce85092790cfbfe7b3aec675f12b3ef28e890c2e5ccb492c345a408118271c20
   historical_kernel: 6.8.0-137-generic
   current_kernel: 6.8.0-138-generic
   target_kernel: 6.8.0-139-generic
+  target_kernel_package_version: 6.8.0-139.139
   reboot_required: true
   accepted_for_current_reboot: false
-  refresh_required_before_reboot: true
-  latest_onhost_config_backup: cloud-infrastructure-config-20260905T030614Z.tar.gz
-  evidence_file: evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md
+  refresh_required_before_reboot: false
+  blocking_reason: OFFHOST_RECOVERY_NOT_FRESH_AT_CHECK
+  system_failed_units: 0
+  latest_onhost_config_backup: cloud-infrastructure-config-20260906T030657Z.tar.gz
+  latest_onhost_config_backup_sha256: ec5d83ddcf8ef72d92d2d52590e6d8a4329fdce6893088ee16520ebb0c5816f4
+  latest_onhost_config_backup_integrity: PASS
+  offhost_recovery:
+    latest_complete_dir: 20260905T033111Z
+    latest_complete_local_time: "2026-09-05T00:31:49-03:00"
+    sha256_status: PASS_6_OF_6
+    current_day_recovery_present: false
+    freshness: NOT_FRESH_FOR_2026_09_06_REBOOT_GATE
+    checked_user_systemd_unit: NOT_FOUND
+    checked_system_systemd_unit: NOT_FOUND
+    checked_user_crontab_entry: NOT_FOUND
+    other_scheduler_absence_proven: false
+    root_cause_missing_current_day: NOT_VERIFIED
+  evidence_file: evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260906.md
 
 sentinelx_direct_connectivity:
   status: INTERMITTENT_NOT_CLOSED
@@ -198,8 +215,9 @@ sentinelx_direct_connectivity:
   mutation_authorized: false
 
 reboot_coordination:
-  status: HUMAN_GATE_AND_EXTERNAL_SERVICE_COORDINATION_REQUIRED
-  checkpoint_refresh_required: true
+  status: BLOCKED_OFFHOST_RECOVERY_FRESHNESS_THEN_EXTERNAL_COORDINATION
+  checkpoint_refresh_required: false
+  offhost_recovery_freshness_required: true
   external_service_coordination_required: true
   host_reboot_would_interrupt_external_services: true
   deepseek_harness: EXTERNALLY_MANAGED_OBSERVE_ONLY
@@ -231,7 +249,7 @@ control_bridge:
     merge_status: TASK_8_TECHNICAL_PASS_DRAFT_UNINTEGRATED
 
 remote_vps:
-  observation_class: CURRENT_READ_ONLY_RECONCILIATION
+  observation_class: CURRENT_PRE_REBOOT_READ_ONLY_CHECKPOINT
   hostname: vmi3506102
   os: Ubuntu 24.04.4 LTS
   kernel: 6.8.0-138-generic
@@ -247,7 +265,7 @@ remote_vps:
     total: 4
     coredns: 2
     squid: 2
-  latest_config_backup: cloud-infrastructure-config-20260905T030614Z.tar.gz
+  latest_config_backup: cloud-infrastructure-config-20260906T030657Z.tar.gz
 
 repository_hygiene:
   status: REPOSITORY_HYGIENE_REVALIDATED
@@ -261,7 +279,7 @@ toolchain:
   canonical_entrypoint: scripts/test.sh
   package: CANONICAL_MAINLINE_NEUTRAL_V2
   validation_status: PASS
-  hosted_canonical_latest_run: 34000214154
+  hosted_canonical_latest_run: 34041274347
   functional_lineage_code_imported: false
   g2b_functional_code_imported: false
   f1_2c_functional_code_imported: false
@@ -290,7 +308,7 @@ authorization:
   g2b_real_write: NOT_AUTHORIZED
   f1_2c_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   network_convergence_p2_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
-  pre_reboot_checkpoint: HISTORICAL_ONE_SHOT_COMPLETED_REFRESH_REQUIRED
+  pre_reboot_checkpoint: FRESH_READ_ONLY_COMPLETED_OFFHOST_FRESHNESS_GAP
   updates: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   reboot: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   destructive_history_remediation: NOT_AUTHORIZED

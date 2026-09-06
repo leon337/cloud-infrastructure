@@ -10,13 +10,12 @@ Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 > [`CHECKPOINT.md`](CHECKPOINT.md) e [`state/current.yaml`](state/current.yaml).
 > Fatos mutáveis verificados no GitHub/provider/VPS prevalecem sobre narrativa histórica.
 
-## Estado executivo reconciliado — 05/09/2026
+## Estado executivo reconciliado — 06/09/2026
 
-A reconciliação desta projeção parte de `main@34248311116e2282950fe560639873c8e5d2f81c`,
-dos receipts live F1.2c/Network P2 preservados da PR #41 e de uma nova leitura read-only
-do NODE-01. Nenhuma mudança na VPS pertence a esta reconciliação.
+A projeção atual parte de `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d` e do
+checkpoint read-only coletado em 06/09/2026. Nenhuma mudança na VPS pertence a este checkpoint.
 
-**Estado documental:** `LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT`.
+**Estado documental:** `PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP`.
 
 | Área | Estado atual | Evidência/limite |
 |---|---|---|
@@ -27,23 +26,24 @@ do NODE-01. Nenhuma mudança na VPS pertence a esta reconciliação.
 | SSH key governance | `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED` | preservar fluxo notebook→VPS e `authorized_keys` |
 | G2-B Task 8 | `TECHNICAL_PASS_DRAFT_UNINTEGRATED` | PR #21 Draft, head `f91c836e...`; 373/373 testes e 13/13 marcadores; não integrado |
 | SentinelX direto | `INTERMITTENT_NOT_CLOSED` | serviço ativo; conexão ao hub oscilou; causa atual `NOT_VERIFIED` |
-| Pre-reboot checkpoint | `HISTORICAL_VERIFIED_REFRESH_REQUIRED` | checkpoint V2 de 29/08 é evidência válida, mas antecede o kernel atual e não vale como checkpoint corrente |
-| Update/reboot | `HUMAN_GATE_AND_EXTERNAL_SERVICE_COORDINATION_REQUIRED` | checkpoint fresco + coordenação externa + autorização humana antes de qualquer reboot |
+| Pre-reboot checkpoint | `FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP` | live/on-host frescos em 06/09; recovery off-host mais recente continua em 05/09 (6/6 SHA PASS) |
+| Update/reboot | `BLOCKED_OFFHOST_RECOVERY_FRESHNESS_THEN_EXTERNAL_COORDINATION` | primeiro fechar recovery off-host; depois coordenação externa + autorização humana |
 | Produção externa | `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` | nenhuma promoção autorizada |
 
 ## Próxima ação exata
 
 ```text
-PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE
+PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE
 ```
 
 Antes de qualquer update/reboot:
 
-1. gerar um checkpoint pré-reboot fresco do estado atual;
-2. validar backup/recovery off-host aplicável ao checkpoint fresco;
-3. coordenar a janela com os responsáveis externos por DeepSeek Harness e 9router;
-4. obter autorização humana explícita para updates/reboot;
-5. somente então executar manutenção e a validação pós-reboot.
+1. checkpoint live fresco de 06/09: **concluído read-only**;
+2. produzir/revalidar recovery off-host fresco para 06/09;
+3. repetir a checagem mínima de frescor do checkpoint se houver mudança material/tempo relevante;
+4. coordenar a janela com os responsáveis externos por DeepSeek Harness e 9router;
+5. obter autorização humana explícita para updates/reboot;
+6. somente então executar manutenção e a validação pós-reboot.
 
 DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY`. Esta PR não
 os modifica, reinicia, usa como executor ou muda seu ownership. Um reboot do host os
@@ -106,14 +106,22 @@ Classificação: `INTERMITTENT_NOT_CLOSED`; causa atual: `NOT_VERIFIED`.
 Não reiniciar ou patchar SentinelX como atalho nesta frente enquanto isso puder interferir
 com workloads externos em execução. Diagnóstico material exige missão/gate próprio.
 
-## Pre-reboot: evidência histórica ≠ checkpoint corrente
+## Pre-reboot — checkpoint fresco com gap off-host
 
-O checkpoint V2 de 29/08 permanece válido como evidência histórica e está documentado em
-[`evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md`](evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md).
+O checkpoint read-only de 06/09 está documentado em
+[`evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260906.md`](evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260906.md).
 
-Ele foi criado com kernel `6.8.0-137-generic`. A releitura de 05/09 mostrou kernel
-`6.8.0-138-generic`, `reboot-required=YES` e alvo `6.8.0-139-generic`. Portanto o V2
-não é aceito como checkpoint corrente para o próximo reboot. Um refresh é obrigatório.
+Ele confirmou kernel `6.8.0-138-generic`, alvo `6.8.0-139.139`, `reboot-required=YES`,
+zero units failed, rede/F1.2c/runner/serviços críticos ativos, 2 CoreDNS + 2 Squid em Docker
+e backup on-host `cloud-infrastructure-config-20260906T030657Z.tar.gz` com integridade PASS.
+
+O último recovery off-host completo permanece `20260905T033111Z`, com `SHA256SUMS` 6/6 PASS.
+Não havia recovery de 06/09 no momento da coleta. Nas superfícies verificadas não foi encontrado
+timer systemd (user/system) nem crontab do usuário para esse recovery; isso não prova ausência
+de outro scheduler. Causa da lacuna: `NOT_VERIFIED`.
+
+Por isso o checkpoint é fresco como snapshot live, mas **não é aceito para reboot** até fechar
+a frescura do recovery off-host e depois cumprir coordenação externa + gate humano.
 
 ## Dívidas ainda abertas
 

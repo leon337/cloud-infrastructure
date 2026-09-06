@@ -19,31 +19,28 @@ Precedência operacional:
 
 Nunca transformar estado desejado ou histórico em estado observado atual.
 
-## Mapa atual — reconciliação de 05/09/2026
+## Mapa atual — checkpoint pré-reboot de 06/09/2026
 
-Base de reconciliação: `main@34248311116e2282950fe560639873c8e5d2f81c`.
+Base canônica: `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`.
 
-- F1.2c: `COMPLETE_LIVE_VERIFIED`; candidato `baaf83908e8e83264baafc032434a4df1952450b` aplicado e pós-verificado.
-- Network P2: `COMPLETE_LIVE_VERIFIED`; candidato `682c3e55d835ebea4bcc2edd297a8b819b2df434`; `eth0` configurado/online e gateway `/32 scope link` presente.
-- Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`; run `33998487949`; nenhuma ação pendente na trilha.
+- F1.2c e Network P2: `COMPLETE_LIVE_VERIFIED`.
+- Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`; `next_exact_step=NONE`.
 - SSH key governance: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; preservar fluxo notebook→VPS.
-- G2-B Task 8: `TECHNICAL_PASS_DRAFT_UNINTEGRATED`; PR #21 Draft/unmerged; Tasks 9/10 `NOT_STARTED`.
-- SentinelX direto: `INTERMITTENT_NOT_CLOSED`; serviço live ativo, causa da intermitência `NOT_VERIFIED`.
-- Pre-reboot checkpoint de 29/08: `HISTORICAL_VERIFIED_REFRESH_REQUIRED` porque foi produzido com kernel `6.8.0-137-generic` e o host está agora em `6.8.0-138-generic` com `6.8.0-139-generic` pendente.
-- Produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
+- G2-B Task 8: `TECHNICAL_PASS_DRAFT_UNINTEGRATED`.
+- SentinelX direto: `INTERMITTENT_NOT_CLOSED`; causa atual `NOT_VERIFIED`.
+- Checkpoint 06/09: `FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP`.
+- Backup on-host 06/09: `FRESH_INTEGRITY_PASS`.
+- Recovery off-host: último completo `20260905T033111Z`, `PASS_6_OF_6`; 06/09 ausente no check; causa `NOT_VERIFIED`.
+- Produção/update/reboot: não autorizados.
 
-**Estado documental:** `LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT`.
+**Estado documental:** `PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP`.
 
 ## Próximo passo exato
 
-`PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE`
+`PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE`
 
-Não executar diretamente update/reboot. Primeiro:
-
-- gerar checkpoint fresco;
-- validar recovery/off-host associado;
-- coordenar janela com owners externos dos serviços que seriam interrompidos;
-- obter autorização humana explícita.
+Não executar update/reboot. Primeiro fechar a frescura do recovery off-host; depois revalidar
+checkpoint conforme necessário, coordenar a janela com owners externos e obter autorização humana.
 
 ## Boundary externo
 
@@ -92,16 +89,18 @@ A causa atual permanece `NOT_VERIFIED`. Não inferir automaticamente que o heart
 
 ## Reboot / checkpoint
 
-O receipt `PRE-REBOOT-CHECKPOINT-NODE01-20260829.md` continua válido como evidência de
-uma baseline histórica. Ele **não** deve ser usado como autorização nem como checkpoint corrente.
+O receipt histórico de 29/08 continua válido como baseline histórica, mas o snapshot corrente é
+`evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260906.md`.
 
-Estado atual observado:
+O checkpoint de 06/09 confirmou:
 
-- kernel `6.8.0-138-generic`;
-- `reboot-required=YES`;
-- alvo `linux-image-6.8.0-139-generic` + `linux-base`;
-- F1.2c, network wait-online, runner e SentinelX ativos;
-- backup on-host recente `cloud-infrastructure-config-20260905T030614Z.tar.gz`.
+- kernel `6.8.0-138-generic`; alvo instalado `6.8.0-139.139`;
+- `reboot-required=YES` para kernel + `linux-base`;
+- zero units failed; F1.2c, wait-online, Docker, UFW, Fail2Ban, Tailscale, Runner e SentinelX ativos;
+- backup on-host 06/09 íntegro;
+- recovery off-host mais recente ainda 05/09, 6/6 SHA PASS.
+
+A ausência do recovery de 06/09 bloqueia o gate atual. Causa: `NOT_VERIFIED`.
 
 ## Toolchain canônica
 

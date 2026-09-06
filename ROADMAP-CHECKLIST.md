@@ -99,21 +99,24 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 
 ## 7. Kernel / checkpoint / update / reboot — P2
 
-- [x] Checkpoint V2 de 29/08 validado e preservado como evidência histórica.
-- [x] Checkpoint V1 rejeitado corretamente por self-hash interno inválido.
-- [x] Releitura atual: kernel `6.8.0-138-generic`.
+- [x] Checkpoint histórico V2 de 29/08 preservado como evidência.
+- [x] Checkpoint pré-reboot read-only fresco coletado em 06/09.
+- [x] Kernel atual `6.8.0-138-generic`; alvo `6.8.0-139.139` instalado.
 - [x] `reboot-required=YES` para `linux-image-6.8.0-139-generic` + `linux-base`.
-- [!] O checkpoint V2 foi criado com kernel `6.8.0-137-generic`; não é aceito como checkpoint corrente.
-- [ ] Gerar **checkpoint pré-reboot fresco** sobre o estado atual.
-- [ ] Revalidar cópia/recovery off-host do checkpoint fresco.
+- [x] Zero units failed; F1.2c/rede/runner/serviços críticos ativos no checkpoint.
+- [x] Backup on-host 06/09 `cloud-infrastructure-config-20260906T030657Z.tar.gz`: integridade PASS.
+- [x] Recovery off-host de 05/09 revalidado: `SHA256SUMS` 6/6 PASS.
+- [!] Recovery off-host de 06/09 ausente no momento da coleta; causa `NOT_VERIFIED`.
+- [ ] Produzir/revalidar recovery off-host fresco para fechar o gate atual.
+- [!] Depois, revalidar frescor mínimo do checkpoint conforme necessário.
 - [!] Coordenar janela com owners externos de DeepSeek Harness e 9router.
 - [!] Obter autorização humana explícita para updates/reboot.
 - [ ] Executar update/reboot controlado somente após todos os gates.
-- [ ] Executar validação pós-reboot de SSH, rede, firewall, Docker, Runner, SentinelX, XRDP e backup.
+- [ ] Executar validação pós-reboot completa.
 
-**Estado:** `HISTORICAL_VERIFIED_REFRESH_REQUIRED` + `HUMAN_GATE_AND_EXTERNAL_SERVICE_COORDINATION_REQUIRED`.
+**Estado:** `FRESH_READ_ONLY_VERIFIED_OFFHOST_FRESHNESS_GAP` + `BLOCKED_OFFHOST_RECOVERY_FRESHNESS_THEN_EXTERNAL_COORDINATION`.
 
-**Próximo passo exato:** `PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE`.
+**Próximo passo exato:** `PRE_REBOOT_OFFHOST_RECOVERY_FRESHNESS_GATE`.
 
 ## 8. SentinelX direto NODE-01 → hub
 
@@ -182,7 +185,7 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [ ] Revisar branches históricas após classificação.
 - [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
 
-**Estado:** `LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT`.
+**Estado:** `PRE_REBOOT_CHECKPOINT_RECONCILED_OFFHOST_FRESHNESS_GAP`.
 
 ## Ordem operacional vigente
 
@@ -194,10 +197,10 @@ RUNNER_ISOLATION_P1                 DONE / ACTIVE_VERIFIED
 SSH_KEY_GOVERNANCE_P1               DONE / KEEP_CURRENT_USER_WORKFLOW
 F1_2C_NODE01_ROLLOUT                DONE / LIVE_VERIFIED
 NETWORK_CONVERGENCE_P2              DONE / LIVE_VERIFIED
-PRE_REBOOT_CHECKPOINT               HISTORICAL_VERIFIED / REFRESH_REQUIRED
+PRE_REBOOT_CHECKPOINT               FRESH_READ_ONLY / OFFHOST_FRESHNESS_GAP
 SENTINELX_DIRECT                    INTERMITTENT / NOT_CLOSED
 G2B_TASK8                           TECHNICAL_PASS / DRAFT_UNINTEGRATED
-PRE_REBOOT_REFRESH_COORDINATION     NEXT / HUMAN_GATE
+PRE_REBOOT_OFFHOST_RECOVERY         NEXT / FRESHNESS_GATE
 UPDATE_AND_CONTROLLED_REBOOT        NOT_AUTHORIZED
 POST_REBOOT_VALIDATION              PENDING
 CANONICAL_PR_BRANCH_HYGIENE         PENDING
