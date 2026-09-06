@@ -1,10 +1,10 @@
 protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
-candidate_branch: docs/live-state-reconciliation-20260905
-updated_at: "2026-09-05T23:50:00-03:00"
-state_classification: CURRENT_F1_2C_NETWORK_LIVE_VERIFIED_PRE_REBOOT_REFRESH_COORDINATION_GATE
-documentation_state: LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT
+candidate_branch: docs/pre-reboot-checkpoint-20260906
+updated_at: "2026-09-06T19:41:21-03:00"
+state_classification: CURRENT_POST_REBOOT_PR51_INTEGRATED_PR50_MERGE_GATE
+documentation_state: POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING
 
 freshness:
   canonical_executive_panel: README.md
@@ -31,8 +31,8 @@ continuity:
 
 source_snapshot:
   main:
-    sha: 34248311116e2282950fe560639873c8e5d2f81c
-    latest_integrated_pr: 48
+    sha: 7ce6fff85f66eaed88c7b6e092c4bc2375f5382d
+    latest_integrated_pr: 49
     reconciliation_pr: 49
     executive_projection: README.md
     operational_checklist: ROADMAP-CHECKLIST.md
@@ -42,14 +42,20 @@ source_snapshot:
     runner_isolation_closeout_merge_sha: 34248311116e2282950fe560639873c8e5d2f81c
     f1_2c_live_applied_candidate: baaf83908e8e83264baafc032434a4df1952450b
     network_convergence_p2_live_applied_candidate: 682c3e55d835ebea4bcc2edd297a8b819b2df434
+    post_reboot_p2_checker_pr: 51
+    post_reboot_p2_checker_candidate: 9070c24e637e6d571bc53c66d0c54d3825340ffb
+    post_reboot_p2_checker_result: PASS_RECOVERED
+    post_reboot_p2_checker_merge_branch: fix/f1-2c-systemd-runtime-lock
+    post_reboot_p2_checker_merge_sha: d5508e1ed417b85bd4863ae5771605079d15aa99
+    post_reboot_p2_checker_merge_tree: b0a51bef522bbb6c872baf5f4ef15116d6f584b0
     g2b_task8_pr: 21
     g2b_task8_head: f91c836e92fae1aea1cc2e48ecc4c4bde6df78b8
     historical_pre_reboot_checkpoint: pre-reboot-checkpoint-20260829T203736Z.tar.gz
 
 project:
   name: IMPLEMENTACAO_DA_VPS
-  status: ACTIVE_WITH_VERIFIED_NETWORK_AND_OPEN_REBOOT_GATE
-  integration_status: LIVE_STATE_RECONCILED_OPEN_INTEGRATION_DEBT
+  status: ACTIVE_POST_REBOOT_PR51_INTEGRATED_PR50_MERGE_GATE
+  integration_status: PR51_OPERATIONAL_FIX_INTEGRATED_PR50_CANONICAL_MERGE_PENDING
   durable_completed:
     phase_0_inventory: DONE
     phase_1_access_recovery_security: DONE
@@ -63,7 +69,7 @@ project:
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
-  next_exact_step: PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE
+  next_exact_step: HUMAN_GATE_PR50_CANONICAL_MERGE
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
@@ -167,21 +173,50 @@ network_convergence_p2:
   one_shot_authorization_consumed: true
 
 pre_reboot_checkpoint:
-  status: HISTORICAL_VERIFIED_REFRESH_REQUIRED
+  status: FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH
+  checkpoint_id: PRE_REBOOT_CHECKPOINT_NODE01_20260906_READONLY
+  collected_at: "2026-09-06T13:34:47-03:00"
+  revalidated_at: "2026-09-06T15:59:52-03:00"
+  live_snapshot_fresh: true
   historical_checkpoint_status: VERIFIED_PRE_REBOOT_CHECKPOINT_V2
   historical_v1_status: REJECTED_INTERNAL_SHA256SUMS_SELF_HASH
   historical_v2_archive: pre-reboot-checkpoint-20260829T203736Z.tar.gz
   historical_v2_sha256: 8fe354e44c5d7948a9e87f0ab57cb9dd261fd438791f10964001158d800e0b42
-  historical_canonical_backup: cloud-infrastructure-config-20260829T203734Z.tar.gz
-  historical_canonical_backup_sha256: ce85092790cfbfe7b3aec675f12b3ef28e890c2e5ccb492c345a408118271c20
   historical_kernel: 6.8.0-137-generic
   current_kernel: 6.8.0-138-generic
   target_kernel: 6.8.0-139-generic
+  target_kernel_package_version: 6.8.0-139.139
   reboot_required: true
   accepted_for_current_reboot: false
-  refresh_required_before_reboot: true
-  latest_onhost_config_backup: cloud-infrastructure-config-20260905T030614Z.tar.gz
-  evidence_file: evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md
+  refresh_required_before_reboot: false
+  blocking_reason: HUMAN_UPDATE_REBOOT_AUTHORIZATION_PENDING
+  system_failed_units: 0
+  latest_onhost_config_backup: cloud-infrastructure-config-20260906T030657Z.tar.gz
+  latest_onhost_config_backup_sha256: ec5d83ddcf8ef72d92d2d52590e6d8a4329fdce6893088ee16520ebb0c5816f4
+  latest_onhost_config_backup_integrity: PASS
+  offhost_recovery:
+    latest_complete_dir: 20260906T185928Z
+    latest_complete_local_time: "2026-09-06T15:59:28-03:00"
+    sha256_status: PASS_6_OF_6
+    current_day_recovery_present: true
+    freshness: FRESH_FOR_2026_09_06_REBOOT_GATE
+    recovery_format: RECOVERY-P2-v1
+    root_backup: cloud-infrastructure-config-20260906T030657Z.tar.gz
+    root_backup_sha256: ec5d83ddcf8ef72d92d2d52590e6d8a4329fdce6893088ee16520ebb0c5816f4
+    root_backup_members: 41
+    runtime_overlay_members: 11
+    secret_scan: PASS
+    archive_path_safety: PASS
+    archive_link_safety: PASS
+    restore_smoke: PASS
+    canonical_script_main_sha: 7ce6fff85f66eaed88c7b6e092c4bc2375f5382d
+    execution_mode: MANUAL_AUTHORIZED_FRESHNESS_GATE
+    checked_user_systemd_unit: NOT_FOUND
+    checked_system_systemd_unit: NOT_FOUND
+    checked_user_crontab_entry: NOT_FOUND
+    other_scheduler_absence_proven: false
+    root_cause_missing_current_day: NOT_VERIFIED
+  evidence_file: evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260906.md
 
 sentinelx_direct_connectivity:
   status: INTERMITTENT_NOT_CLOSED
@@ -198,15 +233,91 @@ sentinelx_direct_connectivity:
   mutation_authorized: false
 
 reboot_coordination:
-  status: HUMAN_GATE_AND_EXTERNAL_SERVICE_COORDINATION_REQUIRED
-  checkpoint_refresh_required: true
-  external_service_coordination_required: true
+  status: MAINTENANCE_COMPLETED_POST_REBOOT_LIVE_VERIFIED
+  checkpoint_refresh_required: false
+  offhost_recovery_freshness_required: false
+  external_service_coordination_required: false
+  coordination_attempted: true
+  coordination_authorized_by: LEANDRO
+  coordination_attempted_at: "2026-09-06T16:15:54-03:00"
+  coordination_gate_result: PASS_ACTIVE_CHAT_CONSUMERS_CHECKPOINTED
+  external_owner_status: NOT_RESOLVED_NOT_GATE_BLOCKING_AFTER_LEANDRO_CLARIFICATION
+  external_contact_channel_status: GUI_CHAT_CHANNEL_VERIFIED
+  maintenance_window_status: COMPLETED
+  contact_attempt_sent: true
+  contact_attempt_reason: ACTIVE_CHAT_CONSUMERS_COORDINATED_VIA_GUI
+  coordination_channel: CHATGPT_GUI
+  coordination_completed_at: "2026-09-06T17:25:25-03:00"
+  active_consumers_ready: true
+  active_consumers:
+    hy4_teste:
+      window_title: "ChatGPT - hy4 teste]"
+      status: READY_FOR_NODE01_MAINTENANCE
+      checkpoint_evidence: TASK_2_CLOSED_HEAD_RECORDED
+    dsh_gpt:
+      window_title: "Dsh Gpt - Mestre chama assistente"
+      status: PAUSED_SAFE_CHECKPOINT_NO_NEW_DSH_9ROUTER_EXECUTIONS
+      checkpoint_evidence: FEATURE_BRANCH_PRESERVED_REMOTE_BACKUP_NO_MAIN_MERGE_DEPLOY_OR_NEW_MODEL_CALL
+  discovery_surfaces_checked:
+    - CANONICAL_REPOSITORY
+    - GMAIL
+    - GOOGLE_CONTACTS
+    - GOOGLE_DRIVE
+    - GOOGLE_CALENDAR
+  evidence_file: evidence/pre-reboot/PRE-REBOOT-EXTERNAL-COORDINATION-20260906.md
   host_reboot_would_interrupt_external_services: true
   deepseek_harness: EXTERNALLY_MANAGED_OBSERVE_ONLY
   ninerouter: EXTERNALLY_MANAGED_OBSERVE_ONLY
-  post_reboot_validation_required: true
+  post_reboot_validation_required: false
+  maintenance_execution:
+    status: PASS_POST_REBOOT_LIVE_VERIFIED
+    authorization_choice: B_UPDATES_AND_REBOOT
+    authorized_by: LEANDRO
+    authorization_consumed: true
+    apt_update_status: PASS
+    apt_upgrade_status: PASS
+    apt_upgrade_rc: 0
+    packages_upgradable_before: 22
+    packages_upgradable_after: 0
+    previous_boot_id: 19d49be9-8d30-4e3d-b3d2-bae23f5fcb75
+    current_boot_id: 0d8df458-4f6f-4db6-84a4-d51b393d6743
+    previous_kernel: 6.8.0-138-generic
+    current_kernel: 6.8.0-139-generic
+    reboot_required_after: false
+    failed_units_after: 0
+    post_reboot_checker_pr: 51
+    post_reboot_checker_candidate: 9070c24e637e6d571bc53c66d0c54d3825340ffb
+    post_reboot_checker_path: /opt/mcf-p2-checkers/9070c24e637e6d571bc53c66d0c54d3825340ffb
+    post_reboot_checker_sha256: 0051b8a4a1975ca17b4dc41dc65240f17418343a3a5849fa7d39b8cc774a84d9
+    post_reboot_checker_result: NETWORK_CONVERGENCE_CHECK_PASS_RECOVERED
+    post_reboot_checker_rc: 0
+    provider_subnet_route: 169.58.128.0/17_VIA_169.58.128.1
+    direct_subnet_scope_link: ABSENT
+    dsh_http: 200
+    ninerouter_http: 307
+    independent_postverify: PASS
   reboot_authorized: false
   updates_authorized: false
+
+post_reboot_integration:
+  status: PR51_OPERATIONAL_FIX_INTEGRATED_PR50_CANONICAL_MERGE_PENDING
+  operational_fix:
+    pr: 51
+    branch: fix/f1-2c-systemd-runtime-lock
+    candidate_head: 9070c24e637e6d571bc53c66d0c54d3825340ffb
+    merge_sha: d5508e1ed417b85bd4863ae5771605079d15aa99
+    tree_sha: b0a51bef522bbb6c872baf5f4ef15116d6f584b0
+    github_merge_verified: true
+    merge_commit_signed_verified: true
+    postmerge_validation: PASS_166_OF_166
+    postmerge_shell_syntax: PASS_21
+    postmerge_ansible_syntax: PASS_6
+    postmerge_worktree_clean: true
+    merge_commit_workflow: NOT_TRIGGERED
+  canonical_reconciliation:
+    pr: 50
+    branch: docs/pre-reboot-checkpoint-20260906
+    merge_status: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
 
 control_bridge:
   g1: PASS_REAL_NODE_01_ROUNDTRIP
@@ -231,23 +342,29 @@ control_bridge:
     merge_status: TASK_8_TECHNICAL_PASS_DRAFT_UNINTEGRATED
 
 remote_vps:
-  observation_class: CURRENT_READ_ONLY_RECONCILIATION
+  observation_class: CURRENT_POST_REBOOT_LIVE_VERIFIED
   hostname: vmi3506102
   os: Ubuntu 24.04.4 LTS
-  kernel: 6.8.0-138-generic
-  reboot_required: true
+  kernel: 6.8.0-139-generic
+  boot_id: 0d8df458-4f6f-4db6-84a4-d51b393d6743
+  reboot_required: false
   target_kernel: 6.8.0-139-generic
   f1_2c_service: active_enabled
   eth0_state: routable_configured
   network_online: true
-  gateway_host_route: 169.58.128.1/32_SCOPE_LINK
+  gateway_host_route: 169.58.128.1/32_SCOPE_LINK_PROTO_STATIC
+  provider_subnet_route: 169.58.128.0/17_VIA_169.58.128.1
+  direct_subnet_scope_link: ABSENT
+  post_reboot_p2_checker: PASS_RECOVERED_9070C24
+  dsh_local_http: 200
+  ninerouter_local_http: 307
   runner_service: active
   sentinelx_service: active
   docker_workload_processes:
     total: 4
     coredns: 2
     squid: 2
-  latest_config_backup: cloud-infrastructure-config-20260905T030614Z.tar.gz
+  latest_config_backup: cloud-infrastructure-config-20260906T030657Z.tar.gz
 
 repository_hygiene:
   status: REPOSITORY_HYGIENE_REVALIDATED
@@ -261,7 +378,7 @@ toolchain:
   canonical_entrypoint: scripts/test.sh
   package: CANONICAL_MAINLINE_NEUTRAL_V2
   validation_status: PASS
-  hosted_canonical_latest_run: 34000214154
+  hosted_canonical_latest_run: 34041274347
   functional_lineage_code_imported: false
   g2b_functional_code_imported: false
   f1_2c_functional_code_imported: false
@@ -290,9 +407,13 @@ authorization:
   g2b_real_write: NOT_AUTHORIZED
   f1_2c_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   network_convergence_p2_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
-  pre_reboot_checkpoint: HISTORICAL_ONE_SHOT_COMPLETED_REFRESH_REQUIRED
-  updates: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
-  reboot: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
+  pre_reboot_checkpoint: FRESH_READ_ONLY_COMPLETED_OFFHOST_RECOVERY_FRESH
+  external_service_coordination_gate: AUTHORIZED_EXECUTED_PASS_ACTIVE_CONSUMERS_CHECKPOINTED
+  updates: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
+  reboot: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
+  post_reboot_live_check: AUTHORIZED_EXECUTED_PASS_EXACT_CANDIDATE
+  post_reboot_integration: PR51_OPERATIONAL_INTEGRATION_COMPLETED
+  pr50_canonical_merge: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   destructive_history_remediation: NOT_AUTHORIZED
   ssh_dsh_key_change: NOT_AUTHORIZED_WITHOUT_PRESERVING_CURRENT_USER_WORKFLOW
 

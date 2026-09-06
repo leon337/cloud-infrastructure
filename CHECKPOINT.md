@@ -1,6 +1,6 @@
 # CHECKPOINT — Continuidade da missão IMPLEMENTAÇÃO DA VPS
 
-Atualizado em **05/09/2026** após reconciliação read-only do GitHub e do NODE-01.
+Atualizado em **06/09/2026** após manutenção autorizada, reboot controlado e validação live pós-reboot do NODE-01.
 
 ## Hierarquia documental
 
@@ -15,35 +15,33 @@ não autoriza mudança material por si só.
 
 ## Estado atual resumido
 
-- Inventário/base: concluído.
-- RECOVERY-P1/P2: concluídos para os componentes cobertos; full-image/provider DR segue `NÃO VERIFICADO`.
-- Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`; run `33998487949` PASS; `runner_isolation.next_exact_step=NONE`.
-- SSH key governance: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; preservar acesso notebook→VPS.
-- F1.2c: `COMPLETE_LIVE_VERIFIED`; candidato aplicado `baaf83908e8e83264baafc032434a4df1952450b`; serviço relido `active+enabled` em 05/09.
-- Network P2: `COMPLETE_LIVE_VERIFIED`; candidato aplicado `682c3e55d835ebea4bcc2edd297a8b819b2df434`; `eth0` relido `routable (configured)` e online.
-- G2-B Task 8: `TECHNICAL_PASS_DRAFT_UNINTEGRATED`; PR #21 permanece Draft e não integrada; Tasks 9/10 não iniciadas.
-- SentinelX direto: `INTERMITTENT_NOT_CLOSED`; serviço ativo, mas aceite persistente ao hub não comprovado; causa atual `NOT_VERIFIED`.
-- Pre-reboot V2 de 29/08: evidência histórica válida, mas `HISTORICAL_VERIFIED_REFRESH_REQUIRED` para o host atual.
-- Kernel atual: `6.8.0-138-generic`; alvo pendente: `6.8.0-139-generic`; `reboot-required=YES`.
+- F1.2c/Network P2: `COMPLETE_LIVE_VERIFIED`.
+- Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`; `next_exact_step=NONE`.
+- SSH key governance: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; preservar fluxo notebook→VPS.
+- G2-B Task 8: `TECHNICAL_PASS_DRAFT_UNINTEGRATED`.
+- SentinelX direto: `INTERMITTENT_NOT_CLOSED`; causa `NOT_VERIFIED`.
+- Kernel atual: `6.8.0-139-generic`; boot ID `0d8df458-...`; `reboot-required=NO`.
+- Checkpoint live 06/09: `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH`.
+- Backup on-host 06/09: `cloud-infrastructure-config-20260906T030657Z.tar.gz`, SHA `ec5d83dd...5816f4`, integridade PASS.
+- Recovery off-host atual: `20260906T185928Z`, formato `RECOVERY-P2-v1`, `SHA256SUMS` 6/6 PASS, secret/path/link safety PASS e restore smoke PASS.
+- Causa da ausência observada às 13:34 permanece historicamente `NOT_VERIFIED`; a lacuna de frescor foi fechada manualmente pelo gate autorizado.
 
 ## Próxima ação exata
 
-`PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE`
+`HUMAN_GATE_PR50_CANONICAL_MERGE`
 
-Esse gate exige, nesta ordem:
-
-1. checkpoint pré-reboot fresco do estado atual;
-2. validação do backup/recovery off-host aplicável ao checkpoint fresco;
-3. coordenação de janela com os responsáveis externos por DeepSeek Harness e 9router;
-4. autorização humana explícita para update/reboot;
-5. manutenção controlada e pós-validação completa.
+A autorização B de LEANDRO foi consumida por update + reboot controlado. O kernel `6.8.0-139-generic`
+está ativo, o sistema está `running` com zero failed units, e o checker P2 corrigido `9070c24...`
+retornou `NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED`. DSH e 9Router responderam HTTP 200/307
+na pós-verificação independente. A PR #51 foi integrada em `fix/f1-2c-systemd-runtime-lock@d5508e1...` e
+o resultado integrado passou 166/166 testes. O próximo gate é somente o merge canônico da PR #50.
 
 ## Boundaries
 
 - DeepSeek Harness: `EXTERNALLY_MANAGED_OBSERVE_ONLY`.
 - 9router: `EXTERNALLY_MANAGED_OBSERVE_ONLY`.
-- Esta reconciliação não faz deploy, restart, package update, firewall change ou write na VPS.
-- Reboot do host interromperia os serviços externos acima; portanto coordenação externa é obrigatória.
+- A manutenção live já foi executada sob autorização one-shot; esta reconciliação documental não executa nova alteração na VPS.
+- A interrupção do reboot já ocorreu dentro da janela autorizada; DSH/9Router voltaram acessíveis e não há nova autorização de reboot ativa.
 - F1.2c e Network P2 tiveram autorizações one-shot consumidas; nenhum reapply está autorizado.
 - G2-B real write permanece `NOT_AUTHORIZED`.
 - Produção permanece `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
@@ -54,7 +52,9 @@ Esse gate exige, nesta ordem:
 - F1.2c: `evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`.
 - Network P2: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md`.
 - Checkpoint histórico: `evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260829.md`.
+- Checkpoint fresco: `evidence/pre-reboot/PRE-REBOOT-CHECKPOINT-NODE01-20260906.md`.
 - Reconciliação atual: `evidence/vps/LIVE-STATE-RECONCILIATION-20260905.md`.
+- Pós-reboot: `evidence/post-reboot/POST-REBOOT-LIVE-VERIFICATION-20260906.md`.
 
 ## Toolchain canônica
 
@@ -70,4 +70,4 @@ Esse gate exige, nesta ordem:
 - ShellCheck no CI hospedado;
 - policy de isolamento do runner.
 
-**Estado documental:** `LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT`.
+**Estado documental:** `POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING`.
