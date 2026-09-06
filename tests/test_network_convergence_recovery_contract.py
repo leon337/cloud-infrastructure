@@ -157,6 +157,18 @@ class NetworkConvergenceSelfReviewTests(unittest.TestCase):
         self.assertIn("POSTBOOT_P2_CHECK=PASS", harness)
         self.assertIn('ip route replace 169.58.128.0/17 via 169.58.128.1 dev eth0', harness)
 
+    def test_host_route_probe_accepts_proto_static_without_relaxing_link_scope(self):
+        text = OP.read_text(encoding="utf-8")
+        harness = KVM.read_text(encoding="utf-8")
+        self.assertIn('ip -o -4 route show "$GATEWAY/32" table main dev "$INTERFACE"', text)
+        self.assertIn('-v gateway="$GATEWAY"', text)
+        self.assertIn('-v interface="$INTERFACE"', text)
+        self.assertIn('$i == "scope" && $(i + 1) == "link"', text)
+        self.assertIn('$i == "via"', text)
+        self.assertNotIn('dev $INTERFACE scope link|', text)
+        self.assertIn('ip route replace 169.58.128.1/32 dev eth0 proto static scope link', harness)
+        self.assertIn('POSTBOOT_HOST_ROUTE_PROTO_STATIC=PASS', harness)
+
     def test_successor_check_accepts_exact_live_applied_checkpoint_without_relaxing_mutators(self):
         text = OP.read_text(encoding="utf-8")
         harness = KVM.read_text(encoding="utf-8")
@@ -173,9 +185,12 @@ class NetworkConvergenceSelfReviewTests(unittest.TestCase):
         self.assertIn(applied, harness)
 
     def test_new_checkpoint_lineage_branch_runs_hosted_gates(self):
-        branch = "fix/network-convergence-p2-check-lineage-20260829"
-        self.assertIn(branch, WORKFLOW.read_text(encoding="utf-8"))
-        self.assertIn(branch, STATIC_WORKFLOW.read_text(encoding="utf-8"))
+        for branch in (
+            "fix/network-convergence-p2-check-lineage-20260829",
+            "fix/network-convergence-p2-host-route-parser-20260906",
+        ):
+            self.assertIn(branch, WORKFLOW.read_text(encoding="utf-8"))
+            self.assertIn(branch, STATIC_WORKFLOW.read_text(encoding="utf-8"))
 
     def test_live_rollback_restores_persistence_without_forcing_runtime_reconfigure(self):
         text = OP.read_text(encoding="utf-8")

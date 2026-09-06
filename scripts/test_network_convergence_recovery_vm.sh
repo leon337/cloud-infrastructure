@@ -115,6 +115,10 @@ sudo ip route replace 169.58.128.0/17 via 169.58.128.1 dev eth0
 ip -o -4 route show 169.58.128.0/17 | grep -Eq '^169\.58\.128\.0/17 via 169\.58\.128\.1 dev eth0([[:space:]]|$)' || fail provider_postboot_route_missing
 ! ip -4 route show 169.58.128.0/17 dev eth0 scope link | grep -q . || fail provider_postboot_direct_route_present
 echo PROVIDER_POSTBOOT_ROUTE=PASS
+# Reproduce NODE-01 postboot host-route formatting where systemd-networkd includes protocol metadata.
+sudo ip route replace 169.58.128.1/32 dev eth0 proto static scope link
+ip -o -4 route show 169.58.128.1/32 dev eth0 | grep -Eq '^169\.58\.128\.1 dev eth0 proto static scope link([[:space:]]|$)' || fail postboot_host_route_proto_static_missing
+echo POSTBOOT_HOST_ROUTE_PROTO_STATIC=PASS
 sudo env "${ENV[@]}" "$OP" check
 echo POSTBOOT_P2_CHECK=PASS
 
