@@ -116,11 +116,12 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [x] Validação pós-reboot concluída: F1.2c PASS, P2 checker `9070c24...` PASS live, pós-verificação independente PASS.
 - [x] PR #51 integrada na linhagem operacional: `fix/f1-2c-systemd-runtime-lock@d5508e1...`.
 - [x] Resultado integrado revalidado: 166/166 testes, shell syntax 21, Ansible syntax 6, worktree clean.
-- [!] Merge canônico da PR #50 permanece dependente de autorização explícita de LEANDRO.
+- [x] PR #50 integrada em `main@c7315e43...`; CI pós-merge `34065344230` SUCCESS e validação isolada 35/35 PASS.
+- [x] Closeout documental preparado como projeção pós-integração; autorização de merge permanece fora do estado durável e é controlada pelo gate humano da PR.
 
-**Estado:** `PASS_POST_REBOOT_LIVE_VERIFIED` + `PR51_OPERATIONAL_FIX_INTEGRATED`.
+**Estado:** `PASS_POST_REBOOT_LIVE_VERIFIED` + `PR51_OPERATIONAL_FIX_INTEGRATED` + `PR50_CANONICAL_RECONCILIATION_INTEGRATED` + `POST_REBOOT_INTEGRATION_COMPLETE`.
 
-**Próximo passo exato:** `HUMAN_GATE_PR50_CANONICAL_MERGE`.
+**Próximo passo exato:** `CANONICAL_PR_BRANCH_HYGIENE`.
 
 ## 8. SentinelX direto NODE-01 → hub
 
@@ -189,7 +190,7 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [ ] Revisar branches históricas após classificação.
 - [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
 
-**Estado:** `POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING`.
+**Estado:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_NEXT`.
 
 ## Ordem operacional vigente
 
@@ -208,9 +209,9 @@ PRE_REBOOT_OFFHOST_RECOVERY         DONE / RECOVERY_P2_PASS
 PRE_REBOOT_EXTERNAL_COORDINATION    DONE / CHAT_CONSUMERS_CHECKPOINTED
 UPDATE_AND_CONTROLLED_REBOOT        DONE / ONE_SHOT_AUTHORIZATION_CONSUMED
 POST_REBOOT_VALIDATION              DONE / LIVE_VERIFIED
-POST_REBOOT_P2_CHECKER_PR51         DRAFT / STATIC+KVM+LIVE_CHECK_PASS
-POST_REBOOT_INTEGRATION_DECISION    NEXT / LEANDRO
-CANONICAL_PR_BRANCH_HYGIENE         PENDING
+POST_REBOOT_P2_CHECKER_PR51         DONE / MERGED
+POST_REBOOT_INTEGRATION_DECISION    DONE / PR51+PR50 MERGED
+CANONICAL_PR_BRANCH_HYGIENE         NEXT
 FINAL_TRANSVERSAL_AUDIT             PENDING
 ```
 

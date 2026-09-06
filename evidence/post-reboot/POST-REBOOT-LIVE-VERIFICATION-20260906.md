@@ -96,7 +96,7 @@ PR #51 was merged into `fix/f1-2c-systemd-runtime-lock` with merge commit:
 
 The merge tree `b0a51bef522bbb6c872baf5f4ef15116d6f584b0` is byte-identical to the previously qualified candidate tree. A fresh isolated post-merge run on `d5508e1...` passed 166/166 tests, shell syntax 21/21, Ansible syntax 6/6, and remained clean. No workflow was automatically triggered for the merge SHA.
 
-PR #50 remains unmerged and requires a separate LEANDRO human gate.
+PR #50 was subsequently merged into `main` with merge commit `c7315e43e86beedae5a921e39b1ab7103f4da276` and tree `9dd8c3031c9d0ace580685ba08e6a00c88f14f2d`. GitHub push CI run `34065344230` completed SUCCESS on that exact merge SHA, and a fresh isolated local run passed 35/35 tests with a clean worktree.
 
 ## Result and boundaries
 
@@ -104,7 +104,7 @@ Maintenance result: `PASS_POST_REBOOT_LIVE_VERIFIED`.
 Network P2 result: `COMPLETE_LIVE_VERIFIED` with corrected exact-candidate check PASS.
 
 Current update/reboot authorization: `false`; the one-shot authorization was consumed.
-Production promotion, G2-B real write, network reapply, and PR #50 canonical merge remain separately gated. PR #51 operational integration is complete.
+Production promotion, G2-B real write, and network reapply remain separately gated. PR #51 operational integration and PR #50 canonical reconciliation are complete. The closeout projection intentionally does not serialize its own merge gate. After integration, the next operational action is `CANONICAL_PR_BRANCH_HYGIENE`.
 
 Next exact step:
-`HUMAN_GATE_PR50_CANONICAL_MERGE`.
+`CANONICAL_PR_BRANCH_HYGIENE`.

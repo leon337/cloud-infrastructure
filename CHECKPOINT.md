@@ -28,13 +28,13 @@ não autoriza mudança material por si só.
 
 ## Próxima ação exata
 
-`HUMAN_GATE_PR50_CANONICAL_MERGE`
+`CANONICAL_PR_BRANCH_HYGIENE`
 
 A autorização B de LEANDRO foi consumida por update + reboot controlado. O kernel `6.8.0-139-generic`
 está ativo, o sistema está `running` com zero failed units, e o checker P2 corrigido `9070c24...`
 retornou `NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED`. DSH e 9Router responderam HTTP 200/307
 na pós-verificação independente. A PR #51 foi integrada em `fix/f1-2c-systemd-runtime-lock@d5508e1...` e
-o resultado integrado passou 166/166 testes. O próximo gate é somente o merge canônico da PR #50.
+o resultado integrado passou 166/166 testes. A PR #50 também foi integrada em `main@c7315e43...`, com CI pós-merge SUCCESS e 35/35 testes em clone isolado. A integração pós-reboot está encerrada. O próximo trabalho operacional é `CANONICAL_PR_BRANCH_HYGIENE`.
 
 ## Boundaries
 
@@ -70,4 +70,4 @@ o resultado integrado passou 166/166 testes. O próximo gate é somente o merge 
 - ShellCheck no CI hospedado;
 - policy de isolamento do runner.
 
-**Estado documental:** `POST_REBOOT_PR51_INTEGRATED_PR50_CANONICAL_MERGE_PENDING`.
+**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_NEXT`.
