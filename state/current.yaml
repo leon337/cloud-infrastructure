@@ -252,6 +252,9 @@ remote_vps:
 repository_hygiene:
   status: REPOSITORY_HYGIENE_REVALIDATED
   pr: 19
+  revalidation:
+    status: PASS_AGAINST_CANONICAL_TOOLCHAIN
+    head: f34aec6c641fb577d620446df4a743df3ff3fa5d
   legacy_pr_classification_pending: true
 
 toolchain:
