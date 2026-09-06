@@ -104,7 +104,7 @@ Maintenance result: `PASS_POST_REBOOT_LIVE_VERIFIED`.
 Network P2 result: `COMPLETE_LIVE_VERIFIED` with corrected exact-candidate check PASS.
 
 Current update/reboot authorization: `false`; the one-shot authorization was consumed.
-Production promotion, G2-B real write, and network reapply remain separately gated. PR #51 operational integration and PR #50 canonical reconciliation are complete. The remaining gate is only the closeout-documentation merge.
+Production promotion, G2-B real write, and network reapply remain separately gated. PR #51 operational integration and PR #50 canonical reconciliation are complete. The closeout projection intentionally does not serialize its own merge gate. After integration, the next operational action is `CANONICAL_PR_BRANCH_HYGIENE`.
 
 Next exact step:
-`HUMAN_GATE_POST_REBOOT_CLOSEOUT_MERGE`.
+`CANONICAL_PR_BRANCH_HYGIENE`.

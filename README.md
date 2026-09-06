@@ -15,7 +15,7 @@ Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 A projeção atual parte de `main@c7315e43e86beedae5a921e39b1ab7103f4da276`, do checkpoint
 pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo dia.
 
-**Estado documental:** `POST_REBOOT_PR51_PR50_INTEGRATED_CLOSEOUT_MERGE_PENDING`.
+**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_NEXT`.
 
 | Área | Estado atual | Evidência/limite |
 |---|---|---|
@@ -33,7 +33,7 @@ pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo 
 ## Próxima ação exata
 
 ```text
-HUMAN_GATE_POST_REBOOT_CLOSEOUT_MERGE
+CANONICAL_PR_BRANCH_HYGIENE
 ```
 
 A manutenção autorizada por LEANDRO foi concluída:
@@ -48,7 +48,7 @@ A manutenção autorizada por LEANDRO foi concluída:
 8. PR #51: **MERGED** em `fix/f1-2c-systemd-runtime-lock@d5508e1...`; validação pós-merge 166/166, shell 21 e Ansible 6 PASS.
 9. PR #50: **MERGED** em `main@c7315e43...`; CI pós-merge `34065344230` SUCCESS e suíte isolada 35/35 PASS.
 
-A correção operacional e a reconciliação canônica já estão integradas. O próximo gate é somente o merge do closeout documental desta manutenção.
+A correção operacional e a reconciliação canônica já estão integradas. A integração pós-reboot está encerrada. O próximo trabalho operacional é a higiene canônica de PRs/branches.
 
 DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY` como boundary de mutação.
 Esta PR não os modifica, reinicia, usa como executor ou muda seu ownership. Um reboot do host os
