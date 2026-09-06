@@ -169,6 +169,10 @@ class NetworkConvergenceSelfReviewTests(unittest.TestCase):
         self.assertNotIn('dev $INTERFACE scope link|', text)
         self.assertIn('ip route replace 169.58.128.1/32 dev eth0 proto static scope link', harness)
         self.assertIn('POSTBOOT_HOST_ROUTE_PROTO_STATIC=PASS', harness)
+        self.assertIn('postboot_host_route=$(ip -o -4 route show 169.58.128.1/32 table main dev eth0)', harness)
+        self.assertIn('POSTBOOT_HOST_ROUTE_OUTPUT=%s', harness)
+        self.assertIn('-v gateway="169.58.128.1"', harness)
+        self.assertNotIn("^169\\.58\\.128\\.1 dev eth0 proto static scope link", harness)
 
     def test_successor_check_accepts_exact_live_applied_checkpoint_without_relaxing_mutators(self):
         text = OP.read_text(encoding="utf-8")
