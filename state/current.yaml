@@ -2,9 +2,9 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: docs/pre-reboot-checkpoint-20260906
-updated_at: "2026-09-06T16:15:54-03:00"
-state_classification: CURRENT_PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW
-documentation_state: PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW
+updated_at: "2026-09-06T17:25:25-03:00"
+state_classification: CURRENT_PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_HUMAN_GATE
+documentation_state: PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING
 
 freshness:
   canonical_executive_panel: README.md
@@ -48,7 +48,7 @@ source_snapshot:
 
 project:
   name: IMPLEMENTACAO_DA_VPS
-  status: ACTIVE_PRE_REBOOT_BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW
+  status: ACTIVE_PRE_REBOOT_COORDINATED_HUMAN_GATE
   integration_status: LIVE_STATE_RECONCILED_OPEN_INTEGRATION_DEBT
   durable_completed:
     phase_0_inventory: DONE
@@ -63,7 +63,7 @@ project:
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
-  next_exact_step: HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW
+  next_exact_step: HUMAN_GATE_UPDATE_REBOOT
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
@@ -183,7 +183,7 @@ pre_reboot_checkpoint:
   reboot_required: true
   accepted_for_current_reboot: false
   refresh_required_before_reboot: false
-  blocking_reason: EXTERNAL_OWNER_CHANNEL_WINDOW_NOT_VERIFIED
+  blocking_reason: HUMAN_UPDATE_REBOOT_AUTHORIZATION_PENDING
   system_failed_units: 0
   latest_onhost_config_backup: cloud-infrastructure-config-20260906T030657Z.tar.gz
   latest_onhost_config_backup_sha256: ec5d83ddcf8ef72d92d2d52590e6d8a4329fdce6893088ee16520ebb0c5816f4
@@ -227,19 +227,31 @@ sentinelx_direct_connectivity:
   mutation_authorized: false
 
 reboot_coordination:
-  status: BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW_AND_HUMAN_GATE
+  status: ACTIVE_CONSUMERS_COORDINATED_HUMAN_GATE
   checkpoint_refresh_required: false
   offhost_recovery_freshness_required: false
-  external_service_coordination_required: true
+  external_service_coordination_required: false
   coordination_attempted: true
   coordination_authorized_by: LEANDRO
   coordination_attempted_at: "2026-09-06T16:15:54-03:00"
-  coordination_gate_result: BLOCKED_NO_VERIFIED_OWNER_CHANNEL_WINDOW
-  external_owner_status: NOT_VERIFIED
-  external_contact_channel_status: NOT_VERIFIED
-  maintenance_window_status: NOT_SCHEDULED
-  contact_attempt_sent: false
-  contact_attempt_reason: NO_VERIFIED_RECIPIENT
+  coordination_gate_result: PASS_ACTIVE_CHAT_CONSUMERS_CHECKPOINTED
+  external_owner_status: NOT_RESOLVED_NOT_GATE_BLOCKING_AFTER_LEANDRO_CLARIFICATION
+  external_contact_channel_status: GUI_CHAT_CHANNEL_VERIFIED
+  maintenance_window_status: HUMAN_GATE_PENDING
+  contact_attempt_sent: true
+  contact_attempt_reason: ACTIVE_CHAT_CONSUMERS_COORDINATED_VIA_GUI
+  coordination_channel: CHATGPT_GUI
+  coordination_completed_at: "2026-09-06T17:25:25-03:00"
+  active_consumers_ready: true
+  active_consumers:
+    hy4_teste:
+      window_title: "ChatGPT - hy4 teste]"
+      status: READY_FOR_NODE01_MAINTENANCE
+      checkpoint_evidence: TASK_2_CLOSED_HEAD_RECORDED
+    dsh_gpt:
+      window_title: "Dsh Gpt - Mestre chama assistente"
+      status: PAUSED_SAFE_CHECKPOINT_NO_NEW_DSH_9ROUTER_EXECUTIONS
+      checkpoint_evidence: FEATURE_BRANCH_PRESERVED_REMOTE_BACKUP_NO_MAIN_MERGE_DEPLOY_OR_NEW_MODEL_CALL
   discovery_surfaces_checked:
     - CANONICAL_REPOSITORY
     - GMAIL
@@ -337,7 +349,7 @@ authorization:
   f1_2c_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   network_convergence_p2_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   pre_reboot_checkpoint: FRESH_READ_ONLY_COMPLETED_OFFHOST_RECOVERY_FRESH
-  external_service_coordination_gate: AUTHORIZED_EXECUTED_BLOCKED_OWNER_CHANNEL_WINDOW
+  external_service_coordination_gate: AUTHORIZED_EXECUTED_PASS_ACTIVE_CONSUMERS_CHECKPOINTED
   updates: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   reboot: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   destructive_history_remediation: NOT_AUTHORIZED

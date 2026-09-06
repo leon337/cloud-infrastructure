@@ -28,17 +28,18 @@ não autoriza mudança material por si só.
 
 ## Próxima ação exata
 
-`HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`
+`HUMAN_GATE_UPDATE_REBOOT`
 
-O recovery off-host fresco e o recheck mínimo já foram concluídos. O gate de coordenação externa
-foi tentado, mas owner/canal/janela não foram verificados; LEANDRO precisa fornecer ou confirmar esses dados antes de qualquer gate de reboot.
+O recovery off-host fresco e o recheck mínimo já foram concluídos. Após clarificação de LEANDRO,
+a coordenação operacional foi feita diretamente pela GUI com os dois chats consumidores ativos de
+DSH/9Router. Ambos estão em checkpoint seguro. Falta apenas o gate humano de update/reboot.
 
 ## Boundaries
 
 - DeepSeek Harness: `EXTERNALLY_MANAGED_OBSERVE_ONLY`.
 - 9router: `EXTERNALLY_MANAGED_OBSERVE_ONLY`.
 - Esta reconciliação não faz deploy, restart, package update, firewall change ou write na VPS.
-- Reboot do host interromperia os serviços externos acima; portanto coordenação externa é obrigatória.
+- Reboot do host interromperia os serviços acima; os consumidores ativos já foram coordenados e drenados para checkpoint seguro.
 - F1.2c e Network P2 tiveram autorizações one-shot consumidas; nenhum reapply está autorizado.
 - G2-B real write permanece `NOT_AUTHORIZED`.
 - Produção permanece `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
@@ -66,4 +67,4 @@ foi tentado, mas owner/canal/janela não foram verificados; LEANDRO precisa forn
 - ShellCheck no CI hospedado;
 - policy de isolamento do runner.
 
-**Estado documental:** `PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW`.
+**Estado documental:** `PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING`.

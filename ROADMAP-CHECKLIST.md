@@ -109,14 +109,14 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [x] Ausência do recovery de 06/09 preservada como observação histórica de 13:34; causa segue `NOT_VERIFIED`.
 - [x] Recovery off-host 06/09 produzido em `20260906T185928Z`: RECOVERY-P2, 6/6 SHA, secret/path/link safety e restore smoke PASS.
 - [x] Recheck mínimo pós-recovery: sistema `running`, zero failed units, kernel `6.8.0-138`, rede/F1.2c previamente revalidados nesta janela; repetir antes do reboot se houver drift/tempo relevante.
-- [!] Gate de coordenação executado: owner/canal/janela externos não verificados; nenhum contato enviado sem destinatário comprovado.
+- [x] Gate de coordenação concluído via GUI: `hy4 teste]` = `READY_FOR_NODE01_MAINTENANCE`; `Dsh Gpt` = missão pausada em checkpoint seguro, sem novas execuções DSH/9Router até retorno do NODE-01.
 - [!] Obter autorização humana explícita para updates/reboot.
 - [ ] Executar update/reboot controlado somente após todos os gates.
 - [ ] Executar validação pós-reboot completa.
 
-**Estado:** `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH` + `BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW_AND_HUMAN_GATE`.
+**Estado:** `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH` + `ACTIVE_CONSUMERS_COORDINATED_HUMAN_GATE`.
 
-**Próximo passo exato:** `HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`.
+**Próximo passo exato:** `HUMAN_GATE_UPDATE_REBOOT`.
 
 ## 8. SentinelX direto NODE-01 → hub
 
@@ -185,7 +185,7 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [ ] Revisar branches históricas após classificação.
 - [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
 
-**Estado:** `PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW`.
+**Estado:** `PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING`.
 
 ## Ordem operacional vigente
 

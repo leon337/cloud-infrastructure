@@ -143,25 +143,32 @@ Classificação atual: `FRESH_FOR_2026_09_06_REBOOT_GATE`.
 
 - `live_snapshot_fresh=true`.
 - `accepted_for_current_reboot=false`.
-- `blocking_reason=EXTERNAL_OWNER_CHANNEL_WINDOW_NOT_VERIFIED`.
+- `blocking_reason=HUMAN_UPDATE_REBOOT_AUTHORIZATION_PENDING`.
 - recovery off-host fresco: **PASS**.
+- consumidores ativos de DSH/9router: **COORDENADOS / CHECKPOINT SEGURO**.
 - Reboot e updates continuam `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
-- DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY`.
+- DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY` como boundary de mutação.
 
 Próximo gate:
 
-`HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`
+`HUMAN_GATE_UPDATE_REBOOT`
 
 Nenhuma causa não comprovada foi promovida a fato e nenhum reboot/update foi autorizado.
 
-## Tentativa autorizada de coordenação externa — 16:15 -03
+## Coordenação autorizada — tentativa inicial e reconciliação GUI
 
-LEANDRO autorizou `PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`. O gate foi executado sem tocar
-DeepSeek Harness ou 9router. O repositório canônico confirma que ambos são owned by another team,
-mas não fornece identidade/canal desse owner. Também não foram encontrados destinatários ou janela
-verificáveis nas superfícies Gmail, Google Contacts, Google Drive ou Google Calendar consultadas.
+Às 16:15 -03, a primeira interpretação procurou owner/canal externo e terminou em
+`BLOCKED_NO_VERIFIED_OWNER_CHANNEL_WINDOW`; esse resultado histórico é preservado.
 
-Resultado: `BLOCKED_NO_VERIFIED_OWNER_CHANNEL_WINDOW`. Nenhum contato foi enviado por falta de
-destinatário comprovado. Reboot e updates continuam `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
+Depois, LEANDRO clarificou que a coordenação operacional deveria ocorrer com os dois chats ativos
+que estavam consumindo DSH/9router, usando a GUI do notebook. A coordenação foi então executada sem
+interromper à força nenhuma missão:
 
-Próximo passo: `HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`.
+- `ChatGPT - hy4 teste]`: `READY_FOR_NODE01_MAINTENANCE`;
+- `Dsh Gpt - Mestre chama assistente`: missão `PAUSADA EM CHECKPOINT SEGURO`, sem novas execuções
+  dependentes de DSH/9router até o retorno do NODE-01.
+
+Resultado atual: `PASS_ACTIVE_CHAT_CONSUMERS_CHECKPOINTED`.
+Reboot e updates continuam `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
+
+Próximo passo: `HUMAN_GATE_UPDATE_REBOOT`.

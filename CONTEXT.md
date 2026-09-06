@@ -33,14 +33,15 @@ Base canônica: `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`.
 - Recovery off-host: `20260906T185928Z`, `RECOVERY-P2-v1`, `PASS_6_OF_6`, restore smoke PASS; causa da ausência anterior segue historicamente `NOT_VERIFIED`.
 - Produção/update/reboot: não autorizados.
 
-**Estado documental:** `PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW`.
+**Estado documental:** `PRE_REBOOT_ACTIVE_CONSUMERS_COORDINATED_UPDATE_REBOOT_GATE_PENDING`.
 
 ## Próximo passo exato
 
-`HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`
+`HUMAN_GATE_UPDATE_REBOOT`
 
-Não executar update/reboot. O recovery off-host e o recheck mínimo foram fechados; a tentativa de coordenação
-externa não encontrou owner/canal/janela verificáveis. Resolver esses três dados com LEANDRO antes de qualquer gate de manutenção.
+Não executar update/reboot. O recovery off-host e o recheck mínimo foram fechados; LEANDRO clarificou
+que o canal operacional correto era a GUI com os dois chats consumidores ativos. Ambos foram coordenados
+e estão em checkpoint seguro. O próximo passo é somente o gate humano de update/reboot.
 
 ## Boundary externo
 
@@ -52,7 +53,7 @@ Não:
 - reiniciar/parar seus processos;
 - alterar supervisor/cron/pacotes;
 - usá-los como rota de execução;
-- realizar reboot do host sem coordenação externa explícita.
+- realizar reboot do host antes do gate humano explícito de update/reboot.
 
 O fato de um reboot não editar seus arquivos não elimina o impacto: ele interrompe o host e,
 portanto, esses serviços.

@@ -84,7 +84,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
         self.assertEqual(
             self.state["project"]["next_exact_step"],
-            "HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW",
+            "HUMAN_GATE_UPDATE_REBOOT",
         )
 
     def test_reboot_gate_requires_fresh_checkpoint_and_external_coordination(self):
@@ -93,7 +93,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertFalse(checkpoint["accepted_for_current_reboot"])
         self.assertFalse(checkpoint["refresh_required_before_reboot"])
         self.assertTrue(checkpoint["live_snapshot_fresh"])
-        self.assertEqual(checkpoint["blocking_reason"], "EXTERNAL_OWNER_CHANNEL_WINDOW_NOT_VERIFIED")
+        self.assertEqual(checkpoint["blocking_reason"], "HUMAN_UPDATE_REBOOT_AUTHORIZATION_PENDING")
         self.assertEqual(checkpoint["latest_onhost_config_backup"], "cloud-infrastructure-config-20260906T030657Z.tar.gz")
         self.assertEqual(checkpoint["latest_onhost_config_backup_integrity"], "PASS")
         self.assertEqual(checkpoint["offhost_recovery"]["latest_complete_dir"], "20260906T185928Z")
@@ -122,20 +122,25 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(sentinel["root_cause"], "NOT_VERIFIED")
 
         coordination = self.state["reboot_coordination"]
-        self.assertEqual(coordination["status"], "BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW_AND_HUMAN_GATE")
+        self.assertEqual(coordination["status"], "ACTIVE_CONSUMERS_COORDINATED_HUMAN_GATE")
         self.assertFalse(coordination["checkpoint_refresh_required"])
         self.assertFalse(coordination["offhost_recovery_freshness_required"])
-        self.assertTrue(coordination["external_service_coordination_required"])
+        self.assertFalse(coordination["external_service_coordination_required"])
         self.assertTrue(coordination["coordination_attempted"])
-        self.assertEqual(coordination["coordination_gate_result"], "BLOCKED_NO_VERIFIED_OWNER_CHANNEL_WINDOW")
-        self.assertEqual(coordination["external_owner_status"], "NOT_VERIFIED")
-        self.assertEqual(coordination["external_contact_channel_status"], "NOT_VERIFIED")
-        self.assertEqual(coordination["maintenance_window_status"], "NOT_SCHEDULED")
-        self.assertFalse(coordination["contact_attempt_sent"])
-        self.assertEqual(coordination["contact_attempt_reason"], "NO_VERIFIED_RECIPIENT")
+        self.assertEqual(coordination["coordination_gate_result"], "PASS_ACTIVE_CHAT_CONSUMERS_CHECKPOINTED")
+        self.assertEqual(coordination["external_owner_status"], "NOT_RESOLVED_NOT_GATE_BLOCKING_AFTER_LEANDRO_CLARIFICATION")
+        self.assertEqual(coordination["external_contact_channel_status"], "GUI_CHAT_CHANNEL_VERIFIED")
+        self.assertEqual(coordination["maintenance_window_status"], "HUMAN_GATE_PENDING")
+        self.assertTrue(coordination["contact_attempt_sent"])
+        self.assertEqual(coordination["contact_attempt_reason"], "ACTIVE_CHAT_CONSUMERS_COORDINATED_VIA_GUI")
         self.assertTrue(coordination["host_reboot_would_interrupt_external_services"])
         self.assertEqual(coordination["deepseek_harness"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")
         self.assertEqual(coordination["ninerouter"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")
+        self.assertTrue(coordination["active_consumers_ready"])
+        self.assertEqual(coordination["coordination_channel"], "CHATGPT_GUI")
+        self.assertEqual(coordination["active_consumers"]["hy4_teste"]["status"], "READY_FOR_NODE01_MAINTENANCE")
+        self.assertEqual(coordination["active_consumers"]["dsh_gpt"]["status"], "PAUSED_SAFE_CHECKPOINT_NO_NEW_DSH_9ROUTER_EXECUTIONS")
+        self.assertEqual(self.state["authorization"]["external_service_coordination_gate"], "AUTHORIZED_EXECUTED_PASS_ACTIVE_CONSUMERS_CHECKPOINTED")
         self.assertEqual(self.state["authorization"]["updates"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
         self.assertEqual(self.state["authorization"]["reboot"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
 
