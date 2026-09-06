@@ -84,7 +84,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
         self.assertEqual(
             self.state["project"]["next_exact_step"],
-            "HUMAN_GATE_PR50_CANONICAL_MERGE",
+            "HUMAN_GATE_POST_REBOOT_CLOSEOUT_MERGE",
         )
 
     def test_reboot_gate_requires_fresh_checkpoint_and_external_coordination(self):
@@ -154,7 +154,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(self.state["authorization"]["updates"], "COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED")
         self.assertEqual(self.state["authorization"]["reboot"], "COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED")
         integration = self.state["post_reboot_integration"]
-        self.assertEqual(integration["status"], "PR51_OPERATIONAL_FIX_INTEGRATED_PR50_CANONICAL_MERGE_PENDING")
+        self.assertEqual(integration["status"], "PR51_OPERATIONAL_AND_PR50_CANONICAL_INTEGRATED_CLOSEOUT_PENDING")
         self.assertEqual(integration["operational_fix"]["pr"], 51)
         self.assertEqual(integration["operational_fix"]["branch"], "fix/f1-2c-systemd-runtime-lock")
         self.assertEqual(integration["operational_fix"]["candidate_head"], "9070c24e637e6d571bc53c66d0c54d3825340ffb")
@@ -162,7 +162,14 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(integration["operational_fix"]["tree_sha"], "b0a51bef522bbb6c872baf5f4ef15116d6f584b0")
         self.assertEqual(integration["operational_fix"]["postmerge_validation"], "PASS_166_OF_166")
         self.assertEqual(integration["canonical_reconciliation"]["pr"], 50)
-        self.assertEqual(integration["canonical_reconciliation"]["merge_status"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+        self.assertEqual(integration["canonical_reconciliation"]["merge_status"], "MERGED")
+        self.assertEqual(integration["canonical_reconciliation"]["merge_sha"], "c7315e43e86beedae5a921e39b1ab7103f4da276")
+        self.assertEqual(integration["canonical_reconciliation"]["tree_sha"], "9dd8c3031c9d0ace580685ba08e6a00c88f14f2d")
+        self.assertEqual(integration["canonical_reconciliation"]["postmerge_validation"], "PASS_35_OF_35")
+        self.assertEqual(integration["canonical_reconciliation"]["postmerge_ci_run"], 34065344230)
+        self.assertEqual(integration["closeout"]["merge_status"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+        self.assertEqual(self.state["authorization"]["pr50_canonical_merge"], "COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED")
+        self.assertEqual(self.state["authorization"]["post_reboot_closeout_merge"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
 
     def test_runner_isolation_state_records_active_verified_global_hook(self):
         runner = self.state["runner_isolation"]
