@@ -109,14 +109,14 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [x] Ausência do recovery de 06/09 preservada como observação histórica de 13:34; causa segue `NOT_VERIFIED`.
 - [x] Recovery off-host 06/09 produzido em `20260906T185928Z`: RECOVERY-P2, 6/6 SHA, secret/path/link safety e restore smoke PASS.
 - [x] Recheck mínimo pós-recovery: sistema `running`, zero failed units, kernel `6.8.0-138`, rede/F1.2c previamente revalidados nesta janela; repetir antes do reboot se houver drift/tempo relevante.
-- [!] Coordenar janela com owners externos de DeepSeek Harness e 9router.
+- [!] Gate de coordenação executado: owner/canal/janela externos não verificados; nenhum contato enviado sem destinatário comprovado.
 - [!] Obter autorização humana explícita para updates/reboot.
 - [ ] Executar update/reboot controlado somente após todos os gates.
 - [ ] Executar validação pós-reboot completa.
 
-**Estado:** `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH` + `BLOCKED_EXTERNAL_SERVICE_COORDINATION_AND_HUMAN_GATE`.
+**Estado:** `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH` + `BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW_AND_HUMAN_GATE`.
 
-**Próximo passo exato:** `PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`.
+**Próximo passo exato:** `HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`.
 
 ## 8. SentinelX direto NODE-01 → hub
 
@@ -185,7 +185,7 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [ ] Revisar branches históricas após classificação.
 - [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
 
-**Estado:** `PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING`.
+**Estado:** `PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW`.
 
 ## Ordem operacional vigente
 
@@ -201,7 +201,8 @@ PRE_REBOOT_CHECKPOINT               FRESH_READ_ONLY / OFFHOST_RECOVERY_FRESH
 SENTINELX_DIRECT                    INTERMITTENT / NOT_CLOSED
 G2B_TASK8                           TECHNICAL_PASS / DRAFT_UNINTEGRATED
 PRE_REBOOT_OFFHOST_RECOVERY         DONE / RECOVERY_P2_PASS
-PRE_REBOOT_EXTERNAL_COORDINATION    NEXT / HUMAN_COORDINATION_GATE
+PRE_REBOOT_EXTERNAL_COORDINATION    BLOCKED / OWNER_CHANNEL_WINDOW_UNRESOLVED
+HUMAN_GATE_EXTERNAL_OWNER_WINDOW    NEXT / LEANDRO
 UPDATE_AND_CONTROLLED_REBOOT        NOT_AUTHORIZED
 POST_REBOOT_VALIDATION              PENDING
 CANONICAL_PR_BRANCH_HYGIENE         PENDING

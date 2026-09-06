@@ -2,9 +2,9 @@ protocol_version: PUC-v1.0
 canonical_repository: leon337/cloud-infrastructure
 canonical_branch: main
 candidate_branch: docs/pre-reboot-checkpoint-20260906
-updated_at: "2026-09-06T16:02:01-03:00"
-state_classification: CURRENT_PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_GATE
-documentation_state: PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING
+updated_at: "2026-09-06T16:15:54-03:00"
+state_classification: CURRENT_PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW
+documentation_state: PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW
 
 freshness:
   canonical_executive_panel: README.md
@@ -48,7 +48,7 @@ source_snapshot:
 
 project:
   name: IMPLEMENTACAO_DA_VPS
-  status: ACTIVE_PRE_REBOOT_BLOCKED_EXTERNAL_COORDINATION
+  status: ACTIVE_PRE_REBOOT_BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW
   integration_status: LIVE_STATE_RECONCILED_OPEN_INTEGRATION_DEBT
   durable_completed:
     phase_0_inventory: DONE
@@ -63,7 +63,7 @@ project:
     recovery_p2: COMPLETE
     runner_isolation_p1: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
     ssh_key_governance_p1: KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW
-  next_exact_step: PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE
+  next_exact_step: HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW
 
 runner_isolation:
   status: CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED
@@ -183,7 +183,7 @@ pre_reboot_checkpoint:
   reboot_required: true
   accepted_for_current_reboot: false
   refresh_required_before_reboot: false
-  blocking_reason: EXTERNAL_SERVICE_COORDINATION_PENDING
+  blocking_reason: EXTERNAL_OWNER_CHANNEL_WINDOW_NOT_VERIFIED
   system_failed_units: 0
   latest_onhost_config_backup: cloud-infrastructure-config-20260906T030657Z.tar.gz
   latest_onhost_config_backup_sha256: ec5d83ddcf8ef72d92d2d52590e6d8a4329fdce6893088ee16520ebb0c5816f4
@@ -227,10 +227,26 @@ sentinelx_direct_connectivity:
   mutation_authorized: false
 
 reboot_coordination:
-  status: BLOCKED_EXTERNAL_SERVICE_COORDINATION_AND_HUMAN_GATE
+  status: BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW_AND_HUMAN_GATE
   checkpoint_refresh_required: false
   offhost_recovery_freshness_required: false
   external_service_coordination_required: true
+  coordination_attempted: true
+  coordination_authorized_by: LEANDRO
+  coordination_attempted_at: "2026-09-06T16:15:54-03:00"
+  coordination_gate_result: BLOCKED_NO_VERIFIED_OWNER_CHANNEL_WINDOW
+  external_owner_status: NOT_VERIFIED
+  external_contact_channel_status: NOT_VERIFIED
+  maintenance_window_status: NOT_SCHEDULED
+  contact_attempt_sent: false
+  contact_attempt_reason: NO_VERIFIED_RECIPIENT
+  discovery_surfaces_checked:
+    - CANONICAL_REPOSITORY
+    - GMAIL
+    - GOOGLE_CONTACTS
+    - GOOGLE_DRIVE
+    - GOOGLE_CALENDAR
+  evidence_file: evidence/pre-reboot/PRE-REBOOT-EXTERNAL-COORDINATION-20260906.md
   host_reboot_would_interrupt_external_services: true
   deepseek_harness: EXTERNALLY_MANAGED_OBSERVE_ONLY
   ninerouter: EXTERNALLY_MANAGED_OBSERVE_ONLY
@@ -321,6 +337,7 @@ authorization:
   f1_2c_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   network_convergence_p2_node01_reapply: COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED
   pre_reboot_checkpoint: FRESH_READ_ONLY_COMPLETED_OFFHOST_RECOVERY_FRESH
+  external_service_coordination_gate: AUTHORIZED_EXECUTED_BLOCKED_OWNER_CHANNEL_WINDOW
   updates: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   reboot: NOT_AUTHORIZED_HUMAN_GATE_REQUIRED
   destructive_history_remediation: NOT_AUTHORIZED

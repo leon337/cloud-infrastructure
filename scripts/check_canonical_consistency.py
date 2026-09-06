@@ -32,7 +32,7 @@ def main() -> int:
     for token in (
         "CANONICAL_EXECUTIVE_PANEL_IMPLEMENTACAO_DA_VPS",
         "Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**",
-        "PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING",
+        "PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW",
         "COMPLETE_LIVE_VERIFIED",
         "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
         "INTERMITTENT_NOT_CLOSED",
@@ -43,13 +43,13 @@ def main() -> int:
     for path in (Path("CONTEXT.md"), Path("CHECKPOINT.md")):
         for token in (
             "scripts/test.sh",
-            "PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING",
+            "PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW",
             "COMPLETE_LIVE_VERIFIED",
             "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
             "INTERMITTENT_NOT_CLOSED",
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE",
+            "HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW",
         ):
             require_token(path, token)
 
@@ -57,7 +57,7 @@ def main() -> int:
         for token in (
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE",
+            "HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW",
             "COMPLETE_LIVE_VERIFIED",
             "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
         ):
@@ -148,7 +148,7 @@ def main() -> int:
         raise AssertionError("fresh read-only checkpoint must not still require checkpoint refresh")
     if checkpoint.get("live_snapshot_fresh") is not True:
         raise AssertionError("fresh checkpoint live snapshot drift")
-    if checkpoint.get("blocking_reason") != "EXTERNAL_SERVICE_COORDINATION_PENDING":
+    if checkpoint.get("blocking_reason") != "EXTERNAL_OWNER_CHANNEL_WINDOW_NOT_VERIFIED":
         raise AssertionError("pre-reboot blocking reason drift")
     if checkpoint.get("latest_onhost_config_backup_integrity") != "PASS":
         raise AssertionError("on-host backup integrity drift")
@@ -169,12 +169,26 @@ def main() -> int:
         raise AssertionError("historical off-host missing-run cause must remain NOT_VERIFIED")
 
     coordination = state.get("reboot_coordination", {})
-    if coordination.get("status") != "BLOCKED_EXTERNAL_SERVICE_COORDINATION_AND_HUMAN_GATE":
+    if coordination.get("status") != "BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW_AND_HUMAN_GATE":
         raise AssertionError("reboot coordination gate drift")
     if coordination.get("checkpoint_refresh_required") is not False:
         raise AssertionError("checkpoint refresh must be closed after fresh read-only collection")
     if coordination.get("offhost_recovery_freshness_required") is not False:
         raise AssertionError("off-host recovery freshness gate must be closed")
+    if coordination.get("coordination_attempted") is not True:
+        raise AssertionError("external coordination attempt receipt missing")
+    if coordination.get("coordination_gate_result") != "BLOCKED_NO_VERIFIED_OWNER_CHANNEL_WINDOW":
+        raise AssertionError("external coordination gate result drift")
+    if coordination.get("external_owner_status") != "NOT_VERIFIED":
+        raise AssertionError("external owner must remain NOT_VERIFIED without evidence")
+    if coordination.get("external_contact_channel_status") != "NOT_VERIFIED":
+        raise AssertionError("external contact channel must remain NOT_VERIFIED without evidence")
+    if coordination.get("maintenance_window_status") != "NOT_SCHEDULED":
+        raise AssertionError("maintenance window must not be invented")
+    if coordination.get("contact_attempt_sent") is not False:
+        raise AssertionError("contact must not be sent without verified recipient")
+    if coordination.get("contact_attempt_reason") != "NO_VERIFIED_RECIPIENT":
+        raise AssertionError("contact attempt reason drift")
     if coordination.get("deepseek_harness") != "EXTERNALLY_MANAGED_OBSERVE_ONLY":
         raise AssertionError("DeepSeek Harness ownership boundary drift")
     if coordination.get("ninerouter") != "EXTERNALLY_MANAGED_OBSERVE_ONLY":
@@ -182,8 +196,10 @@ def main() -> int:
 
     if state.get("authorization", {}).get("pre_reboot_checkpoint") != "FRESH_READ_ONLY_COMPLETED_OFFHOST_RECOVERY_FRESH":
         raise AssertionError("pre-reboot authorization receipt drift")
+    if state.get("authorization", {}).get("external_service_coordination_gate") != "AUTHORIZED_EXECUTED_BLOCKED_OWNER_CHANNEL_WINDOW":
+        raise AssertionError("external coordination authorization receipt drift")
 
-    if state["project"].get("next_exact_step") != "PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE":
+    if state["project"].get("next_exact_step") != "HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW":
         raise AssertionError("project next exact step drift")
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

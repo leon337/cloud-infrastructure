@@ -15,7 +15,7 @@ Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 A projeção atual parte de `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d` e do
 checkpoint read-only coletado em 06/09/2026. Nenhuma mudança na VPS pertence a este checkpoint.
 
-**Estado documental:** `PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING`.
+**Estado documental:** `PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW`.
 
 | Área | Estado atual | Evidência/limite |
 |---|---|---|
@@ -27,13 +27,13 @@ checkpoint read-only coletado em 06/09/2026. Nenhuma mudança na VPS pertence a 
 | G2-B Task 8 | `TECHNICAL_PASS_DRAFT_UNINTEGRATED` | PR #21 Draft, head `f91c836e...`; 373/373 testes e 13/13 marcadores; não integrado |
 | SentinelX direto | `INTERMITTENT_NOT_CLOSED` | serviço ativo; conexão ao hub oscilou; causa atual `NOT_VERIFIED` |
 | Pre-reboot checkpoint | `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH` | live/on-host frescos em 06/09; recovery `20260906T185928Z` com 6/6 SHA, secret/path/link safety e restore smoke PASS |
-| Update/reboot | `BLOCKED_EXTERNAL_SERVICE_COORDINATION_AND_HUMAN_GATE` | recovery off-host fechado; falta coordenação externa + autorização humana |
+| Update/reboot | `BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW_AND_HUMAN_GATE` | recovery fechado; owner/canal/janela externos não foram resolvidos; reboot segue proibido |
 | Produção externa | `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED` | nenhuma promoção autorizada |
 
 ## Próxima ação exata
 
 ```text
-PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE
+HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW
 ```
 
 Antes de qualquer update/reboot:
@@ -41,13 +41,17 @@ Antes de qualquer update/reboot:
 1. checkpoint live fresco de 06/09: **concluído read-only**;
 2. recovery off-host fresco de 06/09: **concluído** (`20260906T185928Z`, RECOVERY-P2 PASS);
 3. recheck mínimo pós-recovery: **concluído**; repetir imediatamente antes do reboot se houver drift/tempo relevante;
-4. coordenar a janela com os responsáveis externos por DeepSeek Harness e 9router;
+4. resolver com LEANDRO a identidade/canal dos owners externos e uma janela de manutenção;
 5. obter autorização humana explícita para updates/reboot;
 6. somente então executar manutenção e a validação pós-reboot.
 
 DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY`. Esta PR não
 os modifica, reinicia, usa como executor ou muda seu ownership. Um reboot do host os
 interromperia inevitavelmente, por isso a coordenação externa é requisito de gate.
+
+O gate de coordenação foi autorizado e executado em 06/09/2026, mas não encontrou owner,
+canal de contato ou janela verificáveis no repositório canônico, Gmail, Google Contacts,
+Google Drive ou Google Calendar. Nenhum contato foi enviado sem destinatário comprovado.
 
 ## F1.2c — fechado live
 

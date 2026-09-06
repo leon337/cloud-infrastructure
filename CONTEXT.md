@@ -33,14 +33,14 @@ Base canônica: `main@7ce6fff85f66eaed88c7b6e092c4bc2375f5382d`.
 - Recovery off-host: `20260906T185928Z`, `RECOVERY-P2-v1`, `PASS_6_OF_6`, restore smoke PASS; causa da ausência anterior segue historicamente `NOT_VERIFIED`.
 - Produção/update/reboot: não autorizados.
 
-**Estado documental:** `PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING`.
+**Estado documental:** `PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW`.
 
 ## Próximo passo exato
 
-`PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`
+`HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`
 
-Não executar update/reboot. O recovery off-host e o recheck mínimo foram fechados; agora coordenar
-a janela com owners externos e somente depois abrir gate humano separado para updates/reboot.
+Não executar update/reboot. O recovery off-host e o recheck mínimo foram fechados; a tentativa de coordenação
+externa não encontrou owner/canal/janela verificáveis. Resolver esses três dados com LEANDRO antes de qualquer gate de manutenção.
 
 ## Boundary externo
 

@@ -84,7 +84,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
         self.assertEqual(
             self.state["project"]["next_exact_step"],
-            "PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE",
+            "HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW",
         )
 
     def test_reboot_gate_requires_fresh_checkpoint_and_external_coordination(self):
@@ -93,7 +93,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertFalse(checkpoint["accepted_for_current_reboot"])
         self.assertFalse(checkpoint["refresh_required_before_reboot"])
         self.assertTrue(checkpoint["live_snapshot_fresh"])
-        self.assertEqual(checkpoint["blocking_reason"], "EXTERNAL_SERVICE_COORDINATION_PENDING")
+        self.assertEqual(checkpoint["blocking_reason"], "EXTERNAL_OWNER_CHANNEL_WINDOW_NOT_VERIFIED")
         self.assertEqual(checkpoint["latest_onhost_config_backup"], "cloud-infrastructure-config-20260906T030657Z.tar.gz")
         self.assertEqual(checkpoint["latest_onhost_config_backup_integrity"], "PASS")
         self.assertEqual(checkpoint["offhost_recovery"]["latest_complete_dir"], "20260906T185928Z")
@@ -122,10 +122,17 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(sentinel["root_cause"], "NOT_VERIFIED")
 
         coordination = self.state["reboot_coordination"]
-        self.assertEqual(coordination["status"], "BLOCKED_EXTERNAL_SERVICE_COORDINATION_AND_HUMAN_GATE")
+        self.assertEqual(coordination["status"], "BLOCKED_EXTERNAL_OWNER_CHANNEL_WINDOW_AND_HUMAN_GATE")
         self.assertFalse(coordination["checkpoint_refresh_required"])
         self.assertFalse(coordination["offhost_recovery_freshness_required"])
         self.assertTrue(coordination["external_service_coordination_required"])
+        self.assertTrue(coordination["coordination_attempted"])
+        self.assertEqual(coordination["coordination_gate_result"], "BLOCKED_NO_VERIFIED_OWNER_CHANNEL_WINDOW")
+        self.assertEqual(coordination["external_owner_status"], "NOT_VERIFIED")
+        self.assertEqual(coordination["external_contact_channel_status"], "NOT_VERIFIED")
+        self.assertEqual(coordination["maintenance_window_status"], "NOT_SCHEDULED")
+        self.assertFalse(coordination["contact_attempt_sent"])
+        self.assertEqual(coordination["contact_attempt_reason"], "NO_VERIFIED_RECIPIENT")
         self.assertTrue(coordination["host_reboot_would_interrupt_external_services"])
         self.assertEqual(coordination["deepseek_harness"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")
         self.assertEqual(coordination["ninerouter"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")

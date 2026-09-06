@@ -28,10 +28,10 @@ não autoriza mudança material por si só.
 
 ## Próxima ação exata
 
-`PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`
+`HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`
 
-O recovery off-host fresco e o recheck mínimo já foram concluídos. Agora permanecem obrigatórios
-coordenação externa de DSH/9router e um gate humano separado para updates/reboot.
+O recovery off-host fresco e o recheck mínimo já foram concluídos. O gate de coordenação externa
+foi tentado, mas owner/canal/janela não foram verificados; LEANDRO precisa fornecer ou confirmar esses dados antes de qualquer gate de reboot.
 
 ## Boundaries
 
@@ -66,4 +66,4 @@ coordenação externa de DSH/9router e um gate humano separado para updates/rebo
 - ShellCheck no CI hospedado;
 - policy de isolamento do runner.
 
-**Estado documental:** `PRE_REBOOT_OFFHOST_RECOVERY_FRESH_EXTERNAL_COORDINATION_PENDING`.
+**Estado documental:** `PRE_REBOOT_EXTERNAL_COORDINATION_BLOCKED_OWNER_CHANNEL_WINDOW`.

@@ -143,13 +143,25 @@ Classificação atual: `FRESH_FOR_2026_09_06_REBOOT_GATE`.
 
 - `live_snapshot_fresh=true`.
 - `accepted_for_current_reboot=false`.
-- `blocking_reason=EXTERNAL_SERVICE_COORDINATION_PENDING`.
+- `blocking_reason=EXTERNAL_OWNER_CHANNEL_WINDOW_NOT_VERIFIED`.
 - recovery off-host fresco: **PASS**.
 - Reboot e updates continuam `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
 - DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY`.
 
 Próximo gate:
 
-`PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`
+`HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`
 
 Nenhuma causa não comprovada foi promovida a fato e nenhum reboot/update foi autorizado.
+
+## Tentativa autorizada de coordenação externa — 16:15 -03
+
+LEANDRO autorizou `PRE_REBOOT_EXTERNAL_SERVICE_COORDINATION_GATE`. O gate foi executado sem tocar
+DeepSeek Harness ou 9router. O repositório canônico confirma que ambos são owned by another team,
+mas não fornece identidade/canal desse owner. Também não foram encontrados destinatários ou janela
+verificáveis nas superfícies Gmail, Google Contacts, Google Drive ou Google Calendar consultadas.
+
+Resultado: `BLOCKED_NO_VERIFIED_OWNER_CHANNEL_WINDOW`. Nenhum contato foi enviado por falta de
+destinatário comprovado. Reboot e updates continuam `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
+
+Próximo passo: `HUMAN_GATE_EXTERNAL_OWNER_CHANNEL_WINDOW`.
