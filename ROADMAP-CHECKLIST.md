@@ -2,66 +2,42 @@
 
 <!-- IMPLEMENTACAO_DA_VPS_OPERATIONAL_CHECKLIST -->
 
-Atualizado em **28/08/2026 14:14 -03:00**.
+Atualizado em **05/09/2026** pela reconciliação read-only da realidade live.
 
 Este arquivo é o checklist operacional detalhado da missão **IMPLEMENTAÇÃO DA VPS** no
 repositório `leon337/cloud-infrastructure`. Ele é **subordinado ao `README.md`**, que
-permanece o painel executivo canônico e consolidado da missão. Este checklist não cria
-uma autoridade paralela e não se aplica ao MCF como projeto separado.
+permanece o painel executivo canônico. Não é autoridade paralela e não se aplica ao MCF
+como projeto separado.
 
-Ele substitui apenas, para acompanhamento operacional detalhado desta missão, o antigo
-checklist específico da lineage G2-B. Documentos históricos continuam preservados como
-evidência.
+Precedência para fatos mutáveis:
 
-## Hierarquia e atualização
-
-Para decisões e fatos mutáveis, aplicar esta precedência:
-
-1. instrução atual explícita de LEANDRO;
+1. instrução explícita atual de LEANDRO;
 2. GitHub/provider/infraestrutura verificável ao vivo;
-3. evidência executável vinculada ao estado/SHA aplicável;
-4. `README.md` como painel executivo da missão;
-5. este checklist para detalhamento operacional da mesma missão;
-6. `state/current.yaml`, `CHECKPOINT.md` e `CONTEXT.md` como projeções de apoio;
-7. documentos históricos.
+3. evidência executável vinculada a SHA/estado;
+4. `README.md`;
+5. este checklist;
+6. `state/current.yaml`, `CHECKPOINT.md` e `CONTEXT.md`;
+7. histórico.
 
-**Regra de closeout:** toda sub-missão da IMPLEMENTAÇÃO DA VPS que mudar o estado de
-um item deste checklist deve atualizar o item e sua evidência antes do closeout. Mudanças
-fora desta missão não devem ser inseridas aqui automaticamente.
-
-Legenda:
-
-- `[x]` concluído e com evidência compatível;
-- `[ ]` pendente;
-- `[!]` bloqueado ou requer gate;
-- `NÃO VERIFICADO` significa que não há evidência suficiente para afirmar o estado.
-
-Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88349b4253ea3b3`
-(PR #29 integrada). O HEAD atual de `main` deve sempre ser confirmado no GitHub.
+Legenda: `[x]` concluído com evidência; `[ ]` pendente; `[!]` gate/bloqueio;
+`NÃO VERIFICADO` = evidência insuficiente.
 
 ## 1. Inventário e baseline
 
-- [x] VPS identificada como `vmi3506102`, Ubuntu 24.04.4 LTS.
-- [x] 8 vCPU, ~23 GiB RAM e ~300 GiB de disco inventariados.
-- [x] Rede, IPs, listeners e serviços systemd inventariados.
-- [x] Docker/containerd, Cloud Workstation, GitHub Actions Runner e SentinelX detectados.
-- [x] Logs, crashes, reboot pendente e backup local inventariados.
+- [x] NODE-01 identificado como `vmi3506102`, Ubuntu 24.04.4 LTS.
+- [x] CPU/RAM/disco/rede/listeners/serviços inventariados.
+- [x] Docker/containerd, runner, SentinelX e workstation identificados.
+- [x] Auditoria de backups, reboot-required e superfície Git concluída.
 
 **Estado:** `INVENTORY_BASELINE_COMPLETE`.
 
 ## 2. Recovery / backup — RECOVERY-P1 + RECOVERY-P2
 
-- [x] Backup local diário da VPS validado por SHA-256.
-- [x] Backup atual sincronizado para off-host.
-- [x] Restore smoke do archive sanitizado executado com sucesso.
-- [x] Path safety e link safety dos archives validados.
-- [x] Overlay runtime allowlisted implementado.
-- [x] `RECOVERY-MANIFEST.txt`, `runtime-state.txt` e `SHA256SUMS` implementados.
-- [x] Secret scan fail-closed implementado.
-- [x] Timer off-host `systemd --user` ativo, enabled e waiting.
-- [x] Execução real pelo serviço: `Result=success`, `ExecMainStatus=0`.
-- [x] GitHub-hosted `canonical-validation` do candidato RECOVERY-P2: SUCCESS.
-- [x] PR #28 integrada; merge commit `bbdc7b2a3874af75424680c49aed3cbcb8d63bcb`.
+- [x] Backup local diário com SHA-256.
+- [x] Off-host recovery e restore smoke comprovados para componentes cobertos.
+- [x] Path/link safety e secret scan fail-closed.
+- [x] Execução automatizada de recovery validada.
+- [x] Backup on-host mais recente observado nesta reconciliação: `cloud-infrastructure-config-20260905T030614Z.tar.gz`.
 - [ ] Snapshot/bare-metal recovery do provider Contabo.
 - [ ] Restore integral de imagem da VPS.
 
@@ -69,172 +45,167 @@ Baseline usada nesta correção de hierarquia: `main@f06cebd1998300e2b85126ffc88
 
 ## 3. Runner isolation — P1
 
-- [x] `mcf-mission2-terminal.py` persistente identificado e provenance exata preservada.
-- [x] Causa raiz confirmada: workflow histórico executava `unset RUNNER_TRACKING_ID` + `nohup setsid`.
-- [x] Lineage atual do Control Bridge já não contém o passo persistente; runner estava idle antes da limpeza.
-- [x] Não foram observados nomes explícitos de tokens sensíveis no ambiente preservado; valores não foram coletados.
-- [x] Daemon legado encerrado de forma controlada; socket, PID file e source live removidos.
-- [x] `scripts/check_runner_isolation.py` bloqueia manipulação de `RUNNER_TRACKING_ID` e self-hosted workflow sem guard.
-- [x] Guard obrigatório aplicado aos workflows self-hosted canônicos.
-- [x] Prova real em dois jobs no mesmo `node--1-mcf-control`: `RUNNER_ISOLATION_CROSS_JOB=PASS`.
-- [x] Recovery off-host revalidado sem preservar o daemon legado (`RECOVERY_P2=PASS`).
-- [x] Provar carregamento pós-restart: run `33992772737` confirmou STARTED/COMPLETED configurados, mas ambos foram rejeitados por path sem extensão suportada.
-- [x] Preparar wrapper `.sh` canônico e contrato TDD para extensão administrativa suportada.
-- [x] Em gate separado, instalar o wrapper live, atualizar `.env`, reiniciar runner idle e repetir a prova cross-job: run `33998487949` PASS, hooks STARTED/COMPLETED `RUNNER_ISOLATION_GUARD_PASS`.
+- [x] PoC persistente legado identificado e retirado.
+- [x] Policy canônica bloqueia `RUNNER_TRACKING_ID` bypass e exige guard em self-hosted.
+- [x] Wrapper administrativo `.sh` ativado no runner real.
+- [x] Run `33998487949`: STARTED/COMPLETED `RUNNER_ISOLATION_GUARD_PASS`.
+- [x] Run `33998487949`: `RUNNER_ISOLATION_CROSS_JOB=PASS`.
+- [x] PR #47 integrada; PR #48 fechou o gate residual.
+- [x] `runner_isolation.next_exact_step=NONE`.
 
 **Estado:** `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`.
 
-**Próximo passo exato da missão:** `SSH_KEY_GOVERNANCE_P1`.
-
 ## 4. Governança de chaves SSH — P1
 
-- [x] Quatro entradas em `authorized_keys` inventariadas.
-- [x] Duas chaves administrativas históricas reconhecidas.
-- [x] `mcf-ox-display10` confirmada com loopback + forced command/restrict.
-- [x] `dsh-tunnel-leo-N43SM-to-vmi3506102` identificada e comando de inclusão localizado.
-- [x] Owner/origem operacional da `dsh-tunnel...` correlacionados ao caminho administrativo do notebook por histórico do `ubuntu` + fingerprint em auth log.
-- [x] LEANDRO confirmou dependência atual: a chave é usada para abrir/acessar a VPS pelo notebook (`CONFIRMED_BY_LEANDRO_USER_WORKFLOW`).
-- [x] Fallback independente comprovado com chave administrativa distinta (`PASS_INDEPENDENT_KEY`), classificado apenas como contingência.
-- [x] Decisão operacional: manter a `dsh-tunnel...` para preservar o fluxo notebook→VPS; `authorized_keys` permanece inalterado.
-- [!] Qualquer hardening/restrição futura deve primeiro provar que preserva o acesso interativo atual.
-- [x] Provenance e correção da dependência registradas em `evidence/ssh-key-governance/SSH-KEY-GOVERNANCE-P1-20260828.md`.
+- [x] `authorized_keys` inventariado e provenance relevante preservada.
+- [x] LEANDRO confirmou dependência do fluxo notebook→VPS.
+- [x] Fallback independente comprovado.
+- [x] Decisão: manter a chave requerida pelo fluxo atual; `authorized_keys` inalterado.
+- [!] Hardening futuro deve preservar acesso interativo notebook→VPS.
 
 **Estado:** `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`.
 
-**Próximo passo exato:** `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
-
 ## 5. F1.2c / Cloud Platform Network Services — P1
 
-- [x] `cloud-platform-network-services.service` confirmado em FAILED no live audit.
-- [x] Falha de runtime lock sob filesystem protegido observada.
-- [x] Estado live classificado como `PARTIAL_FIRST_APPLY`: marker presente, helper/unit históricos conhecidos e árvore `/etc/cloud-platform/network-services` ausente.
-- [x] Recovery fail-closed específico para esse estado parcial implementado sem alterar o `apply`/`rollback` normais.
-- [x] Candidato exato do recovery fixado em `81a5f3571d66d9764d9c70f8071367f5094fbc05`.
-- [x] GitHub-hosted static + ShellCheck: run `33191612674` = PASS no SHA exato.
-- [x] GitHub-hosted KVM: run `33191612729` = PASS no SHA exato, incluindo `historical_failure`, `precheck`, `apply`, `check`, idempotência, rollback e cleanup.
-- [x] Artifact KVM `9694059362`, SHA-256 `1aced1e4e786859dd9faa3f0d700a7a35ccd815a06f7ec79311a6557e9b718da`.
-- [x] PR #35 integrada na lineage `fix/f1-2c-systemd-runtime-lock`; merge `2575bdaa99b195d756386ff9e923e05231b9aa17`.
-- [!] `foundation-ci` run `33191612766` e `docker-boundary-ci` run `33191612669` permanecem `FAIL — PREEXISTING_HISTORY_ONLY_GATE`; não contam como CI verde desta frente.
-- [x] Preflight live **somente leitura** via SSH notebook→VPS executado em `2026-08-28T17:11:31Z`: identidade, hashes antigos/base, serviços requeridos, LXD inativo, unit enabled+failed, config/runtime ausentes, lock legado, forwarding, socket Docker e ausência de links/rotas/listeners gerenciados = PASS.
-- [!] Conteúdo exato dos markers `0600` e `zero_docker_state` permanecem `NÃO VERIFICADO` sem privilégio; ambos pertencem ao `precheck` privilegiado fail-closed.
-- [!] Staging root-owned do candidato exato + `precheck` privilegiado + `apply` pertencem ao rollout controlado e permanecem bloqueados pelo HUMAN_GATE.
-- [!] Reapply NODE-01 requer autorização humana explícita antes de alteração privilegiada/material.
-- [ ] Validar serviço, redes privadas e `systemctl --failed` pós-apply, se autorizado.
+- [x] Falha histórica de runtime lock sob `ProtectSystem=strict` reproduzida/classificada.
+- [x] Recovery fail-closed validado em CI estática + KVM.
+- [x] Variantes de baseline parcial `ABSENT`/`EXACT_PRESENT` tratadas fail-closed.
+- [x] Candidato live aplicado: `baaf83908e8e83264baafc032434a4df1952450b`.
+- [x] Pós-validação root independente: recovery/check/base/helper PASS.
+- [x] Serviço final `active+enabled`, não failed.
+- [x] Releitura de 05/09: serviço ainda `active+enabled`, zero units failed.
+- [x] Hash helper live `b69f41cd1c66000da239f39c09a46681afd5098a311065adf76b3c7aae35b9a3`.
+- [x] Hash unit live `c8297e4e88572a9fee9393960f7896e1ba27d9650f5643d595388878f059a57b`.
+- [!] Autorização one-shot consumida; qualquer novo reapply exige novo gate.
 
-**Estado:** `REQUIRES_REVIEW`; recovery técnico validado e integrado, rollout live pendente de `F1_2C_NODE01_ROLLOUT_HUMAN_GATE`.
+Evidência: `evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`.
 
-## 6. Rede / systemd-networkd — P2
+**Estado:** `COMPLETE_LIVE_VERIFIED`.
 
-- [x] `eth0` operacional/routable observado.
-- [x] `SetupState=configuring` observado.
-- [x] `systemd-networkd-wait-online` com timeouts recorrentes observado.
-- [ ] Identificar causa de não convergência.
-- [ ] Validar netplan/networkd efetivo.
-- [ ] Corrigir somente após diagnóstico.
-- [ ] Confirmar `wait-online` saudável antes de reboot.
+## 6. Rede / systemd-networkd — NETWORK_CONVERGENCE_P2
 
-**Estado:** `NETWORK_CONVERGENCE_P2_PENDING`.
+- [x] Assinatura `eth0 configuring` + wait-online timeout reproduzida em KVM.
+- [x] Causa funcional: ausência da rota IPv4 conectada reproduzida; agente que a removeu permanece `NOT_VERIFIED`.
+- [x] Correção mínima: `169.58.128.1/32 scope link`, sem restaurar o `/17` conectado.
+- [x] Candidato live aplicado: `682c3e55d835ebea4bcc2edd297a8b819b2df434`.
+- [x] Postverify live: `AdministrativeState=configured` e wait-online PASS.
+- [x] Releitura de 05/09: `eth0` `routable (configured)`, online, gateway `/32` presente.
+- [x] `systemd-networkd-wait-online.service` observado active.
+- [!] Autorização one-shot consumida; qualquer novo reapply exige novo gate.
 
-## 7. Kernel / atualização / reboot — P2
+Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md`.
 
-- [x] `reboot-required` confirmado.
-- [x] Kernel atual e kernel novo pendente inventariados.
-- [x] Pacotes atualizáveis inventariados.
-- [x] `Spec rstack overflow` reportado pelo kernel foi registrado.
-- [!] Não rebootar antes de fechar recovery, F1.2c e network convergence.
-- [ ] Criar checkpoint pré-reboot.
-- [ ] Executar reboot controlado quando autorizado.
-- [ ] Validar SSH, rede, firewall, Docker, Runner, SentinelX, XRDP e backup pós-reboot.
+**Estado:** `COMPLETE_LIVE_VERIFIED`.
 
-**Estado:** `REBOOT_BLOCKED_BY_PRECONDITIONS`.
+## 7. Kernel / checkpoint / update / reboot — P2
 
-## 8. Segurança / firewall
+- [x] Checkpoint V2 de 29/08 validado e preservado como evidência histórica.
+- [x] Checkpoint V1 rejeitado corretamente por self-hash interno inválido.
+- [x] Releitura atual: kernel `6.8.0-138-generic`.
+- [x] `reboot-required=YES` para `linux-image-6.8.0-139-generic` + `linux-base`.
+- [!] O checkpoint V2 foi criado com kernel `6.8.0-137-generic`; não é aceito como checkpoint corrente.
+- [ ] Gerar **checkpoint pré-reboot fresco** sobre o estado atual.
+- [ ] Revalidar cópia/recovery off-host do checkpoint fresco.
+- [!] Coordenar janela com owners externos de DeepSeek Harness e 9router.
+- [!] Obter autorização humana explícita para updates/reboot.
+- [ ] Executar update/reboot controlado somente após todos os gates.
+- [ ] Executar validação pós-reboot de SSH, rede, firewall, Docker, Runner, SentinelX, XRDP e backup.
 
-- [x] UFW, Fail2ban e AppArmor ativos na auditoria.
-- [x] Snapshot efetivo: `INPUT DROP`, `FORWARD DROP`, `OUTPUT ACCEPT`.
-- [x] TCP/22 como regra explícita de entrada; RDP loopback-only.
-- [x] SSH root/password authentication desabilitados.
-- [x] `ubuntu` sem NOPASSWD genérico.
-- [x] Boundary `sentinelx -> mcf-hermes-operator` identificado como restrito ao wrapper.
-- [ ] Bans/jails Fail2ban live com privilégio.
+**Estado:** `HISTORICAL_VERIFIED_REFRESH_REQUIRED` + `HUMAN_GATE_AND_EXTERNAL_SERVICE_COORDINATION_REQUIRED`.
+
+**Próximo passo exato:** `PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE`.
+
+## 8. SentinelX direto NODE-01 → hub
+
+- [x] `sentinelx-cloud-core` observado active + enabled no NODE-01.
+- [x] Conexões diretas ao hub observadas.
+- [x] Oscilações recentes observadas: WebSocket `1006`, hub `1012`, HTTP `502`, seguidas de reconexão.
+- [ ] Provar uma janela de conectividade persistente suficiente para o critério operacional.
+- [ ] Identificar causa atual se a intermitência persistir; hoje `NOT_VERIFIED`.
+- [!] Não reiniciar/patchar SentinelX como atalho nesta frente enquanto puder interferir em workloads externos.
+
+**Estado:** `INTERMITTENT_NOT_CLOSED`.
+
+## 9. Control Bridge G2-B
+
+- [x] G1: `PASS_REAL_NODE_01_ROUNDTRIP`.
+- [x] G2-A: `PASS_REAL_NODE_01_READ_ONLY`.
+- [x] G2-B Tasks 1–7: `COMPLETE`.
+- [x] Task 8 head `f91c836e92fae1aea1cc2e48ecc4c4bde6df78b8`: 373/373 testes PASS.
+- [x] Task 8: 13/13 marcadores de lifecycle comprovados; cleanup sem resíduos.
+- [!] PR #21 permanece Draft e não integrada ao mainline aplicável.
+- [ ] Task 9: não iniciada.
+- [ ] Task 10: não iniciada.
+- [!] Escrita G2-B real no NODE-01 continua `NOT_AUTHORIZED`.
+
+**Estado Task 8:** `TECHNICAL_PASS_DRAFT_UNINTEGRATED`.
+
+## 10. Segurança / firewall
+
+- [x] Baseline anterior: UFW/Fail2ban/AppArmor ativos; INPUT/FORWARD DROP; SSH key-only.
+- [x] Nenhuma evidência de comprometimento confirmada na auditoria.
+- [ ] Bans/jails Fail2ban com visibilidade privilegiada atual.
 - [ ] Firewall/snapshot/recovery nativo do provider Contabo.
-- [ ] Auditoria privilegiada final após saneamento.
+- [ ] Auditoria privilegiada final após os gates de manutenção.
 
 **Estado:** `SECURITY_BASELINE_GOOD_WITH_PRIVILEGED_VISIBILITY_GAPS`.
 
-## 9. Docker / workloads
+## 11. Docker / workloads
 
-- [x] Docker e containerd ativos.
-- [x] `ubuntu` fora do grupo Docker.
-- [ ] Inventário completo de containers, imagens e volumes.
-- [ ] Mapear owner/projeto, restart policies e persistência de cada workload.
-- [ ] Definir recovery apropriado por workload.
+- [x] Docker/containerd ativos na auditoria.
+- [x] Quatro processos live confirmados em cgroups Docker: 2 CoreDNS + 2 Squid.
+- [ ] Inventário semântico completo de containers/images/volumes/restart policies/owners.
+- [ ] Definir recovery por workload.
+- [!] DeepSeek Harness e 9router são `EXTERNALLY_MANAGED_OBSERVE_ONLY`; não modificar/reiniciar nesta missão.
 
 **Estado:** `DOCKER_DEEP_INVENTORY_PENDING`.
 
-## 10. Cloud Workstation / XRDP
+## 12. Workstation / XRDP / desktop
 
-- [x] XRDP e LightDM ativos; RDP restrito a loopback.
-- [x] Acúmulo de sessões Xorg/XFCE observado.
-- [x] Erros XRDP/sesman quantificados na auditoria.
-- [ ] Identificar sessões realmente ativas e órfãs.
-- [ ] Implementar lifecycle/cleanup de sessão.
-- [ ] Validar novo login/logout limpo e consumo após cleanup.
+- [x] XRDP/LightDM e RDP loopback-only inventariados.
+- [x] Acúmulo de sessões e erros históricos quantificados.
+- [ ] Classificar sessões ativas vs órfãs.
+- [ ] Implementar lifecycle/cleanup em gate próprio.
+- [ ] Revisar estabilidade Firefox/desktop após manutenção futura.
 
 **Estado:** `XRDP_SESSION_LIFECYCLE_DEBT`.
 
-## 11. Firefox / desktop
+## 13. Estado canônico / PR e branch hygiene
 
-- [x] 26 segfaults históricos `libxul.so` identificados.
-- [x] Crash file identificado.
-- [x] Nenhum novo segfault `libxul` observado nas 48h da auditoria.
-- [ ] Revisar estabilidade após atualização/reboot.
-
-**Estado:** `HISTORICAL_CRASH_MONITOR`.
-
-## 12. Estado canônico e documentação
-
-- [x] `README.md` preservado como painel executivo canônico e consolidado da missão **IMPLEMENTAÇÃO DA VPS**.
-- [x] `ROADMAP-CHECKLIST.md` adotado somente como checklist operacional detalhado, subordinado ao README e restrito à missão.
-- [x] `state/current.yaml` codifica `README.md` como `canonical_executive_panel` e o checklist como `SUBORDINATE_TO_README_EXECUTIVE_PANEL`.
-- [x] `CHECKPOINT.md` classificado como checkpoint de continuidade, sem autoridade executiva concorrente.
-- [x] CI exige os marcadores distintos de README/checklist, o escopo `IMPLEMENTACAO_DA_VPS_ONLY` e rejeita a antiga autodeclaração `CANONICAL_OPERATIONAL_CHECKLIST`.
-- [ ] Reconciliar integralmente subseções históricas de `state/current.yaml` que ainda representam frentes antigas.
+- [x] `README.md` permanece painel executivo canônico.
+- [x] Este checklist permanece subordinado ao `README.md`.
+- [x] Runner foi reconciliado e fechado em PRs #47/#48.
+- [x] F1.2c e Network P2 agora projetados como live verified.
+- [x] PR #23 classificada operacionalmente como histórica/sucedida por lineage posterior.
+- [x] PR #41 tratada como fonte de evidência, não como merge candidate atual.
+- [ ] Classificar/fechar PRs legadas comprovadamente superseded sem apagar evidência.
+- [ ] Revisar branches históricas após classificação.
 - [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
-- [ ] Registrar ownership canônico dos runtimes live não pertencentes ao core Cloud.
 
-**Estado:** `MISSION_DOCUMENT_HIERARCHY_RECONCILED_LEGACY_STATE_RECONCILIATION_PENDING`.
-
-## 13. PR / branch hygiene
-
-- [x] Dívida de PRs históricas identificada.
-- [ ] Classificar PRs legadas como `ACTIVE`, `SUPERSEDED`, `HISTORICAL` ou `DO_NOT_MERGE`.
-- [ ] Fechar somente PRs comprovadamente superseded, sem apagar evidência necessária.
-- [ ] Revisar branches antigas após classificação das PRs.
-
-**Estado:** `REPOSITORY_GOVERNANCE_DEBT_PENDING`.
+**Estado:** `LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT`.
 
 ## Ordem operacional vigente
 
 ```text
-RECOVERY-P1                         DONE
-RECOVERY-P2                         DONE
-RUNNER_ISOLATION_P1                 DONE_CROSS_JOB / GLOBAL_HOOK_HARDENING_PENDING
-SSH_KEY_GOVERNANCE_P1               DONE_KEEP_CURRENT_USER_WORKFLOW
-F1_2C_NODE01_ROLLOUT                PENDING / HUMAN_GATE
-NETWORK_CONVERGENCE_P2              PENDING
-UPDATE_AND_CONTROLLED_REBOOT        BLOCKED_BY_PRECONDITIONS
+INVENTORY                           DONE
+RECOVERY_P1                         DONE
+RECOVERY_P2                         DONE
+RUNNER_ISOLATION_P1                 DONE / ACTIVE_VERIFIED
+SSH_KEY_GOVERNANCE_P1               DONE / KEEP_CURRENT_USER_WORKFLOW
+F1_2C_NODE01_ROLLOUT                DONE / LIVE_VERIFIED
+NETWORK_CONVERGENCE_P2              DONE / LIVE_VERIFIED
+PRE_REBOOT_CHECKPOINT               HISTORICAL_VERIFIED / REFRESH_REQUIRED
+SENTINELX_DIRECT                    INTERMITTENT / NOT_CLOSED
+G2B_TASK8                           TECHNICAL_PASS / DRAFT_UNINTEGRATED
+PRE_REBOOT_REFRESH_COORDINATION     NEXT / HUMAN_GATE
+UPDATE_AND_CONTROLLED_REBOOT        NOT_AUTHORIZED
 POST_REBOOT_VALIDATION              PENDING
-CANONICAL_STATE_AND_PR_HYGIENE      PENDING
-FINAL_AUDIT                         PENDING
+CANONICAL_PR_BRANCH_HYGIENE         PENDING
+FINAL_TRANSVERSAL_AUDIT             PENDING
 ```
 
-## Evidência de atualização
+## Regra de closeout
 
-Ao concluir uma missão, registrar neste arquivo pelo menos:
-
-- status anterior -> status novo;
-- data da validação;
-- PR/commit ou evidência live aplicável;
-- pendências remanescentes;
-- `NÃO VERIFICADO` para qualquer ponto sem prova suficiente.
+Toda sub-missão que mude o estado de um item deste checklist deve atualizar a projeção e
+vincular evidência antes do closeout. Não promover `NÃO VERIFICADO` para PASS e não
+transformar autorização one-shot em autorização permanente.

@@ -32,8 +32,10 @@ def main() -> int:
     for token in (
         "CANONICAL_EXECUTIVE_PANEL_IMPLEMENTACAO_DA_VPS",
         "Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**",
-        "TASK_8_FAILED_ATTEMPT_3",
-        "DOCUMENTATION_AND_INTEGRATION_DRIFT",
+        "LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT",
+        "COMPLETE_LIVE_VERIFIED",
+        "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
+        "INTERMITTENT_NOT_CLOSED",
         "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED",
     ):
         require_token(Path("README.md"), token)
@@ -41,20 +43,25 @@ def main() -> int:
     for path in (Path("CONTEXT.md"), Path("CHECKPOINT.md")):
         for token in (
             "scripts/test.sh",
-            "DOCUMENTATION_AND_INTEGRATION_DRIFT",
-            "REQUIRES_REVIEW",
-            "IN_PROGRESS_DIAGNOSTIC_REPRODUCTION",
-            "REPOSITORY_HYGIENE_REVALIDATED",
+            "LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT",
+            "COMPLETE_LIVE_VERIFIED",
+            "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
+            "INTERMITTENT_NOT_CLOSED",
             "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
             "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
-            "F1_2C_NODE01_ROLLOUT_HUMAN_GATE",
+            "PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE",
         ):
             require_token(path, token)
 
     for path in (Path("README.md"), Path("ROADMAP-CHECKLIST.md")):
-        require_token(path, "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED")
-        require_token(path, "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED")
-        require_token(path, "F1_2C_NODE01_ROLLOUT_HUMAN_GATE")
+        for token in (
+            "CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED",
+            "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED",
+            "PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE",
+            "COMPLETE_LIVE_VERIFIED",
+            "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
+        ):
+            require_token(path, token)
 
     active = state["continuity"]["active_mission_model"]
     if active["status"] == "NOT_ADOPTED" and Path(active["file"]).exists():
@@ -78,7 +85,6 @@ def main() -> int:
     elif roadmap["status"] != "NOT_ADOPTED":
         raise AssertionError(f"unexpected roadmap checklist status: {roadmap['status']!r}")
 
-
     freshness = state["freshness"]
     if freshness.get("canonical_executive_panel") != "README.md":
         raise AssertionError("README.md must remain the canonical executive panel")
@@ -98,22 +104,57 @@ def main() -> int:
         raise AssertionError("runner global hook probe run drift")
     if runner.get("global_hook_last_probe_result") != "PASS_ACTIVE_VERIFIED":
         raise AssertionError("runner global hook probe result drift")
-    if runner.get("global_hook_activation_authorized") is not True:
-        raise AssertionError("runner global hook activation authorization receipt drift")
     if runner.get("next_exact_step") != "NONE":
         raise AssertionError("runner global hook next gate drift")
+
     ssh = state.get("ssh_key_governance", {})
     if ssh.get("status") != "CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED":
         raise AssertionError("ssh key governance state drift")
     if ssh.get("dsh_key", {}).get("current_dependency") != "CONFIRMED_BY_LEANDRO_USER_WORKFLOW":
-        raise AssertionError("ssh key governance must preserve LEANDRO-confirmed current dependency")
+        raise AssertionError("ssh key governance must preserve LEANDRO-confirmed dependency")
     if ssh.get("decision") != "KEEP_REQUIRED_FOR_CURRENT_USER_WORKFLOW":
         raise AssertionError("ssh key governance must keep current user workflow")
     if ssh.get("authorized_keys_changed") is not False:
         raise AssertionError("ssh key governance must preserve authorized_keys")
-    if state["project"].get("next_exact_step") != "F1_2C_NODE01_ROLLOUT_HUMAN_GATE":
-        raise AssertionError("next exact step drift after ssh key governance")
 
+    f1 = state.get("platform", {}).get("f1_2c", {})
+    if f1.get("status") != "COMPLETE_LIVE_VERIFIED" or f1.get("accepted") is not True:
+        raise AssertionError("F1.2c current state must reflect verified live completion")
+
+    network = state.get("network_convergence_p2", {})
+    if network.get("status") != "COMPLETE_LIVE_VERIFIED" or network.get("accepted") is not True:
+        raise AssertionError("Network P2 current state must reflect verified live completion")
+    if network.get("route_removal_agent") != "NOT_VERIFIED":
+        raise AssertionError("Network P2 exact route-removal agent must remain NOT_VERIFIED")
+
+    g2b = state.get("control_bridge", {}).get("g2b", {})
+    if g2b.get("task_8", {}).get("diagnostic_status") != "TECHNICAL_PASS_DRAFT_UNINTEGRATED":
+        raise AssertionError("G2-B Task 8 current technical status drift")
+    if g2b.get("accepted") is not False:
+        raise AssertionError("G2-B must not be promoted to accepted")
+
+    sentinel = state.get("sentinelx_direct_connectivity", {})
+    if sentinel.get("status") != "INTERMITTENT_NOT_CLOSED":
+        raise AssertionError("SentinelX direct-connectivity state drift")
+    if sentinel.get("root_cause") != "NOT_VERIFIED":
+        raise AssertionError("SentinelX current root cause must remain NOT_VERIFIED")
+
+    checkpoint = state.get("pre_reboot_checkpoint", {})
+    if checkpoint.get("status") != "HISTORICAL_VERIFIED_REFRESH_REQUIRED":
+        raise AssertionError("pre-reboot checkpoint freshness classification drift")
+    if checkpoint.get("accepted_for_current_reboot") is not False:
+        raise AssertionError("historical checkpoint must not be accepted for current reboot")
+
+    coordination = state.get("reboot_coordination", {})
+    if coordination.get("status") != "HUMAN_GATE_AND_EXTERNAL_SERVICE_COORDINATION_REQUIRED":
+        raise AssertionError("reboot coordination gate drift")
+    if coordination.get("deepseek_harness") != "EXTERNALLY_MANAGED_OBSERVE_ONLY":
+        raise AssertionError("DeepSeek Harness ownership boundary drift")
+    if coordination.get("ninerouter") != "EXTERNALLY_MANAGED_OBSERVE_ONLY":
+        raise AssertionError("9router ownership boundary drift")
+
+    if state["project"].get("next_exact_step") != "PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE":
+        raise AssertionError("project next exact step drift")
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")
 

@@ -27,17 +27,31 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertTrue(Path(roadmap["file"]).is_file())
         self.assertEqual(self.state["source_snapshot"]["main"]["executive_projection"], "README.md")
 
-    def test_future_state_is_not_promoted(self):
+    def test_live_reconciliation_records_verified_network_and_unintegrated_g2b(self):
         f1 = self.state["platform"]["f1_2c"]
-        self.assertEqual(f1["status"], "REQUIRES_REVIEW")
-        self.assertFalse(f1["accepted"])
+        self.assertEqual(f1["status"], "COMPLETE_LIVE_VERIFIED")
+        self.assertTrue(f1["accepted"])
+        self.assertEqual(f1["applied_candidate_sha"], "baaf83908e8e83264baafc032434a4df1952450b")
+        self.assertEqual(f1["live_postverify"]["status"], "PASS")
+        self.assertTrue(f1["live_postverify"]["service_active"])
         self.assertFalse(f1["node01_reapply_authorized"])
+
+        network = self.state["network_convergence_p2"]
+        self.assertEqual(network["status"], "COMPLETE_LIVE_VERIFIED")
+        self.assertTrue(network["accepted"])
+        self.assertEqual(network["applied_candidate_sha"], "682c3e55d835ebea4bcc2edd297a8b819b2df434")
+        self.assertEqual(network["live_postverify"]["administrative_state"], "configured")
+        self.assertEqual(network["live_postverify"]["gateway_host_route"], "169.58.128.1/32_SCOPE_LINK")
+        self.assertFalse(network["node01_reapply_authorized"])
 
         g2b = self.state["control_bridge"]["g2b"]
         self.assertFalse(g2b["accepted"])
-        self.assertEqual(g2b["task_8"]["last_terminal_attempt"], "FAILED_ATTEMPT_3_NOT_ACCEPTED")
-        self.assertEqual(g2b["task_8"]["root_cause"], "NOT_VERIFIED")
+        self.assertEqual(g2b["task_8"]["last_terminal_attempt"], "TECHNICAL_PASS_DRAFT_UNINTEGRATED")
+        self.assertTrue(g2b["task_8"]["acceptance_markers_proven"])
+        self.assertEqual(g2b["task_8"]["diagnostic_head"], "f91c836e92fae1aea1cc2e48ecc4c4bde6df78b8")
+        self.assertEqual(g2b["task_8"]["diagnostic_status"], "TECHNICAL_PASS_DRAFT_UNINTEGRATED")
         self.assertEqual(g2b["tasks_9_10"], "NOT_STARTED")
+        self.assertEqual(g2b["merge_status"], "TASK_8_TECHNICAL_PASS_DRAFT_UNINTEGRATED")
 
     def test_production_remains_closed(self):
         self.assertEqual(
@@ -68,7 +82,32 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["fallback_auth"], "PASS_INDEPENDENT_KEY")
         self.assertFalse(ssh["authorized_keys_changed"])
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
-        self.assertEqual(self.state["project"]["next_exact_step"], "F1_2C_NODE01_ROLLOUT_HUMAN_GATE")
+        self.assertEqual(
+            self.state["project"]["next_exact_step"],
+            "PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE",
+        )
+
+    def test_reboot_gate_requires_fresh_checkpoint_and_external_coordination(self):
+        checkpoint = self.state["pre_reboot_checkpoint"]
+        self.assertEqual(checkpoint["status"], "HISTORICAL_VERIFIED_REFRESH_REQUIRED")
+        self.assertFalse(checkpoint["accepted_for_current_reboot"])
+        self.assertTrue(checkpoint["refresh_required_before_reboot"])
+        self.assertEqual(checkpoint["current_kernel"], "6.8.0-138-generic")
+        self.assertEqual(checkpoint["target_kernel"], "6.8.0-139-generic")
+        self.assertTrue(checkpoint["reboot_required"])
+
+        sentinel = self.state["sentinelx_direct_connectivity"]
+        self.assertEqual(sentinel["status"], "INTERMITTENT_NOT_CLOSED")
+        self.assertEqual(sentinel["root_cause"], "NOT_VERIFIED")
+
+        coordination = self.state["reboot_coordination"]
+        self.assertEqual(coordination["status"], "HUMAN_GATE_AND_EXTERNAL_SERVICE_COORDINATION_REQUIRED")
+        self.assertTrue(coordination["external_service_coordination_required"])
+        self.assertTrue(coordination["host_reboot_would_interrupt_external_services"])
+        self.assertEqual(coordination["deepseek_harness"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")
+        self.assertEqual(coordination["ninerouter"], "EXTERNALLY_MANAGED_OBSERVE_ONLY")
+        self.assertEqual(self.state["authorization"]["updates"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+        self.assertEqual(self.state["authorization"]["reboot"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
 
     def test_runner_isolation_state_records_active_verified_global_hook(self):
         runner = self.state["runner_isolation"]

@@ -4,84 +4,116 @@ Este arquivo é a entrada obrigatória para qualquer IA, agente ou humano que as
 
 ## Regra de verdade
 
-Hierarquia documental: `README.md` é o painel executivo canônico da missão; `ROADMAP-CHECKLIST.md` é seu checklist operacional detalhado; `state/current.yaml` é a projeção estruturada; este arquivo fornece contexto e entrada.
+Hierarquia documental: `README.md` é o painel executivo canônico; `ROADMAP-CHECKLIST.md`
+é o checklist operacional detalhado subordinado; `state/current.yaml` é a projeção estruturada;
+`CHECKPOINT.md` preserva continuidade.
 
-Use esta precedência para qualquer decisão operacional:
+Precedência operacional:
 
 1. instrução explícita atual de LEANDRO;
-2. GitHub e infraestrutura verificáveis ao vivo;
-3. testes/evidências executáveis vinculados a SHA;
-4. `state/current.yaml` e este checkpoint;
-5. documentação canônica;
+2. GitHub/provider/infraestrutura verificável ao vivo;
+3. testes/evidências executáveis vinculados a SHA/estado;
+4. `README.md` e `state/current.yaml`;
+5. `ROADMAP-CHECKLIST.md` e `CHECKPOINT.md`;
 6. histórico.
 
-Nunca transforme estado desejado em estado observado.
+Nunca transformar estado desejado ou histórico em estado observado atual.
 
-## Mapa canônico atual
+## Mapa atual — reconciliação de 05/09/2026
 
-| Pergunta | Fonte |
-|---|---|
-| Estado estruturado reconciliado | `state/current.yaml` |
-| Checkpoint de continuidade | `CHECKPOINT.md` |
-| Painel executivo | `README.md` |
-| Decisões Platform Discovery Q1–Q40 | `state/platform-discovery.yaml` |
-| Contrato de execução histórico/vinculante | `docs/CODEX-EXECUTION-MISSION-001.md` |
-| Validação canônica do repositório | `scripts/test.sh` + `.github/workflows/canonical-validation.yml` |
+Base de reconciliação: `main@34248311116e2282950fe560639873c8e5d2f81c`.
 
-## Estado reconciliado em 22/08/2026 + atualização operacional de 28/08/2026
+- F1.2c: `COMPLETE_LIVE_VERIFIED`; candidato `baaf83908e8e83264baafc032434a4df1952450b` aplicado e pós-verificado.
+- Network P2: `COMPLETE_LIVE_VERIFIED`; candidato `682c3e55d835ebea4bcc2edd297a8b819b2df434`; `eth0` configurado/online e gateway `/32 scope link` presente.
+- Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`; run `33998487949`; nenhuma ação pendente na trilha.
+- SSH key governance: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; preservar fluxo notebook→VPS.
+- G2-B Task 8: `TECHNICAL_PASS_DRAFT_UNINTEGRATED`; PR #21 Draft/unmerged; Tasks 9/10 `NOT_STARTED`.
+- SentinelX direto: `INTERMITTENT_NOT_CLOSED`; serviço live ativo, causa da intermitência `NOT_VERIFIED`.
+- Pre-reboot checkpoint de 29/08: `HISTORICAL_VERIFIED_REFRESH_REQUIRED` porque foi produzido com kernel `6.8.0-137-generic` e o host está agora em `6.8.0-138-generic` com `6.8.0-139-generic` pendente.
+- Produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`.
 
-`main@f2e01dfa1247d648a4c6e2ecf5ecc0f57ce0db8b` está em `DOCUMENTATION_AND_INTEGRATION_DRIFT`.
-
-Fatos que não podem ser promovidos além da evidência:
-
-- S0, F1.1 e F1.2b: concluídos conforme a reconciliação integrada;
-- F1.2c: `REQUIRES_REVIEW`; recovery candidate estático verde, mas KVM acceptance não executado e NODE-01 sem reapply;
-- Control Bridge G1: `PASS_REAL_NODE_01_ROUNDTRIP`;
-- Control Bridge G2-A: `PASS_REAL_NODE_01_READ_ONLY`;
-- G2-B Tasks 1–7: `COMPLETE`;
-- G2-B Task 8: último terminal comprovado `FAILED_ATTEMPT_3_NOT_ACCEPTED`; causa `NOT_VERIFIED`; diagnóstico isolado `IN_PROGRESS_DIAGNOSTIC_REPRODUCTION`;
-- G2-B Tasks 9–10: `NOT_STARTED`;
-- produção: `NOT_AUTHORIZED_HUMAN_GATE_REQUIRED`;
-- Repository Hygiene: `REPOSITORY_HYGIENE_REVALIDATED`; a compatibilidade do PR #19 com a toolchain canônica foi comprovada e o blocker histórico de secrets foi resolvido.
-- SSH key governance: `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED`; LEANDRO confirmou uso da `dsh-tunnel...` no acesso notebook→VPS; chave preservada e `authorized_keys` inalterado.
-- Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`; PoC legado removido, policy/guard canônicos e prova cross-job histórica PASS; após restart real, run `33992772737` provou que o hook global foi carregado mas rejeitado por extensão inválida. Wrapper `.sh` ativado após autorização de LEANDRO; run `33998487949` confirmou hooks STARTED/COMPLETED e `RUNNER_ISOLATION_CROSS_JOB=PASS`. PR #47 foi integrado em `main@65717400a1c976f0d8a634411b69515519dd87cb`; a trilha de runner isolation não possui ação pendente.
-
-## Toolchain canônica
-
-`scripts/test.sh` é o entrypoint canônico. A extração mainline-neutral preserva os gates genéricos separáveis do contrato F1.1:
-
-- `git diff --check` contra a base de integração;
-- secret policy na árvore atual e em todos os blobs Git alcançáveis;
-- links Markdown locais;
-- YAML estrito com rejeição de chaves duplicadas;
-- invariantes de `state/current.yaml`;
-- consistência README/CONTEXT/CHECKPOINT/state;
-- testes unitários;
-- sintaxe Python/shell;
-- ShellCheck;
-- policy de isolamento do runner, incluindo recusa de manipulação de `RUNNER_TRACKING_ID` e exigência de guard nos workflows self-hosted.
-
-O executor canônico de integração também preserva o boundary F1.1: GitHub-hosted `ubuntu-24.04`, Python 3.12 e dependências lockadas em `requirements-dev.lock`. O lock neutro contém somente `PyYAML==6.0.3`, pois dependências F1.1 acopladas a Ansible/manifests não pertencem a esta extração.
-
-`.github/workflows/canonical-validation-maintenance-proof.yml` é uma prova alternativa restrita às branches `team/canonical-state-toolchain-*`, `runner/isolation-*` ou disparo manual. Ela usa NODE-01 somente como executor não privilegiado e recusa passwordless sudo ou Docker socket gravável. Não substitui o CI hospedado canônico.
-
-`validate_manifests.py` não é importado porque depende de schemas/manifests da implementação F1.1. A toolchain neutra não enfraquece o secret gate para fabricar resultado verde.
-
-## Modelo de missão ativa
-
-`state/active-mission.yaml` permanece `NOT_ADOPTED`: sua lineage G2-B modela uma missão ativa única, enquanto o projeto possui frentes isoladas paralelas.
-
-`ROADMAP-CHECKLIST.md` está `ADOPTED` como checklist operacional detalhado da missão **IMPLEMENTAÇÃO DA VPS**, subordinado ao `README.md`. O README permanece o painel executivo canônico e consolidado; o checklist não constitui uma autoridade concorrente nem se estende ao MCF como projeto separado. `state/active-mission.yaml` permanece separado e `NOT_ADOPTED`.
-
-## Guardrails
-
-- LEANDRO é autoridade humana final.
-- MESTRE orquestra a missão.
-- nenhuma conclusão autoriza merge final, produção, escrita real G2-B ou reapply F1.2c;
-- nenhuma operação privilegiada no NODE-01 pertence a esta frente;
-- branches G2-B/F1.2c permanecem isoladas;
-- secrets nunca são versionados.
+**Estado documental:** `LIVE_STATE_RECONCILED_OPEN_GOVERNANCE_DEBT`.
 
 ## Próximo passo exato
 
-**F1_2C_NODE01_ROLLOUT_HUMAN_GATE**. `SSH_KEY_GOVERNANCE_P1` foi resolvido preservando a `dsh-tunnel...` porque LEANDRO confirmou dependência no fluxo notebook→VPS. Qualquer hardening futuro deve manter esse acesso. O hardening de hooks globais do runner permanece pendente até restart autorizado do serviço; não contornar `systemd`/sudo.
+`PRE_REBOOT_CHECKPOINT_REFRESH_AND_EXTERNAL_SERVICE_COORDINATION_GATE`
+
+Não executar diretamente update/reboot. Primeiro:
+
+- gerar checkpoint fresco;
+- validar recovery/off-host associado;
+- coordenar janela com owners externos dos serviços que seriam interrompidos;
+- obter autorização humana explícita.
+
+## Boundary externo
+
+DeepSeek Harness e 9router são `EXTERNALLY_MANAGED_OBSERVE_ONLY` nesta missão.
+
+Não:
+
+- editar seus arquivos/configurações;
+- reiniciar/parar seus processos;
+- alterar supervisor/cron/pacotes;
+- usá-los como rota de execução;
+- realizar reboot do host sem coordenação externa explícita.
+
+O fato de um reboot não editar seus arquivos não elimina o impacto: ele interrompe o host e,
+portanto, esses serviços.
+
+## F1.2c e Network P2
+
+O antigo `F1_2C_NODE01_ROLLOUT_HUMAN_GATE` foi consumido por execução posterior comprovada.
+Não reaplicar F1.2c nem Network P2 como resposta ao checklist histórico.
+
+Receipts canônicos:
+
+- `evidence/f1-2c/F1-2C-NODE01-LIVE-RECOVERY-20260828.md`;
+- `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-20260829.md`.
+
+A releitura read-only de 05/09 confirmou F1.2c `active+enabled`, zero units failed,
+`eth0 routable (configured)`, gateway `169.58.128.1`, wait-online ativo e os hashes live
+esperados do helper/unit F1.2c.
+
+## G2-B
+
+O estado antigo `FAILED_ATTEMPT_3_NOT_ACCEPTED` não é mais o terminal técnico mais recente.
+A PR #21 registra o head `f91c836e92fae1aea1cc2e48ecc4c4bde6df78b8` com 373/373 testes,
+13/13 marcadores e cleanup sem resíduos.
+
+Isso é **PASS técnico**, não integração. A classificação corrente é
+`TECHNICAL_PASS_DRAFT_UNINTEGRATED`. Escrita real G2-B segue não autorizada.
+
+## SentinelX
+
+`sentinelx-cloud-core` está ativo/enabled, mas a janela observada mostrou conexão ao hub
+alternando com WebSocket `1006`, hub restart `1012` e HTTP `502`, seguida de reconexões.
+A causa atual permanece `NOT_VERIFIED`. Não inferir automaticamente que o heartbeat histórico
+é a causa presente.
+
+## Reboot / checkpoint
+
+O receipt `PRE-REBOOT-CHECKPOINT-NODE01-20260829.md` continua válido como evidência de
+uma baseline histórica. Ele **não** deve ser usado como autorização nem como checkpoint corrente.
+
+Estado atual observado:
+
+- kernel `6.8.0-138-generic`;
+- `reboot-required=YES`;
+- alvo `linux-image-6.8.0-139-generic` + `linux-base`;
+- F1.2c, network wait-online, runner e SentinelX ativos;
+- backup on-host recente `cloud-infrastructure-config-20260905T030614Z.tar.gz`.
+
+## Toolchain canônica
+
+`scripts/test.sh` é o entrypoint canônico. O CI de integração permanece GitHub-hosted
+`ubuntu-24.04`, com secret policy, runner isolation policy, Markdown, YAML estrito,
+state/consistency, unit tests, Python/shell syntax e ShellCheck.
+
+## Guardrails
+
+- LEANDRO é a autoridade humana final.
+- MESTRE orquestra a missão.
+- esta reconciliação é documental/estado e não autoriza mudanças live;
+- autorizações one-shot F1.2c/Network P2 foram consumidas;
+- nenhuma conclusão autoriza produção, reboot, update, G2-B real write ou reapply;
+- secrets nunca são versionados.
