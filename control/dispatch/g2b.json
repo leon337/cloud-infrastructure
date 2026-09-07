@@ -4,7 +4,7 @@
   },
   "request": {
     "protocol": "MCF_WORKSPACE_MUTATION_V1",
-    "request_id": "G2B-REAL-ROLLBACK-20260907220000",
+    "request_id": "G2B-REAL-STATUS-20260907220200",
     "mission_id": "CONTROL-BRIDGE-G2B-PILOT",
     "declared_actor": "MESTRE_MCF",
     "project": {
@@ -12,9 +12,7 @@
       "name": "g2a-smoke",
       "environment": "dev"
     },
-    "operation": "rollback",
-    "arguments": {
-      "original_request_id": "G2B-REAL-WRITE-20260907215100"
-    }
+    "operation": "status",
+    "arguments": {}
   }
 }
