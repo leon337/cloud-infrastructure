@@ -21,7 +21,7 @@ Nunca transformar estado desejado ou histórico em estado observado atual.
 
 ## Mapa atual — pós-reboot live verified de 06/09/2026
 
-Base canônica: `main@c7315e43e86beedae5a921e39b1ab7103f4da276`.
+Base canônica: `main@78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7`.
 
 - F1.2c e Network P2: `COMPLETE_LIVE_VERIFIED`.
 - Runner isolation: `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED`; `next_exact_step=NONE`.
@@ -33,16 +33,18 @@ Base canônica: `main@c7315e43e86beedae5a921e39b1ab7103f4da276`.
 - Recovery off-host: `20260906T185928Z`, `RECOVERY-P2-v1`, `PASS_6_OF_6`, restore smoke PASS; causa da ausência anterior segue historicamente `NOT_VERIFIED`.
 - Produção: não autorizada; autorizações one-shot de update/reboot já foram consumidas e não permanecem ativas.
 
-**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_CLASSIFIED_FINAL_AUDIT_NEXT`.
+**Estado documental:** `FINAL_TRANSVERSAL_AUDIT_EXECUTED_REMEDIATION_GATE_NEXT`.
 
 ## Próximo passo exato
 
-`FINAL_TRANSVERSAL_AUDIT`
+`HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION`
 
 Update/reboot autorizados por LEANDRO já foram executados e consumidos. O NODE-01 voltou no kernel
-`6.8.0-139-generic`, zero failed units, DSH/9Router acessíveis e Network P2 formalmente PASS com o
-checker corrigido `9070c24...`. A PR #51 foi integrada em `fix/f1-2c-systemd-runtime-lock@d5508e1...`
-e passou validação pós-merge 166/166. A PR #50 foi integrada em `main@c7315e43...`, com CI pós-merge SUCCESS e 35/35 testes isolados. A integração pós-reboot está encerrada. A higiene canônica fechou 8 PRs legadas com evidência preservada, reteve a PR #21 Draft, classificou 68 branches e deletou 0. O próximo passo operacional é `FINAL_TRANSVERSAL_AUDIT`.
+`6.8.0-139-generic`, zero failed units, DSH/9Router acessíveis e Network P2 formalmente PASS. A PR #53
+integrou a higiene em `main@78a4106...`; a auditoria transversal posterior confirmou o runtime read-only,
+separou o snapshot histórico de 68 branches do audit pré-publicação de 69 branches e do live atual pós-publicação da PR #54: 70 branches; reexecutou os hosted workflows da PR #21
+e localizou o Capability Registry em MCF `main@0825bbc...`. O próximo passo durável é o gate humano de
+remediation da dívida de Secret Policy no histórico; nenhuma ação destrutiva está autorizada.
 
 ## Boundary externo
 
@@ -77,10 +79,12 @@ esperados do helper/unit F1.2c.
 
 O estado antigo `FAILED_ATTEMPT_3_NOT_ACCEPTED` não é mais o terminal técnico mais recente.
 A PR #21 registra o head `f91c836e92fae1aea1cc2e48ecc4c4bde6df78b8` com 373/373 testes,
-13/13 marcadores e cleanup sem resíduos.
+13/13 marcadores e cleanup sem resíduos. Os fresh hosted reruns de `control-bridge-g2b-ci`,
+`docker-boundary-ci` e `foundation-ci` executaram código no mesmo head, mas pararam em
+`SECRET_POLICY_FAIL` de blobs históricos alcançáveis antes dos gates específicos G2-B.
 
-Isso é **PASS técnico**, não integração. A classificação corrente é
-`TECHNICAL_PASS_DRAFT_UNINTEGRATED`. Escrita real G2-B segue não autorizada.
+Isso preserva o **PASS técnico** anterior, mas não produz hosted PASS nem integração. A classificação
+corrente continua `TECHNICAL_PASS_DRAFT_UNINTEGRATED`; merge e escrita real G2-B seguem não autorizados.
 
 ## SentinelX
 

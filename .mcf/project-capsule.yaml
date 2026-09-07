@@ -1,0 +1,31 @@
+schema_version: 1
+project_id: cloud-infrastructure
+
+purpose: >-
+  Govern and reproduce the Cloud/VPS infrastructure used by the MCF ecosystem
+  while preserving explicit human gates, live-evidence boundaries, recovery
+  evidence, and separation between verified infrastructure state and
+  unintegrated control-plane capabilities.
+
+lifecycle: ACTIVE
+
+snapshot:
+  current_workstream: final-transversal-audit-closeout
+  current_status: POST_REBOOT_LIVE_VERIFIED__PR_BRANCH_HYGIENE_INTEGRATED__FINAL_TRANSVERSAL_AUDIT_EXECUTED__G2B_DRAFT_BLOCKED_BY_REPOSITORY_HISTORY_POLICY
+  next_action: >-
+    Present HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION to LEANDRO;
+    do not perform repository-history rewrite, branch deletion, PR #21 merge,
+    G2-B real write, production promotion, NODE-01 mutation, or provider action
+    without a separate explicit authorization.
+  blockers:
+    - "PR #21 remains OPEN + DRAFT and unintegrated; fresh hosted reruns reached scripts/test.sh but were blocked by pre-existing reachable repository-history Secret Policy findings before G2-B-specific hosted lifecycle gates."
+    - Repository-history destructive remediation is NOT_AUTHORIZED and requires a separate human gate.
+    - SentinelX direct hub connectivity remains INTERMITTENT_NOT_CLOSED; the service is active/enabled and the current root cause is NOT_VERIFIED.
+    - Branch deletion remains NOT_AUTHORIZED_HUMAN_GATE_REQUIRED; 26 historical refs remain REVIEW_REQUIRED in the hygiene snapshot.
+    - Production promotion and G2-B real write remain unauthorized.
+    - The MCF cloud capability contracts remain LIVE_REQUIRED and must not be promoted from historical verification by inference.
+
+sources:
+  current_state: state/current.yaml
+
+observed_at: '2026-09-06T21:21:00-03:00'

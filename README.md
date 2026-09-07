@@ -12,10 +12,11 @@ Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 
 ## Estado executivo reconciliado — 06/09/2026
 
-A projeção atual parte de `main@ec9bc8cbac143197ab8d8102da23d3cb54fcd43a`, do checkpoint
-pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo dia.
+A projeção atual parte de `main@78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7`, já com a PR #53
+de higiene integrada, do checkpoint pré-reboot de 06/09/2026 e da auditoria transversal read-only
+executada após a integração.
 
-**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_CLASSIFIED_FINAL_AUDIT_NEXT`.
+**Estado documental:** `FINAL_TRANSVERSAL_AUDIT_EXECUTED_REMEDIATION_GATE_NEXT`.
 
 | Área | Estado atual | Evidência/limite |
 |---|---|---|
@@ -24,7 +25,7 @@ pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo 
 | Network Convergence P2 | `COMPLETE_LIVE_VERIFIED` | candidato live `682c3e55...`; checker corrigido integrado pela PR #51 em `fix/f1-2c-systemd-runtime-lock@d5508e1...` |
 | Runner isolation | `CROSS_JOB_ISOLATION_VERIFIED_GLOBAL_HOOK_ACTIVE_VERIFIED` | run `33998487949`; STARTED/COMPLETED e prova cross-job PASS; `next_exact_step=NONE` |
 | SSH key governance | `CURRENT_USER_WORKFLOW_DEPENDENCY_CONFIRMED` | preservar fluxo notebook→VPS e `authorized_keys` |
-| G2-B Task 8 | `TECHNICAL_PASS_DRAFT_UNINTEGRATED` | PR #21 Draft, head `f91c836e...`; 373/373 testes e 13/13 marcadores; não integrado |
+| G2-B Task 8 | `TECHNICAL_PASS_DRAFT_UNINTEGRATED` | PR #21 Draft, head `f91c836e...`; PASS técnico local/lab preservado; fresh hosted reruns executaram e pararam no Secret Policy de histórico alcançável antes do lifecycle G2-B específico |
 | SentinelX direto | `INTERMITTENT_NOT_CLOSED` | serviço ativo; conexão ao hub oscilou; causa atual `NOT_VERIFIED` |
 | Pre-reboot checkpoint | `FRESH_READ_ONLY_VERIFIED_OFFHOST_RECOVERY_FRESH` | live/on-host frescos em 06/09; recovery `20260906T185928Z` com 6/6 SHA, secret/path/link safety e restore smoke PASS |
 | Update/reboot | `PASS_POST_REBOOT_LIVE_VERIFIED` | autorização B consumida; upgrade RC=0; reboot concluído; P2 check corrigido PASS; nenhuma nova autorização permanece ativa |
@@ -33,7 +34,7 @@ pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo 
 ## Próxima ação exata
 
 ```text
-FINAL_TRANSVERSAL_AUDIT
+HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION
 ```
 
 A manutenção autorizada por LEANDRO foi concluída:
@@ -48,9 +49,11 @@ A manutenção autorizada por LEANDRO foi concluída:
 8. PR #51: **MERGED** em `fix/f1-2c-systemd-runtime-lock@d5508e1...`; validação pós-merge 166/166, shell 21 e Ansible 6 PASS.
 9. PR #50: **MERGED** em `main@c7315e43...`; CI pós-merge `34065344230` SUCCESS e suíte isolada 35/35 PASS.
 10. PR #52 closeout: **MERGED** em `main@ec9bc8cb...`; CI pós-merge `34066674036` SUCCESS.
-11. PR/branch hygiene: 8 PRs legadas fechadas com evidência preservada; #21 mantida Draft; 68 branches classificadas; 0 deletadas.
+11. PR/branch hygiene: 8 PRs legadas fechadas com evidência preservada; #21 mantida Draft; snapshot de 68 branches classificado; 0 deletadas.
+12. PR #53: **MERGED** em `main@78a4106...`; CI pós-merge `34068890016` SUCCESS, 35/35 testes e ShellCheck 6/6.
+13. `FINAL_TRANSVERSAL_AUDIT_EXECUTED`: pós-verificação NODE-01 read-only PASS; audit pré-publicação 69 branches; live atual pós-publicação da PR #54: 70 branches; fresh hosted CI da PR #21 bloqueado por dívida preexistente de Secret Policy no histórico; fonte de verdade do Capability Registry localizada em MCF `main@0825bbc...`; Capsule Cloud reconstruída no candidato de closeout.
 
-A correção operacional e a reconciliação canônica já estão integradas. A integração pós-reboot está encerrada. O próximo trabalho operacional é a higiene canônica de PRs/branches.
+A frente de manutenção, integração e higiene está encerrada. O próximo passo é o gate humano `HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION`; ele **não** autoriza reescrita de histórico, merge da PR #21, produção ou G2-B real write.
 
 DeepSeek Harness e 9router permanecem `EXTERNALLY_MANAGED_OBSERVE_ONLY` como boundary de mutação.
 Esta PR não os modifica, reinicia, usa como executor ou muda seu ownership. Um reboot do host os
@@ -141,8 +144,9 @@ consumido pela manutenção autorizada e concluída no mesmo dia.
 - lifecycle/cleanup XRDP;
 - SentinelX direto persistente;
 - G2-B Task 8 ainda não integrada; Tasks 9/10 não iniciadas;
-- classificação/fechamento de PRs e branches históricas;
-- auditoria transversal final após os gates de manutenção.
+- 26 branches históricas permanecem `REVIEW_REQUIRED` e retidas; deleção continua em gate separado;
+- dívida de Secret Policy em histórico alcançável bloqueia os hosted gates específicos da PR #21; remediation destrutiva continua não autorizada;
+- SentinelX direto persistente e inventários privilegiados/workload/XRDP permanecem frentes separadas.
 
 ## Regra de execução
 
