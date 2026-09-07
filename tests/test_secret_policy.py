@@ -52,6 +52,30 @@ class SecretPolicyTests(unittest.TestCase):
         synthetic = b"root_" + b"password: DISABLED_AND_NOT_USED_AFTER_BOOTSTRAP"
         self.assertIsNone(CONTENT_RULES["secret-like-assignment"].search(synthetic))
 
+    def test_symbolic_runtime_credential_in_uri_is_allowed(self):
+        synthetic = b"https://x-access-token:${RUNTIME_TOKEN}@github.com/example/repository.git"
+        self.assertNotIn("credential-in-uri", set(MODULE.content_findings(synthetic)))
+
+    def test_literal_credential_in_uri_remains_blocked(self):
+        synthetic = (
+            b"https://service-user:"
+            + b"literal-password-1234"
+            + b"@example.invalid/repository.git"
+        )
+        self.assertIn("credential-in-uri", set(MODULE.content_findings(synthetic)))
+
+    def test_known_historical_diagnostic_assignment_is_exactly_allowlisted(self):
+        synthetic = b'password = match.group("password").lower()'
+        findings = set(
+            MODULE.content_findings(
+                synthetic,
+                allowed_assignment_line_hashes=frozenset(
+                    MODULE.HISTORICAL_NON_SECRET_ASSIGNMENT_LINE_SHA256
+                ),
+            )
+        )
+        self.assertNotIn("secret-like-assignment", findings)
+
     def test_only_an_explicit_line_hash_can_allowlist_historical_status(self):
         synthetic = b"root_" + b"password: reviewed-historical-status"
         line_hash = hashlib.sha256(synthetic).hexdigest()
