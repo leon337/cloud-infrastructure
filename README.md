@@ -17,31 +17,33 @@ INSTITUTIONAL_MEMORY=state/institutional-memory.yaml
 R8_MEMO=history/memos/2026-08-22-r8-task7-completion.md
 DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
 COLD_START_R7_SNAPSHOT=state/cold-start-validation.yaml
-ACTIVE_BRANCH=codex/context-bridge-reconcile-20260823
-ACTIVE_PR=NONE_LOCAL_ONLY_NO_PUSH
+ACTIVE_BRANCH=team/g2b-task9-prebootstrap-gate-20260907
+ACTIVE_PR=56_DRAFT_DO_NOT_MERGE
 TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
 TASK_7=COMPLETE_7_PASS_0_FAIL
 TASK_7_CANDIDATE_SHA=604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
 TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
-TASK_8=PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
-TASK_8_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
+TASK_8=COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13
+TASK_8_SOURCE_MERGE_SHA=f1be00b8f7623316188a62ce94caf9f3e2feb21f
+TASK_8_LAB_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
 G2B_LIFECYCLE=LAB_VALIDATED_INACTIVE
-TASKS_9_10=NOT_STARTED
+TASK_9=WAITING_HUMAN_GATE
+TASK_10=NOT_STARTED
 ROADMAP_R1_R8=COMPLETE
-NODE01_G2B_GATE=CLOSED
+NODE01_G2B_GATE=CLOSED_NOT_AUTHORIZED_WAITING_HUMAN_REVIEW
 REAL_GRANT_GATE=CLOSED
 REAL_WRITE_GATE=CLOSED
 PRODUCTION_GATE=CLOSED
-MERGE_G2B_GATE=CLOSED
+MERGE_G2B_GATE=CLOSED_NOT_AUTHORIZED_TASK9_DRAFT
 F1_2C=PARALLEL_ISOLATED_DO_NOT_MODIFY
-NEXT_EXACT_STEP=REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+NEXT_EXACT_STEP=HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 ```
 
 > Nova IA/agente: execute primeiro [`governance/AI-STARTUP-RECOVERY-PROTOCOL.md`](governance/AI-STARTUP-RECOVERY-PROTOCOL.md), leia `state/active-mission.yaml`, `CONTEXT.md`, `CHECKPOINT.md` e `state/control-bridge-g2b.yaml`, e obtenha `RECOVERY_VERDICT=PASS` antes de implementar.
 
 > O R7 permanece como snapshot histórico repository-only do estado anterior à R8. A conclusão de R8 não altera retroativamente essa evidência.
 
-> **Task 8 passou somente no laboratório Docker descartável do notebook, com 13/13 marcadores e cleanup completo.** G2-B permanece `LAB_VALIDATED_INACTIVE`; Tasks 9/10, transporte mutante a partir do Context, NODE-01, grant real, escrita real, produção, publicação e merge continuam fechados.
+> **Task 8 está completa no escopo descartável.** Além do laboratório histórico 13/13, a integração `f1be00b...` foi validada por CI hospedada pós-merge. A Task 9 publicou somente a PR Draft #56 e parou em `WAITING_HUMAN_GATE`; G2-B permanece `LAB_VALIDATED_INACTIVE`. NODE-01, grant real, escrita real, produção e merge continuam fechados e não autorizados.
 
 > A seção `PROJECT_STATUS` abaixo continua sendo a projeção da trilha principal da plataforma e não substitui o estado transversal G2-B acima.
 
@@ -83,26 +85,27 @@ GitHub live, branch/PR aplicável, código, testes e evidência do SHA aplicáve
 ## Control Bridge — estado transversal reconciliado
 
 ```text
-CONTROL_BRIDGE_G2B=TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED
+CONTROL_BRIDGE_G2B=WAITING_FOR_HUMAN_GATE_G2B_NODE01_BOOTSTRAP
 G1=PASS_REAL_NODE_01_ROUNDTRIP_HISTORIC_LIVE_REQUIRED
 G2A=PASS_REAL_NODE_01_READ_ONLY_HISTORIC_LIVE_REQUIRED
 G2B_TASKS_1_6=COMPLETE_MATERIALLY_REVIEWED
 G2B_TASK_7=COMPLETE_7_PASS_0_FAIL
 G2B_TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
-G2B_TASK_8=PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
-TASKS_9_10=NOT_STARTED
+G2B_TASK_8=COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13
+TASK_9=WAITING_HUMAN_GATE
+TASK_10=NOT_STARTED
 G2B_REAL_WRITE=NOT_EXECUTED
-G2B_PR=NONE_LOCAL_ONLY_NO_PUSH
+G2B_PR=56_DRAFT_DO_NOT_MERGE
 MESTRE_MCF=CURRENT_ORCHESTRATOR
 LEANDRO=FINAL_HUMAN_AUTHORITY
 F1_2C_SYSTEMD_RUNTIME_LOCK=PARALLEL_ISOLATED_DO_NOT_MODIFY
-NODE01_G2B_GATE=CLOSED
-NEXT_EXACT_STEP=REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+NODE01_G2B_GATE=CLOSED_NOT_AUTHORIZED_WAITING_HUMAN_REVIEW
+NEXT_EXACT_STEP=HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 ```
 
 O RED recuperado da Task 7 foi resolvido com validação fail-closed do conjunto exato de chaves de grant existente. O candidato `604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390` obteve 7/7 testes focados e 3/3 syntax-checks Ansible no self-hosted runner, sem apply, grant ou escrita real. No candidato, o GitHub-hosted CI falhou antes dos steps com `BlobNotFound`; no commit de conclusão R8 `047495c5...`, os runs hosted concluíram `action_required` sem criar jobs. Ambos permanecem inconclusivos como prova de conteúdo.
 
-O candidato reconciliado une a base madura G1/G2-A `3e34044...` ao input Task 8 `f116f16...` no merge `9359450...`. Em `570779b...`, `scripts/test_control_bridge_g2b_vm.sh` concluiu localmente em Docker Ubuntu 24.04/systemd com `--network none`, 13/13 marcadores e cleanup. A evidência sanitizada está em `evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md`; o contrato Context `project_id` → chave Cloud está em `context/mcf-cloud-context.yaml`, referenciado por `.mcf/project-capsule.yaml`.
+O candidato reconciliado histórico uniu a base madura G1/G2-A ao input Task 8 e provou 13/13 no laboratório em `570779b...`. Depois, a PR #21 integrou a Task 8 em `f1be00b...` e três workflows pós-merge passaram no SHA exato. Para a Task 9, somente os quatro deltas G2-B não equivalentes foram transportados sobre a base MCF atual; o pre-checkpoint `da78a16...` passou 400/400 testes localmente e foi publicado na PR Draft #56. A evidência histórica permanece em `evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md`.
 
 ## Estado operacional — baseline reconciliada em 16/08/2026
 

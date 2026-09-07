@@ -1,20 +1,38 @@
 protocol_version: MCF_CONTROL_BRIDGE_G2B_STATE_V1
-updated_at: 2026-08-23
+updated_at: '2026-09-07'
 scope: TRANSVERSAL_CONTROL_PLANE
 priority: P0
 repository: leon337/cloud-infrastructure
-branch: codex/context-bridge-reconcile-20260823
+branch: team/g2b-task9-prebootstrap-gate-20260907
 base_branch: mcf/mission-001-control-bridge-g1
-base_sha: 3e34044c0fb10429fe2f7a262dec21932479f143
-status: TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED
+base_sha: 420ee7d26bc40159e3040a5319b16b21a6f02499
+status: WAITING_FOR_HUMAN_GATE_G2B_NODE01_BOOTSTRAP
 candidate:
-  branch: codex/context-bridge-reconcile-20260823
+  branch: team/g2b-task9-prebootstrap-gate-20260907
   safe_pull_request_target: mcf/mission-001-control-bridge-g1
   reconciliation_merge_sha: 9359450742020d1c99b298379b8a29fefce6294f
   validated_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
-  push_executed: false
-  pull_request: null
+  push_executed: true
+  pull_request: 56
   merge_authorized: false
+  base_sha: 420ee7d26bc40159e3040a5319b16b21a6f02499
+  source_g2b_merge_sha: f1be00b8f7623316188a62ce94caf9f3e2feb21f
+  pre_checkpoint_validated_sha: da78a16d670aa4e8ccb3105b0eac0c172c09021b
+  pre_checkpoint_validation: PASS_400_TESTS_16_SHELL_SYNTAX_9_ANSIBLE_SYNTAX_SHELLCHECK_LOCAL_NOT_EXECUTED
+  pull_request_state: DRAFT_OPEN_DO_NOT_MERGE
+  publication_authority: LEANDRO_CONTINUE_REPO_ONLY_TASK9
+  validation_basis:
+    classification: VALIDATION_BASIS_SNAPSHOT_BEFORE_CLOSEOUT_METADATA
+    sha: 7f1f331cc7309190e5dcc16429d3557cd721eb58
+    receipt: evidence/CONTROL-BRIDGE-G2B/TASK-9-VALIDATION-BASIS-20260907.yaml
+    control_bridge_run: 34087239108
+    foundation_run: 34087241172
+    docker_run: 34087243164
+    unit_tests: PASS_400_OF_400
+    ansible_syntax: PASS_9_OF_9
+    shellcheck: PASS_16_OF_16
+    g2b_lifecycle: PASS_13_OF_13_BOUNDED_CLEANUP
+    validates_future_closeout_commit: false
 recovery_checkpoint:
   classification: HISTORICAL_WIP_CHECKPOINT
   sha: 7205a647f918580d09c87ed44f38b0a433552a51
@@ -43,7 +61,7 @@ implementation:
     post_r8_publication_foundation_run: 32549668020
     post_r8_publication_hosted_validation: INCONCLUSIVE_ACTION_REQUIRED_NO_JOBS
     review_mode: SAME_SESSION_MCF_ROLE_REVIEW_NOT_EXTERNAL_INDEPENDENT
-  task_8: PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+  task_8: COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13
   task_8_validation:
     candidate_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
     contract_tests: PASS_6_OF_6
@@ -63,8 +81,19 @@ implementation:
     historical_hosted_classification: INCONCLUSIVE_PRE_STEP_SUPERSEDED_ONLY_FOR_LOCAL_TASK8_BY_EXACT_LAB_PASS
     disposable_lifecycle: PASS_13_OF_13
     boundary_rule: DISPOSABLE_NOTEBOOK_DOCKER_NETWORK_NONE_NEVER_NODE01
-  tasks_9_10: NOT_STARTED
-  tasks_8_10: TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED
+    postmerge_source_sha: f1be00b8f7623316188a62ce94caf9f3e2feb21f
+    postmerge_control_bridge_run: 34083420595
+    postmerge_foundation_run: 34083420638
+    postmerge_docker_run: 34083420634
+    postmerge_tests: PASS_377_OF_377
+    postmerge_shellcheck: PASS_16_OF_16
+    postmerge_lifecycle_markers: PASS_13_OF_13
+    postmerge_bounded_cleanup: PASS
+    postmerge_validation: PASS_EXACT_MERGE_SHA
+  tasks_9_10: TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED
+  tasks_8_10: TASK_8_COMPLETE_TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED
+  task_9: WAITING_HUMAN_GATE
+  task_10: NOT_STARTED
 pilot:
   project: leon337/g2a-smoke/dev
   path: G2B-PILOT.txt
@@ -109,15 +138,17 @@ continuity:
   roadmap_stage: R8_COMPLETE
   f1_2c_parallel_branch: fix/f1-2c-systemd-runtime-lock
   f1_2c_rule: ISOLATED_DO_NOT_MODIFY
-technical_next_exact_step: REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
-technical_next_step_gate: REVIEW_REQUIRED_TASK8_LAB_ONLY_G2B_INACTIVE
+technical_next_exact_step: HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
+technical_next_step_gate: WAITING_HUMAN_GATE_NODE01_BOOTSTRAP_NOT_AUTHORIZED
 task_8_historical_remediation_plan: docs/56-g2b-task8-vps-qemu-tcg-disposable-boundary-plan.md
 task_8_historical_remediation_strategy: VPS_QEMU_TCG_DISPOSABLE_UBUNTU24_SYSTEMD
-task_8_host_package_gate: CLOSED_NOT_REQUIRED_AFTER_LOCAL_LAB_PASS
-next_exact_step: REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+task_8_host_package_gate: CLOSED_NOT_REQUIRED_AFTER_DISPOSABLE_PASS
+next_exact_step: HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 r8_does_not_authorize:
-  - NODE01_G2B_BOOTSTRAP
-  - REAL_GRANT_ISSUE_OR_REISSUE
-  - REAL_BOUNDED_WRITE
-  - PRODUCTION_MUTATION
-  - MERGE_G2B
+- NODE01_G2B_BOOTSTRAP
+- REAL_GRANT_ISSUE_OR_REISSUE
+- REAL_BOUNDED_WRITE
+- PRODUCTION_MUTATION
+- MERGE_G2B
+task_9_rule: DRAFT_PUBLICATION_DOES_NOT_AUTHORIZE_NODE01_BOOTSTRAP_TASK10_OR_MERGE
+task_10_rule: NOT_STARTED_REQUIRES_EXPLICIT_LEANDRO_GATE

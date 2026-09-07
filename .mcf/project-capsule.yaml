@@ -3,18 +3,18 @@ project_id: cloud-infrastructure
 purpose: Govern and reproduce the development and lab infrastructure that can host MCF agents without making historical host evidence current by implication.
 lifecycle: ACTIVE
 snapshot:
-  current_workstream: ecosystem-promotion-gate-sync-20260828
-  current_status: G2A_LOCAL_CONTEXT_REAL_MCF_APPMODULE_LAB_E2E_HISTORICALLY_VERIFIED_DISCONNECTED_INACTIVE__G2B_TASK8_LAB_VALIDATED_INACTIVE__PROMOTION_REPLAY_ONLY
-  next_action: Promote only by selective replay into a fresh clean target after independent review, secret scanning, repository validation, four Ansible syntax checks, and green CI; do not merge divergent historical branches directly.
+  current_workstream: g2b-task9-prebootstrap-gate-20260907
+  current_status: G2A_LOCAL_CONTEXT_REAL_MCF_APPMODULE_LAB_E2E_HISTORICALLY_VERIFIED_DISCONNECTED_INACTIVE__G2B_TASK8_COMPLETE__G2B_TASK9_WAITING_HUMAN_GATE__G2B_TASK10_NOT_STARTED
+  next_action: Review Draft PR #56 and its exact-head CI; do not bootstrap G2-B on NODE-01 or start Task 10 without a new explicit LEANDRO authorization.
   blockers:
     - G2-A operational state is historical and requires live verification before material use.
     - The real MCF AppModule path passed a disposable local lab E2E, but the connection is now DISCONNECTED, runtime is INACTIVE, and activation remains a separate gate.
     - Python standard-library, site-package, native-extension, and transitive dependencies remain a residual trusted computing base; the audit hook is not an OS sandbox.
     - Historical policy findings on unrelated Git refs require a separate repository-wide security review; candidate HEAD ancestry is clean.
-    - G2-B Tasks 9 and 10 remain blocked and not started; real write, rollback, revocation, and MCF effective use are not proven.
-    - G2-B Tasks 9 and 10, active G2-B promotion or activation, NODE-01 access, and production mutation are not authorized by this capsule.
+    - G2-B Task 9 is waiting at the explicit LEANDRO NODE-01 bootstrap gate; Task 10 remains not started; real write, rollback, revocation, and MCF effective use are not proven.
+    - Draft publication of Task 9 does not authorize NODE-01 bootstrap, Task 10, active G2-B promotion or activation, NODE-01 access, or production mutation.
     - main and mcf/mission-001-control-bridge-g1 diverge materially; direct promotion is not a safe substitute for reviewed selective replay.
     - The preserved SSH recovery commit is not a promotion candidate; it requires replay and validation on the canonical clean target.
 sources:
   current_state: context/mcf-cloud-context.yaml
-observed_at: "2026-08-28T17:24:51Z"
+observed_at: "2026-09-07T05:17:00Z"

@@ -102,7 +102,11 @@ class McfCloudContextTests(unittest.TestCase):
         )
         self.assertTrue((ROOT / self.capsule["sources"]["current_state"]).is_file())
         self.assertIn(
-            "G2B_TASK8_LAB_VALIDATED_INACTIVE",
+            "G2B_TASK8_COMPLETE",
+            self.capsule["snapshot"]["current_status"],
+        )
+        self.assertIn(
+            "G2B_TASK9_WAITING_HUMAN_GATE",
             self.capsule["snapshot"]["current_status"],
         )
         self.assertIn(
@@ -185,12 +189,12 @@ class McfCloudContextTests(unittest.TestCase):
     def test_g2b_is_lab_validated_but_inactive_and_fail_closed(self):
         g2b = self.context["capabilities"]["g2b"]
         self.assertEqual(g2b["lifecycle"], "LAB_VALIDATED_INACTIVE")
-        self.assertEqual(g2b["state"], "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED")
+        self.assertEqual(g2b["state"], "TASK_8_COMPLETE_TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED")
         self.assertEqual(g2b["task_8"]["acceptance_markers"], MARKERS)
         self.assertEqual(g2b["task_8"]["marker_count"], len(MARKERS))
         self.assertEqual(g2b["task_8"]["boundary"], "DISPOSABLE_NOTEBOOK_DOCKER")
         self.assertEqual(g2b["task_8"]["network"], "NONE")
-        self.assertEqual(g2b["tasks_9_10"], "NOT_STARTED")
+        self.assertEqual(g2b["tasks_9_10"], "TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED")
         self.assertEqual(g2b["activation"], "NOT_AUTHORIZED")
         self.assertEqual(g2b["transport_from_context"], "NOT_IMPLEMENTED")
         self.assertFalse(g2b["production_authorized"])

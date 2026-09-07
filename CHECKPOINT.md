@@ -2,7 +2,7 @@
 
 Checklist canônico de leitura rápida: `ROADMAP-CHECKLIST.md`.
 
-Atualizado em 2026-08-23 após reconciliar G1/G2-A e comprovar a Task 8 somente em laboratório local descartável.
+Atualizado em 2026-09-07 após integrar e validar a Task 8, reconciliar o lineage MCF e publicar a PR Draft #56 para o gate pré-bootstrap da Task 9.
 
 ## Missão ativa
 
@@ -19,7 +19,7 @@ R8_MEMO=history/memos/2026-08-22-r8-task7-completion.md
 DRIFT_CONTROLS=governance/CONTINUITY-DRIFT-CONTROLS.md
 COLD_START_R7_SNAPSHOT=state/cold-start-validation.yaml
 G2B_RECOVERY_CHECKPOINT=docs/54-control-bridge-g2b-recovery-checkpoint.md
-STATUS=REVIEW_REQUIRED
+STATUS=WAITING_HUMAN_GATE
 AUTHORITY=LEANDRO
 ORCHESTRATOR=MESTRE_MCF
 ROADMAP_R1=COMPLETE
@@ -32,16 +32,21 @@ ROADMAP_R7=COMPLETE
 ROADMAP_R8=COMPLETE
 TASK_7=COMPLETE_7_PASS_0_FAIL
 TASK_7_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED
-ACTIVE_BRANCH=codex/context-bridge-reconcile-20260823
-ACTIVE_PR=NONE_LOCAL_ONLY_NO_PUSH
-TASK_8=PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
-TASK_8_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
+ACTIVE_BRANCH=team/g2b-task9-prebootstrap-gate-20260907
+ACTIVE_PR=56_DRAFT_DO_NOT_MERGE
+TASK_8=COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13
+TASK_8_SOURCE_MERGE_SHA=f1be00b8f7623316188a62ce94caf9f3e2feb21f
+TASK_8_LAB_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
 G2B_LIFECYCLE=LAB_VALIDATED_INACTIVE
-TASKS_9_10=NOT_STARTED
-NEXT_EXACT_STEP=REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+TASK_9=WAITING_HUMAN_GATE
+TASK_10=NOT_STARTED
+TASK_9_VALIDATION_BASIS_SHA=7f1f331cc7309190e5dcc16429d3557cd721eb58
+TASK_9_EXACT_HEAD_CI=PASS_RUNS_34087239108_34087241172_34087243164
+TASK_9_VALIDATION_RECEIPT=evidence/CONTROL-BRIDGE-G2B/TASK-9-VALIDATION-BASIS-20260907.yaml
+NEXT_EXACT_STEP=HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 ```
 
-A missão transversal de continuidade foi concluída. Seus controles permanecem ativos. O laboratório Task 8 passou com 13/13 marcadores e cleanup, mas G2-B permanece inativo e não abriu Tasks 9/10, transporte mutante pelo Context, NODE-01, grant real, escrita real, produção, publicação ou merge.
+A missão transversal de continuidade foi concluída e seus controles permanecem ativos. Task 8 está completa no boundary descartável, incluindo CI hospedada pós-merge. A Task 9 publicou apenas a PR Draft #56 e parou no gate humano. G2-B permanece inativo; NODE-01, grant real, escrita real, produção e merge não foram autorizados.
 
 ## Regras obrigatórias de retomada, persistência, memória e drift
 
@@ -241,10 +246,17 @@ Em caso de divergência, aplicar o protocolo e parar em `BLOCKED_RECONCILIATION`
 ## Próximo passo exato da missão ativa
 
 ```text
-G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
+ACTIVE_BRANCH=team/g2b-task9-prebootstrap-gate-20260907
+ACTIVE_PR=56_DRAFT_DO_NOT_MERGE
+TASK_9=WAITING_HUMAN_GATE
+TASK_10=NOT_STARTED
+NODE01_G2B_BOOTSTRAP=CLOSED_NOT_AUTHORIZED_WAITING_HUMAN_REVIEW
+NEXT_EXACT_STEP=HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 ```
 
-## R8 — COMPLETE
+A autorização necessária para o próximo passo é separada. A publicação da PR Draft #56 não autoriza bootstrap, grant, write, rollback, revoke, produção ou merge.
+
+## R8 — COMPLETE (snapshot histórico)
 
 Evidência de conclusão:
 

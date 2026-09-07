@@ -114,6 +114,15 @@ class McfCloudContextReadAdapterTests(unittest.TestCase):
         self.assertEqual(result["result"]["control_bridge"]["g2a"]["operational_freshness"], "LIVE_REQUIRED")
         self.assertEqual(result["result"]["control_bridge"]["g2b"]["lifecycle"], "LAB_VALIDATED_INACTIVE")
         self.assertEqual(
+            result["result"]["control_bridge"]["g2b"]["state"],
+            "TASK_8_COMPLETE_TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED",
+        )
+        self.assertEqual(
+            result["result"]["control_bridge"]["g2b"]["tasks_9_10"],
+            "TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED",
+        )
+        self.assertEqual(result["result"]["control_bridge"]["g2b"]["activation"], "NOT_AUTHORIZED")
+        self.assertEqual(
             result["result"]["adapter"],
             {
                 "transport": "STDIO",

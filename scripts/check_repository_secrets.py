@@ -24,6 +24,7 @@ MAX_SCAN_BYTES = 8 * 1024 * 1024
 # allowlisted. All other assignment-shaped history remains scanned.
 HISTORICAL_NON_SECRET_ASSIGNMENT_LINE_SHA256 = {
     "5a01f4f54c233a03be979b009a24c7e80206334dd860304710c953ac931ece6e",
+    "7eae0b03f7c21a0eb9792277ccebc66e5c7bd345b00e029bacf841985c6b1955",
 }
 
 ALLOWED_SECRETISH_PATHS = {

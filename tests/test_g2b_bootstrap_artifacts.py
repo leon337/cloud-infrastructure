@@ -92,6 +92,26 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
             digest.update(f"{sha256(ROOT / source)}  {source}\n".encode("utf-8"))
         self.assertEqual(self.vars["g2b_executor_bundle_sha256"], digest.hexdigest())
 
+    def test_canonical_bundle_hash_is_propagated_to_runtime_provenance(self) -> None:
+        expected = self.vars["g2b_executor_bundle_sha256"]
+
+        for content_key, sha_key in (
+            ("g2b_marker_content_dev", "g2b_marker_sha256_dev"),
+            ("g2b_marker_content_test", "g2b_marker_sha256_test"),
+        ):
+            marker = self.vars[content_key]
+            self.assertIn(f"bundle_sha256={expected}", marker)
+            self.assertEqual(
+                self.vars[sha_key],
+                hashlib.sha256(marker.encode("utf-8")).hexdigest(),
+            )
+
+        tasks_text = TASKS.read_text(encoding="utf-8")
+        self.assertIn(f"g2b_executor_bundle_sha256 == '{expected}'", tasks_text)
+
+        runbook_text = RUNBOOK.read_text(encoding="utf-8")
+        self.assertIn(f"EXECUTOR_SHA256='{expected}'", runbook_text)
+
     def test_role_is_marker_gated_installs_no_grant_and_places_marker_last(self) -> None:
         text = TASKS.read_text(encoding="utf-8")
         self.assertIn("follow: false", text)
@@ -144,6 +164,24 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
             self.assertEqual(service[path]["owner"], "mcf-workspace")
             self.assertEqual(service[path]["group"], "mcf-workspace")
             self.assertEqual(service[path]["mode"], "0700")
+
+    def test_unmarked_bootstrap_allows_only_exact_shared_parent_directories(self) -> None:
+        shared = set(self.vars["g2b_preexisting_shared_directory_paths"])
+        roots = {item["path"] for item in self.vars["g2b_root_directories"]}
+        service = {item["path"] for item in self.vars["g2b_service_directories"]}
+
+        self.assertIn("/usr/local/libexec", shared)
+        self.assertTrue(shared <= roots)
+        self.assertNotIn("/usr/local/lib/mcf-control-bridge/control_plane/g2b", shared)
+        self.assertTrue(shared.isdisjoint(service))
+
+        text = TASKS.read_text(encoding="utf-8")
+        self.assertIn("Validate any pre-existing shared parent before marker ownership", text)
+        self.assertIn("item.item.path in g2b_preexisting_shared_directory_paths", text)
+        self.assertIn("not (item.stat.islnk | default(false))", text)
+        self.assertIn("item.stat.pw_name == item.item.owner", text)
+        self.assertIn("item.stat.gr_name == item.item.group", text)
+        self.assertIn("item.stat.mode == item.item.mode", text)
 
     def test_apply_and_grant_issuance_are_separate_host_guarded_playbooks(self) -> None:
         apply = load_yaml(APPLY)

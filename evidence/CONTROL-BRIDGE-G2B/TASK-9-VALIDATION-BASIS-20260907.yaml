@@ -1,0 +1,44 @@
+schema_version: 1
+classification: VALIDATION_BASIS_SNAPSHOT_BEFORE_CLOSEOUT_METADATA
+observed_at: '2026-09-07T05:39:11Z'
+repository: leon337/cloud-infrastructure
+branch: team/g2b-task9-prebootstrap-gate-20260907
+pull_request: 56
+basis_sha: 7f1f331cc7309190e5dcc16429d3557cd721eb58
+semantics:
+  validates_basis_sha_only: true
+  validates_future_closeout_commit: false
+  task9_state: WAITING_HUMAN_GATE
+  task10_state: NOT_STARTED
+  node01_bootstrap_authorized: false
+  merge_authorized: false
+hosted_exact_head:
+  control_bridge_g2b_ci:
+    run: 34087239108
+    result: SUCCESS
+  foundation_ci:
+    run: 34087241172
+    result: SUCCESS
+  docker_boundary_ci:
+    run: 34087243164
+    result: SUCCESS
+validation:
+  secret_policy: PASS
+  continuity_drift: PASS
+  unit_tests: PASS_400_OF_400
+  shell_syntax: PASS_16_OF_16
+  ansible_syntax: PASS_9_OF_9
+  shellcheck: PASS_16_OF_16
+  g2b_lifecycle: PASS_13_OF_13_BOUNDED_CLEANUP
+  foundation_disposable: PASS_WITH_CLEANUP
+  docker_disposable: PASS_WITH_CLEANUP
+  node_network_services_disposable: PASS
+  network_services_disposable: PASS
+boundaries:
+  node01_mutated: false
+  real_grant_executed: false
+  real_write_executed: false
+  real_rollback_executed: false
+  real_revoke_executed: false
+  production_mutated: false
+  merge_executed: false

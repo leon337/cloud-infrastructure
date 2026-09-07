@@ -265,3 +265,22 @@ Esse PASS é restrito à Task 8 no laboratório. O contrato atual está em `cont
 ## Encerramento da missão de continuidade
 
 R1–R8 estão `COMPLETE`. Os protocolos, memória institucional, drift controls e cold-start evidence permanecem ativos como infraestrutura permanente de continuidade. O snapshot R7 continua histórico; o estado corrente está em `state/active-mission.yaml`, `state/current.yaml` e `state/control-bridge-g2b.yaml`.
+
+
+## Addendum de handoff — Task 9 (2026-09-07)
+
+Este documento permanece histórico para R1–R8. O estado operacional posterior é projetado pelas fontes canônicas atuais. Após a integração da Task 8 e reconciliação do lineage, a continuidade foi entregue à Task 9 com o seguinte checkpoint:
+
+```text
+ACTIVE_BRANCH=team/g2b-task9-prebootstrap-gate-20260907
+ACTIVE_PR=56_DRAFT_DO_NOT_MERGE
+TASK_8=COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13
+TASK_9=WAITING_HUMAN_GATE
+TASK_10=NOT_STARTED
+G2B_LIFECYCLE=LAB_VALIDATED_INACTIVE
+NODE01_G2B_BOOTSTRAP=CLOSED_NOT_AUTHORIZED_WAITING_HUMAN_REVIEW
+MERGE_G2B=CLOSED_NOT_AUTHORIZED_TASK9_DRAFT
+NEXT_EXACT_STEP=HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
+```
+
+A PR Draft #56 é publicação para revisão, não autorização operacional. Qualquer bootstrap NODE-01 ou início da Task 10 exige autorização humana separada de LEANDRO.

@@ -289,7 +289,11 @@ def _success_result(
         raise AdapterError("source_contract_invalid")
     if g2a_state.get("capabilities") != g2a.get("operations"):
         raise AdapterError("source_contract_invalid")
-    if g2b_state.get("status") != "TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED":
+    if g2b_state.get("status") != "WAITING_FOR_HUMAN_GATE_G2B_NODE01_BOOTSTRAP":
+        raise AdapterError("source_contract_invalid")
+    if g2b.get("state") != "TASK_8_COMPLETE_TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED":
+        raise AdapterError("source_contract_invalid")
+    if g2b.get("tasks_9_10") != "TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED":
         raise AdapterError("source_contract_invalid")
     if g2a.get("mutation") is not False or g2a.get("operational_freshness") != "LIVE_REQUIRED":
         raise AdapterError("source_contract_invalid")

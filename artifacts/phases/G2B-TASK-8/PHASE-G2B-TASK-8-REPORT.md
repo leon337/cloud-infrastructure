@@ -102,3 +102,27 @@ A perda de stdout do Ansible é uma causa comprovada de insuficiência de observ
 ## Decisão
 
 Aplicada a condição de parada definida por LEANDRO: não corrigir por hipótese, não repetir cegamente o lifecycle e não iniciar Tasks 9/10.
+
+## Final continuation — 2026-08-23
+
+The blocked checkpoint was reopened with explicit authorization to use the local machine only as a disposable validation host. The original attempt-3 exit=2 root cause was reproduced and proven. Three additional defects were then isolated by evidence and corrected with bounded changes: the installed executor workspace leaf, the missing `lsof` fixture dependency, and the non-portable `lsof rc == 1` assertion.
+
+Validated functional candidate: `ac3e2f8a52b881bcd2b40acab0d723d547b90e81`.
+
+Final evidence:
+- secret policy PASS;
+- unit tests 373/373 PASS;
+- Ansible syntax 9/9 PASS;
+- focused G2-B regressions PASS;
+- disposable lifecycle exit 0;
+- all 13 required markers exactly once and in required order;
+- `G2B_BOUNDED_CLEANUP_PASS` present;
+- zero abort markers;
+- zero residual G2-B process/container/image on the validation host;
+- no real NODE-01 G2-B write.
+
+After the validated candidate was published, GitHub-hosted validate jobs for control-bridge-g2b-ci, docker-boundary-ci, and foundation-ci all failed before any step was scheduled. GitHub check annotations explicitly report account payment/spending-limit blocking. Each job has `runner_id=0` and `steps=[]`. This is classified as an external billing block, not a repository validation failure.
+
+## Final decision
+
+Task 8 technical acceptance: **PASS**. PR #21 remains draft and unmerged for central audit. Tasks 9/10 remain not started. The protected source branch and `main` were not rewritten or merged.

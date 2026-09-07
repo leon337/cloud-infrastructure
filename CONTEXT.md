@@ -74,8 +74,8 @@ CONTINUITY_MISSION_STATUS=COMPLETE
 CONTINUITY_MISSION_DOC=docs/53-repository-continuity-context-recovery-mission.md
 AUTHORITY=LEANDRO
 ORCHESTRATOR=MESTRE_MCF
-ACTIVE_BRANCH=codex/context-bridge-reconcile-20260823
-ACTIVE_PR=NONE_LOCAL_ONLY_NO_PUSH
+ACTIVE_BRANCH=team/g2b-task9-prebootstrap-gate-20260907
+ACTIVE_PR=56_DRAFT_DO_NOT_MERGE
 ROADMAP_R1=COMPLETE
 ROADMAP_R2=COMPLETE
 ROADMAP_R3=COMPLETE
@@ -85,7 +85,7 @@ ROADMAP_R6=COMPLETE
 ROADMAP_R7=COMPLETE
 ROADMAP_R8=COMPLETE
 R7_VERDICT=PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION_HISTORICAL_SNAPSHOT
-NEXT_EXACT_STEP=REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+NEXT_EXACT_STEP=HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 ```
 
 A missão de continuidade concluiu R1–R8 e devolveu a missão ativa ao G2-B. Os controles criados continuam obrigatórios. O R7 permanece evidência histórica do estado pré-R8 e não deve ser reescrito.
@@ -100,20 +100,22 @@ G2B_TASK_7=COMPLETE
 G2B_TASK_7_TESTS=7_PASS_0_FAIL
 G2B_KNOWN_RED=RESOLVED_EXISTING_GRANT_EXACT_KEY_SET_ENFORCED
 G2B_ANSIBLE_SYNTAX=PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
-G2B_TASK_8=PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
-G2B_TASK_8_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
+G2B_TASK_8=COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13
+G2B_TASK_8_SOURCE_MERGE_SHA=f1be00b8f7623316188a62ce94caf9f3e2feb21f
+G2B_TASK_8_LAB_CANDIDATE_SHA=570779b75ba41ac3725ef16bc65a163e01631a1c
 G2B_LIFECYCLE=LAB_VALIDATED_INACTIVE
-TASKS_9_10=NOT_STARTED
+TASK_9=WAITING_HUMAN_GATE
+TASK_10=NOT_STARTED
 G2B_REAL_WRITE=NOT_EXECUTED
 G2B_REAL_ROLLBACK=NOT_EXECUTED
 G2B_REAL_REVOCATION=NOT_EXECUTED
-NODE01_G2B_GATE=CLOSED
-MERGE_G2B=NO
+NODE01_G2B_GATE=CLOSED_NOT_AUTHORIZED_WAITING_HUMAN_REVIEW
+MERGE_G2B=CLOSED_NOT_AUTHORIZED_TASK9_DRAFT
 ```
 
 Fontes atuais: `.mcf/project-capsule.yaml`, `context/mcf-cloud-context.yaml`, `state/control-bridge-g2b.yaml`, `state/active-mission.yaml` e `evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md`. O checkpoint `docs/54-control-bridge-g2b-recovery-checkpoint.md`, Issue #10 e PR #11 permanecem históricos.
 
-Task 8 passou apenas no laboratório Docker descartável do notebook (`--network none`) com 13/13 marcadores e cleanup. Esse resultado não ativa G2-B e não autoriza Tasks 9/10, transporte mutante pelo Context, NODE-01, grant real, escrita real, publicação, merge ou produção. G2-A preserva evidência histórica read-only, mas todo uso material requer verificação live.
+Task 8 possui prova descartável histórica 13/13 e prova hospedada pós-merge no SHA `f1be00b...`. A Task 9 publicou a PR Draft #56 sobre a base MCF atual e está parada no gate humano de bootstrap. A publicação Draft não ativa G2-B e não autoriza NODE-01, grant real, escrita real, merge ou produção. G2-A preserva evidência histórica read-only, mas todo uso material requer verificação live.
 
 ## Trabalho paralelo isolado
 
@@ -208,7 +210,7 @@ Fatos voláteis devem ser medidos novamente antes de qualquer operação real.
 - MESTRE/MCF orquestra a missão ativa.
 - `RECOVERY_VERDICT=PASS` não abre automaticamente nenhum HUMAN_GATE.
 - R8 concluída não equivale a autorização de bootstrap, grant, escrita, produção ou merge.
-- Antes de iniciar Task 8, executar novamente o protocolo de startup/recovery e reconciliar estado local/remoto aplicável.
+- Antes de qualquer operação real da Task 10, executar novamente o protocolo de startup/recovery e reconciliar estado local/remoto aplicável.
 - Missões longas devem persistir trabalho material remotamente no máximo a cada 30 minutos, ou antes quando ocorrer um trigger obrigatório.
 - WIP remoto preserva continuidade; não prova aceitação.
 - Se persistência remota falhar, preservar localmente, registrar o blocker e não continuar acumulando horas de trabalho material.
@@ -220,10 +222,15 @@ Fatos voláteis devem ser medidos novamente antes de qualquer operação real.
 
 ## Ponto exato
 
-A missão de continuidade concluiu R1–R8 e a Task 7 está aceita. O próximo passo técnico é:
+Task 8 está completa no escopo descartável e a Task 9 publicou somente o candidato Draft #56. O estado atual é fail-closed:
 
 ```text
-G2B_TASK8_PROVE_COMPLETE_LIFECYCLE_DISPOSABLE_BOUNDARY
+ACTIVE_BRANCH=team/g2b-task9-prebootstrap-gate-20260907
+ACTIVE_PR=56_DRAFT_DO_NOT_MERGE
+TASK_9=WAITING_HUMAN_GATE
+TASK_10=NOT_STARTED
+NODE01_G2B_GATE=CLOSED_NOT_AUTHORIZED_WAITING_HUMAN_REVIEW
+NEXT_EXACT_STEP=HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 ```
 
-Task 8 permanece `NOT_STARTED`; nenhum HUMAN_GATE foi aberto pela conclusão da R8.
+`WAITING_HUMAN_GATE` não significa gate aberto. Nenhuma operação real da Task 10 está autorizada.

@@ -1,9 +1,9 @@
 protocol_version: CLOUD_INFRA_ACTIVE_MISSION_V1
-updated_at: 2026-08-23
+updated_at: '2026-09-07'
 mission:
   id: CONTROL_BRIDGE_G2B
   title: Control Bridge G2-B bounded write
-  status: REVIEW_REQUIRED
+  status: WAITING_HUMAN_GATE
   priority: P0
   authority: LEANDRO
   orchestrator: MESTRE_MCF
@@ -18,15 +18,18 @@ continuity_mission:
   completed_at: 2026-08-22
 repository:
   name: leon337/cloud-infrastructure
-  active_branch: codex/context-bridge-reconcile-20260823
+  active_branch: team/g2b-task9-prebootstrap-gate-20260907
   base_branch: mcf/mission-001-control-bridge-g1
-  pull_request: null
-  pull_request_state: LOCAL_ONLY_NO_PUSH
+  pull_request: 56
+  pull_request_state: DRAFT_DO_NOT_MERGE_WAITING_HUMAN_GATE
   safe_pull_request_target: mcf/mission-001-control-bridge-g1
   reconciliation_merge_sha: 9359450742020d1c99b298379b8a29fefce6294f
   validated_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
   recovered_checkpoint_sha: 7205a647f918580d09c87ed44f38b0a433552a51
   recovered_commits_ahead_of_base: 25
+  base_sha: 420ee7d26bc40159e3040a5319b16b21a6f02499
+  published_precheckpoint_sha: da78a16d670aa4e8ccb3105b0eac0c172c09021b
+  source_g2b_merge_sha: f1be00b8f7623316188a62ce94caf9f3e2feb21f
 startup_recovery_protocol:
   status: ACTIVE_REQUIRED
   protocol_version: CLOUD_INFRA_AI_STARTUP_RECOVERY_V1
@@ -68,7 +71,7 @@ cold_start_validation:
   verdict: PASS_REPOSITORY_ONLY_STATE_RECONSTRUCTION
   independent_fresh_model_process: NOT_PROVEN_SAME_SESSION_ROLE_EXECUTION
 control_bridge_g2b:
-  status: TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED
+  status: WAITING_FOR_HUMAN_GATE_G2B_NODE01_BOOTSTRAP
   recovery_checkpoint_doc: docs/54-control-bridge-g2b-recovery-checkpoint.md
   tasks_1_6: COMPLETE_MATERIALLY_REVIEWED
   task_7: COMPLETE
@@ -80,33 +83,39 @@ control_bridge_g2b:
   ansible_syntax: PASS_3_SELF_HOSTED_TARGET_SHA_604E6D0E
   task_7_candidate_sha: 604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390
   task_7_evidence_issue_comment: https://github.com/leon337/cloud-infrastructure/issues/10#issuecomment-5377605173
-  task_8: PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13
+  task_8: COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13
   task_8_candidate_sha: 570779b75ba41ac3725ef16bc65a163e01631a1c
   task_8_markers: PASS_13_OF_13
   task_8_cleanup: PASS
   task_8_evidence: evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md
   task_8_hosted_run: 32551353362
   task_8_hosted_validation: HISTORICAL_INCONCLUSIVE_ZERO_STEPS_BLOB_NOT_FOUND
-  tasks_9_10: NOT_STARTED
-  tasks_8_10: TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED
+  tasks_9_10: TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED
+  tasks_8_10: TASK_8_COMPLETE_TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED
   lifecycle: LAB_VALIDATED_INACTIVE
   real_write: NOT_EXECUTED
   real_rollback: NOT_EXECUTED
   real_revocation: NOT_EXECUTED
   mcf_effective_use: NOT_EXECUTED
+  task_8_postmerge_source_sha: f1be00b8f7623316188a62ce94caf9f3e2feb21f
+  task_8_postmerge_control_bridge_run: 34083420595
+  task_8_postmerge_foundation_run: 34083420638
+  task_8_postmerge_docker_run: 34083420634
+  task_9: WAITING_HUMAN_GATE
+  task_10: NOT_STARTED
 parallel_work:
   f1_2c_systemd_runtime_lock:
     branch: fix/f1-2c-systemd-runtime-lock
     status_for_this_mission: ISOLATED_DO_NOT_MODIFY
     ownership: MESTRE_MCF_AND_LEANDRO
 human_gates:
-  node_01_g2b_bootstrap: CLOSED_NOT_AUTHORIZED
+  node_01_g2b_bootstrap: CLOSED_NOT_AUTHORIZED_WAITING_HUMAN_REVIEW
   real_grant_issue_or_reissue: CLOSED_NOT_AUTHORIZED
   real_bounded_write: CLOSED_NOT_AUTHORIZED
   production_mutation: CLOSED_NOT_AUTHORIZED
-  merge_g2b: CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED
-  publication_g2b: CLOSED_NOT_AUTHORIZED
-  task8_qemu_tcg_host_packages: CLOSED_NOT_REQUIRED_AFTER_LOCAL_LAB_PASS
+  merge_g2b: CLOSED_NOT_AUTHORIZED_TASK9_DRAFT
+  publication_g2b: EXECUTED_DRAFT_PR56_NO_MERGE
+  task8_qemu_tcg_host_packages: CLOSED_NOT_REQUIRED_AFTER_DISPOSABLE_PASS
 continuity_roadmap:
   R1: COMPLETE
   R2: COMPLETE
@@ -138,10 +147,23 @@ validation:
   current_full_unit_suite: PASS_372_OF_372_AT_RECONCILIATION_MERGE
   final_reconciled_unit_suite: PASS_381_OF_381
   aggregate_gate: BLOCKED_LOCAL_SHARED_GIT_OBJECT_DB_NOT_CANDIDATE_RESULT
-next_exact_step: REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+  task8_postmerge_exact_sha: f1be00b8f7623316188a62ce94caf9f3e2feb21f
+  task8_postmerge_hosted_ci: PASS_THREE_WORKFLOWS
+  task9_precheckpoint_sha: da78a16d670aa4e8ccb3105b0eac0c172c09021b
+  task9_precheckpoint_local_validation: PASS_400_TESTS_16_SHELL_SYNTAX_9_ANSIBLE_SYNTAX_SHELLCHECK_LOCAL_NOT_EXECUTED
+  task9_draft_pr: 56
+  task9_hosted_ci: PASS_THREE_WORKFLOWS_EXACT_HEAD_VALIDATION_BASIS
+  task9_validation_basis_sha: 7f1f331cc7309190e5dcc16429d3557cd721eb58
+  task9_validation_basis_receipt: evidence/CONTROL-BRIDGE-G2B/TASK-9-VALIDATION-BASIS-20260907.yaml
+  task9_validation_basis_control_bridge_run: 34087239108
+  task9_validation_basis_foundation_run: 34087241172
+  task9_validation_basis_docker_run: 34087243164
+next_exact_step: HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 recovery_rule: NEW_AGENT_MUST_EXECUTE_STARTUP_RECOVERY_PROTOCOL_BEFORE_IMPLEMENTATION
 persistence_rule: LONG_RUNNING_WORK_MUST_FOLLOW_MISSION_PERSISTENCE_POLICY
 memory_rule: MATERIAL_PROJECT_HISTORY_MUST_USE_APPEND_ORIENTED_INSTITUTIONAL_MEMOS
 drift_rule: CANONICAL_DRIFT_MUST_FAIL_CLOSED_UNTIL_RECONCILED
 r8_rule: R8_COMPLETE_DID_NOT_OPEN_ANY_HUMAN_GATE
 task8_rule: LOCAL_LAB_PASS_DOES_NOT_ACTIVATE_G2B_OR_OPEN_PUBLICATION_NODE01_TASK9_TASK10_MERGE_OR_PRODUCTION
+task9_rule: WAITING_HUMAN_GATE_DOES_NOT_MEAN_GATE_OPEN
+task10_rule: DO_NOT_START_WITHOUT_EXPLICIT_LEANDRO_AUTHORIZATION
