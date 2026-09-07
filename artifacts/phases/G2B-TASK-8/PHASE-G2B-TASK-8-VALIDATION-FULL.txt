@@ -1,0 +1,66 @@
+G2-B TASK 8 VALIDATION — FINAL CONTINUATION
+
+Protected source:
+  branch: codex/control-bridge-g2b
+  sha: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+
+Work branch:
+  branch: team/g2b-task8-20260822
+  PR: #21
+
+Historical attempt 3:
+  exit: 2
+  stage: apply_g2b
+  decisive reproduction: run 32609821992 / job 97120897002
+  root cause: inventory/test-container set ansible_become: false, overriding task-level become/become_user and invalidating the ubuntu direct-write proof.
+
+Final continuation on disposable local boundary:
+  validated functional SHA: ac3e2f8a52b881bcd2b40acab0d723d547b90e81
+  repository dirty: 0
+  secret policy: PASS
+  unit tests: PASS 373/373
+  ansible syntax: PASS 9/9
+  focused G2-B regression: PASS
+
+Additional proven defects corrected during continuation:
+  1. Installed G2-B boundary passed /var/lib/mcf-control-bridge/workspaces to execute_request although the executor contract requires the already-resolved operational workspace. The parent is intentionally root-owned; the pilot leaf is mcf-workspace-owned. Correction binds the installed pilot boundary to the exact reviewed leaf /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev.
+  2. Disposable Ubuntu fixture did not install lsof even though bounded rollback requires lsof to prove no service-account open files. Correction adds lsof to the fixture and a regression test.
+  3. Rollback collection already accepted lsof rc in [0,1], but the following assertion incorrectly required rc == 1. The corrected contract accepts rc in [0,1] while still requiring stdout length == 0. Same fixture proved lsof rc=0, stdout empty, stderr empty for an existing user with no open files.
+
+Final lifecycle evidence:
+  G2B_DISPOSABLE_IDENTITY_PASS count=1
+  G2B_TRANSPORT_DIRECT_WRITE_REFUSED count=1
+  G2B_GRANT_24H_PASS count=1
+  G2B_WRITE_PASS count=1
+  G2B_REPLAY_PASS count=1
+  G2B_REQUEST_ID_CONFLICT_PASS count=1
+  G2B_CONCURRENCY_PASS count=1
+  G2B_AUDIT_PASS count=1
+  G2B_ROLLBACK_PASS count=1
+  G2B_FINAL_STATE_PASS count=1
+  G2B_REVOKE_PASS count=1
+  G2B_POST_REVOKE_REFUSAL_PASS count=1
+  G2B_BOUNDED_CLEANUP_PASS count=1
+  order: REQUIRED_ORDER_PASS
+  abort markers: 0
+  lifecycle acceptance: PASS
+
+Post-lifecycle host cleanup:
+  residual G2-B processes: 0
+  residual G2-B containers: 0
+  residual G2-B images: 0
+  real NODE-01 G2-B write: NOT_EXECUTED
+
+GitHub-hosted CI after publishing ac3e2f8:
+  control-bridge-g2b-ci run 32624457045 validate job 97157525706: FAILURE_BEFORE_EXECUTION
+  docker-boundary-ci run 32624457027 validate job 97157525783: FAILURE_BEFORE_EXECUTION
+  foundation-ci run 32624457060 validate job 97157525839: FAILURE_BEFORE_EXECUTION
+  all three: runner_id=0, steps=[]
+  annotation: job not started because recent account payments failed or spending limit needs to be increased.
+  classification: EXTERNAL_BILLING_BLOCK; no repository code executed in those jobs.
+
+Acceptance:
+  Task 8 technical acceptance: PASS.
+  Hosted GitHub CI: NOT_EXECUTED due external billing block.
+  Central integration: NOT EXECUTED.
+  Tasks 9/10: NOT STARTED.

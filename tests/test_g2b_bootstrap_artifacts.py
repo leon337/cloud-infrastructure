@@ -92,6 +92,26 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
             digest.update(f"{sha256(ROOT / source)}  {source}\n".encode("utf-8"))
         self.assertEqual(self.vars["g2b_executor_bundle_sha256"], digest.hexdigest())
 
+    def test_canonical_bundle_hash_is_propagated_to_runtime_provenance(self) -> None:
+        expected = self.vars["g2b_executor_bundle_sha256"]
+
+        for content_key, sha_key in (
+            ("g2b_marker_content_dev", "g2b_marker_sha256_dev"),
+            ("g2b_marker_content_test", "g2b_marker_sha256_test"),
+        ):
+            marker = self.vars[content_key]
+            self.assertIn(f"bundle_sha256={expected}", marker)
+            self.assertEqual(
+                self.vars[sha_key],
+                hashlib.sha256(marker.encode("utf-8")).hexdigest(),
+            )
+
+        tasks_text = TASKS.read_text(encoding="utf-8")
+        self.assertIn(f"g2b_executor_bundle_sha256 == '{expected}'", tasks_text)
+
+        runbook_text = RUNBOOK.read_text(encoding="utf-8")
+        self.assertIn(f"EXECUTOR_SHA256='{expected}'", runbook_text)
+
     def test_role_is_marker_gated_installs_no_grant_and_places_marker_last(self) -> None:
         text = TASKS.read_text(encoding="utf-8")
         self.assertIn("follow: false", text)
@@ -212,6 +232,10 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, text)
         self.assertNotRegex(text, r"(?m)^\s*recurse:\s*true")
+        self.assertIn("g2b_rollback_open_files.rc not in [0, 1]", text)
+        self.assertIn("g2b_rollback_open_files.rc in [0, 1]", text)
+        self.assertIn("g2b_rollback_open_files.stdout | length == 0", text)
+        self.assertNotIn("g2b_rollback_open_files.rc == 1", text)
         self.assertEqual(
             load_yaml(ROLLBACK)[-1]["tasks"][-1]["name"],
             "Remove the G2-B provenance marker last",
