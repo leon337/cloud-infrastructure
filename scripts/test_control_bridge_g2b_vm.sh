@@ -143,6 +143,10 @@ if ! docker exec "$CONTAINER" id -u ubuntu >/dev/null 2>&1; then
   UBUNTU_USER_CREATED=true
 fi
 
+# Mirror the real NODE-01 baseline: this generic system parent already exists
+# before G2-B bootstrap and must not be mistaken for an orphan G2-B object.
+docker exec "$CONTAINER" install -d -o root -g root -m 0755 /usr/local/libexec
+
 run_playbook() {
   docker exec --workdir "$CONTAINER_REPOSITORY_ROOT/automation/ansible" "$CONTAINER" \
     /opt/foundation-test-venv/bin/ansible-playbook --inventory inventory/test-container/hosts.yml "$@"

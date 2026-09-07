@@ -54,6 +54,22 @@ g2b_service_directories:
   - {path: /var/lib/mcf-control-bridge/state/g2b, owner: mcf-workspace, group: mcf-workspace, mode: "0700"}
   - {path: /var/log/mcf-control-bridge/g2b, owner: mcf-workspace, group: mcf-workspace, mode: "0700"}
 
+# Parents shared with the base OS or other CONTROL-BRIDGE slices may already
+# exist before the external G2-B provenance marker. They may be reused only
+# when their exact reviewed owner/group/mode already matches the directory
+# contract. G2-B-exclusive leaves are intentionally absent from this list.
+g2b_preexisting_shared_directory_paths:
+  - /usr/local/libexec
+  - /usr/local/lib/mcf-control-bridge
+  - /usr/local/lib/mcf-control-bridge/control_plane
+  - /etc/mcf-control-bridge
+  - /var/lib/mcf-control-bridge
+  - /var/lib/mcf-control-bridge/workspaces
+  - /var/lib/mcf-control-bridge/workspaces/leon337
+  - /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke
+  - /var/lib/mcf-control-bridge/state
+  - /var/log/mcf-control-bridge
+
 g2b_install_payloads:
   - source: control_plane/__init__.py
     destination: /usr/local/lib/mcf-control-bridge/control_plane/__init__.py

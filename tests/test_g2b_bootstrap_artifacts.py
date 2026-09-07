@@ -165,6 +165,24 @@ class G2BBootstrapArtifactTests(unittest.TestCase):
             self.assertEqual(service[path]["group"], "mcf-workspace")
             self.assertEqual(service[path]["mode"], "0700")
 
+    def test_unmarked_bootstrap_allows_only_exact_shared_parent_directories(self) -> None:
+        shared = set(self.vars["g2b_preexisting_shared_directory_paths"])
+        roots = {item["path"] for item in self.vars["g2b_root_directories"]}
+        service = {item["path"] for item in self.vars["g2b_service_directories"]}
+
+        self.assertIn("/usr/local/libexec", shared)
+        self.assertTrue(shared <= roots)
+        self.assertNotIn("/usr/local/lib/mcf-control-bridge/control_plane/g2b", shared)
+        self.assertTrue(shared.isdisjoint(service))
+
+        text = TASKS.read_text(encoding="utf-8")
+        self.assertIn("Validate any pre-existing shared parent before marker ownership", text)
+        self.assertIn("item.item.path in g2b_preexisting_shared_directory_paths", text)
+        self.assertIn("not (item.stat.islnk | default(false))", text)
+        self.assertIn("item.stat.pw_name == item.item.owner", text)
+        self.assertIn("item.stat.gr_name == item.item.group", text)
+        self.assertIn("item.stat.mode == item.item.mode", text)
+
     def test_apply_and_grant_issuance_are_separate_host_guarded_playbooks(self) -> None:
         apply = load_yaml(APPLY)
         issue_text = ISSUE.read_text(encoding="utf-8")

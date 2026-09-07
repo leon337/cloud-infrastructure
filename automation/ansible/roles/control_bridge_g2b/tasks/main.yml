@@ -114,6 +114,23 @@
   loop: "{{ g2b_root_directories + g2b_service_directories }}"
   register: g2b_existing_directories
 
+- name: Validate any pre-existing shared parent before marker ownership
+  ansible.builtin.assert:
+    that:
+      - item.item.path in g2b_preexisting_shared_directory_paths
+      - item.stat.isdir | default(false)
+      - not (item.stat.islnk | default(false))
+      - item.stat.pw_name == item.item.owner
+      - item.stat.gr_name == item.item.group
+      - item.stat.mode == item.item.mode
+    fail_msg: >-
+      An unmarked G2-B-exclusive directory exists, or a shared parent has
+      unexpected provenance. Refusing ownership or permission changes.
+  loop: "{{ g2b_existing_directories.results }}"
+  when:
+    - not g2b_marker_state.stat.exists
+    - item.stat.exists
+
 - name: Inspect every managed G2-B payload without following links
   ansible.builtin.stat:
     path: "{{ item.destination }}"
@@ -173,8 +190,6 @@
       - >-
         g2b_marker_state.stat.exists or
         (
-          (g2b_existing_directories.results |
-            selectattr('stat.exists') | list | length) == 0 and
           (g2b_existing_payloads.results |
             selectattr('stat.exists') | list | length) == 0 and
           not g2b_existing_grant.stat.exists and
