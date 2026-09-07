@@ -155,9 +155,9 @@
               "required": ["lifecycle", "state", "activation", "tasks_9_10", "production_authorized"],
               "properties": {
                 "lifecycle": {"const": "LAB_VALIDATED_INACTIVE"},
-                "state": {"const": "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED"},
+                "state": {"const": "TASK_8_COMPLETE_TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED"},
                 "activation": {"const": "NOT_AUTHORIZED"},
-                "tasks_9_10": {"const": "NOT_STARTED"},
+                "tasks_9_10": {"const": "TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED"},
                 "production_authorized": {"const": false}
               }
             }

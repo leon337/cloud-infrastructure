@@ -154,7 +154,7 @@
           "required": ["lifecycle", "state", "request_protocol", "result_protocol", "task_8", "tasks_9_10", "real_evidence", "activation", "transport_from_context", "production_authorized"],
           "properties": {
             "lifecycle": {"const": "LAB_VALIDATED_INACTIVE"},
-            "state": {"const": "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED"},
+            "state": {"const": "TASK_8_COMPLETE_TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED"},
             "request_protocol": {"const": "MCF_WORKSPACE_MUTATION_V1"},
             "result_protocol": {"const": "MCF_WORKSPACE_MUTATION_RESULT_V1"},
             "task_8": {
@@ -191,7 +191,7 @@
                 "evidence_ref": {"const": "evidence/CONTROL-BRIDGE-G2B/TASK-8-RECONCILED-LAB-20260823.md"}
               }
             },
-            "tasks_9_10": {"const": "NOT_STARTED"},
+            "tasks_9_10": {"const": "TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED"},
             "real_evidence": {
               "type": "object",
               "additionalProperties": false,
@@ -244,7 +244,7 @@
           "required": ["result", "count", "scope"],
           "properties": {
             "result": {"const": "PASS"},
-            "count": {"const": 396},
+            "count": {"const": 400},
             "scope": {"const": "CURRENT_CONTEXT_RECONCILIATION"}
           }
         },
