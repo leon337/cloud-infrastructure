@@ -15,7 +15,7 @@
     "operation": "workspace.write",
     "arguments": {
       "path": "G2B-PILOT.txt",
-      "content": "G2-B bounded pilot\n",
+      "content": "G2-B changed conflict probe\n",
       "precondition": {
         "state": "ABSENT"
       }
