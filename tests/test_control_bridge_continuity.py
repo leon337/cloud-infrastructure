@@ -16,10 +16,10 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         mission = state["active_mission"]
 
         self.assertEqual(mission["id"], "CONTROL_BRIDGE_G2B")
-        self.assertEqual(mission["status"], "REVIEW_REQUIRED")
+        self.assertEqual(mission["status"], "WAITING_HUMAN_GATE")
         self.assertIsNone(mission["issue"])
         self.assertEqual(mission["continuity_origin_issue"], 10)
-        self.assertIsNone(mission["pull_request"])
+        self.assertEqual(mission["pull_request"], 56)
         for key in ("R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"):
             self.assertEqual(mission["roadmap"][key], "COMPLETE")
         self.assertEqual(
@@ -60,17 +60,17 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         )
         self.assertEqual(
             state["continuity"]["next_exact_step"],
-            "REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9",
+            "HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP",
         )
 
         self.assertEqual(bridge["priority"], "P0")
         self.assertEqual(bridge["g1"], "PASS_REAL_NODE_01_ROUNDTRIP_HISTORIC_LIVE_REQUIRED")
         self.assertEqual(bridge["g2a"], "PASS_REAL_NODE_01_READ_ONLY_HISTORIC_LIVE_REQUIRED")
-        self.assertEqual(bridge["g2b"], "TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED")
+        self.assertEqual(bridge["g2b"], "WAITING_FOR_HUMAN_GATE_G2B_NODE01_BOOTSTRAP")
         self.assertEqual(bridge["g2b_task_7"], "COMPLETE_7_PASS_0_FAIL")
-        self.assertEqual(bridge["g2b_task_8"], "PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13")
-        self.assertEqual(bridge["g2b_tasks_9_10"], "NOT_STARTED")
-        self.assertEqual(bridge["g2b_tasks_8_10"], "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED")
+        self.assertEqual(bridge["g2b_task_8"], "COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13")
+        self.assertEqual(bridge["g2b_tasks_9_10"], "TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED")
+        self.assertEqual(bridge["g2b_tasks_8_10"], "TASK_8_COMPLETE_TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED")
         self.assertEqual(bridge["g2b_lifecycle"], "LAB_VALIDATED_INACTIVE")
         self.assertEqual(
             state["work_ownership"]["f1_2c_systemd_runtime_lock"]["owner"],
@@ -95,13 +95,13 @@ class ControlBridgeContinuityTests(unittest.TestCase):
             self.assertIn("state/institutional-memory.yaml", text)
             self.assertIn("state/continuity-drift-controls.yaml", text)
             self.assertIn("state/cold-start-validation.yaml", text)
-            self.assertIn("REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9", text)
-            self.assertIn("codex/context-bridge-reconcile-20260823", text)
+            self.assertIn("HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP", text)
+            self.assertIn("team/g2b-task9-prebootstrap-gate-20260907", text)
             self.assertIn("docs/54-control-bridge-g2b-recovery-checkpoint.md", text)
 
     def test_g2b_state_preserves_task7_completion_and_fail_closed_boundaries(self):
         state = yaml.safe_load((ROOT / "state/control-bridge-g2b.yaml").read_text())
-        self.assertEqual(state["status"], "TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED")
+        self.assertEqual(state["status"], "WAITING_FOR_HUMAN_GATE_G2B_NODE01_BOOTSTRAP")
         self.assertEqual(
             state["recovery_checkpoint"]["document"],
             "docs/54-control-bridge-g2b-recovery-checkpoint.md",
@@ -112,13 +112,20 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(state["implementation"]["task_7_focused_tests"]["fail"], 0)
         self.assertTrue(state["implementation"]["ansible_syntax"].startswith("PASS_3_"))
         self.assertEqual(state["implementation"]["task_7_validation"]["candidate_sha"], "604e6d0e1fb1feddb7f271c58c9e8baf2cc0b390")
-        self.assertEqual(state["implementation"]["task_8"], "PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13")
-        self.assertEqual(state["implementation"]["tasks_9_10"], "NOT_STARTED")
-        self.assertEqual(state["implementation"]["tasks_8_10"], "TASK_8_LAB_PASS_TASKS_9_10_NOT_STARTED")
+        self.assertEqual(state["implementation"]["task_8"], "COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13")
+        self.assertEqual(state["implementation"]["tasks_9_10"], "TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED")
+        self.assertEqual(state["implementation"]["task_9"], "WAITING_HUMAN_GATE")
+        self.assertEqual(state["implementation"]["task_10"], "NOT_STARTED")
+        self.assertEqual(state["implementation"]["tasks_8_10"], "TASK_8_COMPLETE_TASK_9_WAITING_HUMAN_GATE_TASK_10_NOT_STARTED")
         self.assertEqual(state["implementation"]["task_8_validation"]["hosted_run"], 32551353362)
         self.assertEqual(state["implementation"]["task_8_validation"]["hosted_validate_steps"], 0)
         self.assertEqual(state["implementation"]["task_8_validation"]["disposable_markers_pass"], 13)
         self.assertEqual(state["implementation"]["task_8_validation"]["disposable_cleanup"], "PASS")
+        self.assertEqual(state["implementation"]["task_8_validation"]["postmerge_source_sha"], "f1be00b8f7623316188a62ce94caf9f3e2feb21f")
+        self.assertEqual(state["implementation"]["task_8_validation"]["postmerge_control_bridge_run"], 34083420595)
+        self.assertEqual(state["implementation"]["task_8_validation"]["postmerge_foundation_run"], 34083420638)
+        self.assertEqual(state["implementation"]["task_8_validation"]["postmerge_docker_run"], 34083420634)
+        self.assertEqual(state["implementation"]["task_8_validation"]["postmerge_shellcheck"], "PASS_16_OF_16")
         self.assertEqual(state["pilot"]["project"], "leon337/g2a-smoke/dev")
         self.assertEqual(state["pilot"]["path"], "G2B-PILOT.txt")
         self.assertEqual(state["pilot"]["grant_duration_hours"], 24)
@@ -135,7 +142,8 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertFalse(state["evidence"]["real_rollback"])
         self.assertFalse(state["evidence"]["real_revocation"])
         self.assertTrue(state["evidence"]["disposable_lifecycle"])
-        self.assertFalse(state["candidate"]["push_executed"])
+        self.assertTrue(state["candidate"]["push_executed"])
+        self.assertEqual(state["candidate"]["pull_request"], 56)
         self.assertFalse(state["candidate"]["merge_authorized"])
 
     def test_active_mission_state_points_to_task8_and_closed_human_gates(self):
@@ -169,13 +177,15 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         )
         self.assertEqual(
             state["next_exact_step"],
-            "REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9",
+            "HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP",
         )
         for gate, value in state["human_gates"].items():
             if gate == "merge_g2b":
-                self.assertEqual(value, "CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED")
+                self.assertEqual(value, "CLOSED_NOT_AUTHORIZED_TASK9_DRAFT")
             elif gate == "task8_qemu_tcg_host_packages":
-                self.assertEqual(value, "CLOSED_NOT_REQUIRED_AFTER_LOCAL_LAB_PASS")
+                self.assertEqual(value, "CLOSED_NOT_REQUIRED_AFTER_DISPOSABLE_PASS")
+            elif gate == "publication_g2b":
+                self.assertEqual(value, "EXECUTED_DRAFT_PR56_NO_MERGE")
             else:
                 self.assertIn("NOT_AUTHORIZED", value)
 

@@ -1,9 +1,9 @@
 # ROADMAP CHECKLIST — ESTADO CANÔNICO ATUAL
 
-Atualizado em: **2026-08-23**
+Atualizado em: **2026-09-07**
 Repositório: `leon337/cloud-infrastructure`
-Branch de trabalho G2-B: `codex/context-bridge-reconcile-20260823`
-PR: `NONE_LOCAL_ONLY_NO_PUSH`
+Branch de trabalho G2-B: `team/g2b-task9-prebootstrap-gate-20260907`
+PR: `#56 DRAFT / DO NOT MERGE`
 Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 
 > Regra: um item só recebe `[x]` quando sua evidência aplicável sustenta conclusão. `BLOCKED_EXTERNAL`, `WAITING_HUMAN_GATE`, `PARTIAL`, `CONDITIONAL` e `PLANNED` permanecem `[ ]`.
@@ -25,11 +25,11 @@ Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 - [x] G2-A — leitura real NODE-01 histórica — `PASS_REAL_NODE_01_READ_ONLY_HISTORIC_LIVE_REQUIRED`
 - [x] G2-B Tasks 1–6 — `COMPLETE_MATERIALLY_REVIEWED`
 - [x] G2-B Task 7 — `COMPLETE_7_PASS_0_FAIL`; Ansible `3/3 PASS`
-- [x] G2-B Task 8 — `PASS_DISPOSABLE_NOTEBOOK_DOCKER_13_OF_13` — laboratório local Ubuntu 24.04/systemd, `--network none`, cleanup completo
+- [x] G2-B Task 8 — `COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13` — laboratório histórico 13/13 + CI hospedada pós-merge no `f1be00b...`
 - [ ] G2-B lifecycle — `LAB_VALIDATED_INACTIVE` — ativação não autorizada
-- [ ] G2-B Task 9 — `NOT_STARTED` — exige revisão/publicação separada e não é autorizada pelo PASS da Task 8
-- [ ] G2-B Task 10 — `NOT_STARTED` — exige HUMAN_GATE explícito para NODE-01 bootstrap/grant/write
-- [ ] G2-B merge — `CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED`
+- [ ] G2-B Task 9 — `WAITING_HUMAN_GATE` — PR #56 Draft publicada; parada obrigatória antes do bootstrap NODE-01
+- [ ] G2-B Task 10 — `NOT_STARTED` — nenhuma operação real autorizada; exige HUMAN_GATE explícito
+- [ ] G2-B merge — `CLOSED_NOT_AUTHORIZED_TASK9_DRAFT`
 
 ### Evidência atual e plano histórico
 
@@ -39,12 +39,12 @@ Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 
 ### Limite G2-B atual
 
-Task 8 passou no candidato local `570779b...`; Tasks 9/10, ativação, transporte mutante pelo Context, NODE-01, staging, produção, publicação e merge permanecem não executados/não autorizados. O resultado hosted anterior (`steps=0`, `BlobNotFound`) continua evidência histórica inconclusiva e não é reescrito.
+Task 8 preserva o laboratório `570779b...` como evidência histórica e adiciona a prova hospedada pós-merge de `f1be00b...`. O transporte seletivo sobre a base MCF atual resultou no pre-checkpoint `da78a16...`, validado localmente com 400 testes, e foi publicado na PR Draft #56. Task 9 está parada no gate humano; Task 10, NODE-01, grant, write, produção e merge permanecem não autorizados.
 
 Próximo passo exato:
 
 ```text
-REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
+HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 ```
 
 ## Roadmap principal da plataforma
@@ -84,10 +84,10 @@ REVIEW_LOCAL_RECONCILED_CANDIDATE_BEFORE_PUBLICATION_OR_TASK_9
 
 ## Gates atuais
 
-- NODE-01 G2-B bootstrap: `CLOSED_NOT_AUTHORIZED`
+- NODE-01 G2-B bootstrap: `CLOSED_NOT_AUTHORIZED_WAITING_HUMAN_REVIEW`
 - grant real G2-B: `CLOSED_NOT_AUTHORIZED`
 - bounded write real: `CLOSED_NOT_AUTHORIZED`
 - produção: `CLOSED_NOT_AUTHORIZED`
-- publicação G2-B: `CLOSED_NOT_AUTHORIZED`
-- merge G2-B: `CLOSED_NOT_AUTHORIZED_LOCAL_CANDIDATE_REVIEW_REQUIRED`
+- publicação G2-B: `EXECUTED_DRAFT_PR56_NO_MERGE`
+- merge G2-B: `CLOSED_NOT_AUTHORIZED_TASK9_DRAFT`
 - F1.2c parallel branch: `ISOLATED_DO_NOT_MODIFY`

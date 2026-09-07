@@ -1,6 +1,6 @@
 # CONTROL BRIDGE G2-B — Evidence
 
-Current status: `TASK_8_LAB_PASS_INACTIVE_TASKS_9_10_NOT_STARTED`
+Current status: `WAITING_FOR_HUMAN_GATE_G2B_NODE01_BOOTSTRAP`
 
 ## Scope
 
@@ -9,11 +9,16 @@ This directory records sanitized G2-B lifecycle evidence. It must never contain 
 ## Current exact candidate
 
 - lifecycle: `LAB_VALIDATED_INACTIVE`
-- candidate: `570779b75ba41ac3725ef16bc65a163e01631a1c`
-- boundary: disposable notebook Docker, Ubuntu 24.04/systemd, `--network none`
-- Task 8: `PASS_13_OF_13`, cleanup `PASS`
-- evidence: `TASK-8-RECONCILED-LAB-20260823.md`
-- Tasks 9/10, mutating Context transport, activation, real host use, publication, merge, and production: not executed / not authorized
+- Task 8 source merge: `f1be00b8f7623316188a62ce94caf9f3e2feb21f` (PR #21)
+- Task 8 post-merge hosted runs: `34083420595`, `34083420638`, `34083420634` — PASS
+- historical lab candidate: `570779b75ba41ac3725ef16bc65a163e01631a1c`, 13/13 + cleanup PASS
+- Task 9 branch: `team/g2b-task9-prebootstrap-gate-20260907`
+- Task 9 Draft PR: `#56 / DO NOT MERGE`
+- pre-checkpoint transport SHA: `da78a16d670aa4e8ccb3105b0eac0c172c09021b` — local `400/400` tests PASS, shell syntax 16, Ansible syntax 9; local ShellCheck not installed
+- Task 9: `WAITING_HUMAN_GATE`
+- Task 10: `NOT_STARTED`
+- NODE-01/bootstrap/grant/write/rollback/revoke/production/merge: not authorized / not executed
+- historical evidence: `TASK-8-RECONCILED-LAB-20260823.md`
 
 The sections below preserve earlier attempts as historical evidence; their then-current blockers are not silently rewritten.
 
