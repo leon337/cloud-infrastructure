@@ -230,7 +230,7 @@ if sha != "any": assert v.get("after",{}).get("sha256") == sha, v.get("after")
 PY
 }
 
-CURRENT_STAGE='write'
+CURRENT_STAGE="write"
 WRITE_ID=G2B-DISPOSABLE-WRITE-0001
 CONTENT=$'disposable-pilot-v1\n'
 EXPECTED_HASH=$(printf '%s' "$CONTENT" | sha256sum | awk '{print $1}')
