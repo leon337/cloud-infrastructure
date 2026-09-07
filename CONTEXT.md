@@ -42,7 +42,7 @@ Base canônica: `main@78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7`.
 Update/reboot autorizados por LEANDRO já foram executados e consumidos. O NODE-01 voltou no kernel
 `6.8.0-139-generic`, zero failed units, DSH/9Router acessíveis e Network P2 formalmente PASS. A PR #53
 integrou a higiene em `main@78a4106...`; a auditoria transversal posterior confirmou o runtime read-only,
-separou o snapshot histórico de 68 branches do live count 69, reexecutou os hosted workflows da PR #21
+separou o snapshot histórico de 68 branches do audit pré-publicação de 69 branches e do live atual pós-publicação da PR #54: 70 branches; reexecutou os hosted workflows da PR #21
 e localizou o Capability Registry em MCF `main@0825bbc...`. O próximo passo durável é o gate humano de
 remediation da dívida de Secret Policy no histórico; nenhuma ação destrutiva está autorizada.
 

@@ -239,6 +239,9 @@ class CanonicalStateTests(unittest.TestCase):
         hygiene = state["repository_hygiene"]
         self.assertEqual(hygiene["live_remote_branch_count"], 70)
         self.assertEqual(hygiene["prepublication_audit_branch_count"], 69)
+        context = Path("CONTEXT.md").read_text(encoding="utf-8")
+        self.assertNotIn("live count 69", context)
+        self.assertIn("live atual pós-publicação da PR #54: 70 branches", context)
         self.assertEqual(audit["branch_deletions"], 0)
         self.assertEqual(audit["g2b_pr21"], "DRAFT_UNINTEGRATED_FRESH_HOSTED_CI_BLOCKED_BY_HISTORY_SECRET_POLICY")
         self.assertEqual(audit["sentinelx_direct"], "INTERMITTENT_NOT_CLOSED_SERVICE_ACTIVE")
