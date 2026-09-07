@@ -15,6 +15,8 @@ This directory records sanitized G2-B lifecycle evidence. It must never contain 
 - Task 9 branch: `team/g2b-task9-prebootstrap-gate-20260907`
 - Task 9 Draft PR: `#56 / DO NOT MERGE`
 - pre-checkpoint transport SHA: `da78a16d670aa4e8ccb3105b0eac0c172c09021b` — local `400/400` tests PASS, shell syntax 16, Ansible syntax 9; local ShellCheck not installed
+- Task 9 validation basis: `7f1f331cc7309190e5dcc16429d3557cd721eb58` — exact-head hosted runs `34087239108`, `34087241172`, `34087243164` PASS; 400/400 tests, Ansible 9/9, ShellCheck 16/16, G2-B 13/13 + bounded cleanup
+- validation-basis receipt: `evidence/CONTROL-BRIDGE-G2B/TASK-9-VALIDATION-BASIS-20260907.yaml` — historical snapshot; it does not claim to validate the later closeout metadata commit
 - Task 9: `WAITING_HUMAN_GATE`
 - Task 10: `NOT_STARTED`
 - NODE-01/bootstrap/grant/write/rollback/revoke/production/merge: not authorized / not executed

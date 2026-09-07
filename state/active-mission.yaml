@@ -152,7 +152,12 @@ validation:
   task9_precheckpoint_sha: da78a16d670aa4e8ccb3105b0eac0c172c09021b
   task9_precheckpoint_local_validation: PASS_400_TESTS_16_SHELL_SYNTAX_9_ANSIBLE_SYNTAX_SHELLCHECK_LOCAL_NOT_EXECUTED
   task9_draft_pr: 56
-  task9_hosted_ci: PENDING_FINAL_CHECKPOINT_HEAD
+  task9_hosted_ci: PASS_THREE_WORKFLOWS_EXACT_HEAD_VALIDATION_BASIS
+  task9_validation_basis_sha: 7f1f331cc7309190e5dcc16429d3557cd721eb58
+  task9_validation_basis_receipt: evidence/CONTROL-BRIDGE-G2B/TASK-9-VALIDATION-BASIS-20260907.yaml
+  task9_validation_basis_control_bridge_run: 34087239108
+  task9_validation_basis_foundation_run: 34087241172
+  task9_validation_basis_docker_run: 34087243164
 next_exact_step: HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP
 recovery_rule: NEW_AGENT_MUST_EXECUTE_STARTUP_RECOVERY_PROTOCOL_BEFORE_IMPLEMENTATION
 persistence_rule: LONG_RUNNING_WORK_MUST_FOLLOW_MISSION_PERSISTENCE_POLICY

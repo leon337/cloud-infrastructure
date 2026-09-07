@@ -144,6 +144,16 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertTrue(state["evidence"]["disposable_lifecycle"])
         self.assertTrue(state["candidate"]["push_executed"])
         self.assertEqual(state["candidate"]["pull_request"], 56)
+        basis = state["candidate"]["validation_basis"]
+        self.assertEqual(basis["sha"], "7f1f331cc7309190e5dcc16429d3557cd721eb58")
+        self.assertEqual(basis["control_bridge_run"], 34087239108)
+        self.assertEqual(basis["foundation_run"], 34087241172)
+        self.assertEqual(basis["docker_run"], 34087243164)
+        self.assertEqual(basis["unit_tests"], "PASS_400_OF_400")
+        self.assertEqual(basis["ansible_syntax"], "PASS_9_OF_9")
+        self.assertEqual(basis["shellcheck"], "PASS_16_OF_16")
+        self.assertEqual(basis["g2b_lifecycle"], "PASS_13_OF_13_BOUNDED_CLEANUP")
+        self.assertEqual(basis["classification"], "VALIDATION_BASIS_SNAPSHOT_BEFORE_CLOSEOUT_METADATA")
         self.assertFalse(state["candidate"]["merge_authorized"])
 
     def test_active_mission_state_points_to_task8_and_closed_human_gates(self):
@@ -178,6 +188,14 @@ class ControlBridgeContinuityTests(unittest.TestCase):
         self.assertEqual(
             state["next_exact_step"],
             "HUMAN_REVIEW_AND_NODE01_G2B_BOOTSTRAP",
+        )
+        self.assertEqual(
+            state["validation"]["task9_hosted_ci"],
+            "PASS_THREE_WORKFLOWS_EXACT_HEAD_VALIDATION_BASIS",
+        )
+        self.assertEqual(
+            state["validation"]["task9_validation_basis_sha"],
+            "7f1f331cc7309190e5dcc16429d3557cd721eb58",
         )
         for gate, value in state["human_gates"].items():
             if gate == "merge_g2b":

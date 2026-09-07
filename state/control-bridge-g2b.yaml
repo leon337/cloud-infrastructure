@@ -21,6 +21,18 @@ candidate:
   pre_checkpoint_validation: PASS_400_TESTS_16_SHELL_SYNTAX_9_ANSIBLE_SYNTAX_SHELLCHECK_LOCAL_NOT_EXECUTED
   pull_request_state: DRAFT_OPEN_DO_NOT_MERGE
   publication_authority: LEANDRO_CONTINUE_REPO_ONLY_TASK9
+  validation_basis:
+    classification: VALIDATION_BASIS_SNAPSHOT_BEFORE_CLOSEOUT_METADATA
+    sha: 7f1f331cc7309190e5dcc16429d3557cd721eb58
+    receipt: evidence/CONTROL-BRIDGE-G2B/TASK-9-VALIDATION-BASIS-20260907.yaml
+    control_bridge_run: 34087239108
+    foundation_run: 34087241172
+    docker_run: 34087243164
+    unit_tests: PASS_400_OF_400
+    ansible_syntax: PASS_9_OF_9
+    shellcheck: PASS_16_OF_16
+    g2b_lifecycle: PASS_13_OF_13_BOUNDED_CLEANUP
+    validates_future_closeout_commit: false
 recovery_checkpoint:
   classification: HISTORICAL_WIP_CHECKPOINT
   sha: 7205a647f918580d09c87ed44f38b0a433552a51

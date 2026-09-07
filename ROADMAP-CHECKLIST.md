@@ -27,7 +27,7 @@ Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 - [x] G2-B Task 7 — `COMPLETE_7_PASS_0_FAIL`; Ansible `3/3 PASS`
 - [x] G2-B Task 8 — `COMPLETE_PASS_DISPOSABLE_HOSTED_AND_LAB_13_OF_13` — laboratório histórico 13/13 + CI hospedada pós-merge no `f1be00b...`
 - [ ] G2-B lifecycle — `LAB_VALIDATED_INACTIVE` — ativação não autorizada
-- [ ] G2-B Task 9 — `WAITING_HUMAN_GATE` — PR #56 Draft publicada; parada obrigatória antes do bootstrap NODE-01
+- [ ] G2-B Task 9 — `WAITING_HUMAN_GATE` — PR #56 Draft publicada; exact-head validation basis `7f1f331cc...` com runs `34087239108/34087241172/34087243164` PASS; parada obrigatória antes do bootstrap NODE-01
 - [ ] G2-B Task 10 — `NOT_STARTED` — nenhuma operação real autorizada; exige HUMAN_GATE explícito
 - [ ] G2-B merge — `CLOSED_NOT_AUTHORIZED_TASK9_DRAFT`
 
@@ -39,7 +39,7 @@ Fonte machine-readable: `state/current.yaml` + `state/control-bridge-g2b.yaml`
 
 ### Limite G2-B atual
 
-Task 8 preserva o laboratório `570779b...` como evidência histórica e adiciona a prova hospedada pós-merge de `f1be00b...`. O transporte seletivo sobre a base MCF atual resultou no pre-checkpoint `da78a16...`, validado localmente com 400 testes, e foi publicado na PR Draft #56. Task 9 está parada no gate humano; Task 10, NODE-01, grant, write, produção e merge permanecem não autorizados.
+Task 8 preserva o laboratório `570779b...` como evidência histórica e adiciona a prova hospedada pós-merge de `f1be00b...`. O transporte seletivo sobre a base MCF atual resultou no pre-checkpoint `da78a16...` e evoluiu até o validation basis `7f1f331cc...`, provado por três workflows exact-head e registrado em `evidence/CONTROL-BRIDGE-G2B/TASK-9-VALIDATION-BASIS-20260907.yaml`. Esse receipt valida o basis SHA, não commits futuros de metadata. Task 9 está parada no gate humano; Task 10, NODE-01, grant, write, produção e merge permanecem não autorizados.
 
 Próximo passo exato:
 
