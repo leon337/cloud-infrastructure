@@ -4,7 +4,7 @@
   },
   "request": {
     "protocol": "MCF_WORKSPACE_MUTATION_V1",
-    "request_id": "G2B-REAL-WRITE-20260907215900",
+    "request_id": "G2B-REAL-ROLLBACK-20260907220000",
     "mission_id": "CONTROL-BRIDGE-G2B-PILOT",
     "declared_actor": "MESTRE_MCF",
     "project": {
@@ -12,13 +12,9 @@
       "name": "g2a-smoke",
       "environment": "dev"
     },
-    "operation": "workspace.write",
+    "operation": "rollback",
     "arguments": {
-      "path": "G2B-PILOT.txt",
-      "content": "G2-B second active mutation probe\n",
-      "precondition": {
-        "state": "ABSENT"
-      }
+      "original_request_id": "G2B-REAL-WRITE-20260907215100"
     }
   }
 }
