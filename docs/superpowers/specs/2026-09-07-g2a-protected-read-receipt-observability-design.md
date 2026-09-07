@@ -1,7 +1,7 @@
 # G2-A Protected Read + G2-B Receipt Observability Design
 
 **Date:** 2026-09-07
-**Status:** DESIGN_APPROVED_PENDING_SPEC_REVIEW
+**Status:** SPEC_APPROVED
 **Base SHA:** `c6a8206e40137f930f6a963c185c2bdc1f7c3ff2`
 **Human authority:** LEANDRO
 **Coordinator:** MESTRE
