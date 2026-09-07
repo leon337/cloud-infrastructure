@@ -119,7 +119,7 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [x] PR #50 integrada em `main@c7315e43...`; CI pós-merge `34065344230` SUCCESS e validação isolada 35/35 PASS.
 - [x] Closeout documental preparado como projeção pós-integração; autorização de merge permanece fora do estado durável e é controlada pelo gate humano da PR.
 - [x] PR #53 integrou a higiene em `main@78a4106...`; CI pós-merge `34068890016` SUCCESS.
-- [x] `FINAL_TRANSVERSAL_AUDIT` executado: NODE-01 read-only PASS; live branch count 69; SentinelX service active; fresh hosted CI da PR #21 classificado; cross-repo Capsule/Capability Registry reconciliado no candidato.
+- [x] `FINAL_TRANSVERSAL_AUDIT` executado: NODE-01 read-only PASS; audit pré-publicação 69 branches; live atual pós-publicação da PR #54: 70 branches; SentinelX service active; fresh hosted CI da PR #21 classificado; cross-repo Capsule/Capability Registry reconciliado no candidato.
 
 **Estado:** `PASS_POST_REBOOT_LIVE_VERIFIED` + `PR51_OPERATIONAL_FIX_INTEGRATED` + `PR50_CANONICAL_RECONCILIATION_INTEGRATED` + `POST_REBOOT_INTEGRATION_COMPLETE`.
 

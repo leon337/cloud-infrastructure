@@ -233,8 +233,12 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(state["toolchain"]["hosted_canonical_latest_run"], 34068890016)
         audit = state["final_transversal_audit"]
         self.assertEqual(audit["status"], "EXECUTED_REMEDIATION_PREPARED")
-        self.assertEqual(audit["live_remote_branch_count"], 69)
+        self.assertEqual(audit["live_remote_branch_count"], 70)
+        self.assertEqual(audit["prepublication_audit_branch_count"], 69)
         self.assertEqual(audit["historical_hygiene_snapshot_branch_count"], 68)
+        hygiene = state["repository_hygiene"]
+        self.assertEqual(hygiene["live_remote_branch_count"], 70)
+        self.assertEqual(hygiene["prepublication_audit_branch_count"], 69)
         self.assertEqual(audit["branch_deletions"], 0)
         self.assertEqual(audit["g2b_pr21"], "DRAFT_UNINTEGRATED_FRESH_HOSTED_CI_BLOCKED_BY_HISTORY_SECRET_POLICY")
         self.assertEqual(audit["sentinelx_direct"], "INTERMITTENT_NOT_CLOSED_SERVICE_ACTIVE")

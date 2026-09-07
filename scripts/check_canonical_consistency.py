@@ -276,8 +276,10 @@ def main() -> int:
     audit = state.get("final_transversal_audit", {})
     if audit.get("status") != "EXECUTED_REMEDIATION_PREPARED":
         raise AssertionError("final transversal audit status drift")
-    if audit.get("live_remote_branch_count") != 69 or audit.get("historical_hygiene_snapshot_branch_count") != 68:
-        raise AssertionError("final audit live vs historical branch count drift")
+    if (audit.get("live_remote_branch_count") != 70 or
+            audit.get("prepublication_audit_branch_count") != 69 or
+            audit.get("historical_hygiene_snapshot_branch_count") != 68):
+        raise AssertionError("final audit live vs prepublication vs historical branch count drift")
     if audit.get("branch_deletions") != 0:
         raise AssertionError("final audit unexpectedly deleted branches")
     if audit.get("g2b_pr21") != "DRAFT_UNINTEGRATED_FRESH_HOSTED_CI_BLOCKED_BY_HISTORY_SECRET_POLICY":

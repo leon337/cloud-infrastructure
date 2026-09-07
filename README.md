@@ -51,7 +51,7 @@ A manutenção autorizada por LEANDRO foi concluída:
 10. PR #52 closeout: **MERGED** em `main@ec9bc8cb...`; CI pós-merge `34066674036` SUCCESS.
 11. PR/branch hygiene: 8 PRs legadas fechadas com evidência preservada; #21 mantida Draft; snapshot de 68 branches classificado; 0 deletadas.
 12. PR #53: **MERGED** em `main@78a4106...`; CI pós-merge `34068890016` SUCCESS, 35/35 testes e ShellCheck 6/6.
-13. `FINAL_TRANSVERSAL_AUDIT_EXECUTED`: pós-verificação NODE-01 read-only PASS; live branch count 69; fresh hosted CI da PR #21 bloqueado por dívida preexistente de Secret Policy no histórico; fonte de verdade do Capability Registry localizada em MCF `main@0825bbc...`; Capsule Cloud reconstruída no candidato de closeout.
+13. `FINAL_TRANSVERSAL_AUDIT_EXECUTED`: pós-verificação NODE-01 read-only PASS; audit pré-publicação 69 branches; live atual pós-publicação da PR #54: 70 branches; fresh hosted CI da PR #21 bloqueado por dívida preexistente de Secret Policy no histórico; fonte de verdade do Capability Registry localizada em MCF `main@0825bbc...`; Capsule Cloud reconstruída no candidato de closeout.
 
 A frente de manutenção, integração e higiene está encerrada. O próximo passo é o gate humano `HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION`; ele **não** autoriza reescrita de histórico, merge da PR #21, produção ou G2-B real write.
 

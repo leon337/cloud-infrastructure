@@ -34,7 +34,7 @@ A autorização B de LEANDRO foi consumida por update + reboot controlado. O ker
 está ativo, o sistema está `running` com zero failed units, e o checker P2 corrigido `9070c24...`
 retornou `NETWORK_CONVERGENCE_CHECK=PASS state=RECOVERED`. DSH e 9Router responderam HTTP 200/307.
 A PR #53 integrou a higiene em `main@78a4106...` e o CI pós-merge `34068890016` passou. A auditoria
-transversal posterior confirmou o NODE-01 read-only, live branch count 69, Capsule/Capability source-of-truth
+transversal posterior confirmou o NODE-01 read-only, audit pré-publicação 69 branches; live atual pós-publicação da PR #54: 70 branches, Capsule/Capability source-of-truth
 e que fresh hosted CI da PR #21 está bloqueado pelo Secret Policy de histórico antes dos gates G2-B específicos.
 O próximo passo é somente o gate humano de remediation do histórico; nenhuma ação destrutiva foi autorizada.
 
