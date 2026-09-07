@@ -33,16 +33,16 @@ Base canônica: `main@c7315e43e86beedae5a921e39b1ab7103f4da276`.
 - Recovery off-host: `20260906T185928Z`, `RECOVERY-P2-v1`, `PASS_6_OF_6`, restore smoke PASS; causa da ausência anterior segue historicamente `NOT_VERIFIED`.
 - Produção: não autorizada; autorizações one-shot de update/reboot já foram consumidas e não permanecem ativas.
 
-**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_NEXT`.
+**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_CLASSIFIED_FINAL_AUDIT_NEXT`.
 
 ## Próximo passo exato
 
-`CANONICAL_PR_BRANCH_HYGIENE`
+`FINAL_TRANSVERSAL_AUDIT`
 
 Update/reboot autorizados por LEANDRO já foram executados e consumidos. O NODE-01 voltou no kernel
 `6.8.0-139-generic`, zero failed units, DSH/9Router acessíveis e Network P2 formalmente PASS com o
 checker corrigido `9070c24...`. A PR #51 foi integrada em `fix/f1-2c-systemd-runtime-lock@d5508e1...`
-e passou validação pós-merge 166/166. A PR #50 foi integrada em `main@c7315e43...`, com CI pós-merge SUCCESS e 35/35 testes isolados. A integração pós-reboot está encerrada. O próximo passo operacional é `CANONICAL_PR_BRANCH_HYGIENE`.
+e passou validação pós-merge 166/166. A PR #50 foi integrada em `main@c7315e43...`, com CI pós-merge SUCCESS e 35/35 testes isolados. A integração pós-reboot está encerrada. A higiene canônica fechou 8 PRs legadas com evidência preservada, reteve a PR #21 Draft, classificou 68 branches e deletou 0. O próximo passo operacional é `FINAL_TRANSVERSAL_AUDIT`.
 
 ## Boundary externo
 

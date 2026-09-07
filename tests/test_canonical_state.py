@@ -62,10 +62,47 @@ class CanonicalStateTests(unittest.TestCase):
 
     def test_repository_hygiene_revalidation_is_recorded(self):
         hygiene = self.state["repository_hygiene"]
-        self.assertEqual(hygiene["status"], "REPOSITORY_HYGIENE_REVALIDATED")
+        self.assertEqual(hygiene["status"], "PR_BRANCH_HYGIENE_CLASSIFIED")
         self.assertEqual(hygiene["revalidation"]["status"], "PASS_AGAINST_CANONICAL_TOOLCHAIN")
         self.assertEqual(hygiene["pr"], 19)
         self.assertEqual(hygiene["revalidation"]["head"], "f34aec6c641fb577d620446df4a743df3ff3fa5d")
+        self.assertFalse(hygiene["legacy_pr_classification_pending"])
+        self.assertEqual(hygiene["remote_branch_count"], 68)
+        self.assertEqual(hygiene["branch_deletions"], 0)
+        self.assertEqual(hygiene["active_prs_retained"], [21])
+        self.assertEqual(hygiene["legacy_prs_closed"], [1, 2, 3, 7, 8, 23, 41, 45])
+        self.assertEqual(hygiene["deletion_gate"], "NOT_AUTHORIZED_HUMAN_GATE_REQUIRED")
+
+        receipt_path = Path(hygiene["classification_receipt"])
+        self.assertTrue(receipt_path.is_file())
+        receipt = yaml.safe_load(receipt_path.read_text(encoding="utf-8"))
+        self.assertEqual(receipt["protocol"], "MCF-PR-BRANCH-HYGIENE-v1")
+        self.assertEqual(receipt["observed_main"], "ec9bc8cbac143197ab8d8102da23d3cb54fcd43a")
+        self.assertEqual(receipt["remote_branch_count"], 68)
+        self.assertEqual(receipt["branch_deletions"], 0)
+        self.assertEqual(receipt["active_open_prs"], [21])
+        self.assertEqual(receipt["closed_legacy_prs"], [1, 2, 3, 7, 8, 23, 41, 45])
+        self.assertEqual([row["number"] for row in receipt["pr_actions"]], [1, 2, 3, 7, 8, 23, 41, 45])
+        self.assertTrue(all(row["action"] == "CLOSED_PRESERVE_EVIDENCE" for row in receipt["pr_actions"]))
+        self.assertTrue(all(row["branch_deleted"] is False for row in receipt["pr_actions"]))
+        self.assertEqual(receipt["retained_active_pr"]["number"], 21)
+        self.assertEqual(receipt["retained_active_pr"]["state"], "OPEN_DRAFT")
+        self.assertEqual(receipt["retained_active_pr"]["head"], "f91c836e92fae1aea1cc2e48ecc4c4bde6df78b8")
+        self.assertEqual(len(receipt["branches"]), 68)
+        allowed = {
+            "ACTIVE_RETAIN",
+            "INTEGRATED_IN_MAIN",
+            "COVERED_BY_OPERATIONAL_LINEAGE",
+            "HISTORICAL_EVIDENCE_RETAIN",
+            "REVIEW_REQUIRED",
+        }
+        self.assertEqual({row["classification"] for row in receipt["branches"]} - allowed, set())
+        self.assertTrue(all(row["deletion_authorized"] is False for row in receipt["branches"]))
+        by_name = {row["name"]: row for row in receipt["branches"]}
+        self.assertEqual(by_name["main"]["classification"], "ACTIVE_RETAIN")
+        self.assertEqual(by_name["team/g2b-task8-20260822"]["classification"], "ACTIVE_RETAIN")
+        self.assertEqual(by_name["codex/control-bridge-g2b"]["classification"], "ACTIVE_RETAIN")
+        self.assertEqual(by_name["fix/f1-2c-systemd-runtime-lock"]["classification"], "ACTIVE_RETAIN")
 
     def test_neutral_package_boundary(self):
         toolchain = self.state["toolchain"]
@@ -84,7 +121,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
         self.assertEqual(
             self.state["project"]["next_exact_step"],
-            "CANONICAL_PR_BRANCH_HYGIENE",
+            "FINAL_TRANSVERSAL_AUDIT",
         )
 
     def test_reboot_gate_requires_fresh_checkpoint_and_external_coordination(self):

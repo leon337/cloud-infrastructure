@@ -121,7 +121,7 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 
 **Estado:** `PASS_POST_REBOOT_LIVE_VERIFIED` + `PR51_OPERATIONAL_FIX_INTEGRATED` + `PR50_CANONICAL_RECONCILIATION_INTEGRATED` + `POST_REBOOT_INTEGRATION_COMPLETE`.
 
-**Próximo passo exato:** `CANONICAL_PR_BRANCH_HYGIENE`.
+**Próximo passo exato:** `FINAL_TRANSVERSAL_AUDIT`.
 
 ## 8. SentinelX direto NODE-01 → hub
 
@@ -186,11 +186,11 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [x] F1.2c e Network P2 agora projetados como live verified.
 - [x] PR #23 classificada operacionalmente como histórica/sucedida por lineage posterior.
 - [x] PR #41 tratada como fonte de evidência, não como merge candidate atual.
-- [ ] Classificar/fechar PRs legadas comprovadamente superseded sem apagar evidência.
-- [ ] Revisar branches históricas após classificação.
+- [x] Classificar/fechar PRs legadas comprovadamente superseded sem apagar evidência: #1/#2/#3/#7/#8/#23/#41/#45 fechadas; #21 preservada OPEN + DRAFT.
+- [x] Revisar branches históricas após classificação: 68 refs classificadas; 0 deletadas; 26 `REVIEW_REQUIRED` retidas fail-closed; deleção segue em gate humano separado.
 - [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
 
-**Estado:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_NEXT`.
+**Estado:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_CLASSIFIED_FINAL_AUDIT_NEXT`.
 
 ## Ordem operacional vigente
 
@@ -211,8 +211,8 @@ UPDATE_AND_CONTROLLED_REBOOT        DONE / ONE_SHOT_AUTHORIZATION_CONSUMED
 POST_REBOOT_VALIDATION              DONE / LIVE_VERIFIED
 POST_REBOOT_P2_CHECKER_PR51         DONE / MERGED
 POST_REBOOT_INTEGRATION_DECISION    DONE / PR51+PR50 MERGED
-CANONICAL_PR_BRANCH_HYGIENE         NEXT
-FINAL_TRANSVERSAL_AUDIT             PENDING
+CANONICAL_PR_BRANCH_HYGIENE         DONE / CLASSIFIED_NO_BRANCH_DELETION
+FINAL_TRANSVERSAL_AUDIT             NEXT
 ```
 
 ## Regra de closeout

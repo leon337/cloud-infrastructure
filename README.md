@@ -12,10 +12,10 @@ Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**.
 
 ## Estado executivo reconciliado — 06/09/2026
 
-A projeção atual parte de `main@c7315e43e86beedae5a921e39b1ab7103f4da276`, do checkpoint
+A projeção atual parte de `main@ec9bc8cbac143197ab8d8102da23d3cb54fcd43a`, do checkpoint
 pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo dia.
 
-**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_NEXT`.
+**Estado documental:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_CLASSIFIED_FINAL_AUDIT_NEXT`.
 
 | Área | Estado atual | Evidência/limite |
 |---|---|---|
@@ -33,7 +33,7 @@ pré-reboot de 06/09/2026 e da validação live pós-reboot registrada no mesmo 
 ## Próxima ação exata
 
 ```text
-CANONICAL_PR_BRANCH_HYGIENE
+FINAL_TRANSVERSAL_AUDIT
 ```
 
 A manutenção autorizada por LEANDRO foi concluída:
@@ -47,6 +47,8 @@ A manutenção autorizada por LEANDRO foi concluída:
 7. pós-verificação independente: **PASS**;
 8. PR #51: **MERGED** em `fix/f1-2c-systemd-runtime-lock@d5508e1...`; validação pós-merge 166/166, shell 21 e Ansible 6 PASS.
 9. PR #50: **MERGED** em `main@c7315e43...`; CI pós-merge `34065344230` SUCCESS e suíte isolada 35/35 PASS.
+10. PR #52 closeout: **MERGED** em `main@ec9bc8cb...`; CI pós-merge `34066674036` SUCCESS.
+11. PR/branch hygiene: 8 PRs legadas fechadas com evidência preservada; #21 mantida Draft; 68 branches classificadas; 0 deletadas.
 
 A correção operacional e a reconciliação canônica já estão integradas. A integração pós-reboot está encerrada. O próximo trabalho operacional é a higiene canônica de PRs/branches.
 
