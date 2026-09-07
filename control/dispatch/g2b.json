@@ -4,7 +4,7 @@
   },
   "request": {
     "protocol": "MCF_WORKSPACE_MUTATION_V1",
-    "request_id": "G2B-REAL-WRITE-20260907215100",
+    "request_id": "G2B-REAL-WRITE-20260907215900",
     "mission_id": "CONTROL-BRIDGE-G2B-PILOT",
     "declared_actor": "MESTRE_MCF",
     "project": {
@@ -15,7 +15,7 @@
     "operation": "workspace.write",
     "arguments": {
       "path": "G2B-PILOT.txt",
-      "content": "G2-B changed conflict probe\n",
+      "content": "G2-B second active mutation probe\n",
       "precondition": {
         "state": "ABSENT"
       }
