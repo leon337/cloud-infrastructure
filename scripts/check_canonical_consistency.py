@@ -32,7 +32,7 @@ def main() -> int:
     for token in (
         "CANONICAL_EXECUTIVE_PANEL_IMPLEMENTACAO_DA_VPS",
         "Repositório canônico da missão **IMPLEMENTAÇÃO DA VPS**",
-        "POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_CLASSIFIED_FINAL_AUDIT_NEXT",
+        "FINAL_TRANSVERSAL_AUDIT_EXECUTED_REMEDIATION_GATE_NEXT",
         "COMPLETE_LIVE_VERIFIED",
         "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
         "INTERMITTENT_NOT_CLOSED",
@@ -43,7 +43,7 @@ def main() -> int:
     for path in (Path("CONTEXT.md"), Path("CHECKPOINT.md")):
         for token in (
             "scripts/test.sh",
-            "POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_CLASSIFIED_FINAL_AUDIT_NEXT",
+            "FINAL_TRANSVERSAL_AUDIT_EXECUTED_REMEDIATION_GATE_NEXT",
             "COMPLETE_LIVE_VERIFIED",
             "TECHNICAL_PASS_DRAFT_UNINTEGRATED",
             "INTERMITTENT_NOT_CLOSED",
@@ -79,7 +79,8 @@ def main() -> int:
         require_token(roadmap_path, "POST_REBOOT_P2_CHECKER_PR51         DONE / MERGED")
         require_token(roadmap_path, "POST_REBOOT_INTEGRATION_DECISION    DONE / PR51+PR50 MERGED")
         require_token(roadmap_path, "CANONICAL_PR_BRANCH_HYGIENE         DONE / CLASSIFIED_NO_BRANCH_DELETION")
-        require_token(roadmap_path, "FINAL_TRANSVERSAL_AUDIT             NEXT")
+        require_token(roadmap_path, "FINAL_TRANSVERSAL_AUDIT             DONE / REMEDIATION_PREPARED")
+        require_token(roadmap_path, "REPOSITORY_HISTORY_SECRET_POLICY    HUMAN_GATE / DESTRUCTIVE_REMEDIATION_NOT_AUTHORIZED")
         if "<!-- CANONICAL_OPERATIONAL_CHECKLIST -->" in roadmap_path.read_text(encoding="utf-8"):
             raise AssertionError("roadmap must not self-declare as canonical executive authority")
         if roadmap.get("authority") != "SUBORDINATE_TO_README_EXECUTIVE_PANEL":
@@ -220,7 +221,7 @@ def main() -> int:
     if active.get("dsh_gpt", {}).get("status") != "PAUSED_SAFE_CHECKPOINT_NO_NEW_DSH_9ROUTER_EXECUTIONS":
         raise AssertionError("Dsh Gpt maintenance checkpoint drift")
 
-    if state.get("source_snapshot", {}).get("main", {}).get("sha") != "ec9bc8cbac143197ab8d8102da23d3cb54fcd43a":
+    if state.get("source_snapshot", {}).get("main", {}).get("sha") != "78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7":
         raise AssertionError("canonical main SHA drift")
 
     integration = state.get("post_reboot_integration", {})
@@ -254,7 +255,7 @@ def main() -> int:
     if state.get("authorization", {}).get("pr50_canonical_merge") != "COMPLETED_ONE_SHOT_AUTHORIZATION_CONSUMED":
         raise AssertionError("PR #50 canonical merge authorization receipt drift")
 
-    if state["project"].get("next_exact_step") != "FINAL_TRANSVERSAL_AUDIT":
+    if state["project"].get("next_exact_step") != "HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION":
         raise AssertionError("project next exact step drift")
     hygiene = state.get("repository_hygiene", {})
     receipt_path = Path(hygiene.get("classification_receipt", ""))
@@ -271,6 +272,34 @@ def main() -> int:
         raise AssertionError("legacy PR closure receipt drift")
     if any(row.get("deletion_authorized") is not False for row in receipt.get("branches", [])):
         raise AssertionError("branch deletion authorization drift")
+
+    audit = state.get("final_transversal_audit", {})
+    if audit.get("status") != "EXECUTED_REMEDIATION_PREPARED":
+        raise AssertionError("final transversal audit status drift")
+    if audit.get("live_remote_branch_count") != 69 or audit.get("historical_hygiene_snapshot_branch_count") != 68:
+        raise AssertionError("final audit live vs historical branch count drift")
+    if audit.get("branch_deletions") != 0:
+        raise AssertionError("final audit unexpectedly deleted branches")
+    if audit.get("g2b_pr21") != "DRAFT_UNINTEGRATED_FRESH_HOSTED_CI_BLOCKED_BY_HISTORY_SECRET_POLICY":
+        raise AssertionError("PR #21 fresh hosted classification drift")
+    if audit.get("mcf_main_sha") != "0825bbcfa1c9e8a07c08d9ff7d9ecbcc51186b22" or audit.get("mcf_repository_mutated") is not False:
+        raise AssertionError("MCF capability source-of-truth drift")
+    audit_receipt = Path(audit.get("evidence_file", ""))
+    if not audit_receipt.is_file():
+        raise AssertionError("final transversal audit receipt missing")
+    audit_doc = yaml.safe_load(audit_receipt.read_text(encoding="utf-8"))
+    if audit_doc.get("basis", {}).get("cloud_main_sha") != "78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7":
+        raise AssertionError("final audit receipt main SHA drift")
+    if audit_doc.get("repository_hygiene", {}).get("historical_snapshot_branch_count") != 68 or audit_doc.get("repository_hygiene", {}).get("live_remote_branch_count") != 69:
+        raise AssertionError("final audit receipt branch count semantics drift")
+    if audit_doc.get("boundaries", {}).get("destructive_history_remediation_authorized") is not False:
+        raise AssertionError("history remediation must remain unauthorized")
+    capsule_path = Path(".mcf/project-capsule.yaml")
+    if not capsule_path.is_file():
+        raise AssertionError("MCF project capsule missing")
+    capsule = yaml.safe_load(capsule_path.read_text(encoding="utf-8"))
+    if capsule.get("project_id") != "cloud-infrastructure" or capsule.get("sources", {}).get("current_state") != "state/current.yaml":
+        raise AssertionError("MCF project capsule contract drift")
 
     if state["toolchain"]["canonical_entrypoint"] != "scripts/test.sh":
         raise AssertionError("toolchain entrypoint drift")

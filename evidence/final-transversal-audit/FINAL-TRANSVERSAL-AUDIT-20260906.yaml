@@ -1,0 +1,114 @@
+schema_version: 1
+audit_id: FINAL_TRANSVERSAL_AUDIT_20260906
+observed_at: '2026-09-06T21:21:00-03:00'
+status: EXECUTED_REMEDIATION_PREPARED
+
+basis:
+  cloud_repository: leon337/cloud-infrastructure
+  cloud_main_sha: 78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7
+  hygiene_pr: 53
+  hygiene_head_sha: a74863c69743f1a53d57dee695cdf56f87746f61
+  hygiene_merge_sha: 78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7
+  hygiene_merge_tree: e125b0409a101bc179b7e19acbc3ab543956e61b
+  hygiene_postmerge_ci_run: 34068890016
+  hygiene_postmerge_ci: SUCCESS
+
+node01_read_only:
+  hostname: vmi3506102
+  kernel: 6.8.0-139-generic
+  system_state: running
+  failed_units: 0
+  reboot_required: false
+  gateway_host_route: 169.58.128.1_SCOPE_LINK_PROTO_STATIC
+  provider_subnet_route: 169.58.128.0/17_VIA_169.58.128.1
+  direct_provider_subnet_scope_link: ABSENT
+  dsh_http: 200
+  ninerouter_http: 307
+  sentinelx_unit: sentinelx-cloud-core.service
+  sentinelx_service: ACTIVE_ENABLED
+  sentinelx_direct: INTERMITTENT_NOT_CLOSED
+  sentinelx_root_cause: NOT_VERIFIED
+  mutation_performed: false
+
+repository_hygiene:
+  receipt: evidence/repository-hygiene/PR-BRANCH-HYGIENE-20260906.yaml
+  historical_snapshot_branch_count: 68
+  historical_snapshot_observed_main: ec9bc8cbac143197ab8d8102da23d3cb54fcd43a
+  live_remote_branch_count: 69
+  live_main: 78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7
+  live_integrated_in_main_count: 18
+  branch_deletions: 0
+  review_required_retained: 26
+  snapshot_semantics: HISTORICAL_POINT_IN_TIME_PRESERVED
+
+g2b_pr21:
+  pr: 21
+  state: OPEN_DRAFT_UNINTEGRATED
+  head: f91c836e92fae1aea1cc2e48ecc4c4bde6df78b8
+  base: fbef3d407dbd9b7947b6c100a63d098eaebe2b6a
+  historical_technical_result: PASS_373_OF_373_AND_13_OF_13_DISPOSABLE_LIFECYCLE
+  fresh_hosted_result: BLOCKED_BY_PREEXISTING_REACHABLE_HISTORY_SECRET_POLICY
+  g2b_specific_hosted_lifecycle_reached: false
+  fresh_hosted_reruns:
+    - workflow: control-bridge-g2b-ci
+      run_id: 32624927473
+      attempt: 2
+      conclusion: failure
+      classification: REPOSITORY_HISTORY_SECRET_POLICY_BEFORE_G2B_SPECIFIC_LIFECYCLE
+    - workflow: docker-boundary-ci
+      run_id: 32624927481
+      attempt: 2
+      conclusion: failure
+      classification: REPOSITORY_HISTORY_SECRET_POLICY_BEFORE_DISPOSABLE_INTEGRATION
+    - workflow: foundation-ci
+      run_id: 32624927482
+      attempt: 2
+      conclusion: failure
+      classification: REPOSITORY_HISTORY_SECRET_POLICY_BEFORE_DISPOSABLE_INTEGRATION
+  merge_authorized: false
+  real_write_authorized: false
+
+cross_repo:
+  mcf_repository: leon337/multiagent-collaboration-framework
+  mcf_main_sha: 0825bbcfa1c9e8a07c08d9ff7d9ecbcc51186b22
+  project_registry: context/projects/cloud-infrastructure.yaml
+  project_registry_capsule_path: .mcf/project-capsule.yaml
+  capability_registry_loader: apps/rede-social-agentes/apps/server/src/mcf-context/capability-registry.loader.ts
+  capability_registry_sources: context/capabilities/*.yaml
+  capsule_schema: schemas/context/project-capsule.schema.json
+  capsule_schema_blob_sha: 223c313a4229b09784776de961405fc503a43c79
+  cloud_capability_current_contract: HISTORICALLY_VERIFIED_DISCONNECTED_INACTIVE_LIVE_REQUIRED
+  old_cloud_capsule_replayed: false
+  mcf_repository_mutated: false
+  cloud_capsule_reconstructed_in_candidate: true
+
+findings:
+  - id: README_NEXT_STEP_DRIFT
+    before: HYGIENE_NARRATED_AS_NEXT_AFTER_PR53_MERGE
+    remediation: CORRECTED_IN_CLOSEOUT_CANDIDATE
+  - id: CURRENT_POINTERS_STALE
+    before: MAIN_EC9_LATEST_PR52_CI34066674036
+    remediation: CORRECTED_TO_MAIN_78A_PR53_CI34068890016
+  - id: HYGIENE_RECEIPT_POINT_IN_TIME
+    before: REMOTE_BRANCH_COUNT_68
+    remediation: PRESERVED_AS_HISTORICAL_SNAPSHOT_WITH_LIVE_COUNT_69_SEPARATE
+  - id: PR21_HOSTED_REQUALIFICATION
+    before: BILLING_BLOCKER_ONLY
+    remediation: FRESH_CI_EXECUTED_AND_CLASSIFIED_AS_HISTORY_SECRET_POLICY_BLOCKER
+  - id: CLOUD_CAPSULE_MISSING
+    before: MCF_PROJECT_REGISTRY_EXPECTS_CAPSULE_BUT_CLOUD_MAIN_78A_HAS_NONE
+    remediation: RECONSTRUCTED_FROM_CURRENT_STATE_IN_CLOSEOUT_CANDIDATE
+
+next_gate:
+  id: HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION
+  purpose: Decide whether and how to address reachable historical Secret Policy findings that block PR #21 hosted validation.
+  destructive_action_included: false
+
+boundaries:
+  node01_mutated: false
+  production_promoted: false
+  g2b_real_write: false
+  pr21_merged: false
+  mcf_repository_mutated: false
+  branch_deletion_authorized: false
+  destructive_history_remediation_authorized: false

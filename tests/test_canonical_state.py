@@ -63,6 +63,9 @@ class CanonicalStateTests(unittest.TestCase):
     def test_repository_hygiene_revalidation_is_recorded(self):
         hygiene = self.state["repository_hygiene"]
         self.assertEqual(hygiene["status"], "PR_BRANCH_HYGIENE_CLASSIFIED")
+        self.assertEqual(hygiene["pr_semantics"], "HISTORICAL_SANITIZATION_LINEAGE")
+        self.assertEqual(hygiene["classification_pr"], 53)
+        self.assertEqual(hygiene["classification_merge_sha"], "78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7")
         self.assertEqual(hygiene["revalidation"]["status"], "PASS_AGAINST_CANONICAL_TOOLCHAIN")
         self.assertEqual(hygiene["pr"], 19)
         self.assertEqual(hygiene["revalidation"]["head"], "f34aec6c641fb577d620446df4a743df3ff3fa5d")
@@ -121,7 +124,7 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(ssh["future_hardening_gate"], "PRESERVE_INTERACTIVE_NOTEBOOK_ACCESS")
         self.assertEqual(
             self.state["project"]["next_exact_step"],
-            "FINAL_TRANSVERSAL_AUDIT",
+            "HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION",
         )
 
     def test_reboot_gate_requires_fresh_checkpoint_and_external_coordination(self):
@@ -222,6 +225,54 @@ class CanonicalStateTests(unittest.TestCase):
         self.assertEqual(runner["cross_job_proof_run"], 33998487949)
         self.assertEqual(runner["next_exact_step"], "NONE")
 
+
+    def test_final_transversal_audit_closeout_is_current_and_non_recursive(self):
+        state = self.state
+        self.assertEqual(state["source_snapshot"]["main"]["sha"], "78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7")
+        self.assertEqual(state["source_snapshot"]["main"]["latest_integrated_pr"], 53)
+        self.assertEqual(state["toolchain"]["hosted_canonical_latest_run"], 34068890016)
+        audit = state["final_transversal_audit"]
+        self.assertEqual(audit["status"], "EXECUTED_REMEDIATION_PREPARED")
+        self.assertEqual(audit["live_remote_branch_count"], 69)
+        self.assertEqual(audit["historical_hygiene_snapshot_branch_count"], 68)
+        self.assertEqual(audit["branch_deletions"], 0)
+        self.assertEqual(audit["g2b_pr21"], "DRAFT_UNINTEGRATED_FRESH_HOSTED_CI_BLOCKED_BY_HISTORY_SECRET_POLICY")
+        self.assertEqual(audit["sentinelx_direct"], "INTERMITTENT_NOT_CLOSED_SERVICE_ACTIVE")
+        self.assertEqual(audit["capsule"], "RECONSTRUCTED_FROM_CURRENT_STATE_PENDING_MERGE")
+        self.assertEqual(audit["capability_registry"], "SOURCE_OF_TRUTH_MCF_MAIN_0825BBC")
+        self.assertEqual(state["project"]["next_exact_step"], "HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION")
+
+    def test_final_transversal_audit_receipt_is_fail_closed(self):
+        audit = self.state["final_transversal_audit"]
+        receipt_path = Path(audit["evidence_file"])
+        self.assertTrue(receipt_path.is_file())
+        receipt = yaml.safe_load(receipt_path.read_text(encoding="utf-8"))
+        self.assertEqual(receipt["basis"]["cloud_main_sha"], "78a4106aaa7a4cbbe3b6c78525bf7991d05a83a7")
+        self.assertEqual(receipt["basis"]["hygiene_pr"], 53)
+        self.assertEqual(receipt["basis"]["hygiene_postmerge_ci_run"], 34068890016)
+        self.assertEqual(receipt["repository_hygiene"]["historical_snapshot_branch_count"], 68)
+        self.assertEqual(receipt["repository_hygiene"]["live_remote_branch_count"], 69)
+        self.assertEqual(receipt["repository_hygiene"]["branch_deletions"], 0)
+        self.assertEqual(len(receipt["g2b_pr21"]["fresh_hosted_reruns"]), 3)
+        self.assertEqual(receipt["cross_repo"]["mcf_main_sha"], "0825bbcfa1c9e8a07c08d9ff7d9ecbcc51186b22")
+        self.assertFalse(receipt["boundaries"]["destructive_history_remediation_authorized"])
+        self.assertFalse(receipt["boundaries"]["branch_deletion_authorized"])
+
+    def test_cross_repo_capsule_matches_current_cloud_contract(self):
+        capsule_path = Path(".mcf/project-capsule.yaml")
+        self.assertTrue(capsule_path.is_file())
+        capsule = yaml.safe_load(capsule_path.read_text(encoding="utf-8"))
+        self.assertEqual(capsule["schema_version"], 1)
+        self.assertEqual(capsule["project_id"], "cloud-infrastructure")
+        self.assertEqual(capsule["sources"]["current_state"], "state/current.yaml")
+        self.assertEqual(capsule["snapshot"]["current_workstream"], "final-transversal-audit-closeout")
+        self.assertIn("PR #21", " ".join(capsule["snapshot"]["blockers"]))
+        self.assertIn("repository-history", capsule["snapshot"]["next_action"])
+
+    def test_readme_does_not_regress_to_hygiene_as_next_work(self):
+        readme = Path("README.md").read_text(encoding="utf-8")
+        self.assertNotIn("O próximo trabalho operacional é a higiene canônica de PRs/branches", readme)
+        self.assertIn("FINAL_TRANSVERSAL_AUDIT_EXECUTED", readme)
 
 if __name__ == "__main__":
     unittest.main()

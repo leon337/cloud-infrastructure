@@ -118,10 +118,12 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [x] Resultado integrado revalidado: 166/166 testes, shell syntax 21, Ansible syntax 6, worktree clean.
 - [x] PR #50 integrada em `main@c7315e43...`; CI pós-merge `34065344230` SUCCESS e validação isolada 35/35 PASS.
 - [x] Closeout documental preparado como projeção pós-integração; autorização de merge permanece fora do estado durável e é controlada pelo gate humano da PR.
+- [x] PR #53 integrou a higiene em `main@78a4106...`; CI pós-merge `34068890016` SUCCESS.
+- [x] `FINAL_TRANSVERSAL_AUDIT` executado: NODE-01 read-only PASS; live branch count 69; SentinelX service active; fresh hosted CI da PR #21 classificado; cross-repo Capsule/Capability Registry reconciliado no candidato.
 
 **Estado:** `PASS_POST_REBOOT_LIVE_VERIFIED` + `PR51_OPERATIONAL_FIX_INTEGRATED` + `PR50_CANONICAL_RECONCILIATION_INTEGRATED` + `POST_REBOOT_INTEGRATION_COMPLETE`.
 
-**Próximo passo exato:** `FINAL_TRANSVERSAL_AUDIT`.
+**Próximo passo exato:** `HUMAN_GATE_REPOSITORY_HISTORY_SECRET_POLICY_REMEDIATION`.
 
 ## 8. SentinelX direto NODE-01 → hub
 
@@ -142,6 +144,7 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [x] Task 8 head `f91c836e92fae1aea1cc2e48ecc4c4bde6df78b8`: 373/373 testes PASS.
 - [x] Task 8: 13/13 marcadores de lifecycle comprovados; cleanup sem resíduos.
 - [!] PR #21 permanece Draft e não integrada ao mainline aplicável.
+- [x] Fresh hosted reruns (attempt 2) executaram no head `f91c836e...` e foram bloqueados pelo Secret Policy de histórico alcançável antes dos gates G2-B específicos.
 - [ ] Task 9: não iniciada.
 - [ ] Task 10: não iniciada.
 - [!] Escrita G2-B real no NODE-01 continua `NOT_AUTHORIZED`.
@@ -188,9 +191,9 @@ Evidência: `evidence/network-convergence/NETWORK-CONVERGENCE-P2-NODE01-LIVE-202
 - [x] PR #41 tratada como fonte de evidência, não como merge candidate atual.
 - [x] Classificar/fechar PRs legadas comprovadamente superseded sem apagar evidência: #1/#2/#3/#7/#8/#23/#41/#45 fechadas; #21 preservada OPEN + DRAFT.
 - [x] Revisar branches históricas após classificação: 68 refs classificadas; 0 deletadas; 26 `REVIEW_REQUIRED` retidas fail-closed; deleção segue em gate humano separado.
-- [ ] Atualizar Capsule/Capability Registry quando a reconciliação cross-repo for retomada.
+- [x] Capability Registry source-of-truth localizado em `multiagent-collaboration-framework@0825bbc...`; `.mcf/project-capsule.yaml` reconstruída no candidato de closeout e validada contra o schema atual, sem mutar o MCF.
 
-**Estado:** `POST_REBOOT_INTEGRATION_COMPLETE_BRANCH_HYGIENE_CLASSIFIED_FINAL_AUDIT_NEXT`.
+**Estado:** `FINAL_TRANSVERSAL_AUDIT_EXECUTED_REMEDIATION_GATE_NEXT`.
 
 ## Ordem operacional vigente
 
@@ -212,7 +215,8 @@ POST_REBOOT_VALIDATION              DONE / LIVE_VERIFIED
 POST_REBOOT_P2_CHECKER_PR51         DONE / MERGED
 POST_REBOOT_INTEGRATION_DECISION    DONE / PR51+PR50 MERGED
 CANONICAL_PR_BRANCH_HYGIENE         DONE / CLASSIFIED_NO_BRANCH_DELETION
-FINAL_TRANSVERSAL_AUDIT             NEXT
+FINAL_TRANSVERSAL_AUDIT             DONE / REMEDIATION_PREPARED
+REPOSITORY_HISTORY_SECRET_POLICY    HUMAN_GATE / DESTRUCTIVE_REMEDIATION_NOT_AUTHORIZED
 ```
 
 ## Regra de closeout
