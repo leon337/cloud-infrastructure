@@ -77,7 +77,7 @@ never copy an ID from evidence or this document.
 GRANT_ID='REPLACE-WITH-FRESH-GRANT-ID'
 NOT_BEFORE="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 NOT_AFTER="$(date -u -d "$NOT_BEFORE + 24 hours" '+%Y-%m-%dT%H:%M:%SZ')"
-EXECUTOR_SHA256='7ed806ee4d73743f3d0ab6f7f5c216494ed0d4f645f5f2bea0b128f2a689d3af'
+EXECUTOR_SHA256='35ba49c0919764d78381a121e1882fac60a9925a69d861cc7da4ca042d461255'
 ansible-playbook playbooks/issue-control-bridge-g2b-grant.yml \
   --ask-become-pass --diff \
   -e "g2b_grant_id=$GRANT_ID" \

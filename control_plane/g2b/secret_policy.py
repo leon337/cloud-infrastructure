@@ -6,6 +6,16 @@ import re
 from collections.abc import Iterator
 
 
+RUNTIME_CREDENTIAL_REFERENCE = re.compile(
+    rb"^(?:"
+    rb"\$[A-Za-z_][A-Za-z0-9_]*"
+    rb"|\$\{[A-Za-z_][A-Za-z0-9_]*\}"
+    rb"|\{\{[A-Za-z0-9_.-]+\}\}"
+    rb"|\$\{\{[A-Za-z0-9_.-]+\}\}"
+    rb")$"
+)
+
+
 CONTENT_RULES = {
     "private-key-material": re.compile(
         rb"-----BEGIN (?:(?:OPENSSH|RSA|EC|DSA|ENCRYPTED) )?PRIVATE KEY-----"
@@ -38,7 +48,7 @@ CONTENT_RULES = {
     ),
     "credential-in-uri": re.compile(
         rb"\b(?:https?|postgres(?:ql)?|mysql|redis|amqps?)://"
-        rb"[^\s/:@]+:[^\s/@]+@",
+        rb"[^\s/:@]+:(?P<password>[^\s/@]+)@",
         re.IGNORECASE,
     ),
 }
@@ -50,6 +60,14 @@ def content_findings(
     allowed_assignment_line_hashes: frozenset[str] = frozenset(),
 ) -> Iterator[str]:
     for rule_name, rule in CONTENT_RULES.items():
+        if rule_name == "credential-in-uri":
+            for match in rule.finditer(content):
+                if RUNTIME_CREDENTIAL_REFERENCE.fullmatch(match.group("password")):
+                    continue
+                yield rule_name
+                break
+            continue
+
         if rule_name != "secret-like-assignment":
             if rule.search(content):
                 yield rule_name

@@ -31,7 +31,7 @@
       - g2b_state_path == '/var/lib/mcf-control-bridge/state/g2b'
       - g2b_log_path == '/var/log/mcf-control-bridge/g2b'
       - g2b_lock_path == '/run/lock/mcf-control-bridge-g2b.lock'
-      - g2b_executor_bundle_sha256 == '7ed806ee4d73743f3d0ab6f7f5c216494ed0d4f645f5f2bea0b128f2a689d3af'
+      - g2b_executor_bundle_sha256 == '35ba49c0919764d78381a121e1882fac60a9925a69d861cc7da4ca042d461255'
       - (g2b_marker_content | hash('sha256')) == g2b_marker_sha256
       - >-
         (
