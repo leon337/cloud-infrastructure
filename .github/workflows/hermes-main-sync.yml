@@ -1,0 +1,57 @@
+name: hermes-main-sync
+
+on:
+  push:
+    branches:
+      - feat/triview-relay-recovery-20260911
+    paths:
+      - .github/workflows/hermes-main-sync.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+    steps:
+      - name: Enforce runner isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
+
+      - name: Fast-forward Hermes checkout to merged main and verify
+        shell: bash
+        env:
+          EXPECTED_MAIN_SHA: 4fefd6e6593cc74e8f6e7e9ca5a9e506aa3df23c
+        run: |
+          set -euo pipefail
+          repo="$HOME/leon337-hermes-operator"
+          test -d "$repo/.git"
+          test -z "$(git -C "$repo" status --porcelain)"
+          test "$(git -C "$repo" remote get-url origin)" = "git@github.com:leon337/leon337-hermes-operator.git"
+          git -C "$repo" fetch origin main
+          remote_sha="$(git -C "$repo" rev-parse origin/main)"
+          test "$remote_sha" = "$EXPECTED_MAIN_SHA"
+          if git -C "$repo" show-ref --verify --quiet refs/heads/main; then
+            git -C "$repo" switch main
+          else
+            git -C "$repo" switch -c main --track origin/main
+          fi
+          git -C "$repo" merge --ff-only origin/main
+          test "$(git -C "$repo" rev-parse HEAD)" = "$EXPECTED_MAIN_SHA"
+          bash "$repo/tests/test-context-contract.sh"
+          bash "$repo/tests/test-hermes-remote-client.sh"
+          bash "$repo/tests/test-notebook-deployment.sh"
+          bash -n "$repo/scripts/hermes-remote-client.sh"
+          bash -n "$repo/scripts/deploy-notebook-client.sh"
+          echo HERMES_VPS_MAIN_SYNC_PASS
+
+      - name: Enforce runner isolation after mission
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
