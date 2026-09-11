@@ -34,7 +34,7 @@ jobs:
           test -r /home/ubuntu/.ssh/id_ed25519_hermes_operator_ro
           test -z "$(git -C "$repo" status --porcelain)"
           test "$(git -C "$repo" remote get-url origin)" = "git@github.com:leon337/leon337-hermes-operator.git"
-          git -C "$repo" fetch origin main
+          git -C "$repo" fetch origin main:refs/remotes/origin/main
           remote_sha="$(git -C "$repo" rev-parse origin/main)"
           test "$remote_sha" = "$EXPECTED_MAIN_SHA"
           if git -C "$repo" show-ref --verify --quiet refs/heads/main; then
