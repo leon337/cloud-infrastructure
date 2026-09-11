@@ -26,6 +26,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          test -S "$XDG_RUNTIME_DIR/bus"
           echo "OBSERVED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           test "$(systemctl --user is-active hermes-provider.service)" = active
           test "$(systemctl --user is-active hermes-controller.service)" = active
