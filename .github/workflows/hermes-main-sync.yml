@@ -26,10 +26,12 @@ jobs:
         shell: bash
         env:
           EXPECTED_MAIN_SHA: 4fefd6e6593cc74e8f6e7e9ca5a9e506aa3df23c
+          GIT_SSH_COMMAND: ssh -i /home/ubuntu/.ssh/id_ed25519_hermes_operator_ro -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes
         run: |
           set -euo pipefail
           repo="$HOME/leon337-hermes-operator"
           test -d "$repo/.git"
+          test -r /home/ubuntu/.ssh/id_ed25519_hermes_operator_ro
           test -z "$(git -C "$repo" status --porcelain)"
           test "$(git -C "$repo" remote get-url origin)" = "git@github.com:leon337/leon337-hermes-operator.git"
           git -C "$repo" fetch origin main
