@@ -40,7 +40,7 @@ jobs:
           if git -C "$repo" show-ref --verify --quiet refs/heads/main; then
             git -C "$repo" switch main
           else
-            git -C "$repo" switch -c main --track origin/main
+            git -C "$repo" switch -c main origin/main
           fi
           git -C "$repo" merge --ff-only origin/main
           test "$(git -C "$repo" rev-parse HEAD)" = "$EXPECTED_MAIN_SHA"
