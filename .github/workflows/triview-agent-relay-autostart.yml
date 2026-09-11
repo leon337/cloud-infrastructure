@@ -43,6 +43,20 @@ jobs:
           npm ci --ignore-scripts
           npm run test:js
 
+      - name: Sync and verify TriView CDP recovery branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$HOME/mcf-triview-canary"
+          test -d "$target/.git"
+          test -z "$(git -C "$target" status --porcelain)"
+          test "$(git -C "$target" branch --show-current)" = feat/loopback-cdp-agent-panels-20260911
+          git -C "$target" fetch origin feat/loopback-cdp-agent-panels-20260911
+          git -C "$target" merge --ff-only FETCH_HEAD
+          git -C "$target" merge-base --is-ancestor 16402577 HEAD
+          cd "$target"
+          .venv/bin/python -m pytest -q tests/test_gui_sessions_auto_restore.py tests/test_browser_xephyr_cdp.py
+
       - name: Install governed relay autostart
         shell: bash
         run: |
@@ -91,7 +105,7 @@ jobs:
             fi
           fi
           nohup "$HOME/.local/bin/mcf-triview-cdp-launcher" >"$HOME/.local/state/mcf-triview-canary/relay-recovery-launch.log" 2>&1 &
-          for _ in {1..60}; do
+          for _ in {1..80}; do
             ok=1
             for port in 9221 9222 9223; do
               curl -fsS --max-time 1 "http://127.0.0.1:${port}/json/version" >/dev/null || ok=0
@@ -107,6 +121,18 @@ jobs:
           printf '%s\n' "$response"
           grep -F 'EMILY_RELAY_RECOVERY_OK' <<<"$response"
           echo 'TRIVIEW_RELAY_RECOVERY_E2E_PASS'
+
+      - name: Show recovery diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          systemctl --user status mcf-agent-relay.service --no-pager
+          tail -80 "$HOME/.local/state/mcf-triview-canary/relay-recovery-launch.log"
+          pgrep -af 'triview_workspace.cli|Xephyr|brave.*chatgpt.com'
+          ss -ltn | grep -E ':(17600|9221|9222|9223)\b'
 
       - name: Enforce runner isolation after deployment
         if: always()
