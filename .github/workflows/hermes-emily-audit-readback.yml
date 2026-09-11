@@ -1,0 +1,72 @@
+name: hermes-emily-audit-readback
+
+on:
+  push:
+    branches:
+      - feat/triview-relay-recovery-20260911
+    paths:
+      - .github/workflows/hermes-emily-audit-readback.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readback:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 6
+    steps:
+      - name: Enforce runner isolation and verify Emily CDP
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
+          curl -fsS http://127.0.0.1:9223/json/version >/dev/null
+
+      - name: Read completed Emily audit from DOM
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$HOME/mcf-triview-agent-lab"
+          node --input-type=module <<'NODE'
+          import puppeteer from 'puppeteer-core';
+          const version = await (await fetch('http://127.0.0.1:9223/json/version')).json();
+          const browser = await puppeteer.connect({ browserWSEndpoint: version.webSocketDebuggerUrl, defaultViewport: null });
+          try {
+            const pages = await browser.pages();
+            const page = pages.find((p) => /^https:\/\/chatgpt\.com\//i.test(p.url()));
+            if (!page) throw new Error('Emily ChatGPT page not found');
+            const deadline = Date.now() + 240000;
+            let state = null;
+            while (Date.now() < deadline) {
+              state = await page.evaluate(() => {
+                const nodes = [...document.querySelectorAll('[data-message-author-role="assistant"]')];
+                const text = nodes.at(-1)?.innerText?.trim() ?? '';
+                const generating = Boolean(
+                  document.querySelector('button[data-testid="stop-button"]') ||
+                  document.querySelector('button[aria-label*="Stop"]') ||
+                  document.querySelector('button[aria-label*="Parar"]')
+                );
+                return { text, generating };
+              });
+              if (!state.generating && /EMILY_AUDIT:\s*(PASS|REQUIRES_CHANGE)/.test(state.text)) break;
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+            if (!state?.text) throw new Error('Emily latest assistant response is empty');
+            console.log('EMILY_AUDIT_READBACK_BEGIN');
+            console.log(state.text);
+            console.log('EMILY_AUDIT_READBACK_END');
+            if (!/EMILY_AUDIT:\s*(PASS|REQUIRES_CHANGE)/.test(state.text)) {
+              throw new Error('Emily audit verdict not found before timeout');
+            }
+          } finally {
+            browser.disconnect();
+          }
+          NODE
+
+      - name: Enforce runner isolation after readback
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
