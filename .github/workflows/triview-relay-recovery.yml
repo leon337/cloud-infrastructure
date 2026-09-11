@@ -65,9 +65,10 @@ jobs:
           git -C "$target" fetch origin feat/loopback-cdp-agent-panels-20260911
           git -C "$target" merge --ff-only FETCH_HEAD
           test "$(git -C "$target" rev-parse HEAD)" = 16402577f1a2390b267b479d8f7af073f4074ff0
+          cd "$target"
           "$target/.venv/bin/python" -m pytest -q \
-            "$target/tests/test_gui_sessions.py" \
-            "$target/tests/test_browser_xephyr.py"
+            tests/test_browser_xephyr_cdp.py \
+            tests/test_runtime_state.py
 
       - name: Install governed relay and TriView services
         shell: bash
