@@ -1,0 +1,181 @@
+name: triview-relay-recovery
+
+on:
+  push:
+    branches:
+      - feat/triview-relay-recovery-20260911
+    paths:
+      - .github/workflows/triview-relay-recovery.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: triview-relay-recovery-node-01
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 12
+    steps:
+      - name: Enforce runner isolation before mission
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
+
+      - name: Establish ubuntu user-service environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = ubuntu
+          test "$HOME" = /home/ubuntu
+          test -S /tmp/.X11-unix/X14
+          test -S "/run/user/$(id -u)/bus"
+          echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
+          echo 'DISPLAY=:14' >> "$GITHUB_ENV"
+          echo "XAUTHORITY=$HOME/.Xauthority" >> "$GITHUB_ENV"
+
+      - name: Sync and verify Agent Lab implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$HOME/mcf-triview-agent-lab"
+          test -d "$target/.git"
+          test -z "$(git -C "$target" status --porcelain)"
+          test "$(git -C "$target" branch --show-current)" = feat/agent-relay-cdp-20260911
+          git -C "$target" fetch origin feat/agent-relay-cdp-20260911
+          git -C "$target" merge --ff-only FETCH_HEAD
+          test "$(git -C "$target" rev-parse HEAD)" = 2b93de29c977c2550998e0405fe7539ca554408d
+          cd "$target"
+          npm ci --ignore-scripts
+          npm run test:js
+
+      - name: Verify TriView runtime branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$HOME/mcf-triview-canary"
+          test -d "$target/.git"
+          test -z "$(git -C "$target" status --porcelain)"
+          test "$(git -C "$target" branch --show-current)" = feat/loopback-cdp-agent-panels-20260911
+          git -C "$target" fetch origin feat/loopback-cdp-agent-panels-20260911
+          git -C "$target" merge --ff-only FETCH_HEAD
+          test "$(git -C "$target" rev-parse HEAD)" = 16402577f1a2390b267b479d8f7af073f4074ff0
+          "$target/.venv/bin/python" -m pytest -q \
+            "$target/tests/test_gui_sessions.py" \
+            "$target/tests/test_browser_xephyr.py"
+
+      - name: Install governed relay and TriView services
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$HOME/mcf-triview-agent-lab"
+          bash scripts/deploy/install-agent-relay-autostart.sh
+          systemctl --user stop mcf-triview.service
+
+      - name: Restore the proven three-agent session intent
+        shell: bash
+        run: |
+          set -euo pipefail
+          state="$HOME/.local/state/mcf-triview-canary/triview-workspace/runtime-state.json"
+          test -f "$state"
+          cp -p "$state" "$state.pre-goal-recovery-${GITHUB_RUN_ID}"
+          python3 - "$state" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          data = json.loads(path.read_text(encoding='utf-8'))
+          if data.get('schema_version') != 1:
+              raise SystemExit('unexpected runtime-state schema')
+          workspace = next((w for w in data.get('workspaces', []) if w.get('workspace_id') == 'sofia-canary'), None)
+          if workspace is None:
+              raise SystemExit('sofia-canary runtime state missing')
+          expected = {'agent-sofia', 'agent-rafael', 'agent-emily'}
+          seen = set()
+          for panel in workspace.get('panels', []):
+              panel_id = panel.get('panel_id')
+              if panel_id in expected:
+                  panel['was_open'] = True
+                  panel['embedded'] = True
+                  panel['external'] = False
+                  seen.add(panel_id)
+          if seen != expected:
+              raise SystemExit(f'panel mismatch: {sorted(seen)}')
+          data['active_workspace_id'] = 'sofia-canary'
+          data['clean_shutdown'] = False
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print('TRIVIEW_RECOVERY_STATE_PREPARED', ','.join(sorted(seen)))
+          PY
+
+      - name: Start TriView and prove all loopback CDP endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          systemctl --user start mcf-triview.service
+          for _ in {1..80}; do
+            ok=1
+            for port in 9221 9222 9223; do
+              curl -fsS --max-time 1 "http://127.0.0.1:${port}/json/version" >/dev/null || ok=0
+            done
+            [[ "$ok" = 1 ]] && break
+            sleep 0.5
+          done
+          for port in 9221 9222 9223; do
+            curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null
+            ss -ltn | grep -F "127.0.0.1:${port}"
+          done
+          echo 'TRIVIEW_CDP_BOOT_PASS'
+
+      - name: Prove relay delivery before service restart
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$HOME/mcf-triview-agent-lab"
+          curl -fsS http://127.0.0.1:17600/health
+          response="$(npm run --silent relay:send -- emily Reply_only_EMILY_RELAY_RECOVERY_OK)"
+          printf '%s\n' "$response"
+          grep -F 'EMILY_RELAY_RECOVERY_OK' <<<"$response"
+          echo 'TRIVIEW_RELAY_PRE_RESTART_PASS'
+
+      - name: Prove cgroup restart recovers all agents and relay delivery
+        shell: bash
+        run: |
+          set -euo pipefail
+          old_pid="$(systemctl --user show -p MainPID --value mcf-triview.service)"
+          test "$old_pid" -gt 1
+          systemctl --user restart mcf-triview.service
+          for _ in {1..100}; do
+            new_pid="$(systemctl --user show -p MainPID --value mcf-triview.service)"
+            ok=1
+            [[ "$new_pid" -gt 1 && "$new_pid" != "$old_pid" ]] || ok=0
+            for port in 9221 9222 9223; do
+              curl -fsS --max-time 1 "http://127.0.0.1:${port}/json/version" >/dev/null || ok=0
+            done
+            [[ "$ok" = 1 ]] && break
+            sleep 0.5
+          done
+          test "$new_pid" -gt 1
+          test "$new_pid" != "$old_pid"
+          for port in 9221 9222 9223; do
+            curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null
+            ss -ltn | grep -F "127.0.0.1:${port}"
+          done
+          cd "$HOME/mcf-triview-agent-lab"
+          response="$(npm run --silent relay:send -- emily Reply_only_EMILY_RELAY_RECOVERY_RESTART_OK)"
+          printf '%s\n' "$response"
+          grep -F 'EMILY_RELAY_RECOVERY_RESTART_OK' <<<"$response"
+          echo "TRIVIEW_RELAY_RECOVERY_E2E_PASS old=$old_pid new=$new_pid"
+
+      - name: Final health snapshot
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          systemctl --user --no-pager status mcf-agent-relay.service mcf-triview.service
+          ss -ltn | grep -E '127\.0\.0\.1:(17600|9221|9222|9223)'
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
