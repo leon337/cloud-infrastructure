@@ -25,7 +25,7 @@ jobs:
       - name: Fast-forward Hermes checkout to merged main and verify
         shell: bash
         env:
-          EXPECTED_MAIN_SHA: 4fefd6e6593cc74e8f6e7e9ca5a9e506aa3df23c
+          EXPECTED_MAIN_SHA: f8648724a3b62ba4370dcb060d6e3e2d91c53d0f
           GIT_SSH_COMMAND: ssh -i /home/ubuntu/.ssh/id_ed25519_hermes_operator_ro -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes
         run: |
           set -euo pipefail
