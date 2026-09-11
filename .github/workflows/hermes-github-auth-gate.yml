@@ -1,0 +1,45 @@
+name: hermes-github-auth-gate
+
+on:
+  push:
+    branches:
+      - feat/triview-relay-recovery-20260911
+    paths:
+      - .github/workflows/hermes-github-auth-gate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 3
+    steps:
+      - name: Enforce runner isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
+
+      - name: Test private Hermes repository authentication without prompting
+        shell: bash
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          set -euo pipefail
+          if git ls-remote https://github.com/leon337/leon337-hermes-operator.git HEAD >/tmp/hermes-ls-remote.out 2>/tmp/hermes-ls-remote.err; then
+            cat /tmp/hermes-ls-remote.out
+            echo HERMES_GITHUB_AUTH_GATE=PASS
+          else
+            sed -E 's#(https://)[^/@]+@#\1***@#g' /tmp/hermes-ls-remote.err >&2 || true
+            echo HERMES_GITHUB_AUTH_GATE=GITHUB_AUTH_REQUIRED >&2
+            exit 42
+          fi
+
+      - name: Enforce runner isolation after gate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
