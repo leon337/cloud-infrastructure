@@ -1,0 +1,57 @@
+name: hermes-final-safety-check
+
+on:
+  push:
+    branches:
+      - feat/triview-relay-recovery-20260911
+    paths:
+      - .github/workflows/hermes-final-safety-check.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 5
+    steps:
+      - name: Enforce runner isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
+
+      - name: Verify Hermes final live safety state
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "OBSERVED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          test "$(systemctl --user is-active hermes-provider.service)" = active
+          test "$(systemctl --user is-active hermes-controller.service)" = active
+          echo "HERMES_PROVIDER_ACTIVE_ENTER=$(systemctl --user show hermes-provider.service -p ActiveEnterTimestamp --value)"
+          echo "HERMES_CONTROLLER_ACTIVE_ENTER=$(systemctl --user show hermes-controller.service -p ActiveEnterTimestamp --value)"
+          listeners="$(ss -ltnp)"
+          printf '%s\n' "$listeners" | grep -E '127\.0\.0\.1:8080([[:space:]]|$)'
+          ! printf '%s\n' "$listeners" | grep -E '(^|[[:space:]])0\.0\.0\.0:8080([[:space:]]|$)|\[::\]:8080([[:space:]]|$)'
+          for port in 9221 9222 9223 17600; do
+            if printf '%s\n' "$listeners" | grep -qE ":${port}([[:space:]]|$)"; then
+              printf '%s\n' "$listeners" | grep -E "127\.0\.0\.1:${port}([[:space:]]|$)"
+              ! printf '%s\n' "$listeners" | grep -E "(^|[[:space:]])0\.0\.0\.0:${port}([[:space:]]|$)|\[::\]:${port}([[:space:]]|$)"
+            fi
+          done
+          test ! -e /home/ubuntu/responda_exatamente_hermes_remote_v1_ok.py
+          test -d /home/ubuntu/leon337-hermes-operator/.git
+          test "$(git -C /home/ubuntu/leon337-hermes-operator rev-parse HEAD)" = '4fefd6e6593cc74e8f6e7e9ca5a9e506aa3df23c'
+          if ps -eo args= | grep -E '[/]home/ubuntu/\.local/bin/hermes chat|[/]home/ubuntu/\.hermes/hermes-agent.* chat' >/dev/null; then
+            echo 'RESIDUAL_INTERACTIVE_HERMES_CHAT_PRESENT'
+            exit 1
+          fi
+          echo HERMES_FINAL_LIVE_SAFETY_PASS
+
+      - name: Enforce runner isolation after mission
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
