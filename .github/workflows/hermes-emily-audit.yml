@@ -38,27 +38,22 @@ jobs:
 
       - name: Dispatch Hermes implementation audit to Emily
         shell: bash
+        env:
+          AUDIT_PROMPT: |
+            MESTRE para EMILY — auditoria independente HERMES-REMOTE-V1.
+            Audite a implementação do repositório privado leon337/leon337-hermes-operator, branch feat/hermes-remote-client-v1, HEAD 82177d45c4eff6bee524956d32e1d2a69f312376, comparando contra o design/plano aprovado a partir de bc6f8422f1c8e88ee60b7bfcf89c4b98760eb6d2.
+            Escopo materializado: .mcf/project-capsule.yaml; docs/current-state.md; packaging/linux/hermes-agent-remote.desktop; scripts/deploy-notebook-client.sh; scripts/hermes-remote-client.sh; tests/test-context-contract.sh; tests/test-hermes-remote-client.sh; tests/test-notebook-deployment.sh.
+            Decisões obrigatórias: VPS é runtime Hermes canônico; notebook é apenas cliente; usar o Hermes oficial existente; V1 não inicia MCF-HERMES-PC-002; SSH canônico fixo /home/leo/.ssh/mcf-vps-control.conf e target mcf-vps-control; BatchMode=yes; ConnectTimeout; ClearAllForwardings=yes; ControlMaster=no; ControlPath=none; nenhuma porta/API pública; nenhuma credencial nova; falha fechada; estado live não pode ser tratado como verdade durável; registro futuro no Context Fabric será separado e só depois desta auditoria.
+            Faça revisão de código, segurança, testes, aderência ao spec e risco de deployment. Não implemente mudanças. Responda de forma concisa exatamente neste formato:
+            EMILY_AUDIT: PASS ou EMILY_AUDIT: REQUIRES_CHANGE
+            BLOCKERS: none ou itens numerados
+            FINDINGS: achados relevantes, distinguindo blocker de melhoria opcional
+            EVIDENCE: arquivos/linhas ou comportamentos verificados
+            NEXT_GATE: ação recomendada
         run: |
           set -euo pipefail
           cd "$HOME/mcf-triview-agent-lab"
-          prompt=$(cat <<'EOF'
-MESTRE para EMILY — auditoria independente HERMES-REMOTE-V1.
-
-Audite a implementação do repositório privado leon337/leon337-hermes-operator, branch feat/hermes-remote-client-v1, HEAD 82177d45c4eff6bee524956d32e1d2a69f312376, comparando contra o design/plano aprovado a partir de bc6f8422f1c8e88ee60b7bfcf89c4b98760eb6d2.
-
-Escopo materializado: .mcf/project-capsule.yaml; docs/current-state.md; packaging/linux/hermes-agent-remote.desktop; scripts/deploy-notebook-client.sh; scripts/hermes-remote-client.sh; tests/test-context-contract.sh; tests/test-hermes-remote-client.sh; tests/test-notebook-deployment.sh.
-
-Decisões obrigatórias: VPS é runtime Hermes canônico; notebook é apenas cliente; usar o Hermes oficial existente; V1 não inicia MCF-HERMES-PC-002; SSH canônico fixo /home/leo/.ssh/mcf-vps-control.conf e target mcf-vps-control; BatchMode=yes; ConnectTimeout; ClearAllForwardings=yes; ControlMaster=no; ControlPath=none; nenhuma porta/API pública; nenhuma credencial nova; falha fechada; estado live não pode ser tratado como verdade durável; registro futuro no Context Fabric será separado e só depois desta auditoria.
-
-Faça revisão de código, segurança, testes, aderência ao spec e risco de deployment. Não implemente mudanças. Responda de forma concisa exatamente neste formato:
-EMILY_AUDIT: PASS ou EMILY_AUDIT: REQUIRES_CHANGE
-BLOCKERS: none ou itens numerados
-FINDINGS: achados relevantes, distinguindo blocker de melhoria opcional
-EVIDENCE: arquivos/linhas ou comportamentos verificados
-NEXT_GATE: ação recomendada
-EOF
-          )
-          response="$(npm run --silent relay:send -- emily "$prompt")"
+          response="$(npm run --silent relay:send -- emily "$AUDIT_PROMPT")"
           printf '%s\n' "$response"
           grep -E 'EMILY_AUDIT: (PASS|REQUIRES_CHANGE)' <<<"$response"
 
