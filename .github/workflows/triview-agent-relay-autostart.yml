@@ -1,0 +1,116 @@
+name: triview-agent-relay-autostart
+
+on:
+  push:
+    branches:
+      - ops/triview-relay-autostart-20260911
+    paths:
+      - .github/workflows/triview-agent-relay-autostart.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: triview-agent-relay-autostart-node-01
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, x64, node-01, mcf-control]
+    timeout-minutes: 10
+    steps:
+      - name: Enforce runner isolation before deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
+
+      - name: Sync and verify Agent Lab relay branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = ubuntu
+          test "$HOME" = /home/ubuntu
+          target="$HOME/mcf-triview-agent-lab"
+          test -d "$target/.git"
+          test -z "$(git -C "$target" status --porcelain)"
+          test "$(git -C "$target" branch --show-current)" = feat/agent-relay-cdp-20260911
+          git -C "$target" fetch origin feat/agent-relay-cdp-20260911
+          git -C "$target" merge --ff-only FETCH_HEAD
+          git -C "$target" merge-base --is-ancestor 8a6bc19 HEAD
+          cd "$target"
+          npm ci --ignore-scripts
+          npm run test:js
+
+      - name: Install governed relay autostart
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$HOME/mcf-triview-agent-lab"
+          bash scripts/deploy/install-agent-relay-autostart.sh
+
+      - name: Prove relay process recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          old_pid="$(systemctl --user show -p MainPID --value mcf-agent-relay.service)"
+          test "$old_pid" -gt 1
+          kill -TERM "$old_pid"
+          for _ in {1..30}; do
+            new_pid="$(systemctl --user show -p MainPID --value mcf-agent-relay.service)"
+            if [[ "$new_pid" -gt 1 && "$new_pid" != "$old_pid" ]] && curl -fsS --max-time 1 http://127.0.0.1:17600/health >/dev/null; then
+              echo "RELAY_RECOVERY_PASS old=$old_pid new=$new_pid"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "RELAY_RECOVERY_FAIL old=$old_pid new=${new_pid:-0}" >&2
+          exit 1
+
+      - name: Restart TriView through CDP-aware launcher and prove E2E
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DISPLAY=:14
+          export XAUTHORITY="$HOME/.Xauthority"
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          old_pid="$(pgrep -f '/home/ubuntu/mcf-triview-canary/.venv/bin/python -m triview_workspace.cli' | head -1 || true)"
+          if [[ -n "$old_pid" ]]; then
+            kill -TERM "$old_pid"
+            for _ in {1..30}; do
+              kill -0 "$old_pid" 2>/dev/null || break
+              sleep 0.5
+            done
+            if kill -0 "$old_pid" 2>/dev/null; then
+              echo "TRIVIEW_RESTART_REFUSED old process did not exit: $old_pid" >&2
+              exit 1
+            fi
+          fi
+          nohup "$HOME/.local/bin/mcf-triview-cdp-launcher" >"$HOME/.local/state/mcf-triview-canary/relay-recovery-launch.log" 2>&1 &
+          for _ in {1..60}; do
+            ok=1
+            for port in 9221 9222 9223; do
+              curl -fsS --max-time 1 "http://127.0.0.1:${port}/json/version" >/dev/null || ok=0
+            done
+            [[ "$ok" = 1 ]] && break
+            sleep 0.5
+          done
+          for port in 9221 9222 9223; do
+            curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null
+          done
+          cd "$HOME/mcf-triview-agent-lab"
+          response="$(npm run --silent relay:send -- emily Reply_only_EMILY_RELAY_RECOVERY_OK)"
+          printf '%s\n' "$response"
+          grep -F 'EMILY_RELAY_RECOVERY_OK' <<<"$response"
+          echo 'TRIVIEW_RELAY_RECOVERY_E2E_PASS'
+
+      - name: Enforce runner isolation after deployment
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.local/libexec/cloud-infrastructure-runner-isolation-guard"
