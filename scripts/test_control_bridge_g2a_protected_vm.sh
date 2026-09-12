@@ -7,8 +7,6 @@ readonly REPOSITORY_ROOT
 readonly DOCKERFILE="$REPOSITORY_ROOT/tests/fixtures/foundation-systemd/Dockerfile"
 readonly CONTAINER_REPOSITORY_ROOT=/workspace/cloud-infrastructure
 readonly WORKSPACE_PATH=/var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev
-readonly STATE_PATH=/var/lib/mcf-control-bridge/state/g2b
-readonly GRANT_PATH=/etc/mcf-control-bridge/g2b-grant.json
 readonly ENTRYPOINT=/usr/local/libexec/mcf-control-g2b
 readonly G2A_ENTRYPOINT=/usr/local/libexec/mcf-control-g2a-protected-read
 readonly PILOT_PATH=G2B-PILOT.txt
@@ -19,7 +17,6 @@ IMAGE=
 CONTAINER=
 RUN_TOKEN=
 BUNDLE_SOURCE_COUNT=0
-UBUNTU_USER_CREATED=false
 
 fail() {
   printf 'G2A_PROTECTED_DISPOSABLE_TEST_FAIL stage=%s reason=%s\n' "$CURRENT_STAGE" "$1" >&2
@@ -152,7 +149,6 @@ done
 
 if ! docker exec "$CONTAINER" id -u ubuntu >/dev/null 2>&1; then
   docker exec "$CONTAINER" useradd --create-home --shell /bin/bash ubuntu
-  UBUNTU_USER_CREATED=true
 fi
 
 # Mirror the real NODE-01 baseline: this generic system parent already exists
