@@ -100,6 +100,10 @@ def _nested_scalar(value: Any, field: str) -> Any:
     return value.get(field) if isinstance(value, dict) else None
 
 
+def _receipt_id(request_id: str) -> str:
+    return hashlib.sha256(request_id.encode("utf-8")).hexdigest()
+
+
 def _utc_timestamp(value: Any) -> datetime | None:
     if not isinstance(value, str) or not 1 <= len(value) <= 40:
         return None
@@ -474,6 +478,8 @@ def _projection(envelope: dict[str, Any], result: dict[str, Any]) -> dict[str, A
     if expected is None:
         return None
     if _valid_full_result(result, expected):
+        persisted = result["status"] in _SUCCESS_STATUSES or result["replayed"] is True
+        receipt_id = _receipt_id(result["request_id"]) if persisted else None
         return {
             "request_id": result["request_id"],
             "operation": result["operation"],
@@ -487,7 +493,7 @@ def _projection(envelope: dict[str, Any], result: dict[str, Any]) -> dict[str, A
             "before_hash": _nested_scalar(result["before"], "sha256"),
             "after_hash": _nested_scalar(result["after"], "sha256"),
             "replayed": result["replayed"],
-            "receipt_id": None,
+            "receipt_id": receipt_id,
         }
     if _valid_local_result(result, expected):
         return {
@@ -507,7 +513,8 @@ def markdown(envelope: dict[str, Any], result: dict[str, Any]) -> str:
         return (
             "## MCF VPS Control Bridge — G2-B Result\n\n"
             "- status: FAILED\n"
-            "- error code: invalid_publication_result\n\n"
+            "- error code: invalid_publication_result\n"
+            "- receipt ID: none\n\n"
             "> Result metadata failed strict publication validation; no result values were rendered."
         )
     project = projection["project"]
