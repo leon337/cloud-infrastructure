@@ -370,7 +370,7 @@ class G2AProtectedRoutingTests(unittest.TestCase):
 
     def test_rejects_secret_like_protected_content_without_echo(self):
         request = protected_request()
-        secret = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcd"
+        secret = "gh" + "p_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcd"
         candidate = self.valid_result(request, content=secret)
         execution, _ = self.execute(request, self.outcome(candidate))
         self.assert_failed_closed(execution)

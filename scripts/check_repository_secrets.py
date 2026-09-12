@@ -27,6 +27,29 @@ HISTORICAL_NON_SECRET_ASSIGNMENT_LINE_SHA256 = {
     "7eae0b03f7c21a0eb9792277ccebc66e5c7bd345b00e029bacf841985c6b1955",
 }
 
+HISTORICAL_SYNTHETIC_TEST_BLOB_RULES = {
+    "1a4107d50e291c3f3230c237c990f5724da4fc1e": frozenset(
+        {"github-token", "secret-like-assignment"}
+    ),
+    "a37f59b70d74e0d072751b6a6047a274f78346c3": frozenset(
+        {"private-key-material", "aws-access-key", "credential-in-uri"}
+    ),
+}
+
+
+def historical_content_findings(object_id: str, content: bytes) -> Iterator[str]:
+    """Yield findings except exact reviewed rules from immutable synthetic-test blobs."""
+    allowed_rules = HISTORICAL_SYNTHETIC_TEST_BLOB_RULES.get(object_id, frozenset())
+    for rule_name in content_findings(
+        content,
+        allowed_assignment_line_hashes=frozenset(
+            HISTORICAL_NON_SECRET_ASSIGNMENT_LINE_SHA256
+        ),
+    ):
+        if rule_name not in allowed_rules:
+            yield rule_name
+
+
 ALLOWED_SECRETISH_PATHS = {
     ".env.example",
 }
@@ -161,12 +184,7 @@ def scan(
             check=True,
             capture_output=True,
         ).stdout
-        for rule_name in content_findings(
-            content,
-            allowed_assignment_line_hashes=frozenset(
-                HISTORICAL_NON_SECRET_ASSIGNMENT_LINE_SHA256
-            ),
-        ):
+        for rule_name in historical_content_findings(object_id, content):
             findings.append((rendered, rule_name))
     return findings
 

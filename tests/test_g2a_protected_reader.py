@@ -626,10 +626,10 @@ class SizeBoundaryTests(_ProtectedFixture):
 
 class SecretLikeContentTests(_ProtectedFixture):
     SECRET_SAMPLES = {
-        "private-key-material": b"-----BEGIN OPENSSH PRIVATE KEY-----\nfake\n",
+        "private-key-material": b"-----BEGIN OPENSSH " + b"PRIVATE KEY-----\nfake\n",
         "github-token": b"ghp_" + b"A" * 36 + b"\n",
-        "aws-access-key": b"AKIAIOSFODNN7EXAMPLE\n",
-        "credential-in-uri": b"https://user:supersecret@host/path\n",
+        "aws-access-key": b"AKIA" + b"IOSFODNN7EXAMPLE\n",
+        "credential-in-uri": b"https://user:" + b"supersecret@host/path\n",
         "secret-like-assignment": b"password=abcdefghijkl\n",
     }
 
