@@ -1,0 +1,56 @@
+name: control-bridge-g2a-protected-ci
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: control-bridge-g2a-protected-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.lock
+      - name: Install locked validation dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-dev.lock
+      - name: Validate repository and protected-reader contracts
+        env:
+          PYTHON: python
+          REQUIRE_ANSIBLE: "1"
+        run: |
+          scripts/test.sh
+          python3 -m unittest \
+            tests.test_g2a_protected_bootstrap_artifacts \
+            tests.test_g2a_protected_disposable_integration -v
+
+  disposable-lifecycle:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove G2-A protected cross-lifecycle in disposable boundary
+        env:
+          G2A_PROTECTED_TEST_PRIVILEGED_CONFIRM: DISPOSABLE_UBUNTU_24_04_ONLY
+          G2A_PROTECTED_CANDIDATE_SHA: ${{ github.sha }}
+        run: scripts/test_control_bridge_g2a_protected_vm.sh

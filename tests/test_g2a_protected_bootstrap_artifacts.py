@@ -13,6 +13,8 @@ VARS = ROLE / "vars/main.yml"
 TASKS = ROLE / "tasks/main.yml"
 APPLY = ROOT / "automation/ansible/playbooks/apply-control-bridge-g2a-protected-read.yml"
 SUDOERS = ROOT / "platform/sudoers/mcf-control-g2a-protected-read"
+ROLLBACK = ROOT / "automation/ansible/playbooks/rollback-control-bridge-g2a-protected-read.yml"
+RUNBOOK = ROOT / "runbooks/control-bridge-g2a-protected-read.md"
 
 SOURCES = (
     "control_plane/__init__.py",
@@ -130,6 +132,57 @@ class G2AProtectedBootstrapArtifactTests(unittest.TestCase):
         self.assertEqual(last["name"], "Place the G2-A protected-reader provenance marker last")
         self.assertEqual(last["ansible.builtin.copy"]["dest"], "{{ g2a_protected_marker_path }}")
         self.assertEqual(last["when"], "not ansible_check_mode")
+
+    def test_rollback_is_exact_leaf_only_and_preserves_g2b_boundary(self) -> None:
+        self.assertTrue(ROLLBACK.is_file(), "missing protected-reader rollback playbook")
+        text = ROLLBACK.read_text(encoding="utf-8")
+        playbook = load_yaml(ROLLBACK)
+        self.assertEqual(playbook[0]["ansible.builtin.import_playbook"], "controller-preflight.yml")
+        for literal in (
+            "g2a_protected_rollback_confirm",
+            "g2b_marker_path",
+            "g2a_protected_marker_path",
+            "g2a_protected_install_payloads",
+            "pgrep",
+            "lsof",
+            "open file",
+            "mcf-workspace",
+            "/usr/sbin/nologin",
+            "rmdir",
+        ):
+            self.assertIn(literal, text)
+        for forbidden in (
+            "rm -rf", "ansible.builtin.find", "with_fileglob", "recurse: true",
+            "ansible.builtin.user:", "ansible.builtin.group:",
+            "g2b_grant_path", "g2b_state_path", "g2b_log_path",
+        ):
+            self.assertNotIn(forbidden, text)
+        self.assertEqual(
+            playbook[-1]["tasks"][-1]["name"],
+            "Remove the G2-A protected-reader provenance marker last",
+        )
+
+    def test_runbook_documents_gated_cross_lifecycle_and_prohibitions(self) -> None:
+        self.assertTrue(RUNBOOK.is_file(), "missing protected-reader runbook")
+        text = RUNBOOK.read_text(encoding="utf-8").lower()
+        for phrase in (
+            "read-only precheck",
+            "exact-head ci",
+            "--check",
+            "recovery ssh",
+            "leandro",
+            "apply 1",
+            "apply 2",
+            "changed=0",
+            "not_found",
+            "reissue",
+            "g2-a",
+            "rollback",
+            "package install",
+            "permission relaxation",
+            "node-01",
+        ):
+            self.assertIn(phrase, text)
 
 
 if __name__ == "__main__":
