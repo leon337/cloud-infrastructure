@@ -1,0 +1,491 @@
+---
+- name: Load the canonical G2-B baseline contract without executing its role
+  ansible.builtin.include_vars:
+    file: "{{ role_path }}/../control_bridge_g2b/vars/main.yml"
+
+- name: Select exact environment-specific protected-reader and G2-B markers
+  ansible.builtin.set_fact:
+    g2a_protected_marker_content: >-
+      {{ g2a_protected_marker_content_dev if platform_environment == 'dev'
+         else g2a_protected_marker_content_test }}
+    g2a_protected_marker_sha256: >-
+      {{ g2a_protected_marker_sha256_dev if platform_environment == 'dev'
+         else g2a_protected_marker_sha256_test }}
+    g2a_protected_expected_g2b_marker_content: >-
+      {{ g2b_marker_content_dev if platform_environment == 'dev'
+         else g2b_marker_content_test }}
+    g2a_protected_expected_g2b_marker_sha256: >-
+      {{ g2b_marker_sha256_dev if platform_environment == 'dev'
+         else g2b_marker_sha256_test }}
+    g2a_protected_g2b_readme_contract: >-
+      {{ g2b_install_payloads
+         | selectattr('destination', 'equalto', g2a_protected_readme_path)
+         | first }}
+
+- name: Verify exact host identity and immutable protected-reader allowlist
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version == '24.04'
+      - ansible_facts.service_mgr == 'systemd'
+      - ansible_facts.architecture == 'x86_64'
+      - inventory_hostname == 'node-01'
+      - platform_node_id == 'node-01'
+      - platform_environment in ['dev', 'test']
+      - platform_foundation_privileged_groups is defined
+      - g2a_protected_service_account == 'mcf-workspace'
+      - g2a_protected_service_home == '/nonexistent'
+      - g2a_protected_service_shell == '/usr/sbin/nologin'
+      - g2a_protected_workspace_path == g2b_workspace_path
+      - g2a_protected_entrypoint_path == '/usr/local/libexec/mcf-control-g2a-protected-read'
+      - g2a_protected_sudoers_path == '/etc/sudoers.d/mcf-control-g2a-protected-read'
+      - g2a_protected_marker_path == '/etc/mcf-control-g2a-protected-read.managed'
+      - g2a_protected_install_lock == '/run/lock/mcf-control-g2a-protected-read-install'
+      - g2a_protected_bundle_sha256 == 'fa262ac3ab509a549da98b6613d43da56ed0a0b6452585a2de5bfdc3fbfd0aef'
+      - (g2a_protected_marker_content | hash('sha256')) == g2a_protected_marker_sha256
+      - g2a_protected_g2b_readme_contract.source == 'tests/fixtures/g2a/README.md'
+      - >-
+        (
+          (ansible_connection | default('ssh')) == 'local' and
+          platform_environment == 'test' and
+          platform_repository_root == '/workspace/cloud-infrastructure'
+        ) or (
+          (ansible_connection | default('ssh')) != 'local' and
+          platform_environment == 'dev' and
+          ansible_user == 'ubuntu' and
+          platform_expected_ansible_host == '169.58.171.192' and
+          platform_expected_hostname == 'vmi3506102' and
+          platform_expected_machine_id_sha256 ==
+            '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+          (ansible_host | string) == (platform_expected_ansible_host | string) and
+          ansible_facts.hostname == platform_expected_hostname and
+          (ansible_facts.machine_id | hash('sha256')) ==
+            platform_expected_machine_id_sha256
+        )
+    fail_msg: >-
+      G2-A protected read supports only the preflight-guarded Ubuntu 24.04
+      NODE-01 target and the explicit disposable test boundary.
+
+- name: Inspect every reviewed protected-reader source without following links
+  ansible.builtin.stat:
+    path: "{{ platform_repository_root }}/{{ item.source }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop: "{{ g2a_protected_install_payloads }}"
+  register: g2a_protected_source_files
+  become: false
+  delegate_to: localhost
+
+- name: Require exact reviewed protected-reader source hashes
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isreg | default(false)
+      - not (item.stat.islnk | default(false))
+      - item.stat.checksum == item.item.sha256
+    fail_msg: "Reviewed G2-A protected-reader source drifted: {{ item.item.source }}."
+  loop: "{{ g2a_protected_source_files.results }}"
+
+- name: Inspect the required existing G2-B marker without following links
+  ansible.builtin.stat:
+    path: "{{ g2b_marker_path }}"
+    follow: false
+    checksum_algorithm: sha256
+  register: g2a_protected_g2b_marker
+
+- name: Require the exact existing G2-B provenance marker
+  ansible.builtin.assert:
+    that:
+      - g2a_protected_g2b_marker.stat.exists
+      - g2a_protected_g2b_marker.stat.isreg | default(false)
+      - not (g2a_protected_g2b_marker.stat.islnk | default(false))
+      - g2a_protected_g2b_marker.stat.uid == 0
+      - g2a_protected_g2b_marker.stat.gid == 0
+      - g2a_protected_g2b_marker.stat.mode == '0600'
+      - g2a_protected_g2b_marker.stat.checksum == g2a_protected_expected_g2b_marker_sha256
+    fail_msg: The existing G2-B marker is not the exact reviewed baseline.
+
+- name: Read the existing G2-B marker
+  ansible.builtin.slurp:
+    src: "{{ g2b_marker_path }}"
+  register: g2a_protected_g2b_marker_data
+
+- name: Validate exact existing G2-B marker content
+  ansible.builtin.assert:
+    that:
+      - (g2a_protected_g2b_marker_data.content | b64decode) == g2a_protected_expected_g2b_marker_content
+
+- name: Inspect the existing mcf-workspace account
+  ansible.builtin.command:
+    argv: [getent, passwd, "{{ g2a_protected_service_account }}"]
+  register: g2a_protected_account
+  changed_when: false
+  check_mode: false
+
+- name: Inspect the existing mcf-workspace group
+  ansible.builtin.command:
+    argv: [getent, group, "{{ g2a_protected_service_account }}"]
+  register: g2a_protected_group
+  changed_when: false
+  check_mode: false
+
+- name: Inspect existing mcf-workspace group memberships
+  ansible.builtin.command:
+    argv: [id, -nG, "{{ g2a_protected_service_account }}"]
+  register: g2a_protected_memberships
+  changed_when: false
+  check_mode: false
+
+- name: Inspect existing mcf-workspace password state
+  ansible.builtin.command:
+    argv: [passwd, -S, "{{ g2a_protected_service_account }}"]
+  register: g2a_protected_password
+  changed_when: false
+  check_mode: false
+  no_log: true
+
+- name: Require the exact existing locked non-login service identity
+  ansible.builtin.assert:
+    that:
+      - g2a_protected_account.stdout.split(':') | length >= 7
+      - g2a_protected_account.stdout.split(':')[4] == g2b_service_comment
+      - g2a_protected_account.stdout.split(':')[5] == g2a_protected_service_home
+      - g2a_protected_account.stdout.split(':')[6] == g2a_protected_service_shell
+      - >-
+        g2a_protected_account.stdout.split(':')[3] ==
+        g2a_protected_group.stdout.split(':')[2]
+      - g2a_protected_memberships.stdout.split() == [g2a_protected_service_account]
+      - >-
+        (g2a_protected_memberships.stdout.split()
+          | intersect(platform_foundation_privileged_groups) | length) == 0
+      - g2a_protected_password.stdout.split()[1] == 'L'
+    fail_msg: The existing mcf-workspace identity is absent, unlocked, or over-privileged.
+
+- name: Inspect the existing protected G2-B workspace
+  ansible.builtin.stat:
+    path: "{{ g2a_protected_workspace_path }}"
+    follow: false
+  register: g2a_protected_workspace
+
+- name: Require the exact existing protected workspace boundary
+  ansible.builtin.assert:
+    that:
+      - g2a_protected_workspace.stat.exists
+      - g2a_protected_workspace.stat.isdir | default(false)
+      - not (g2a_protected_workspace.stat.islnk | default(false))
+      - g2a_protected_workspace.stat.pw_name == g2a_protected_service_account
+      - g2a_protected_workspace.stat.gr_name == g2a_protected_service_account
+      - g2a_protected_workspace.stat.mode == '0700'
+    fail_msg: The G2-B protected workspace ownership or mode drifted.
+
+- name: Inspect the existing protected README fixture
+  ansible.builtin.stat:
+    path: "{{ g2a_protected_readme_path }}"
+    follow: false
+    checksum_algorithm: sha256
+  register: g2a_protected_readme
+
+- name: Require the exact existing protected README fixture
+  ansible.builtin.assert:
+    that:
+      - g2a_protected_readme.stat.exists
+      - g2a_protected_readme.stat.isreg | default(false)
+      - not (g2a_protected_readme.stat.islnk | default(false))
+      - g2a_protected_readme.stat.nlink == 1
+      - g2a_protected_readme.stat.pw_name == g2a_protected_g2b_readme_contract.owner
+      - g2a_protected_readme.stat.gr_name == g2a_protected_g2b_readme_contract.group
+      - g2a_protected_readme.stat.mode == g2a_protected_g2b_readme_contract.mode
+      - g2a_protected_readme.stat.checksum == g2a_protected_g2b_readme_contract.sha256
+    fail_msg: The existing G2-B protected README fixture drifted.
+
+- name: Inspect the G2-A protected-reader marker without following links
+  ansible.builtin.stat:
+    path: "{{ g2a_protected_marker_path }}"
+    follow: false
+    checksum_algorithm: sha256
+  register: g2a_protected_marker_state
+
+- name: Require an exact root-only protected-reader marker when present
+  ansible.builtin.assert:
+    that:
+      - g2a_protected_marker_state.stat.isreg | default(false)
+      - not (g2a_protected_marker_state.stat.islnk | default(false))
+      - g2a_protected_marker_state.stat.uid == 0
+      - g2a_protected_marker_state.stat.gid == 0
+      - g2a_protected_marker_state.stat.mode == '0600'
+      - g2a_protected_marker_state.stat.checksum == g2a_protected_marker_sha256
+  when: g2a_protected_marker_state.stat.exists
+
+- name: Read the existing protected-reader marker
+  ansible.builtin.slurp:
+    src: "{{ g2a_protected_marker_path }}"
+  register: g2a_protected_marker_data
+  when: g2a_protected_marker_state.stat.exists
+
+- name: Validate exact existing protected-reader marker content
+  ansible.builtin.assert:
+    that:
+      - (g2a_protected_marker_data.content | b64decode) == g2a_protected_marker_content
+  when: g2a_protected_marker_state.stat.exists
+
+- name: Inspect every protected-reader directory without following links
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    follow: false
+  loop: "{{ g2a_protected_root_directories }}"
+  register: g2a_protected_existing_directories
+
+- name: Validate any pre-existing shared parent before marker ownership
+  ansible.builtin.assert:
+    that:
+      - item.item.path in g2a_protected_preexisting_shared_directory_paths
+      - item.stat.isdir | default(false)
+      - not (item.stat.islnk | default(false))
+      - item.stat.pw_name == item.item.owner
+      - item.stat.gr_name == item.item.group
+      - item.stat.mode == item.item.mode
+    fail_msg: >-
+      An unmarked protected-reader private directory exists, or a shared parent
+      has unexpected provenance.
+  loop: "{{ g2a_protected_existing_directories.results }}"
+  when:
+    - not g2a_protected_marker_state.stat.exists
+    - item.stat.exists
+
+- name: Inspect every managed protected-reader payload without following links
+  ansible.builtin.stat:
+    path: "{{ item.destination }}"
+    follow: false
+    checksum_algorithm: sha256
+  loop: "{{ g2a_protected_install_payloads }}"
+  register: g2a_protected_existing_payloads
+
+- name: Refuse to adopt any unmarked protected-reader payload
+  ansible.builtin.assert:
+    that:
+      - >-
+        g2a_protected_marker_state.stat.exists or
+        ((g2a_protected_existing_payloads.results
+          | selectattr('stat.exists') | list | length) == 0)
+    fail_msg: An installed protected-reader payload exists without its exact marker.
+
+- name: Validate exact marked protected-reader directory provenance
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isdir | default(false)
+      - not (item.stat.islnk | default(false))
+      - item.stat.pw_name == item.item.owner
+      - item.stat.gr_name == item.item.group
+      - item.stat.mode == item.item.mode
+  loop: "{{ g2a_protected_existing_directories.results }}"
+  when: g2a_protected_marker_state.stat.exists
+
+- name: Validate exact marked protected-reader payload provenance
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isreg | default(false)
+      - not (item.stat.islnk | default(false))
+      - item.stat.pw_name == item.item.owner
+      - item.stat.gr_name == item.item.group
+      - item.stat.mode == item.item.mode
+      - item.stat.checksum == item.item.sha256
+  loop: "{{ g2a_protected_existing_payloads.results }}"
+  when: g2a_protected_marker_state.stat.exists
+
+- name: Explain the non-mutating initial check-mode preview
+  ansible.builtin.debug:
+    msg: >-
+      Check mode validates host identity, G2-B provenance, service identity,
+      protected workspace, source hashes, and private-path absence without
+      creating a reader object.
+  when: ansible_check_mode and not g2a_protected_marker_state.stat.exists
+
+- name: Acquire the exact G2-A protected-reader installation lock
+  ansible.builtin.command:
+    argv: [mkdir, "{{ g2a_protected_install_lock }}"]
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Reconcile only the G2-A protected-reader objects while holding its lock
+  when: not ansible_check_mode
+  block:
+    - name: Create root-owned non-writable protected-reader directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop: "{{ g2a_protected_root_directories }}"
+
+    - name: Install exact root-owned protected-reader payloads
+      ansible.builtin.copy:
+        src: "{{ platform_repository_root }}/{{ item.source }}"
+        dest: "{{ item.destination }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop: "{{ g2a_protected_install_payloads }}"
+      when: item.destination != g2a_protected_sudoers_path
+
+    - name: Validate sudoers before atomic install
+      ansible.builtin.copy:
+        src: "{{ platform_repository_root }}/platform/sudoers/mcf-control-g2a-protected-read"
+        dest: "{{ g2a_protected_sudoers_path }}"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: /usr/sbin/visudo -cf %s
+
+    - name: Parse the installed exact protected-reader sudoers boundary
+      ansible.builtin.command:
+        argv: [/usr/sbin/visudo, -cf, "{{ g2a_protected_sudoers_path }}"]
+      changed_when: false
+      check_mode: false
+
+    - name: Verify ubuntu direct read of the protected README is denied
+      ansible.builtin.command:
+        argv: [test, '!', -r, "{{ g2a_protected_readme_path }}"]
+      become_user: ubuntu
+      changed_when: false
+      check_mode: false
+
+    - name: Probe generic passwordless sudo denial
+      ansible.builtin.command:
+        argv: [sudo, -n, "true"]
+      become_user: ubuntu
+      register: g2a_protected_generic_sudo
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Require generic passwordless sudo to remain denied
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_generic_sudo.rc != 0
+
+    - name: Probe extra protected-reader argv denial
+      ansible.builtin.command:
+        argv:
+          - sudo
+          - -n
+          - -u
+          - mcf-workspace
+          - /usr/local/libexec/mcf-control-g2a-protected-read
+          - extra
+      become_user: ubuntu
+      register: g2a_protected_extra_argv
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Require extra protected-reader argv to remain denied
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_extra_argv.rc != 0
+
+    - name: Reinspect the service account shell and memberships after install
+      ansible.builtin.command:
+        argv: [getent, passwd, "{{ g2a_protected_service_account }}"]
+      register: g2a_protected_post_account
+      changed_when: false
+      check_mode: false
+
+    - name: Reinspect service account groups after install
+      ansible.builtin.command:
+        argv: [id, -nG, "{{ g2a_protected_service_account }}"]
+      register: g2a_protected_post_memberships
+      changed_when: false
+      check_mode: false
+
+    - name: Require post-install service identity to remain non-login and unprivileged
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_post_account.stdout.split(':')[6] == '/usr/sbin/nologin'
+          - g2a_protected_post_memberships.stdout.split() == [g2a_protected_service_account]
+          - >-
+            (g2a_protected_post_memberships.stdout.split()
+              | intersect(platform_foundation_privileged_groups) | length) == 0
+
+    - name: Inspect Docker socket without following links
+      ansible.builtin.stat:
+        path: /var/run/docker.sock
+        follow: false
+      register: g2a_protected_docker_socket
+
+    - name: Prove mcf-workspace has no Docker socket read access
+      ansible.builtin.command:
+        argv: [test, '!', -r, /var/run/docker.sock]
+      become_user: mcf-workspace
+      changed_when: false
+      check_mode: false
+      when: g2a_protected_docker_socket.stat.exists
+
+    - name: Prove mcf-workspace has no Docker socket write access
+      ansible.builtin.command:
+        argv: [test, '!', -w, /var/run/docker.sock]
+      become_user: mcf-workspace
+      changed_when: false
+      check_mode: false
+      when: g2a_protected_docker_socket.stat.exists
+
+    - name: Verify the exact protected workspace.stat command reaches the reader
+      ansible.builtin.command:
+        argv:
+          - sudo
+          - -n
+          - -u
+          - mcf-workspace
+          - /usr/local/libexec/mcf-control-g2a-protected-read
+        stdin: |-
+          {"protocol":"MCF_WORKSPACE_CONTROL_V1","request_id":"G2A-PROTECTED-BOOTSTRAP-STAT","project":{"tenant":"leon337","name":"g2a-smoke","environment":"dev"},"operation":"workspace.stat","arguments":{}}
+        stdin_add_newline: true
+      become_user: ubuntu
+      register: g2a_protected_stat_probe
+      changed_when: false
+      check_mode: false
+
+    - name: Require the bounded protected workspace.stat result
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_stat_probe.rc == 0
+          - (g2a_protected_stat_probe.stdout | from_json).operation == 'workspace.stat'
+          - (g2a_protected_stat_probe.stdout | from_json).status == 'PASS'
+          - (g2a_protected_stat_probe.stdout | from_json).result.state == 'PRESENT'
+          - (g2a_protected_stat_probe.stdout | from_json).result.mode == 448
+          - (g2a_protected_stat_probe.stdout | from_json).evidence.workspace_state == 'PRESENT'
+
+    - name: Reinspect installed protected-reader payloads after reconciliation
+      ansible.builtin.stat:
+        path: "{{ item.destination }}"
+        follow: false
+        checksum_algorithm: sha256
+      loop: "{{ g2a_protected_install_payloads }}"
+      register: g2a_protected_reconciled_payloads
+
+    - name: Require exact installed protected-reader hashes and permissions
+      ansible.builtin.assert:
+        that:
+          - item.stat.isreg | default(false)
+          - not (item.stat.islnk | default(false))
+          - item.stat.pw_name == item.item.owner
+          - item.stat.gr_name == item.item.group
+          - item.stat.mode == item.item.mode
+          - item.stat.checksum == item.item.sha256
+      loop: "{{ g2a_protected_reconciled_payloads.results }}"
+  always:
+    - name: Release the exact G2-A protected-reader installation lock
+      ansible.builtin.command:
+        argv: [rmdir, "{{ g2a_protected_install_lock }}"]
+      changed_when: false
+
+- name: Place the G2-A protected-reader provenance marker last
+  ansible.builtin.copy:
+    dest: "{{ g2a_protected_marker_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+    content: "{{ g2a_protected_marker_content }}"
+  when: not ansible_check_mode
