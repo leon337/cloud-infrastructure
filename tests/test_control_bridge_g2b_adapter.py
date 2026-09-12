@@ -1697,6 +1697,102 @@ class G2BPublisherTests(unittest.TestCase):
         mismatched_hash["after"]["sha256"] = "b" * 64
         self.assertIn("invalid_publication_result", PUBLISH.markdown(envelope(), mismatched_hash))
 
+    def test_publisher_derives_receipt_id_only_for_persisted_results(self) -> None:
+        def correlated(operation: str, request_id: str):
+            dispatch = envelope(operation, request_id)
+            result = executor_result(operation)
+            result["request_id"] = request_id
+            result["request_digest"] = hashlib.sha256(
+                json.dumps(
+                    dispatch["request"],
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                ).encode("utf-8")
+            ).hexdigest()
+            if operation == "revoke":
+                result["revocation_request_id"] = request_id
+            return dispatch, result
+
+        cases = (
+            ("workspace.write", "G2B-RECEIPT-WRITE-0001"),
+            ("rollback", "G2B-RECEIPT-ROLLBACK-0001"),
+            ("status", "G2B-RECEIPT-STATUS-0001"),
+            ("revoke", "G2B-RECEIPT-REVOKE-0001"),
+        )
+        for operation, request_id in cases:
+            dispatch, result = correlated(operation, request_id)
+            expected = hashlib.sha256(request_id.encode("utf-8")).hexdigest()
+            body = PUBLISH.markdown(dispatch, result)
+            with self.subTest(operation=operation):
+                self.assertNotIn("invalid_publication_result", body)
+                self.assertIn(f"receipt ID: {expected}", body)
+                self.assertRegex(expected, r"^[0-9a-f]{64}$")
+
+        dispatch, replay = correlated("status", "G2B-RECEIPT-REPLAY-0001")
+        replay["replayed"] = True
+        expected = hashlib.sha256(replay["request_id"].encode("utf-8")).hexdigest()
+        body = PUBLISH.markdown(dispatch, replay)
+        self.assertNotIn("invalid_publication_result", body)
+        self.assertIn(f"receipt ID: {expected}", body)
+
+    def test_publisher_keeps_receipt_none_for_nonpersisted_and_local_results(self) -> None:
+        cases = (
+            ("status", "REFUSED", "grant_missing"),
+            ("status", "CONFLICT", "request_id_conflict"),
+            ("status", "REFUSED", "grant_revoked"),
+            ("status", "TIMEOUT", "lock_timeout"),
+        )
+        for operation, status, error in cases:
+            rule = next(
+                rule
+                for rule in PUBLISH.PUBLIC_RESULT_CONTRACT
+                if operation in rule.operations
+                and rule.status == status
+                and error in rule.errors
+                and rule.grant_context == "absent"
+                and rule.result_shape == "stateless"
+            )
+            result = executor_result_for_rule(operation, rule, error)
+            body = PUBLISH.markdown(envelope(operation), result)
+            with self.subTest(error=error):
+                self.assertNotIn("invalid_publication_result", body)
+                self.assertIn("receipt ID: none", body)
+
+        parsed = ADAPTER.parse_request(request("status"))
+        local = ADAPTER._safe_result(
+            parsed,
+            status="TIMEOUT",
+            error="executor_timeout",
+        )
+        local_body = PUBLISH.markdown(envelope("status"), local)
+        self.assertNotIn("invalid_publication_result", local_body)
+        self.assertIn("receipt ID: none", local_body)
+
+    def test_forged_receipt_id_cannot_control_publication(self) -> None:
+        forged = "f" * 64
+
+        result = executor_result()
+        result["receipt_id"] = forged
+        result_body = PUBLISH.markdown(envelope(), result)
+        self.assertIn("invalid_publication_result", result_body)
+        self.assertNotIn(forged, result_body)
+
+        dispatch = envelope()
+        dispatch["request"]["receipt_id"] = forged
+        dispatch_body = PUBLISH.markdown(dispatch, executor_result())
+        self.assertIn("invalid_publication_result", dispatch_body)
+        self.assertNotIn(forged, dispatch_body)
+
+    def test_malformed_full_result_renders_no_receipt_correlation(self) -> None:
+        candidate = executor_result()
+        candidate["finished_at"] = "not-a-timestamp"
+
+        body = PUBLISH.markdown(envelope(), candidate)
+
+        self.assertIn("invalid_publication_result", body)
+        self.assertIn("receipt ID: none", body)
+
     def test_every_allowlisted_value_slot_rejects_arbitrary_payload_tunneling(self) -> None:
         canary = "RAW_EXCEPTION_PAYLOAD_SECRET"
         mutations = {

@@ -1,0 +1,2 @@
+Cmnd_Alias MCF_G2A_PROTECTED_READ = /usr/local/libexec/mcf-control-g2a-protected-read ""
+ubuntu ALL=(mcf-workspace) NOPASSWD: MCF_G2A_PROTECTED_READ

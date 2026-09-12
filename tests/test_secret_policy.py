@@ -90,6 +90,41 @@ class SecretPolicyTests(unittest.TestCase):
         )
         self.assertEqual(list(MODULE.content_findings(synthetic)), ["secret-like-assignment"])
 
+    def test_secret_fixture_sources_do_not_embed_scannable_secret_shapes(self):
+        for relative in (
+            "tests/test_control_bridge_g2a_adapter.py",
+            "tests/test_g2a_protected_reader.py",
+        ):
+            with self.subTest(relative=relative):
+                findings = list(MODULE.content_findings((ROOT / relative).read_bytes()))
+                self.assertEqual(findings, [])
+
+    def test_reviewed_historical_synthetic_fixture_exceptions_are_exact(self):
+        expected = {
+            "1a4107d50e291c3f3230c237c990f5724da4fc1e": frozenset(
+                {"github-token", "secret-like-assignment"}
+            ),
+            "a37f59b70d74e0d072751b6a6047a274f78346c3": frozenset(
+                {"private-key-material", "aws-access-key", "credential-in-uri"}
+            ),
+        }
+        self.assertEqual(
+            getattr(MODULE, "HISTORICAL_SYNTHETIC_TEST_BLOB_RULES", None),
+            expected,
+        )
+        helper = getattr(MODULE, "historical_content_findings", None)
+        self.assertIsNotNone(helper)
+        if helper is None:
+            return
+        for object_id in expected:
+            content = subprocess.run(
+                ["git", "cat-file", "blob", object_id],
+                cwd=ROOT, check=True, capture_output=True,
+            ).stdout
+            self.assertEqual(list(helper(object_id, content)), [])
+            injected = content + b"\n" + b"sk-" + (b"A" * 24) + b"\n"
+            self.assertIn("openai-token", set(helper(object_id, injected)))
+
     def test_secret_bearing_paths_are_detected(self):
         self.assertTrue(MODULE.path_is_forbidden("local/.env"))
         self.assertTrue(MODULE.path_is_forbidden("keys/id_ed25519"))

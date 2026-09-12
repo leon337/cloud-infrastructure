@@ -1,0 +1,11 @@
+---
+- ansible.builtin.import_playbook: controller-preflight.yml
+
+- name: Install the G2-A protected reader without changing G2-B authority
+  hosts: platform_nodes
+  gather_facts: true
+  become: true
+  serial: 1
+
+  roles:
+    - role: control_bridge_g2a_protected_read

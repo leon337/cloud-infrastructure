@@ -85,6 +85,16 @@ class G2BExecutorTests(unittest.TestCase):
         self.assertNotIn("pilot\\n", rendered)
         self.assertEqual(stat.S_IMODE(receipt_path.stat().st_mode), 0o600)
 
+    def test_receipt_filename_correlates_to_request_id_sha256(self) -> None:
+        request_id = "G2B-RECEIPT-ID-CORRELATION"
+        result = self.execute(write_request(request_id))
+        expected = hashlib.sha256(request_id.encode("utf-8")).hexdigest()
+
+        self.assertEqual(result["status"], "PASS")
+        self.assertTrue(
+            (self.state_root / "receipts" / f"{expected}.json").is_file()
+        )
+
     def test_identical_request_replays_without_touching_target(self) -> None:
         request = write_request("G2B-EXEC-REPLAY-0001")
         first = self.execute(request)

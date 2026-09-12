@@ -1,0 +1,98 @@
+---
+# Immutable G2-A protected-reader installation contract. This role owns only
+# its private bundle, fixed entrypoint, sudoers fragment, install lock, marker.
+g2a_protected_service_account: mcf-workspace
+g2a_protected_service_home: /nonexistent
+g2a_protected_service_shell: /usr/sbin/nologin
+g2a_protected_workspace_path: /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev
+g2a_protected_readme_path: /var/lib/mcf-control-bridge/workspaces/leon337/g2a-smoke/dev/README.md
+
+g2a_protected_bundle_root: /usr/local/lib/mcf-control-bridge-g2a-protected
+g2a_protected_bundle_sha256: fa262ac3ab509a549da98b6613d43da56ed0a0b6452585a2de5bfdc3fbfd0aef
+g2a_protected_entrypoint_path: /usr/local/libexec/mcf-control-g2a-protected-read
+g2a_protected_sudoers_path: /etc/sudoers.d/mcf-control-g2a-protected-read
+g2a_protected_marker_path: /etc/mcf-control-g2a-protected-read.managed
+g2a_protected_install_lock: /run/lock/mcf-control-g2a-protected-read-install
+
+g2a_protected_marker_content_dev: |-
+  managed_by=cloud-infrastructure
+  slice=CONTROL-BRIDGE-G2A-PROTECTED-READ
+  schema=1
+  environment=dev
+  node=node-01
+  bundle_sha256=fa262ac3ab509a549da98b6613d43da56ed0a0b6452585a2de5bfdc3fbfd0aef
+g2a_protected_marker_content_test: |-
+  managed_by=cloud-infrastructure
+  slice=CONTROL-BRIDGE-G2A-PROTECTED-READ
+  schema=1
+  environment=test
+  node=node-01
+  bundle_sha256=fa262ac3ab509a549da98b6613d43da56ed0a0b6452585a2de5bfdc3fbfd0aef
+g2a_protected_marker_sha256_dev: a7c8d0958f82c749a7502dd1ab96fe0098e5ac53121fec6fa51d4819f5335d90
+g2a_protected_marker_sha256_test: 19eaed875ff2942ede023b77a9b6a4739196aea8919d26611d0981d6d67dbe97
+
+g2a_protected_root_directories:
+  - {path: /usr/local/libexec, owner: root, group: root, mode: "0755"}
+  - {path: /usr/local/lib/mcf-control-bridge-g2a-protected, owner: root, group: root, mode: "0755"}
+  - {path: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane, owner: root, group: root, mode: "0755"}
+  - {path: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2a, owner: root, group: root, mode: "0755"}
+  - {path: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2b, owner: root, group: root, mode: "0755"}
+
+g2a_protected_preexisting_shared_directory_paths:
+  - /usr/local/libexec
+
+g2a_protected_install_payloads:
+  - source: control_plane/__init__.py
+    destination: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/__init__.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 8d5b8896a1ecfb0617c84419a0bad5f8a41a47ab65678c44419275690de25bad
+  - source: control_plane/g2a/__init__.py
+    destination: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2a/__init__.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 7283c282c36d6903aa66e52681ce8bff925246db756ed6ff54adcef6f8df4cd4
+  - source: control_plane/g2a/errors.py
+    destination: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2a/errors.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 67952a5d3636829cb790e1111e59e1d3def6883d77d1dc5edb0fec41c57ede46
+  - source: control_plane/g2a/protocol.py
+    destination: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2a/protocol.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: d660aa489996e5e6dfa374a16d59d461ee62e9609488bea9e8de9b210e8def57
+  - source: control_plane/g2a/protected_reader.py
+    destination: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2a/protected_reader.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 6c0af8f8147cc5e0c0c978dc3bf7bff2bac3127c8844e23227458454889fa0cd
+  - source: control_plane/g2b/__init__.py
+    destination: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2b/__init__.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: ef1870029c2a0b51cf5615975544087cc9b2957e954f5ce521ad3810544ebc78
+  - source: control_plane/g2b/secret_policy.py
+    destination: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2b/secret_policy.py
+    owner: root
+    group: root
+    mode: "0444"
+    sha256: 243dc987b5ffa5073e2cde20bfe1397f180f2e69d27be588f47aa754dac39b98
+  - source: platform/control-bridge/mcf-control-g2a-protected-read
+    destination: /usr/local/libexec/mcf-control-g2a-protected-read
+    owner: root
+    group: root
+    mode: "0555"
+    sha256: 3339621cabd67b0ef515a5474970a2c70d3f4e725e46c7c430329afad960ff0c
+  - source: platform/sudoers/mcf-control-g2a-protected-read
+    destination: /etc/sudoers.d/mcf-control-g2a-protected-read
+    owner: root
+    group: root
+    mode: "0440"
+    sha256: e12e1601da3d0dcdb6457b8b2f3bb0a823305eb9e87aa71b28c9143835cce962

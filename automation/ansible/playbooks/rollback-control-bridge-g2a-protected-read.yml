@@ -1,0 +1,303 @@
+---
+- ansible.builtin.import_playbook: controller-preflight.yml
+
+- name: Roll back only exact proven-idle G2-A protected-reader objects
+  hosts: platform_nodes
+  gather_facts: true
+  become: true
+  serial: 1
+
+  vars:
+    g2a_protected_rollback_confirm: false
+
+  vars_files:
+    - ../roles/control_bridge_g2a_protected_read/vars/main.yml
+    - ../roles/control_bridge_g2b/vars/main.yml
+
+  tasks:
+    - name: Require explicit bounded protected-reader rollback confirmation
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_rollback_confirm | bool
+        fail_msg: >-
+          Re-run with -e g2a_protected_rollback_confirm=true only after
+          reviewing marker, hash, process, open file, and G2-B coexistence gates.
+
+    - name: Verify the exact rollback target boundary
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == 'Ubuntu'
+          - ansible_facts.distribution_version == '24.04'
+          - ansible_facts.service_mgr == 'systemd'
+          - ansible_facts.architecture == 'x86_64'
+          - inventory_hostname == 'node-01'
+          - platform_node_id == 'node-01'
+          - >-
+            (
+              (ansible_connection | default('ssh')) == 'local' and
+              platform_environment == 'test' and
+              platform_repository_root == '/workspace/cloud-infrastructure'
+            ) or (
+              (ansible_connection | default('ssh')) != 'local' and
+              platform_environment == 'dev' and
+              ansible_user == 'ubuntu' and
+              platform_expected_ansible_host == '169.58.171.192' and
+              platform_expected_hostname == 'vmi3506102' and
+              platform_expected_machine_id_sha256 ==
+                '27cff9587c434cf9024bd88468a8997778a64ce9ca5c3dc8dbcb68e0aee8f107' and
+              (ansible_host | string) == (platform_expected_ansible_host | string) and
+              ansible_facts.hostname == platform_expected_hostname and
+              (ansible_facts.machine_id | hash('sha256')) ==
+                platform_expected_machine_id_sha256
+            )
+
+    - name: Select exact rollback marker contracts
+      ansible.builtin.set_fact:
+        g2a_protected_rollback_marker_content: >-
+          {{ g2a_protected_marker_content_dev if platform_environment == 'dev'
+             else g2a_protected_marker_content_test }}
+        g2a_protected_rollback_marker_sha256: >-
+          {{ g2a_protected_marker_sha256_dev if platform_environment == 'dev'
+             else g2a_protected_marker_sha256_test }}
+        g2a_protected_rollback_g2b_marker_sha256: >-
+          {{ g2b_marker_sha256_dev if platform_environment == 'dev'
+             else g2b_marker_sha256_test }}
+
+    - name: Inspect the protected-reader marker without following links
+      ansible.builtin.stat:
+        path: "{{ g2a_protected_marker_path }}"
+        follow: false
+        checksum_algorithm: sha256
+      register: g2a_protected_rollback_marker
+
+    - name: Require exact protected-reader marker provenance
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_rollback_marker.stat.exists
+          - g2a_protected_rollback_marker.stat.isreg | default(false)
+          - not (g2a_protected_rollback_marker.stat.islnk | default(false))
+          - g2a_protected_rollback_marker.stat.uid == 0
+          - g2a_protected_rollback_marker.stat.gid == 0
+          - g2a_protected_rollback_marker.stat.mode == '0600'
+          - g2a_protected_rollback_marker.stat.checksum == g2a_protected_rollback_marker_sha256
+
+    - name: Read the exact protected-reader marker
+      ansible.builtin.slurp:
+        src: "{{ g2a_protected_marker_path }}"
+      register: g2a_protected_rollback_marker_data
+    - name: Require exact protected-reader marker bytes
+      ansible.builtin.assert:
+        that:
+          - >-
+            (g2a_protected_rollback_marker_data.content | b64decode) ==
+            g2a_protected_rollback_marker_content
+
+    - name: Inspect the required G2-B marker without following links
+      ansible.builtin.stat:
+        path: "{{ g2b_marker_path }}"
+        follow: false
+        checksum_algorithm: sha256
+      register: g2a_protected_rollback_g2b_marker
+
+    - name: Require exact G2-B coexistence marker
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_rollback_g2b_marker.stat.exists
+          - g2a_protected_rollback_g2b_marker.stat.isreg | default(false)
+          - not (g2a_protected_rollback_g2b_marker.stat.islnk | default(false))
+          - g2a_protected_rollback_g2b_marker.stat.uid == 0
+          - g2a_protected_rollback_g2b_marker.stat.gid == 0
+          - g2a_protected_rollback_g2b_marker.stat.mode == '0600'
+          - >-
+            g2a_protected_rollback_g2b_marker.stat.checksum ==
+            g2a_protected_rollback_g2b_marker_sha256
+
+    - name: Inspect every protected-reader payload without following links
+      ansible.builtin.stat:
+        path: "{{ item.destination }}"
+        follow: false
+        checksum_algorithm: sha256
+      loop: "{{ g2a_protected_install_payloads }}"
+      register: g2a_protected_rollback_payloads
+
+    - name: Require every exact protected-reader payload hash owner and mode
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg | default(false)
+          - not (item.stat.islnk | default(false))
+          - item.stat.pw_name == item.item.owner
+          - item.stat.gr_name == item.item.group
+          - item.stat.mode == item.item.mode
+          - item.stat.checksum == item.item.sha256
+      loop: "{{ g2a_protected_rollback_payloads.results }}"
+
+    - name: Inspect exact protected-reader private directories
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        follow: false
+      loop: "{{ g2a_protected_root_directories[1:] }}"
+      register: g2a_protected_rollback_directories
+
+    - name: Require exact private directory provenance before removal
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir | default(false)
+          - not (item.stat.islnk | default(false))
+          - item.stat.pw_name == item.item.owner
+          - item.stat.gr_name == item.item.group
+          - item.stat.mode == item.item.mode
+      loop: "{{ g2a_protected_rollback_directories.results }}"
+
+    - name: Inspect exact service account before rollback
+      ansible.builtin.command:
+        argv: [getent, passwd, mcf-workspace]
+      register: g2a_protected_rollback_account
+      changed_when: false
+      check_mode: false
+
+    - name: Inspect exact service account memberships before rollback
+      ansible.builtin.command:
+        argv: [id, -nG, mcf-workspace]
+      register: g2a_protected_rollback_memberships
+      changed_when: false
+      check_mode: false
+
+    - name: Require service account boundary to remain exact
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_rollback_account.stdout.split(':')[5] == '/nonexistent'
+          - g2a_protected_rollback_account.stdout.split(':')[6] == '/usr/sbin/nologin'
+          - g2a_protected_rollback_memberships.stdout.split() == ['mcf-workspace']
+          - >-
+            (g2a_protected_rollback_memberships.stdout.split()
+              | intersect(platform_foundation_privileged_groups) | length) == 0
+
+    - name: Inspect exact protected workspace boundary
+      ansible.builtin.stat:
+        path: "{{ g2a_protected_workspace_path }}"
+        follow: false
+      register: g2a_protected_rollback_workspace
+
+    - name: Require protected workspace to remain the G2-B boundary
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_rollback_workspace.stat.exists
+          - g2a_protected_rollback_workspace.stat.isdir | default(false)
+          - not (g2a_protected_rollback_workspace.stat.islnk | default(false))
+          - g2a_protected_rollback_workspace.stat.pw_name == 'mcf-workspace'
+          - g2a_protected_rollback_workspace.stat.gr_name == 'mcf-workspace'
+          - g2a_protected_rollback_workspace.stat.mode == '0700'
+
+    - name: Inspect protected-reader processes
+      ansible.builtin.command:
+        argv: [pgrep, -f, /usr/local/libexec/mcf-control-g2a-protected-read]
+      register: g2a_protected_rollback_processes
+      changed_when: false
+      failed_when: g2a_protected_rollback_processes.rc not in [0, 1]
+      check_mode: false
+
+    - name: Require no active protected-reader process
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_rollback_processes.rc == 1
+          - g2a_protected_rollback_processes.stdout | length == 0
+
+    - name: Inspect protected-reader bundle open files
+      ansible.builtin.command:
+        argv: [lsof, -nP, +D, "{{ g2a_protected_bundle_root }}"]
+      register: g2a_protected_rollback_open_files
+      changed_when: false
+      failed_when: g2a_protected_rollback_open_files.rc not in [0, 1]
+      check_mode: false
+
+    - name: Require no protected-reader open file
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_rollback_open_files.stdout | length == 0
+
+    - name: Define exact private bundle baseline entries
+      ansible.builtin.set_fact:
+        g2a_protected_rollback_private_boundaries:
+          - {path: /usr/local/lib/mcf-control-bridge-g2a-protected, expected: [control_plane]}
+          - {path: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane, expected: [__init__.py, g2a, g2b]}
+          - {path: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2a, expected: [__init__.py, errors.py, protocol.py, protected_reader.py]}
+          - {path: /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2b, expected: [__init__.py, secret_policy.py]}
+
+    - name: List each exact private bundle directory
+      ansible.builtin.command:
+        argv: [ls, -1A, "{{ item.path }}"]
+      loop: "{{ g2a_protected_rollback_private_boundaries }}"
+      register: g2a_protected_rollback_private_entries
+      changed_when: false
+      check_mode: false
+
+    - name: Refuse unexpected object under the private bundle root
+      ansible.builtin.assert:
+        that:
+          - (item.stdout_lines | sort) == (item.item.expected | sort)
+      loop: "{{ g2a_protected_rollback_private_entries.results }}"
+
+    - name: Inspect pre-existing protected-reader installation lock
+      ansible.builtin.stat:
+        path: "{{ g2a_protected_install_lock }}"
+        follow: false
+      register: g2a_protected_rollback_lock
+
+    - name: Require installation lock absent before rollback
+      ansible.builtin.assert:
+        that:
+          - not g2a_protected_rollback_lock.stat.exists
+        fail_msg: Refusing rollback while another protected-reader operation owns the lock.
+
+    - name: Acquire rollback ownership of the exact installation lock
+      ansible.builtin.command:
+        argv: [mkdir, "{{ g2a_protected_install_lock }}"]
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Remove only exact protected-reader objects while holding its lock
+      when: not ansible_check_mode
+      block:
+        - name: Remove exact protected-reader payload leaf files
+          ansible.builtin.file:
+            path: "{{ item.destination }}"
+            state: absent
+          loop: "{{ g2a_protected_install_payloads }}"
+
+        - name: Remove exact empty protected-reader private directories
+          ansible.builtin.command:
+            argv: [rmdir, "{{ item }}"]
+          loop:
+            - /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2a
+            - /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane/g2b
+            - /usr/local/lib/mcf-control-bridge-g2a-protected/control_plane
+            - /usr/local/lib/mcf-control-bridge-g2a-protected
+          changed_when: true
+      always:
+        - name: Release rollback-owned G2-A protected-reader installation lock
+          ansible.builtin.command:
+            argv: [rmdir, "{{ g2a_protected_install_lock }}"]
+          changed_when: false
+
+    - name: Prove G2-B marker survives protected-reader rollback
+      ansible.builtin.stat:
+        path: "{{ g2b_marker_path }}"
+        follow: false
+        checksum_algorithm: sha256
+      register: g2a_protected_rollback_g2b_marker_after
+
+    - name: Require G2-B marker unchanged after protected-reader removal
+      ansible.builtin.assert:
+        that:
+          - g2a_protected_rollback_g2b_marker_after.stat.exists
+          - >-
+            g2a_protected_rollback_g2b_marker_after.stat.checksum ==
+            g2a_protected_rollback_g2b_marker_sha256
+
+    - name: Remove the G2-A protected-reader provenance marker last
+      ansible.builtin.file:
+        path: "{{ g2a_protected_marker_path }}"
+        state: absent
+      when: not ansible_check_mode
