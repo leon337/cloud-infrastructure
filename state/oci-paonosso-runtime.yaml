@@ -1,0 +1,54 @@
+schema_version: 1
+mission_id: MCF-20260920-OCI-PAONOSSO-RUNTIME-001
+project_id: cloud-infrastructure
+observed_at: "2026-09-20T06:19:47-03:00"
+branch: mission/oci-paonosso-runtime-20260920
+base_revision: 6ce23fb17f92876fadb371afbdb92288159eaa48
+
+provider:
+  name: Oracle Cloud Infrastructure
+  account_tier: FREE_TRIAL_WITH_ALWAYS_FREE_FALLBACK
+  tenancy_status: ACTIVE
+  home_region: sa-vinhedo-1
+  region_label: Brazil Southeast (Vinhedo)
+
+target_runtime:
+  workload: pao-nosso-whatsapp-ai
+  image: Canonical Ubuntu 24.04 Minimal aarch64
+  shape: VM.Standard.A1.Flex
+  always_free_eligible: true
+  ocpus: 2
+  memory_gb: 12
+  network_bandwidth_gbps: 2
+  boot_volume: DEFAULT
+  boot_volume_observed_gb: 46.6
+  ssh_public_key_name: oci_paonosso.pub
+  ssh_private_key_location: LOCAL_NOTEBOOK_ONLY
+
+network:
+  wizard_mode: CREATE_NEW_VCN_AND_PUBLIC_SUBNET
+  public_ipv4_review_state: "No"
+  resources_created: NOT_VERIFIED
+  next_required_after_instance: ASSIGN_EPHEMERAL_PUBLIC_IPV4_AND_VALIDATE_INGRESS
+
+execution_state:
+  status: BLOCKED_PROVIDER_CAPACITY
+  last_create_result: API_ERROR
+  blocker: >-
+    Out of capacity for shape VM.Standard.A1.Flex in availability domain AD-1.
+  instance_created: false
+  ssh_validated: false
+  application_deployed: false
+  meta_webhook_switched: false
+
+next_action: >-
+  Retry VM.Standard.A1.Flex at 2 OCPU / 12 GB while preserving Always Free.
+  If another availability domain is offered, test it; otherwise retry later.
+  Do not downgrade shape, enable paid resources, or switch the production Meta
+  webhook without an explicit LEANDRO decision.
+
+continuity_notes:
+  - The legacy notebook checkout of cloud-infrastructure has unrelated dirty files and a corrupted refs/codex/turn-diffs ref; this mission branch was created from a fresh clone of origin/main.
+  - The OCI console creation wizard was validated through Orca/AT-SPI.
+  - The SSH public key was uploaded successfully before the latest create attempt; private key material must never be committed.
+  - Capacity failure is the current blocker, not configuration correctness.
